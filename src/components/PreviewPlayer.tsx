@@ -1,53 +1,90 @@
 "use client";
 
+import { playerEmbed, type PlayableTrack } from "@/lib/player";
+
 type Props = {
-  trackId: string | null;
-  title?: string;
-  artists?: string;
-  imageUrl?: string | null;
+  tracks: PlayableTrack[];
+  currentId: string | null;
+  onChange: (id: string) => void;
   onClose: () => void;
 };
 
-export function PreviewPlayer({
-  trackId,
-  title,
-  artists,
-  imageUrl,
-  onClose,
-}: Props) {
-  if (!trackId) return null;
+export function PreviewPlayer({ tracks, currentId, onChange, onClose }: Props) {
+  const index = tracks.findIndex((track) => track.id === currentId);
+  const track = index >= 0 ? tracks[index] : null;
+  if (!track) return null;
+
+  const embed = playerEmbed(track);
+  const prev = index > 0 ? tracks[index - 1] : null;
+  const next = index < tracks.length - 1 ? tracks[index + 1] : null;
 
   return (
-    <aside className="preview-player" aria-label="Track Vorschau">
+    <aside className="preview-player" aria-label="Player">
       <div className="preview-dock">
         <div className="preview-now">
-          {imageUrl ? (
+          <button
+            type="button"
+            className="player-skip"
+            disabled={!prev}
+            onClick={() => prev && onChange(prev.id)}
+            aria-label="Vorheriger Track"
+          >
+            ‹
+          </button>
+          {track.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={imageUrl} alt="" className="preview-art" />
+            <img src={track.imageUrl} alt="" className="preview-art" />
           ) : (
             <div className="preview-art fallback" aria-hidden />
           )}
           <div className="preview-meta">
-            <strong title={title}>{title || "Track"}</strong>
-            {artists ? <span>{artists}</span> : null}
+            <strong title={track.name}>{track.name}</strong>
+            <span>
+              {track.artists.join(", ") || "—"}
+              {embed ? ` · ${embed.label}` : ""}
+            </span>
           </div>
+          <button
+            type="button"
+            className="player-skip"
+            disabled={!next}
+            onClick={() => next && onChange(next.id)}
+            aria-label="Nächster Track"
+          >
+            ›
+          </button>
           <button
             type="button"
             className="preview-close"
             onClick={onClose}
-            aria-label="Vorschau schließen"
+            aria-label="Player schließen"
           >
             ✕
           </button>
         </div>
-        <iframe
-          title="Spotify Preview"
-          src={`https://open.spotify.com/embed/track/${trackId}?utm_source=setform&theme=0`}
-          width="100%"
-          height="80"
-          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-          loading="lazy"
-        />
+        {embed ? (
+          <iframe
+            key={embed.src}
+            title={`${embed.label} Player`}
+            src={embed.src}
+            width="100%"
+            height={embed.height}
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            loading="eager"
+          />
+        ) : (
+          <p className="player-fallback">
+            Kein Embed für diesen Eintrag.
+            {track.externalUrl ? (
+              <>
+                {" "}
+                <a href={track.externalUrl} target="_blank" rel="noreferrer">
+                  In der Quelle öffnen
+                </a>
+              </>
+            ) : null}
+          </p>
+        )}
       </div>
     </aside>
   );

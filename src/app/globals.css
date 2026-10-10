@@ -3496,10 +3496,42 @@ label.btn:hover {
 
 .preview-now {
   display: grid;
-  grid-template-columns: 56px 1fr auto;
-  gap: 0.75rem;
+  grid-template-columns: 32px 56px minmax(0, 1fr) 32px 32px;
+  gap: 0.65rem;
   align-items: center;
   min-width: 0;
+}
+
+.player-skip {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.player-skip:disabled {
+  opacity: 0.28;
+  cursor: default;
+}
+
+.player-fallback {
+  margin: 0;
+  color: #b3b3b3;
+  font-size: 0.85rem;
+}
+
+.player-fallback a {
+  color: #1ed760;
+}
+
+.timeline-tools button.is-playing {
+  background: #1ed760 !important;
+  color: #121212 !important;
 }
 
 .preview-art {

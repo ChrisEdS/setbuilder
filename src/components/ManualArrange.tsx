@@ -320,6 +320,14 @@ export function ManualArrange({
                   </div>
 
                   <div className="timeline-tools">
+                    <button
+                      type="button"
+                      className={focused ? "is-playing" : undefined}
+                      onClick={() => onFocus?.(track.id)}
+                      aria-label={`${track.name} abspielen`}
+                    >
+                      ▶
+                    </button>
                     <button type="button" onClick={() => onMove(track.id, -1)}>
                       ↑
                     </button>

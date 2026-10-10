@@ -876,14 +876,9 @@ export function SetBuilder() {
       <HarmonicPath tracks={draft.tracks} onHarmonize={harmonizeSet} />
 
       <PreviewPlayer
-        trackId={focusTrackId}
-        title={draft.tracks.find((track) => track.id === focusTrackId)?.name}
-        artists={draft.tracks
-          .find((track) => track.id === focusTrackId)
-          ?.artists.join(", ")}
-        imageUrl={
-          draft.tracks.find((track) => track.id === focusTrackId)?.imageUrl
-        }
+        tracks={draft.tracks}
+        currentId={focusTrackId}
+        onChange={(id) => setFocusTrackId(id)}
         onClose={() => setFocusTrackId(null)}
       />
 
@@ -1196,6 +1191,16 @@ export function SetBuilder() {
                         </select>
                       </div>
                       <div className="timeline-tools">
+                        <button
+                          type="button"
+                          className={
+                            focusTrackId === track.id ? "is-playing" : undefined
+                          }
+                          onClick={() => setFocusTrackId(track.id)}
+                          aria-label={`${track.name} abspielen`}
+                        >
+                          ▶
+                        </button>
                         <button
                           type="button"
                           onClick={() => moveTrack(track.id, -1)}
