@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { extractSetFromPlaylist } from "@/lib/extract-set";
 import { fetchPlaylist, parsePlaylistId } from "@/lib/playlist";
+import { attachTidalCatalog, tidalConfigured } from "@/lib/tidal";
 
 export async function POST(request: Request) {
   try {
@@ -27,7 +28,18 @@ export async function POST(request: Request) {
     }
 
     const playlist = await fetchPlaylist(playlistId);
-    const draft = extractSetFromPlaylist(playlist.tracks, playlist.name, {
+    let tidalMatched = 0;
+    let tracks = playlist.tracks;
+    if (tidalConfigured()) {
+      try {
+        const tidal = await attachTidalCatalog(tracks);
+        tracks = tidal.tracks;
+        tidalMatched = tidal.matched;
+      } catch {
+        tidalMatched = 0;
+      }
+    }
+    const draft = extractSetFromPlaylist(tracks, playlist.name, {
       durationMinutes: body.durationMinutes || 60,
       title: body.title,
       vibe: body.vibe,
@@ -61,6 +73,7 @@ export async function POST(request: Request) {
         imported: playlist.tracks.length,
         selected: performanceCount,
         safety: safetyCount,
+        tidalMatched,
         externalUrl: playlist.externalUrl,
         imageUrl: playlist.imageUrl,
       },

@@ -14,6 +14,14 @@ export type SpotifyTrack = {
   album: string;
   imageUrl: string | null;
   externalUrl: string;
+  /** 0–100 from the Spotify catalog. Not an audio feature. */
+  popularity?: number | null;
+  isrc?: string | null;
+  /** Filled from Tidal when Spotify audio-features are blocked. */
+  catalogBpm?: string;
+  catalogKey?: string;
+  /** 0–1 from the Tidal catalog. */
+  catalogPopularity?: number | null;
 };
 
 let cachedToken: { value: string; expiresAt: number } | null = null;

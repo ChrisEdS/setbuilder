@@ -63,6 +63,8 @@ type RawTrack = {
   uri: string;
   duration_ms: number;
   explicit: boolean;
+  popularity?: number;
+  external_ids?: { isrc?: string };
   artists: { name: string }[];
   album: { name: string; images?: { url: string }[] };
   external_urls?: { spotify?: string };
@@ -83,6 +85,9 @@ function mapTrack(track: RawTrack | null | undefined): SpotifyTrack | null {
     externalUrl:
       track.external_urls?.spotify ??
       `https://open.spotify.com/track/${track.id}`,
+    popularity:
+      typeof track.popularity === "number" ? track.popularity : null,
+    isrc: track.external_ids?.isrc?.toUpperCase() ?? null,
   };
 }
 

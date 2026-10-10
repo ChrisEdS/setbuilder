@@ -313,6 +313,7 @@ export function SetBuilder() {
           imported: number;
           selected: number;
           trackCount: number;
+          tidalMatched?: number;
         };
       };
 
@@ -335,8 +336,12 @@ export function SetBuilder() {
       const safetyCount = (data.draft.tracks ?? []).filter(
         (track) => track.role === "safety",
       ).length;
+      const tidalMatched = data.playlist?.tidalMatched ?? 0;
       setStatus(
-        `Set aus „${data.playlist?.name ?? "Playlist"}“: ${performanceCount} Performance-Tracks + ${safetyCount} Safety (Pool: ${data.playlist?.imported ?? "?"}).`,
+        `Set aus „${data.playlist?.name ?? "Playlist"}“: ${performanceCount} Performance-Tracks + ${safetyCount} Safety (Pool: ${data.playlist?.imported ?? "?"})` +
+          (tidalMatched
+            ? `. Tidal: ${tidalMatched} Tracks mit Key/BPM.`
+            : ". Keine Tidal-Keys — Reihenfolge bleibt näher an der Playlist."),
       );
       await refreshAuthStatus();
     } catch (err) {

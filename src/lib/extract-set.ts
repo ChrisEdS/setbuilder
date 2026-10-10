@@ -60,17 +60,23 @@ export function extractSetFromPlaylist(
   const harmonize = options.harmonize !== false;
 
   const pool: Enriched[] = tracks.slice(0, Math.min(tracks.length, 120)).map(
-    (track, index, arr) => ({
-      ...track,
-      bpm: "",
-      keyCamelot: "",
-      // Crate position as soft energy prior (early = lower)
-      energy: arr.length <= 1 ? 0.5 : index / (arr.length - 1),
-    }),
+    (track, index, arr) => {
+      const position = arr.length <= 1 ? 0.5 : index / (arr.length - 1);
+      return {
+        ...track,
+        bpm: track.catalogBpm || "",
+        keyCamelot: track.catalogKey || "",
+        energy: catalogEnergy(track, position),
+      };
+    },
   );
+  normalizeBpmEnergy(pool);
 
   const selected = packTracks(pool, targetMs);
-  const phased = assignPhasesByDuration(selected, targetMs);
+  const arranged = arrangeByCatalogEnergy(selected);
+  const phased = arranged.some((track) => track.bpm)
+    ? arranged
+    : assignPhasesByDuration(selected, targetMs);
 
   // Harmonize inside each phase, keep phase sequence intact
   const byPhase = new Map<SetPhaseId, Enriched[]>();
@@ -114,6 +120,61 @@ export function extractSetFromPlaylist(
     durationMinutes,
     tracks: withSafety,
   };
+}
+
+function catalogEnergy(
+  track: SpotifyTrack,
+  position: number,
+): number {
+  const pop =
+    typeof track.catalogPopularity === "number"
+      ? track.catalogPopularity
+      : typeof track.popularity === "number"
+        ? track.popularity / 100
+        : null;
+  // Playlist position stays a weak prior. Catalog popularity carries the arc
+  // until BPM is normalized across the crate.
+  const popularity = pop == null ? 0.5 : Math.min(1, Math.max(0, pop));
+  return popularity * 0.72 + position * 0.28;
+}
+
+function normalizeBpmEnergy(pool: Enriched[]): void {
+  const bpms = pool
+    .map((track) => Number(track.bpm))
+    .filter((bpm) => Number.isFinite(bpm) && bpm >= 60 && bpm <= 200);
+  if (bpms.length < 4) return;
+  const sorted = [...bpms].sort((a, b) => a - b);
+  const mid = sorted[Math.floor(sorted.length / 2)] || 120;
+  for (const track of pool) {
+    const bpm = Number(track.bpm);
+    if (!Number.isFinite(bpm) || bpm < 60) continue;
+    const relative = Math.min(1, Math.max(0, 0.5 + (bpm - mid) / 24));
+    track.energy = track.energy * 0.35 + relative * 0.65;
+  }
+}
+
+function arrangeByCatalogEnergy(
+  tracks: Enriched[],
+): Array<Enriched & { phase: SetPhaseId }> {
+  const sorted = [...tracks].sort((a, b) => a.energy - b.energy);
+  const count = sorted.length;
+  const slice = (start: number, end: number) =>
+    sorted.slice(Math.round(start * count), Math.round(end * count));
+  const open = slice(0, 0.17);
+  const lift = slice(0.17, 0.42);
+  const rise = slice(0.42, 0.59);
+  const hot = sorted.slice(Math.round(0.59 * count));
+  const peakCount = Math.max(1, Math.round(0.25 * count));
+  const peak = hot.slice(Math.max(0, hot.length - peakCount));
+  const release = hot.slice(0, Math.max(0, hot.length - peakCount)).reverse();
+  const tagged = [
+    ...open.map((track) => ({ ...track, phase: "open" as const })),
+    ...lift.map((track) => ({ ...track, phase: "lift" as const })),
+    ...rise.map((track) => ({ ...track, phase: "rise" as const })),
+    ...peak.map((track) => ({ ...track, phase: "peak" as const })),
+    ...release.map((track) => ({ ...track, phase: "release" as const })),
+  ];
+  return tagged.length ? tagged : tracks.map((track) => ({ ...track, phase: "lift" }));
 }
 
 function sortByEnergy(

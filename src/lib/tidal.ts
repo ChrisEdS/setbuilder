@@ -1,5 +1,6 @@
 import { parseKeyValue } from "@/lib/key-import";
 import type { CamelotCode } from "@/lib/harmonic";
+import type { SpotifyTrack } from "@/lib/spotify";
 
 type TidalTokenResponse = {
   access_token: string;
@@ -15,6 +16,8 @@ export type TidalKeyHit = {
   keyCamelot: CamelotCode | null;
   bpm: string;
   isrc?: string;
+  /** Tidal catalog popularity, 0–1 when the API sends it. */
+  popularity?: number | null;
   match: "isrc" | "search";
 };
 
@@ -24,6 +27,7 @@ type TidalTrackAttributes = {
   bpm?: number | null;
   key?: string;
   keyScale?: string;
+  popularity?: number | null;
 };
 
 type TidalResource = {
@@ -163,6 +167,8 @@ function toHit(
     keyCamelot: mapped.camelot,
     bpm,
     isrc: attrs.isrc,
+    popularity:
+      typeof attrs.popularity === "number" ? attrs.popularity : null,
     match,
   };
 }
@@ -245,4 +251,30 @@ export async function searchTidalTrack(
     if (hit) return hit;
   }
   return null;
+}
+
+/** Match Spotify tracks to Tidal catalog key, BPM and popularity via ISRC. */
+export async function attachTidalCatalog(
+  tracks: SpotifyTrack[],
+): Promise<{ tracks: SpotifyTrack[]; matched: number }> {
+  if (!tidalConfigured()) return { tracks, matched: 0 };
+  const isrcs = tracks
+    .map((track) => track.isrc)
+    .filter((isrc): isrc is string => Boolean(isrc));
+  if (!isrcs.length) return { tracks, matched: 0 };
+
+  const byIsrc = await lookupTidalByIsrcs(isrcs);
+  let matched = 0;
+  const next = tracks.map((track) => {
+    const hit = track.isrc ? byIsrc.get(track.isrc.toUpperCase()) : undefined;
+    if (!hit) return track;
+    matched += 1;
+    return {
+      ...track,
+      catalogBpm: hit.bpm || track.catalogBpm,
+      catalogKey: hit.keyCamelot || track.catalogKey,
+      catalogPopularity: hit.popularity ?? track.catalogPopularity ?? null,
+    };
+  });
+  return { tracks: next, matched };
 }

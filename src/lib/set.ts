@@ -232,11 +232,11 @@ export const PREP_PRINCIPLES = [
 export const EXTRACT_STEPS: { title: string; body: string }[] = [
   {
     title: "1. Auf die Brief-Dauer packen",
-    body: "Tracks werden in Playlist-Reihenfolge (Crate-Order) genommen, bis die Ziel-Minuten voll sind. Der Rest landet als Safety.",
+    body: "Tracks werden bis zur Ziel-Dauer gepackt. Der Rest landet als Safety.",
   },
   {
-    title: "2. Phasen nach Laufzeit",
-    body: "Open → Lift → Rise → Peak → Release bekommen feste Anteile der Set-Länge. Frühe Crate-Tracks starten eher soft, spätere eher peaken.",
+    title: "2. Energie aus Tidal, nicht aus der Playlist-Position",
+    body: "Spotify sperrt Audio-Features. Tidal liefert Key, BPM und Popularität per ISRC. Daraus entsteht der Bogen: langsamer und unbekannter öffnet, schneller und präsenter peakt, Release kommt wieder runter.",
   },
   {
     title: "3. Rollen vergeben",
