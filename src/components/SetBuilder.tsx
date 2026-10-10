@@ -8,6 +8,7 @@ import {
   useTransition,
 } from "react";
 import { HarmonicPath } from "@/components/HarmonicPath";
+import { KeyImport } from "@/components/KeyImport";
 import { RoleCrates } from "@/components/RoleCrates";
 import { openSetPdfExport } from "@/lib/export-pdf";
 import { CAMELOT_CODES } from "@/lib/harmonic";
@@ -658,6 +659,15 @@ export function SetBuilder() {
                 ?.scrollIntoView({ behavior: "smooth", block: "center" });
             });
           }
+        }}
+      />
+
+      <KeyImport
+        draft={draft}
+        onApply={(next, message) => {
+          setDraft(next);
+          setError(null);
+          setStatus(message);
         }}
       />
 

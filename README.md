@@ -6,6 +6,7 @@ Spotify-gestützter DJ-Set-Builder nach dem [DJ.Studio Prep-Workflow](https://dj
 
 - **Playlist → Set**: eigene Spotify-Playlist laden und entlang Open → Lift → Rise → Peak → Release extrahieren
 - **Crate-Rollen-Board**: Anchor / Bridge / Groove / Safety mit Why-Infos, Phase, Key, Transition
+- **Key-Import**: CSV/Paste aus Mixed In Key, rekordbox u. a. (Camelot, Open Key, Am/C…)
 - **Harmonic Path**: Camelot-Kompatibilität, Mix-Score, „Harmonisch sortieren“
 - **Brief**: Venue, Slot, Audience, Gear, Dauer
 - **Spotify-Suche** zum Nachschärfen
