@@ -1,6 +1,12 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore, useTransition } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+  useTransition,
+} from "react";
 import {
   ARC_GUIDE,
   DEFAULT_SET,
@@ -86,10 +92,112 @@ export function SetBuilder() {
   const [status, setStatus] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [hasSearched, setHasSearched] = useState(false);
+  const [playlistUrl, setPlaylistUrl] = useState("");
+  const [spotifyConnected, setSpotifyConnected] = useState<boolean | null>(null);
+  const [redirectUri, setRedirectUri] = useState(
+    "http://127.0.0.1:4317/api/auth/callback",
+  );
+  const [isExtracting, setIsExtracting] = useState(false);
 
   function setDraft(updater: SetDraft | ((current: SetDraft) => SetDraft)) {
     const next = typeof updater === "function" ? updater(draft) : updater;
     persistDraft(next);
+  }
+
+  async function refreshAuthStatus() {
+    try {
+      const response = await fetch("/api/auth/status");
+      const data = (await response.json()) as {
+        connected?: boolean;
+        redirectUri?: string;
+      };
+      setSpotifyConnected(Boolean(data.connected));
+      if (data.redirectUri) setRedirectUri(data.redirectUri);
+    } catch {
+      setSpotifyConnected(false);
+    }
+  }
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const auth = params.get("auth");
+    const message = params.get("message") || "unknown";
+    if (auth) window.history.replaceState({}, "", "/");
+
+    fetch("/api/auth/status")
+      .then((response) => response.json())
+      .then((data: { connected?: boolean; redirectUri?: string }) => {
+        setSpotifyConnected(Boolean(data.connected));
+        if (data.redirectUri) setRedirectUri(data.redirectUri);
+        if (auth === "ok") {
+          setStatus(
+            "Spotify verbunden — Playlist-URL einfügen und Set extrahieren.",
+          );
+        } else if (auth === "error") {
+          setError(`Spotify-Login fehlgeschlagen: ${message}`);
+        }
+      })
+      .catch(() => setSpotifyConnected(false));
+  }, []);
+
+  async function extractFromPlaylist() {
+    const url = playlistUrl.trim();
+    if (!url) {
+      setError("Bitte eine Spotify-Playlist-URL einfügen.");
+      return;
+    }
+
+    setError(null);
+    setStatus(null);
+    setIsExtracting(true);
+    try {
+      const response = await fetch("/api/playlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url,
+          durationMinutes: draft.durationMinutes,
+          title: draft.title,
+          vibe: draft.vibe,
+          venue: draft.venue,
+          slot: draft.slot,
+          audience: draft.audience,
+          gear: draft.gear,
+        }),
+      });
+      const data = (await response.json()) as {
+        error?: string;
+        code?: string;
+        draft?: SetDraft;
+        playlist?: {
+          name: string;
+          imported: number;
+          selected: number;
+          trackCount: number;
+        };
+      };
+
+      if (response.status === 401 || data.code === "AUTH_REQUIRED") {
+        setSpotifyConnected(false);
+        setError(
+          "Spotify-Login nötig, um Playlist-Tracks zu lesen. Zuerst verbinden, dann erneut extrahieren.",
+        );
+        return;
+      }
+      if (!response.ok || !data.draft) {
+        throw new Error(data.error || "Extraktion fehlgeschlagen.");
+      }
+
+      setDraft(data.draft);
+      setStatus(
+        `Set aus „${data.playlist?.name ?? "Playlist"}“: ${data.playlist?.selected ?? data.draft.tracks.length} Tracks gewählt (von ${data.playlist?.imported ?? "?"} importiert).`,
+      );
+      await refreshAuthStatus();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Extraktion fehlgeschlagen.");
+    } finally {
+      setIsExtracting(false);
+    }
   }
 
   const filledMs = totalDurationMs(draft.tracks);
@@ -215,11 +323,10 @@ export function SetBuilder() {
       <header className="hero">
         <div className="hero-copy">
           <p className="brand">SETFORM</p>
-          <h1>Prep wie ein Pro — Arc zuerst, Tracks danach.</h1>
+          <h1>Playlist rein — Set raus.</h1>
           <p className="lede">
-            Nach dem DJ.Studio-Workflow: Brief definieren, Crate mit Anchors /
-            Bridges / Safeties bauen, Energiekurve mappen, Transitions bewusst
-            wählen.
+            Spotify-Playlist laden, automatisch auf Open → Lift → Rise → Peak →
+            Release legen, Anchors/Bridges/Safeties markieren, dann feinschleifen.
           </p>
         </div>
         <div className="hero-meta" aria-label="Set brief">
@@ -294,6 +401,64 @@ export function SetBuilder() {
           </label>
         </div>
       </header>
+
+      <section className="import-panel" aria-label="Playlist import">
+        <div className="panel-head">
+          <h2>Playlist → Set extrahieren</h2>
+          <p>
+            {spotifyConnected === null
+              ? "Auth prüfen…"
+              : spotifyConnected
+                ? "Spotify verbunden"
+                : "Spotify-Login nötig"}
+          </p>
+        </div>
+
+        <div className="import-actions">
+          {spotifyConnected ? (
+            <button
+              type="button"
+              className="ghost"
+              onClick={async () => {
+                await fetch("/api/auth/logout", { method: "POST" });
+                setSpotifyConnected(false);
+                setStatus("Spotify getrennt.");
+              }}
+            >
+              Trennen
+            </button>
+          ) : (
+            <a className="button-link" href="/api/auth/login">
+              Mit Spotify verbinden
+            </a>
+          )}
+        </div>
+
+        <form
+          className="search-row import-row"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void extractFromPlaylist();
+          }}
+        >
+          <input
+            value={playlistUrl}
+            onChange={(e) => setPlaylistUrl(e.target.value)}
+            placeholder="https://open.spotify.com/playlist/…"
+            aria-label="Spotify Playlist URL"
+          />
+          <button type="submit" disabled={isExtracting}>
+            {isExtracting ? "Extrahiere…" : "Set extrahieren"}
+          </button>
+        </form>
+
+        <p className="guide-line">
+          Redirect URI in der Spotify App muss exakt sein:{" "}
+          <code>{redirectUri}</code>
+          {" · "}Playlist muss für deinen Account lesbar sein (eigene oder
+          collaborative). Dauer oben steuert, wie lang das extrahierte Set wird.
+        </p>
+      </section>
 
       <section className="principles" aria-label="Advanced prep tips">
         <h2>Damit das Set sich richtig anfühlt</h2>
@@ -450,11 +615,10 @@ export function SetBuilder() {
 
           {draft.tracks.length === 0 ? (
             <div className="empty">
-              <p>Crate noch leer.</p>
+              <p>Noch kein Set.</p>
               <p>
-                Ziel: 40–120 Tracks im Pool, dann die Arc-Spots besetzen —
-                Anchors auf Peak-Momente, Bridges für Key/BPM-Pivots, Safeties
-                für Raumwechsel.
+                Oben eine Spotify-Playlist einfügen und „Set extrahieren“ —
+                optional danach per Suche nachschärfen.
               </p>
             </div>
           ) : (

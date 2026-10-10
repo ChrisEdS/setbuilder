@@ -42,3 +42,4 @@ next-env.d.ts
 
 # Spotify / MCP secrets
 .cursor/mcp.json
+.data/
