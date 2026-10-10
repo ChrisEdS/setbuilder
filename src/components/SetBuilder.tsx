@@ -776,17 +776,46 @@ export function SetBuilder() {
           )}
         </section>
 
-        <section className="panel set-panel">
+        <section className="panel set-panel timeline-panel">
           <div className="panel-head">
-            <h2>Set-Timeline</h2>
-            <div className="actions">
-              <button
-                type="button"
-                className={roleFilter === "all" ? "btn" : "btn ghost"}
-                onClick={() => setRoleFilter("all")}
-              >
-                Alle
-              </button>
+            <div>
+              <h2>Set-Timeline</h2>
+              <p className="timeline-filter">
+                {roleFilter === "all"
+                  ? "Performance-Set"
+                  : TRACK_ROLES.find((role) => role.id === roleFilter)?.label}
+                {" · "}
+                {visibleTimeline.length} Tracks ·{" "}
+                {formatDuration(
+                  visibleTimeline.reduce(
+                    (sum, track) => sum + track.durationMs,
+                    0,
+                  ),
+                )}
+              </p>
+            </div>
+            <div className="actions timeline-actions">
+              <div className="seg" role="group" aria-label="Timeline-Filter">
+                <button
+                  type="button"
+                  className={roleFilter === "all" ? "seg-item active" : "seg-item"}
+                  onClick={() => setRoleFilter("all")}
+                >
+                  Alle
+                </button>
+                {TRACK_ROLES.map((role) => (
+                  <button
+                    key={role.id}
+                    type="button"
+                    className={
+                      roleFilter === role.id ? "seg-item active" : "seg-item"
+                    }
+                    onClick={() => setRoleFilter(role.id)}
+                  >
+                    {role.label}
+                  </button>
+                ))}
+              </div>
               <button
                 type="button"
                 className="btn"
@@ -809,42 +838,64 @@ export function SetBuilder() {
             </div>
           </div>
 
-          <p className="timeline-filter">
-            Filter:{" "}
-            <strong>
-              {roleFilter === "all"
-                ? "Performance-Set"
-                : TRACK_ROLES.find((role) => role.id === roleFilter)?.label}
-            </strong>
-            {" · "}
-            {visibleTimeline.length} Tracks · {formatDuration(
-              visibleTimeline.reduce((sum, track) => sum + track.durationMs, 0),
-            )}
-          </p>
-
           {visibleTimeline.length === 0 ? (
             <div className="empty">
               <p>Noch kein Set.</p>
               <p>
-                Oben eine eigene Spotify-Playlist wählen und „Set extrahieren“.
-                Danach Keys/BPM setzen und harmonisch sortieren.
+                Playlist extrahieren, Keys matchen, dann Timeline feinschleifen.
               </p>
             </div>
           ) : (
-            <ol className="set-list">
+            <ol className="set-list timeline-list">
               {visibleTimeline.map((track, index) => (
                 <li
                   key={`${track.role}-${track.id}`}
                   id={`track-${track.id}`}
-                  className={focusTrackId === track.id ? "focused" : undefined}
+                  className={
+                    focusTrackId === track.id
+                      ? "timeline-row focused"
+                      : "timeline-row"
+                  }
                 >
-                  <div className="set-index">{index + 1}</div>
-                  <div className="set-body">
-                    <div className="set-title-row">
+                  <button
+                    type="button"
+                    className="timeline-main"
+                    onClick={() => setFocusTrackId(track.id)}
+                  >
+                    <span className="set-index">{index + 1}</span>
+                    <span className="timeline-copy">
                       <strong>{track.name}</strong>
-                      <span>{formatDuration(track.durationMs)}</span>
-                    </div>
-                    <p>{track.artists.join(", ")}</p>
+                      <span>
+                        {track.artists.join(", ")}
+                        {track.keyCamelot ? ` · ${track.keyCamelot}` : ""}
+                        {track.bpm ? ` · ${track.bpm}` : ""}
+                      </span>
+                    </span>
+                    <span className="timeline-meta">
+                      <em>{PHASES.find((p) => p.id === track.phase)?.label}</em>
+                      <em>{track.role}</em>
+                      <em>{formatDuration(track.durationMs)}</em>
+                    </span>
+                  </button>
+
+                  <div className="timeline-tools">
+                    <button type="button" onClick={() => moveTrack(track.id, -1)}>
+                      ↑
+                    </button>
+                    <button type="button" onClick={() => moveTrack(track.id, 1)}>
+                      ↓
+                    </button>
+                    <button
+                      type="button"
+                      className="danger"
+                      onClick={() => removeTrack(track.id)}
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <details className="timeline-details">
+                    <summary>Edit</summary>
                     {track.why ? <p className="why-inline">{track.why}</p> : null}
                     <div className="set-controls">
                       <select
@@ -908,7 +959,7 @@ export function SetBuilder() {
                         }
                         aria-label={`Key für ${track.name}`}
                       >
-                        <option value="">Key (Camelot)</option>
+                        <option value="">Key</option>
                         {CAMELOT_CODES.map((code) => (
                           <option key={code} value={code}>
                             {code}
@@ -920,42 +971,20 @@ export function SetBuilder() {
                         onChange={(e) =>
                           patchTrack(track.id, { note: e.target.value })
                         }
-                        placeholder="In/Out · Mix-Rationale"
+                        placeholder="Cue / Transition"
                         aria-label={`Cue für ${track.name}`}
-                      />
-                      <input
-                        value={track.safetyAlt}
-                        onChange={(e) =>
-                          patchTrack(track.id, { safetyAlt: e.target.value })
-                        }
-                        placeholder="Safety alt"
-                        aria-label={`Safety für ${track.name}`}
                         className="full"
                       />
                     </div>
-                    <div className="set-actions">
-                      <a
-                        href={track.externalUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Spotify
-                      </a>
-                      <button type="button" onClick={() => moveTrack(track.id, -1)}>
-                        ↑
-                      </button>
-                      <button type="button" onClick={() => moveTrack(track.id, 1)}>
-                        ↓
-                      </button>
-                      <button
-                        type="button"
-                        className="danger"
-                        onClick={() => removeTrack(track.id)}
-                      >
-                        Entfernen
-                      </button>
-                    </div>
-                  </div>
+                    <a
+                      className="timeline-link"
+                      href={track.externalUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      In Spotify öffnen
+                    </a>
+                  </details>
                 </li>
               ))}
             </ol>
