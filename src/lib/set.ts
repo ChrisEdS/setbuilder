@@ -144,7 +144,7 @@ export const TRACK_ROLES: { id: TrackRole; label: string; hint: string }[] = [
   {
     id: "safety",
     label: "Alternativen",
-    hint: "Safety / Plan B wenn der Floor dreht",
+    hint: "Plan B wenn der Floor dreht",
   },
 ];
 

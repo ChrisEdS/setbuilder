@@ -42,10 +42,10 @@ const STORAGE_KEY = "setform-crate-prefs-v1";
 const MIN_HEIGHT = 140;
 const MAX_HEIGHT = 720;
 const DEFAULT_HEIGHT: Record<TrackRole, number> = {
-  anchor: 260,
-  bridge: 260,
-  groove: 260,
-  safety: 360,
+  anchor: 280,
+  bridge: 280,
+  groove: 280,
+  safety: 280,
 };
 
 const DEFAULT_OPEN: Record<TrackRole, boolean> = {
@@ -58,7 +58,7 @@ const DEFAULT_OPEN: Record<TrackRole, boolean> = {
 const DEFAULT_PREFS: CratePrefs = {
   open: DEFAULT_OPEN,
   heights: DEFAULT_HEIGHT,
-  wide: "safety",
+  wide: null,
 };
 
 let cachedRaw: string | null | undefined;
@@ -66,7 +66,13 @@ let cachedPrefs: CratePrefs = DEFAULT_PREFS;
 const listeners = new Set<() => void>();
 
 function parsePrefs(raw: string | null): CratePrefs {
-  if (!raw) return { ...DEFAULT_PREFS, open: { ...DEFAULT_OPEN }, heights: { ...DEFAULT_HEIGHT } };
+  if (!raw) {
+    return {
+      open: { ...DEFAULT_OPEN },
+      heights: { ...DEFAULT_HEIGHT },
+      wide: null,
+    };
+  }
   try {
     const parsed = JSON.parse(raw) as Partial<CratePrefs>;
     const wide =
@@ -76,14 +82,18 @@ function parsePrefs(raw: string | null): CratePrefs {
       parsed.wide === "groove" ||
       parsed.wide === "safety"
         ? parsed.wide
-        : "safety";
+        : null;
     return {
       open: { ...DEFAULT_OPEN, ...parsed.open },
       heights: { ...DEFAULT_HEIGHT, ...parsed.heights },
       wide,
     };
   } catch {
-    return { ...DEFAULT_PREFS, open: { ...DEFAULT_OPEN }, heights: { ...DEFAULT_HEIGHT } };
+    return {
+      open: { ...DEFAULT_OPEN },
+      heights: { ...DEFAULT_HEIGHT },
+      wide: null,
+    };
   }
 }
 
@@ -232,7 +242,10 @@ export function RoleCrates({
           <button
             type="button"
             className={prefs.wide === "safety" ? "btn" : "btn ghost"}
-            onClick={() => setWide("safety")}
+            onClick={() => {
+              setWide("safety");
+              setOpen("safety", true);
+            }}
           >
             Alternativen groß
           </button>
@@ -302,10 +315,7 @@ export function RoleCrates({
                   }}
                 >
                   <span className="crate-bar" aria-hidden />
-                  <strong>
-                    {role.label}
-                    {isSafety ? <i className="crate-alt-tag">Safety</i> : null}
-                  </strong>
+                  <strong>{role.label}</strong>
                   <span>{role.hint}</span>
                   <em>{roleTracks.length}</em>
                 </button>

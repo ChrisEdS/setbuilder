@@ -8,16 +8,26 @@
   --cream: #fdfef6;
   --espresso: #120b06;
 
-  --ink: var(--espresso);
-  --muted: color-mix(in oklab, var(--slate) 78%, var(--espresso));
-  --paper: var(--cream);
+  --ink: #0b0b0c;
+  --muted: #5c6770;
+  --paper: #f7f8f6;
   --paper-2: var(--mint);
+  --surface: #ffffff;
+  --surface-2: #f1f4f3;
   --accent: var(--mauve);
   --accent-2: var(--slate);
-  --accent-ink: var(--cream);
-  --line: color-mix(in oklab, var(--slate) 28%, transparent);
-  --danger: #9b3a3a;
-  --shadow: none;
+  --accent-ink: #ffffff;
+  --line: rgba(12, 18, 22, 0.1);
+  --line-strong: rgba(12, 18, 22, 0.16);
+  --danger: #b42318;
+  --ok: #1f7a4c;
+  --shadow: 0 1px 2px rgba(12, 18, 22, 0.04);
+  --shadow-md: 0 8px 28px rgba(12, 18, 22, 0.08);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-xs: 6px;
+  --control-h: 44px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --font-display: var(--font-display);
   --font-body: var(--font-body);
 }
@@ -42,12 +52,11 @@ body {
   color: var(--ink);
   font-family: var(--font-body), system-ui, sans-serif;
   background:
-    linear-gradient(
-      180deg,
-      #ffffff 0%,
-      color-mix(in oklab, var(--mint) 22%, #ffffff) 48%,
-      color-mix(in oklab, var(--cream) 70%, #ffffff) 100%
-    );
+    radial-gradient(900px 420px at 0% -10%, color-mix(in oklab, var(--mint) 55%, white), transparent 60%),
+    radial-gradient(700px 380px at 100% 0%, color-mix(in oklab, var(--mauve) 10%, white), transparent 55%),
+    linear-gradient(180deg, #ffffff 0%, var(--paper) 100%);
+  letter-spacing: -0.011em;
+  text-rendering: optimizeLegibility;
 }
 
 a {
@@ -56,8 +65,20 @@ a {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
+  letter-spacing: inherit;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--mauve) 28%, white);
+  color: var(--espresso);
+}
+
+:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--mauve) 55%, var(--slate));
+  outline-offset: 2px;
 }
 
 .set-shell {
@@ -478,20 +499,18 @@ select {
   transition: border-color 160ms ease;
 }
 
-.crate-col.active {
-  border-color: var(--espresso);
+.crate-col.active,
+.crate-col.is-wide {
+  border-color: var(--line-strong);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--mauve) 22%, transparent);
 }
 
 .crate-col.is-safety {
-  background: color-mix(in oklab, var(--mint) 28%, #fff);
-}
-
-.crate-col.is-wide {
-  border-color: var(--mauve);
+  background: #fff;
 }
 
 .crate-col.is-collapsed {
-  min-height: 0;
+  min-height: 7.5rem;
 }
 
 .crate-col-head-row {
@@ -505,10 +524,6 @@ select {
   top: 0;
   z-index: 3;
   background: #fff;
-}
-
-.crate-col.is-safety .crate-col-head-row {
-  background: color-mix(in oklab, var(--mint) 28%, #fff);
 }
 
 .crate-col.is-collapsed .crate-col-head-row {
@@ -589,16 +604,6 @@ select {
   font-weight: 600;
 }
 
-.crate-alt-tag {
-  font-style: normal;
-  font-family: var(--font-body), sans-serif;
-  font-size: 0.65rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--slate);
-  font-weight: 700;
-}
-
 .crate-col-head span,
 .crate-col-head em {
   display: block;
@@ -664,9 +669,6 @@ select {
   transform: none;
 }
 
-.crate-col.is-safety .crate-resize {
-  background: color-mix(in oklab, var(--mauve) 12%, var(--mint));
-}
 
 .safety-line {
   margin: 0.3rem 0 0;
@@ -2276,5 +2278,678 @@ button {
   }
   .seg {
     width: 100%;
+  }
+}
+
+/* ===== SETFORM 2026 — Spotify/Tidal-grade chrome ===== */
+.set-shell {
+  width: min(1120px, calc(100% - 2rem));
+  padding: 2rem 0 7.5rem;
+}
+
+.brand {
+  color: var(--ink);
+  font-weight: 700;
+  letter-spacing: -0.08em;
+}
+
+.hero {
+  gap: 2rem;
+  margin-bottom: 1.75rem;
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid var(--line);
+  align-items: start;
+}
+
+.hero h1 {
+  font-weight: 560;
+  color: var(--ink);
+  max-width: 18ch;
+  font-size: clamp(1.45rem, 2.6vw, 1.95rem);
+  line-height: 1.15;
+}
+
+.lede {
+  color: var(--muted);
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.hero-meta,
+.import-panel,
+.curve,
+.role-crates,
+.harmonic-path,
+.key-import,
+.library-panel,
+.panel,
+.explain-fold,
+.principles {
+  background: var(--surface) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: var(--shadow) !important;
+  backdrop-filter: none !important;
+}
+
+.hero-meta {
+  padding: 1rem;
+  gap: 0.75rem;
+  border-radius: var(--radius);
+}
+
+.import-panel,
+.library-source-pane,
+.crate-source-bar,
+.empty,
+.library-empty {
+  background: color-mix(in oklab, var(--mint) 34%, white) !important;
+}
+
+.curve,
+.role-crates,
+.harmonic-path,
+.library-panel,
+.import-panel,
+.panel {
+  padding: 1.2rem 1.25rem 1.3rem !important;
+  margin-bottom: 1.1rem !important;
+}
+
+.panel-head h2,
+.curve-head h2,
+.import-panel .panel-head h2,
+.library-panel .panel-head h2,
+.role-crates .panel-head h2,
+.harmonic-path .panel-head h2 {
+  font-size: 1.28rem !important;
+  font-weight: 650;
+  letter-spacing: -0.04em;
+}
+
+.panel-head p,
+.curve-head p,
+.timeline-filter {
+  color: var(--muted) !important;
+  font-size: 0.8rem !important;
+  letter-spacing: 0.02em;
+  text-transform: none !important;
+  font-weight: 500;
+}
+
+/* Controls */
+.btn,
+.search-row > button,
+.import-row > button,
+.actions > button,
+.set-actions > button,
+.result-list > li > button,
+.button-link,
+.file-btn,
+.library-file {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: var(--control-h);
+  padding: 0 1.05rem !important;
+  border-radius: var(--radius-sm) !important;
+  border: 1px solid transparent !important;
+  font-weight: 650 !important;
+  font-size: 0.9rem !important;
+  letter-spacing: -0.01em;
+  transition:
+    background 160ms var(--ease),
+    color 160ms var(--ease),
+    border-color 160ms var(--ease),
+    transform 160ms var(--ease),
+    opacity 160ms var(--ease) !important;
+  transform: none !important;
+}
+
+.btn:not(.ghost):not(.danger),
+.search-row > button,
+.import-row > button,
+.actions > button.btn:not(.ghost),
+.button-link,
+.result-list > li > button,
+.file-btn,
+.library-file.btn,
+label.btn {
+  background: var(--ink) !important;
+  border-color: var(--ink) !important;
+  color: #fff !important;
+}
+
+.btn:not(.ghost):hover:not(:disabled),
+.search-row > button:hover:not(:disabled),
+.import-row > button:hover:not(:disabled),
+.button-link:hover,
+.result-list > li > button:hover:not(:disabled),
+.file-btn:hover,
+label.btn:hover {
+  background: color-mix(in oklab, var(--ink) 82%, var(--mauve)) !important;
+  border-color: transparent !important;
+  transform: translateY(-1px) !important;
+}
+
+.btn.ghost,
+.actions > button.ghost,
+.set-actions > button.ghost,
+.preview-close {
+  background: var(--surface-2) !important;
+  color: var(--ink) !important;
+  border-color: transparent !important;
+}
+
+.btn.ghost:hover:not(:disabled),
+.actions > button.ghost:hover:not(:disabled),
+.preview-close:hover {
+  background: color-mix(in oklab, var(--mint) 55%, var(--surface-2)) !important;
+}
+
+.btn.danger,
+.set-actions > button.danger,
+.timeline-tools button.danger {
+  color: var(--danger) !important;
+  background: color-mix(in oklab, var(--danger) 8%, white) !important;
+  border-color: transparent !important;
+}
+
+.btn:disabled,
+.search-row > button:disabled,
+.import-row > button:disabled,
+.actions > button:disabled,
+.library-file:disabled {
+  opacity: 0.38 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+/* Fields */
+.hero-meta input,
+.hero-meta select,
+.search-row input,
+.set-controls input,
+.set-controls select,
+.playlist-picker select,
+.key-import textarea,
+.library-browser-head input,
+.library-csv-pane textarea,
+.library-folds textarea {
+  min-height: var(--control-h);
+  border: 1px solid var(--line) !important;
+  background: var(--surface) !important;
+  color: var(--ink) !important;
+  border-radius: var(--radius-sm) !important;
+  padding: 0.65rem 0.85rem !important;
+  box-shadow: none !important;
+  transition: border-color 160ms var(--ease), box-shadow 160ms var(--ease);
+}
+
+.hero-meta input:focus,
+.hero-meta select:focus,
+.search-row input:focus,
+.set-controls input:focus,
+.set-controls select:focus,
+.playlist-picker select:focus,
+.key-import textarea:focus,
+.library-browser-head input:focus,
+.library-csv-pane textarea:focus {
+  border-color: color-mix(in oklab, var(--mauve) 45%, var(--slate)) !important;
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--mint) 70%, transparent) !important;
+  outline: none !important;
+}
+
+.hero-meta span,
+.playlist-picker span {
+  font-size: 0.72rem !important;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted) !important;
+}
+
+/* Segmented controls */
+.seg,
+.crate-mode-seg,
+.library-source-seg {
+  background: var(--surface-2) !important;
+  border-radius: var(--radius-sm);
+  padding: 0.22rem !important;
+  gap: 0.2rem !important;
+  border: 1px solid transparent;
+}
+
+.seg-item {
+  border-radius: calc(var(--radius-sm) - 2px) !important;
+  min-height: 36px;
+  padding: 0.45rem 0.75rem !important;
+  font-size: 0.82rem !important;
+  font-weight: 650 !important;
+  color: var(--muted) !important;
+  background: transparent !important;
+  border: 0 !important;
+  transition: background 140ms var(--ease), color 140ms var(--ease);
+}
+
+.seg-item:hover {
+  color: var(--ink) !important;
+  background: rgba(255, 255, 255, 0.55) !important;
+  transform: none !important;
+}
+
+.seg-item.active {
+  background: var(--surface) !important;
+  color: var(--ink) !important;
+  box-shadow: var(--shadow);
+}
+
+.library-source-seg .seg-item {
+  min-height: 48px;
+  border-radius: var(--radius-xs) !important;
+}
+
+.library-source-seg .seg-item i {
+  opacity: 0.65;
+}
+
+/* Phase chips */
+.phase {
+  border-radius: var(--radius-sm) !important;
+  border: 1px solid var(--line) !important;
+  background: var(--surface) !important;
+  padding: 0.9rem !important;
+  transition: background 160ms var(--ease), border-color 160ms var(--ease), transform 160ms var(--ease);
+}
+
+.phase:hover {
+  border-color: var(--line-strong) !important;
+  transform: translateY(-1px);
+}
+
+.phase.active {
+  background: var(--ink) !important;
+  color: #fff !important;
+  border-color: var(--ink) !important;
+  transform: none;
+}
+
+.phase.active span,
+.phase.active em {
+  color: rgba(255, 255, 255, 0.72) !important;
+}
+
+.curve-bar,
+.library-progress,
+.mini-bar {
+  height: 3px !important;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--surface-2) !important;
+}
+
+.curve-bar span,
+.library-progress i,
+.mini-bar i {
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--mauve), color-mix(in oklab, var(--slate) 40%, var(--mauve))) !important;
+}
+
+/* Explain folds */
+.explain-fold {
+  overflow: hidden;
+}
+
+.explain-fold > summary {
+  padding: 0.95rem 1.1rem !important;
+  font-size: 0.98rem !important;
+  font-weight: 650 !important;
+}
+
+.explain-fold > summary::before {
+  border-radius: 5px;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-color: var(--line-strong);
+}
+
+.explain-fold.nested {
+  background: var(--surface-2) !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+.explain-body {
+  padding: 0.95rem 1.1rem 1.15rem !important;
+}
+
+/* Crates */
+.crate-col {
+  border-radius: var(--radius) !important;
+  border: 1px solid var(--line) !important;
+  background: var(--surface) !important;
+  overflow: hidden;
+  min-height: 7.5rem;
+}
+
+.crate-col.is-safety,
+.crate-col.is-wide,
+.crate-col.active {
+  background: var(--surface) !important;
+  border-color: var(--line) !important;
+  box-shadow: none !important;
+}
+
+.crate-col.active,
+.crate-col.is-wide {
+  border-color: var(--line-strong) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--mauve) 18%, transparent) !important;
+}
+
+.crate-col.is-collapsed {
+  min-height: 7.5rem;
+}
+
+.crate-col-head-row {
+  background: var(--surface) !important;
+}
+
+.crate-col-head {
+  min-height: 6.4rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.crate-col-head em {
+  margin-top: auto !important;
+  padding-top: 0.65rem;
+  font-size: 1.35rem !important;
+  letter-spacing: -0.04em;
+}
+
+.crate-col-tools {
+  padding-top: 0.65rem !important;
+}
+
+.crate-icon-btn {
+  width: 1.85rem !important;
+  height: 1.85rem !important;
+}
+
+.crate-icon-btn.active {
+  background: var(--surface-2) !important;
+  color: var(--ink) !important;
+  border-color: var(--line) !important;
+}
+
+.crate-icon-btn {
+  border-radius: var(--radius-xs) !important;
+  border: 1px solid var(--line) !important;
+  background: var(--surface) !important;
+  transition: background 140ms var(--ease), color 140ms var(--ease), border-color 140ms var(--ease);
+}
+
+.crate-icon-btn:hover,
+.crate-icon-btn.active {
+  background: var(--ink) !important;
+  color: #fff !important;
+  border-color: var(--ink) !important;
+}
+
+.crate-resize {
+  background: var(--surface-2) !important;
+}
+
+.crate-card {
+  border-radius: 0;
+  padding: 0.7rem 0.2rem !important;
+}
+
+.crate-card:hover,
+.crate-card.is-focused {
+  background: color-mix(in oklab, var(--mint) 42%, white) !important;
+  border-radius: var(--radius-xs);
+}
+
+.crate-card img,
+.art-fallback.sm {
+  border-radius: 6px;
+  width: 40px !important;
+  height: 40px !important;
+}
+
+.pill {
+  border-radius: var(--radius-xs) !important;
+  border: 1px solid var(--line) !important;
+  background: var(--surface) !important;
+  font-size: 0.65rem !important;
+  font-weight: 650 !important;
+  padding: 0.18rem 0.4rem !important;
+  letter-spacing: 0.04em;
+}
+
+/* Timeline */
+.timeline-panel {
+  border-radius: var(--radius) !important;
+}
+
+.timeline-panel .panel-head {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 1rem;
+  margin-bottom: 0.35rem;
+}
+
+.timeline-row {
+  padding: 0.95rem 0.2rem !important;
+  border-radius: var(--radius-xs);
+}
+
+.timeline-row.focused {
+  background: color-mix(in oklab, var(--mint) 40%, white) !important;
+  box-shadow: none !important;
+}
+
+.timeline-copy strong {
+  font-size: 1.2rem !important;
+  letter-spacing: -0.045em;
+  font-weight: 650;
+}
+
+.timeline-tools button {
+  min-width: 2rem;
+  min-height: 2rem;
+  border-radius: var(--radius-xs) !important;
+  background: var(--surface-2) !important;
+  transition: background 140ms var(--ease), opacity 140ms var(--ease);
+}
+
+.timeline-tools button:hover {
+  background: color-mix(in oklab, var(--mint) 60%, white) !important;
+}
+
+.timeline-details summary {
+  border-radius: var(--radius-xs);
+  padding: 0.25rem 0.35rem !important;
+}
+
+.timeline-details summary:hover {
+  background: var(--surface-2);
+}
+
+.timeline-details .set-controls input,
+.timeline-details .set-controls select {
+  border-radius: var(--radius-sm) !important;
+}
+
+/* Lists / search results */
+.track-main img,
+.art-fallback {
+  border-radius: 8px;
+}
+
+.result-list li {
+  padding: 0.75rem 0.15rem !important;
+  border-radius: var(--radius-xs);
+  transition: background 140ms var(--ease);
+}
+
+.result-list li:hover {
+  background: color-mix(in oklab, var(--mint) 28%, white);
+}
+
+.result-list > li > button {
+  min-height: 36px !important;
+  padding: 0 0.85rem !important;
+  border-radius: var(--radius-xs) !important;
+}
+
+.crate-source-bar {
+  border-radius: var(--radius-sm) !important;
+  border: 1px solid var(--line) !important;
+  padding: 0.65rem 0.8rem !important;
+}
+
+.banner {
+  border-radius: var(--radius-sm) !important;
+  border: 1px solid var(--line) !important;
+}
+
+.banner.status {
+  background: color-mix(in oklab, var(--mint) 50%, white) !important;
+}
+
+.banner.error {
+  background: #fff5f4 !important;
+  border-color: color-mix(in oklab, var(--danger) 30%, white) !important;
+  color: var(--danger) !important;
+}
+
+.empty,
+.library-empty {
+  border-radius: var(--radius-sm) !important;
+  border: 1px dashed var(--line-strong) !important;
+}
+
+/* Library */
+.library-source-pane {
+  border-radius: var(--radius-sm) !important;
+  border: 1px solid var(--line) !important;
+  min-height: 9rem;
+}
+
+.library-meter strong {
+  font-size: 1.85rem;
+  letter-spacing: -0.06em;
+}
+
+.library-badge {
+  border-radius: 5px;
+  background: var(--ink);
+}
+
+.library-browser {
+  border-radius: var(--radius-sm) !important;
+  border: 1px solid var(--line) !important;
+}
+
+.library-list li {
+  padding: 0.6rem 0.2rem;
+}
+
+.harm-stats > div,
+.harm-node {
+  border-radius: var(--radius-sm) !important;
+  border: 1px solid var(--line) !important;
+  box-shadow: none !important;
+}
+
+.harm-node {
+  transition: transform 160ms var(--ease), border-color 160ms var(--ease);
+}
+
+.harm-node:hover {
+  transform: translateY(-2px);
+  border-color: var(--line-strong) !important;
+}
+
+/* Preview dock — Spotify-like */
+.preview-player {
+  position: fixed !important;
+  left: 50%;
+  bottom: 1rem;
+  transform: translateX(-50%);
+  width: min(720px, calc(100% - 1.5rem));
+  z-index: 40;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.preview-dock {
+  border-radius: 16px;
+  overflow: hidden;
+  background: color-mix(in oklab, var(--espresso) 94%, var(--mauve));
+  color: #f6f7f5;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-md);
+  padding: 0.85rem 1rem 0.75rem;
+}
+
+.preview-kicker {
+  color: color-mix(in oklab, var(--mint) 65%, white) !important;
+  font-size: 0.68rem !important;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin: 0 0 0.15rem !important;
+}
+
+.preview-head strong {
+  font-size: 0.98rem;
+  letter-spacing: -0.02em;
+}
+
+.preview-head span {
+  color: rgba(246, 247, 245, 0.65) !important;
+  font-size: 0.82rem !important;
+}
+
+.preview-player iframe {
+  border: 0;
+  border-radius: 10px;
+  margin-top: 0.55rem;
+  background: #000;
+}
+
+.preview-close {
+  min-height: 36px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #fff !important;
+  border: 0 !important;
+}
+
+.preview-close:hover {
+  background: rgba(255, 255, 255, 0.14) !important;
+}
+
+/* Misc motion */
+.timeline-row,
+.crate-card,
+.phase,
+.result-list li,
+.harm-node {
+  will-change: transform;
+}
+
+@media (max-width: 900px) {
+  .set-shell {
+    padding-bottom: 8.5rem;
+  }
+
+  .preview-player {
+    bottom: 0.65rem;
+    width: calc(100% - 1rem);
   }
 }
