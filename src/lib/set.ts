@@ -141,7 +141,11 @@ export const TRACK_ROLES: { id: TrackRole; label: string; hint: string }[] = [
   { id: "anchor", label: "Anchor", hint: "Crowd-Connector / Signature" },
   { id: "bridge", label: "Bridge", hint: "Key/BPM/Mood-Pivot" },
   { id: "groove", label: "Groove", hint: "Atem zwischen Peaks" },
-  { id: "safety", label: "Safety", hint: "Plan B wenn der Raum dreht" },
+  {
+    id: "safety",
+    label: "Alternativen",
+    hint: "Safety / Plan B wenn der Floor dreht",
+  },
 ];
 
 export const TRANSITIONS: { id: TransitionVerb; label: string }[] = [
