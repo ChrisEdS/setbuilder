@@ -188,8 +188,8 @@ export function ManualArrange({
       </div>
 
       <div className="manual-add">
-        <div className="manual-add-grid">
-          <label>
+        <div className="manual-form">
+          <label className="manual-field is-wide">
             <span>Track-Link</span>
             <input
               value={url}
@@ -200,17 +200,15 @@ export function ManualArrange({
           </label>
           <button
             type="button"
-            className="btn"
+            className="btn manual-form-btn"
             disabled={pending}
             onClick={importLink}
           >
             {pending ? "Lade…" : "Link laden"}
           </button>
-        </div>
 
-        <div className="manual-add-grid manual-manual-row">
-          <label>
-            <span>Oder manuell</span>
+          <label className="manual-field">
+            <span>Titel</span>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -218,7 +216,7 @@ export function ManualArrange({
               aria-label="Manual title"
             />
           </label>
-          <label>
+          <label className="manual-field">
             <span>Artist</span>
             <input
               value={artist}
@@ -227,7 +225,11 @@ export function ManualArrange({
               aria-label="Manual artist"
             />
           </label>
-          <button type="button" className="btn ghost" onClick={addManualEntry}>
+          <button
+            type="button"
+            className="btn ghost manual-form-btn"
+            onClick={addManualEntry}
+          >
             Eintrag +
           </button>
         </div>

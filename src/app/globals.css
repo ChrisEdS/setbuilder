@@ -3888,43 +3888,59 @@ label.btn {
   min-width: 0;
 }
 
-.manual-add-grid {
+.manual-form {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.65rem 0.75rem;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 8.5rem;
+  gap: 0.85rem 0.75rem;
   align-items: end;
-  min-width: 0;
 }
 
-.manual-manual-row {
-  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) auto;
-}
-
-.manual-add label {
+.manual-field {
   display: grid;
-  gap: 0.35rem;
+  grid-template-rows: 0.9rem 44px;
+  gap: 0.4rem;
+  align-content: end;
   min-width: 0;
+  text-align: left;
 }
 
-.manual-add input,
-.manual-add button {
-  width: 100%;
-  min-width: 0;
+.manual-field.is-wide {
+  grid-column: 1 / 3;
 }
 
-.manual-add button {
-  width: auto;
-  min-width: 7.5rem;
-  height: 42px;
-  align-self: end;
-}
-
-.manual-add label > span {
-  font-size: 0.72rem;
+.manual-field > span {
+  display: block;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
+  line-height: 0.9rem;
   text-transform: uppercase;
   color: #b3b3b3;
+}
+
+.manual-form input {
+  width: 100%;
+  height: 44px;
+  min-height: 44px !important;
+  margin: 0;
+  padding: 0 0.9rem !important;
+  text-align: left;
+  line-height: 44px;
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+.manual-form-btn {
+  width: 100%;
+  height: 44px;
+  min-height: 44px !important;
+  margin: 0;
+  padding: 0 0.75rem !important;
+  justify-self: stretch;
+  align-self: end;
 }
 
 .manual-list {
@@ -4171,13 +4187,12 @@ label.btn {
 }
 
 @media (max-width: 900px) {
-  .manual-add-grid,
-  .manual-manual-row {
+  .manual-form {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .manual-add button {
-    width: 100%;
+  .manual-field.is-wide {
+    grid-column: auto;
   }
 
   .manual-row {
