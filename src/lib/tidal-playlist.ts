@@ -44,6 +44,38 @@ async function tidalToken(): Promise<string> {
   return (await getTidalUserAccessToken()) || getTidalAccessToken();
 }
 
+export async function listMyTidalPlaylists(): Promise<
+  Array<{ id: string; name: string; trackCount: number | null }>
+> {
+  const token = await getTidalUserAccessToken();
+  if (!token) return [];
+  const response = await fetch(
+    "https://openapi.tidal.com/v2/playlists?countryCode=DE&filter[owners.id]=me",
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.api+json",
+      },
+      cache: "no-store",
+    },
+  );
+  if (!response.ok) return [];
+  const data = (await response.json()) as {
+    data?: Array<{
+      id: string;
+      attributes?: { name?: string; numberOfItems?: number };
+    }>;
+  };
+  return (data.data ?? []).map((playlist) => ({
+    id: playlist.id,
+    name: playlist.attributes?.name || "Playlist",
+    trackCount:
+      typeof playlist.attributes?.numberOfItems === "number"
+        ? playlist.attributes.numberOfItems
+        : null,
+  }));
+}
+
 export async function fetchTidalPlaylist(playlistId: string): Promise<{
   id: string;
   name: string;

@@ -49,6 +49,7 @@ type SearchTrack = {
   album: string;
   imageUrl: string | null;
   externalUrl: string;
+  source?: "spotify" | "tidal" | "soundcloud" | "beatport" | "manual";
 };
 
 const STORAGE_KEY = "setform-draft-v4";
@@ -146,6 +147,10 @@ export function SetBuilder() {
   const [query, setQuery] = useState("tech house");
   const [linkUrl, setLinkUrl] = useState("");
   const [crateMode, setCrateMode] = useState<"search" | "link">("search");
+  const [crateService, setCrateService] = useState<"spotify" | "tidal">("spotify");
+  const [tidalPlaylists, setTidalPlaylists] = useState<
+    Array<{ id: string; name: string; trackCount: number | null }>
+  >([]);
   const [crateSource, setCrateSource] = useState<string | null>(null);
   const [results, setResults] = useState<SearchTrack[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -211,6 +216,15 @@ export function SetBuilder() {
       const tidalRes = await fetch("/api/auth/tidal/status");
       const tidal = (await tidalRes.json()) as { connected?: boolean };
       setTidalConnected(Boolean(tidal.connected));
+      if (tidal.connected) {
+        const listRes = await fetch("/api/tidal/playlists");
+        const list = (await listRes.json()) as {
+          playlists?: Array<{ id: string; name: string; trackCount: number | null }>;
+        };
+        if (listRes.ok) setTidalPlaylists(list.playlists ?? []);
+      } else {
+        setTidalPlaylists([]);
+      }
     } catch {
       setSpotifyConnected(false);
     }
@@ -255,6 +269,13 @@ export function SetBuilder() {
         const tidalRes = await fetch("/api/auth/tidal/status");
         const tidal = (await tidalRes.json()) as { connected?: boolean };
         if (!cancelled) setTidalConnected(Boolean(tidal.connected));
+        if (!cancelled && tidal.connected) {
+          const listRes = await fetch("/api/tidal/playlists");
+          const list = (await listRes.json()) as {
+            playlists?: Array<{ id: string; name: string; trackCount: number | null }>;
+          };
+          if (!cancelled && listRes.ok) setTidalPlaylists(list.playlists ?? []);
+        }
         const connected = Boolean(data.connected);
         setSpotifyConnected(connected);
         if (data.redirectUri) setRedirectUri(data.redirectUri);
@@ -427,10 +448,65 @@ export function SetBuilder() {
     });
   }
 
+  async function loadTidalCrate(playlistId: string, label?: string) {
+    if (!playlistId) return;
+    setError(null);
+    setStatus(null);
+    setHasSearched(true);
+    setCrateService("tidal");
+    startTransition(async () => {
+      try {
+        const response = await fetch("/api/crate/tidal", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ playlistId }),
+        });
+        const data = (await response.json()) as {
+          label?: string;
+          tracks?: SearchTrack[];
+          error?: string;
+        };
+        if (!response.ok) throw new Error(data.error || "Tidal-Playlist fehlgeschlagen.");
+        const tracks = data.tracks ?? [];
+        setResults(tracks);
+        setCrateSource(`Tidal: ${data.label || label || "Playlist"}`);
+        setStatus(`${tracks.length} Tracks aus Tidal — einzeln oder alle in die Crate.`);
+      } catch (err) {
+        setResults([]);
+        setError(err instanceof Error ? err.message : "Tidal-Playlist fehlgeschlagen.");
+      }
+    });
+  }
+
   async function importCrateLink(rawUrl = linkUrl) {
     const trimmed = rawUrl.trim();
     if (!trimmed) {
-      setError("Spotify-Link einfügen (Track, Playlist oder Album).");
+      setError("Playlist- oder Track-Link einfügen.");
+      return;
+    }
+    if (crateService === "tidal" || trimmed.toLowerCase().includes("tidal.com")) {
+      setHasSearched(true);
+      startTransition(async () => {
+        try {
+          const response = await fetch("/api/crate/tidal", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: trimmed }),
+          });
+          const data = (await response.json()) as {
+            label?: string;
+            tracks?: SearchTrack[];
+            error?: string;
+          };
+          if (!response.ok) throw new Error(data.error || "Tidal-Link fehlgeschlagen.");
+          setResults(data.tracks ?? []);
+          setCrateSource(`Tidal: ${data.label || "Playlist"}`);
+          setStatus(`${(data.tracks ?? []).length} Tracks aus Tidal geladen.`);
+        } catch (err) {
+          setResults([]);
+          setError(err instanceof Error ? err.message : "Tidal-Link fehlgeschlagen.");
+        }
+      });
       return;
     }
 
@@ -501,7 +577,7 @@ export function SetBuilder() {
       keyCamelot: "",
       note: "",
       comment: "",
-      source: "spotify",
+      source: track.source ?? "spotify",
       safetyAlt: "",
     };
 
@@ -549,7 +625,7 @@ export function SetBuilder() {
       keyCamelot: "",
       note: "",
       comment: "",
-      source: "spotify" as const,
+      source: track.source ?? "spotify",
       safetyAlt: "",
     }));
     setDraft((current) => ({
@@ -754,7 +830,7 @@ export function SetBuilder() {
           {spotifyConnected ? (
             <button
               type="button"
-              className="ghost"
+              className="btn ghost"
               onClick={async () => {
                 await fetch("/api/auth/logout", { method: "POST" });
                 setSpotifyConnected(false);
@@ -1020,12 +1096,61 @@ export function SetBuilder() {
       <div className="workspace crate-stack">
         <section className="panel search-panel">
           <div className="panel-head">
-            <h2>Spotify Crate füllen</h2>
+            <h2>Crate füllen</h2>
             <p>
               Aktiv: {PHASES.find((p) => p.id === activePhase)?.label} /{" "}
               {activeRole}
             </p>
           </div>
+
+          <div className="seg crate-mode-seg" role="tablist" aria-label="Crate-Dienst">
+            <button
+              type="button"
+              className={crateService === "spotify" ? "seg-item active" : "seg-item"}
+              onClick={() => setCrateService("spotify")}
+            >
+              Spotify
+            </button>
+            <button
+              type="button"
+              className={crateService === "tidal" ? "seg-item active" : "seg-item"}
+              onClick={() => setCrateService("tidal")}
+            >
+              Tidal
+            </button>
+          </div>
+
+          {crateService === "tidal" ? (
+            <div className="playlist-picker">
+              <label>
+                <span>Eigene Tidal-Playlists</span>
+                <select
+                  value=""
+                  aria-label="Tidal Playlist wählen"
+                  onChange={(event) => {
+                    const id = event.target.value;
+                    if (!id) return;
+                    const picked = tidalPlaylists.find((item) => item.id === id);
+                    void loadTidalCrate(id, picked?.name);
+                  }}
+                >
+                  <option value="">
+                    {tidalConnected
+                      ? tidalPlaylists.length
+                        ? "Playlist laden…"
+                        : "Keine Playlists gefunden"
+                      : "Zuerst mit Tidal verbinden"}
+                  </option>
+                  {tidalPlaylists.map((playlist) => (
+                    <option key={playlist.id} value={playlist.id}>
+                      {playlist.name}
+                      {playlist.trackCount != null ? ` (${playlist.trackCount})` : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          ) : null}
 
           <div className="seg crate-mode-seg" role="tablist" aria-label="Crate-Quelle">
             <button
