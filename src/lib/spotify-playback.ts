@@ -56,7 +56,33 @@ function loadSdk(): Promise<void> {
 
 let deviceReady: Promise<string> | null = null;
 
+function environmentError(): string | null {
+  if (typeof window === "undefined") return "Kein Browser.";
+  let embedded = false;
+  try {
+    embedded = window.top !== window.self;
+  } catch {
+    embedded = true;
+  }
+  if (embedded) {
+    return "Der Premium-Player startet nicht in dieser eingebetteten Ansicht. Öffne SETFORM in einem eigenen Chrome- oder Safari-Fenster — dort läuft die volle Länge.";
+  }
+  if (!window.isSecureContext) {
+    return "Spotify spielt nur auf https oder localhost ab. Die Vorschau bleibt hier verfügbar.";
+  }
+  return null;
+}
+
+function readablePlayerError(message: string): string {
+  if (/failed to initialize player/i.test(message)) {
+    return "Dieser Browser blockiert den Spotify-Player. Volle Länge braucht Chrome oder Safari mit DRM, nicht die eingebettete Vorschau. Unten bleibt die Kurzvorschau.";
+  }
+  return message;
+}
+
 function ensureDevice(): Promise<string> {
+  const blocked = environmentError();
+  if (blocked) return Promise.reject(new Error(blocked));
   if (deviceReady) return deviceReady;
   deviceReady = (async () => {
     await loadSdk();
@@ -76,7 +102,8 @@ function ensureDevice(): Promise<string> {
         if (device_id) resolve(device_id);
       });
       player.addListener("initialization_error", ({ message }) => {
-        reject(new Error(message || "Player-Init fehlgeschlagen."));
+        deviceReady = null;
+        reject(new Error(readablePlayerError(message || "Player-Init fehlgeschlagen.")));
       });
       player.addListener("authentication_error", ({ message }) => {
         deviceReady = null;

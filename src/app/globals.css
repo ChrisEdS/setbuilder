@@ -3482,9 +3482,9 @@ label.btn:hover {
 
 .preview-dock {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(280px, 1.2fr);
-  gap: 1rem;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: stretch;
   background: #000 !important;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 0 !important;
