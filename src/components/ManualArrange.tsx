@@ -493,16 +493,6 @@ export function ManualArrange({
                     placeholder="Key"
                     aria-label={`Key ${track.name}`}
                   />
-                  {track.externalUrl ? (
-                    <a
-                      href={track.externalUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="timeline-link"
-                    >
-                      Öffnen
-                    </a>
-                  ) : null}
                 </div>
                 </div>
               </li>

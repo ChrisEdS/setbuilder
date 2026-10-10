@@ -1956,14 +1956,6 @@ export function SetBuilder() {
                           </option>
                         ))}
                       </select>
-                      <a
-                        className="timeline-link"
-                        href={track.externalUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Öffnen
-                      </a>
                     </div>
                   </div>
                 </li>
