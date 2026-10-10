@@ -4306,6 +4306,7 @@ button.drag-handle:active i {
 }
 .source-soundcloud { background: #ff5500; color: #fff; }
 .source-beatport { background: #94d500; color: #121212; }
+.source-rekordbox { background: #ff2d55; color: #fff; }
 .source-manual { background: #444; color: #fff; }
 
 .manual-comment {
@@ -4496,4 +4497,56 @@ button.drag-handle:active i {
 
 .harm-node span {
   min-height: 2.5rem;
+}
+
+.stick-import {
+  display: grid;
+  gap: 0.85rem;
+  margin-bottom: 1.15rem;
+  padding-bottom: 1.15rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.stick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  align-items: stretch;
+}
+
+.stick-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.stick-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.stick-list strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.stick-list span {
+  display: block;
+  margin-top: 0.15rem;
+  color: #b3b3b3 !important;
+  font-size: 0.78rem;
+}
+
+.stick-list .btn {
+  min-width: 8.5rem;
+}
+
+@media (max-width: 720px) {
+  .stick-list li {
+    grid-template-columns: 1fr;
+  }
 }

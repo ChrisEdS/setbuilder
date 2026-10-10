@@ -31,6 +31,7 @@ export type TrackSource =
   | "tidal"
   | "soundcloud"
   | "beatport"
+  | "rekordbox"
   | "manual";
 
 export type SetTrack = {

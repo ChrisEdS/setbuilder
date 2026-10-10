@@ -1,0 +1,269 @@
+import { parseKeyValue } from "@/lib/key-import";
+import { parseRekordboxPdb, type PdbLibrary, type PdbTrack } from "@/lib/rekordbox-pdb";
+import { PHASES, type SetDraft, type SetPhaseId, type SetTrack } from "@/lib/set";
+
+export type StickTrack = {
+  id: string;
+  title: string;
+  artist: string;
+  album: string;
+  bpm: string;
+  keyRaw: string;
+  keyCamelot: string;
+  durationMs: number;
+  comment: string;
+  filePath: string;
+};
+
+export type RekordboxStickSet = {
+  id: string;
+  name: string;
+  path: string;
+  kind: "playlist" | "history";
+  missing: number;
+  tracks: StickTrack[];
+};
+
+export type RekordboxStickRead = {
+  label: string;
+  sets: RekordboxStickSet[];
+  library: StickTrack[];
+};
+
+export async function readRekordboxStick(files: File[]): Promise<RekordboxStickRead> {
+  const pdb =
+    findFile(files, (path) => path.endsWith("pioneer/rekordbox/export.pdb")) ??
+    findFile(files, (path) => path.endsWith("/export.pdb") || path === "export.pdb") ??
+    findFile(files, (path) => path.endsWith(".pdb"));
+  if (pdb) {
+    const library = parseRekordboxPdb(await pdb.arrayBuffer());
+    return {
+      label: displayPath(pdb),
+      sets: setsFromPdb(library),
+      library: library.tracks.map(toStickTrack),
+    };
+  }
+
+  const xml = findFile(
+    files,
+    (path) => path.endsWith(".xml") && (path.includes("rekordbox") || path.includes("playlist")),
+  ) ?? findFile(files, (path) => path.endsWith(".xml"));
+  if (xml) {
+    const text = await xml.text();
+    const sets = setsFromXml(text);
+    if (!sets.length) {
+      throw new Error(
+        "Die XML enthält keine Playlists. Für Keys ohne Set-Reihenfolge die Collection laden.",
+      );
+    }
+    const library = sets.flatMap((set) => set.tracks);
+    return { label: displayPath(xml), sets, library };
+  }
+
+  throw new Error(
+    "Kein Rekordbox-Stick erkannt. Den Stick-Ordner wählen oder PIONEER/rekordbox/export.pdb.",
+  );
+}
+
+export function applyStickSet(draft: SetDraft, set: RekordboxStickSet): SetDraft {
+  const totalMs = set.tracks.reduce((sum, track) => sum + track.durationMs, 0);
+  const minutes = totalMs
+    ? Math.max(15, Math.round(totalMs / 60000))
+    : draft.durationMinutes;
+  return {
+    ...draft,
+    title: set.name,
+    durationMinutes: minutes,
+    tracks: set.tracks.map((track, index) => toSetTrack(track, set, index, totalMs)),
+  };
+}
+
+function setsFromPdb(library: PdbLibrary): RekordboxStickSet[] {
+  const byId = new Map(library.tracks.map((track) => [track.id, track]));
+  return library.playlists.map((playlist) => {
+    let missing = 0;
+    const tracks: StickTrack[] = [];
+    for (const id of playlist.trackIds) {
+      const track = byId.get(id);
+      if (!track) {
+        missing += 1;
+        continue;
+      }
+      tracks.push(toStickTrack(track));
+    }
+    return {
+      id: `${playlist.kind}:${playlist.id}`,
+      name: playlist.name,
+      path: playlist.path,
+      kind: playlist.kind,
+      missing,
+      tracks,
+    };
+  });
+}
+
+function toStickTrack(track: PdbTrack): StickTrack {
+  const keyCamelot = parseKeyValue(track.key);
+  return {
+    id: String(track.id),
+    title: track.title,
+    artist: track.artist,
+    album: track.album,
+    bpm: track.bpm,
+    keyRaw: track.key,
+    keyCamelot: keyCamelot || "",
+    durationMs: track.durationMs,
+    comment: track.comment,
+    filePath: track.filePath,
+  };
+}
+
+function toSetTrack(
+  track: StickTrack,
+  set: RekordboxStickSet,
+  index: number,
+  totalMs: number,
+): SetTrack {
+  return {
+    id: `rekordbox:${set.id}:${track.id}:${index}`,
+    name: track.title,
+    artists: [track.artist || "Unknown"],
+    album: track.album || "rekordbox",
+    durationMs: track.durationMs,
+    uri: track.filePath || `rekordbox:${track.id}`,
+    externalUrl: "",
+    imageUrl: null,
+    phase: phaseForTrack(index, set.tracks, totalMs),
+    role: "groove",
+    transition: "unset",
+    bpm: track.bpm,
+    keyCamelot: track.keyCamelot,
+    note: track.filePath,
+    comment: track.comment,
+    source: "rekordbox",
+    why:
+      set.kind === "history"
+        ? "Gespielte Reihenfolge aus der Rekordbox-History"
+        : "Reihenfolge der Rekordbox-Playlist",
+    safetyAlt: "",
+  };
+}
+
+function phaseForTrack(index: number, tracks: StickTrack[], totalMs: number): SetPhaseId {
+  const useDuration = totalMs > 0 && tracks.some((track) => track.durationMs > 0);
+  let cursor = 0;
+  const boundaries = PHASES.map((phase) => {
+    cursor += phase.share;
+    return { id: phase.id, until: cursor };
+  });
+  let acc = 0;
+  const total = useDuration ? totalMs : tracks.length || 1;
+  for (let i = 0; i <= index && i < tracks.length; i++) {
+    const span = useDuration ? tracks[i].durationMs || 0 : 1;
+    if (i === index) {
+      const midpoint = (acc + span / 2) / total;
+      return boundaries.find((boundary) => midpoint <= boundary.until)?.id ?? "release";
+    }
+    acc += span;
+  }
+  return "open";
+}
+
+function setsFromXml(xml: string): RekordboxStickSet[] {
+  const doc = new DOMParser().parseFromString(xml, "application/xml");
+  if (doc.querySelector("parsererror")) {
+    throw new Error("Ungültiges XML.");
+  }
+  const collection = new Map<string, StickTrack>();
+  for (const node of doc.querySelectorAll("COLLECTION TRACK, COLLECTION Track")) {
+    const id = node.getAttribute("TrackID") || node.getAttribute("TrackId") || "";
+    const title = node.getAttribute("Name") || "";
+    if (!id || !title) continue;
+    const keyRaw = node.getAttribute("Tonality") || "";
+    const bpmRaw = node.getAttribute("AverageBpm") || node.getAttribute("Bpm") || "";
+    const bpmNum = Number(bpmRaw);
+    const seconds = Number(node.getAttribute("TotalTime") || 0);
+    collection.set(id, {
+      id,
+      title,
+      artist: node.getAttribute("Artist") || "",
+      album: node.getAttribute("Album") || "",
+      bpm: bpmRaw && Number.isFinite(bpmNum) ? String(Math.round(bpmNum)) : "",
+      keyRaw,
+      keyCamelot: parseKeyValue(keyRaw) || "",
+      durationMs: Number.isFinite(seconds) ? seconds * 1000 : 0,
+      comment: node.getAttribute("Comments") || "",
+      filePath: decodeXmlLocation(node.getAttribute("Location") || ""),
+    });
+  }
+
+  const sets: RekordboxStickSet[] = [];
+  const root = doc.querySelector("PLAYLISTS > NODE, PLAYLISTS > Node");
+  if (root) walkPlaylist(root, "", collection, sets);
+  return sets;
+}
+
+function walkPlaylist(
+  node: Element,
+  folder: string,
+  collection: Map<string, StickTrack>,
+  sets: RekordboxStickSet[],
+) {
+  const type = node.getAttribute("Type");
+  const name = node.getAttribute("Name") || "Playlist";
+  if (type === "0") {
+    const next =
+      name && name.toUpperCase() !== "ROOT"
+        ? folder
+          ? `${folder} / ${name}`
+          : name
+        : folder;
+    for (const child of node.children) {
+      if (child.tagName.toUpperCase() === "NODE") walkPlaylist(child, next, collection, sets);
+    }
+    return;
+  }
+  if (type !== "1") return;
+  let missing = 0;
+  const tracks: StickTrack[] = [];
+  for (const child of node.children) {
+    if (child.tagName.toUpperCase() !== "TRACK") continue;
+    const key = child.getAttribute("Key") || "";
+    const track = collection.get(key);
+    if (!track) {
+      missing += 1;
+      continue;
+    }
+    tracks.push(track);
+  }
+  sets.push({
+    id: `xml:${sets.length}:${name}`,
+    name,
+    path: folder ? `${folder} / ${name}` : name,
+    kind: "playlist",
+    missing,
+    tracks,
+  });
+}
+
+function decodeXmlLocation(location: string): string {
+  if (!location) return "";
+  try {
+    const url = new URL(location);
+    return decodeURIComponent(url.pathname);
+  } catch {
+    return location;
+  }
+}
+
+function findFile(files: File[], match: (path: string) => boolean): File | null {
+  for (const file of files) {
+    const path = (file.webkitRelativePath || file.name).replaceAll("\\", "/").toLowerCase();
+    if (match(path)) return file;
+  }
+  return null;
+}
+
+function displayPath(file: File): string {
+  return (file.webkitRelativePath || file.name).replaceAll("\\", "/");
+}

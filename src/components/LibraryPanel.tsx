@@ -8,6 +8,7 @@ import {
   type KeyImportRow,
 } from "@/lib/key-import";
 import { parseRekordboxFile } from "@/lib/rekordbox";
+import { RekordboxStick } from "@/components/RekordboxStick";
 import type { SetDraft } from "@/lib/set";
 import { performanceTracks } from "@/lib/set";
 
@@ -328,12 +329,22 @@ export function LibraryPanel({ draft, onApply }: Props) {
 
       <div className="library-source-pane" role="tabpanel">
         {source === "rekordbox" ? (
-          <div className="library-pane-grid">
+          <>
+          <RekordboxStick
+            draft={draft}
+            busy={busy}
+            onApply={onApply}
+            onIndexed={(rows) => {
+              setLibraryRows(rows);
+              setLibraryCount(rows.length);
+            }}
+          />
+          <div className="library-pane-grid stick-collection">
             <div>
               <h3>rekordbox Collection</h3>
               <p>
-                Empfohlen: Collection als XML exportieren. Keys/BPM werden per
-                Artist/Title aufs Spotify-Set gematcht. Unverschlüsselte{" "}
+                Ohne Stick: Collection als XML exportieren. Keys und BPM werden
+                per Artist/Title aufs bestehende Set gematcht. Unverschlüsselte{" "}
                 <code>master.db</code> und CSV gehen auch.
               </p>
               <p className="library-path">
@@ -364,6 +375,7 @@ export function LibraryPanel({ draft, onApply }: Props) {
               />
             </label>
           </div>
+          </>
         ) : null}
 
         {source === "tidal" ? (

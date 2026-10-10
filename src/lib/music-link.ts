@@ -126,6 +126,8 @@ export function sourceLabel(source: TrackSource | undefined): string {
       return "SoundCloud";
     case "beatport":
       return "Beatport";
+    case "rekordbox":
+      return "rekordbox";
     default:
       return "Manual";
   }

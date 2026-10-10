@@ -11,6 +11,7 @@ const eslintConfig = defineConfig([
     ".next/**",
     ".next-standalone/**",
     "setform-mac/**",
+    "**/*.test.ts",
     "out/**",
     "build/**",
     "next-env.d.ts",
