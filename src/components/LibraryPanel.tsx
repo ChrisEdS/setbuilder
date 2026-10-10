@@ -1,0 +1,270 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import {
+  applyKeyImport,
+  applyKeyImportRows,
+  parseKeyValue,
+  type KeyImportRow,
+} from "@/lib/key-import";
+import { parseRekordboxFile } from "@/lib/rekordbox";
+import type { SetDraft } from "@/lib/set";
+import { performanceTracks } from "@/lib/set";
+
+type Props = {
+  draft: SetDraft;
+  onApply: (draft: SetDraft, message: string) => void;
+};
+
+type LibraryRow = {
+  artist: string;
+  title: string;
+  key: string;
+  bpm: string;
+};
+
+const EXAMPLE = `Artist,Title,Key,BPM
+Floating Points,Ratio - Edit,8A,122
+Kleintierschaukel,Motomia,9A,118
+Crussen,Breakfast in the Hut,Am,120`;
+
+function toImportRows(rows: LibraryRow[]): KeyImportRow[] {
+  return rows.map((row) => ({
+    artist: row.artist,
+    title: row.title,
+    keyRaw: row.key,
+    keyCamelot: parseKeyValue(row.key),
+    bpm: row.bpm,
+  }));
+}
+
+export function LibraryPanel({ draft, onApply }: Props) {
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [libraryCount, setLibraryCount] = useState<number | null>(null);
+  const [query, setQuery] = useState("");
+  const [libraryRows, setLibraryRows] = useState<LibraryRow[]>([]);
+
+  const keyedShare = useMemo(() => {
+    const main = performanceTracks(draft.tracks);
+    if (!main.length) return 0;
+    const keyed = main.filter((track) => track.keyCamelot).length;
+    return Math.round((keyed / main.length) * 100);
+  }, [draft.tracks]);
+
+  const filteredLibrary = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return libraryRows.slice(0, 48);
+    return libraryRows
+      .filter(
+        (row) =>
+          row.title.toLowerCase().includes(q) ||
+          row.artist.toLowerCase().includes(q) ||
+          row.key.toLowerCase().includes(q),
+      )
+      .slice(0, 48);
+  }, [libraryRows, query]);
+
+  function applyText(source: string) {
+    const result = applyKeyImport(draft, source);
+    if (!result.rows) {
+      onApply(
+        draft,
+        "Kein Key-Import erkannt — rekordbox XML/DB, CSV oder Paste nutzen.",
+      );
+      return;
+    }
+    onApply(
+      result.draft,
+      `${result.matched}/${result.rows} Keys gematcht` +
+        (result.unmatched ? ` · ${result.unmatched} ohne Treffer` : "") +
+        (result.samples[0]
+          ? ` · z. B. ${result.samples[0].track} → ${result.samples[0].key}`
+          : ""),
+    );
+  }
+
+  async function onRekordboxFile(file: File | null) {
+    if (!file) return;
+    setBusy(true);
+    try {
+      const parsed = await parseRekordboxFile(file);
+      const rows: LibraryRow[] = parsed.rows.map((row) => ({
+        artist: row.artist,
+        title: row.title,
+        key: row.keyCamelot || row.keyRaw,
+        bpm: row.bpm,
+      }));
+      setLibraryCount(parsed.trackCount);
+      setLibraryRows(rows);
+      const result = applyKeyImportRows(draft, parsed.rows);
+      onApply(
+        result.draft,
+        `rekordbox ${parsed.source.toUpperCase()}: ${parsed.trackCount} Tracks · ${result.matched} aufs Set gematcht` +
+          (parsed.warning ? ` · ${parsed.warning}` : ""),
+      );
+    } catch (error) {
+      onApply(
+        draft,
+        error instanceof Error ? error.message : "rekordbox Import fehlgeschlagen.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function trySpotifyEnrich() {
+    setBusy(true);
+    try {
+      const ids = performanceTracks(draft.tracks)
+        .slice(0, 5)
+        .map((track) => track.id);
+      const response = await fetch("/api/enrich/spotify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ trackIds: ids }),
+      });
+      const data = (await response.json()) as {
+        available?: boolean;
+        message?: string;
+      };
+      onApply(
+        draft,
+        data.message ||
+          (data.available
+            ? "Spotify Features ok"
+            : "Spotify Key-Import nicht verfügbar"),
+      );
+    } catch {
+      onApply(draft, "Spotify Enrichment fehlgeschlagen.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function rematchFromLibrary() {
+    const result = applyKeyImportRows(draft, toImportRows(libraryRows));
+    onApply(
+      result.draft,
+      `${result.matched}/${result.rows} aus rekordbox Index gematcht`,
+    );
+  }
+
+  return (
+    <section className="library-panel" aria-label="Key Library">
+      <div className="panel-head">
+        <h2>Key Library</h2>
+        <p>{keyedShare}% des Sets haben Keys</p>
+      </div>
+
+      <div className="library-grid">
+        <article className="library-card accent">
+          <h3>rekordbox durchsuchen</h3>
+          <p>
+            Collection-XML (empfohlen), CSV oder unverschlüsselte{" "}
+            <code>master.db</code>. Danach per Artist/Title aufs Spotify-Set
+            matchen.
+          </p>
+          <label className={"btn file-btn" + (busy ? " is-busy" : "")}>
+            {busy ? "Lade…" : "Datei wählen"}
+            <input
+              type="file"
+              accept=".xml,.db,.sqlite,.csv,.txt,.tsv"
+              hidden
+              disabled={busy}
+              onChange={(event) => {
+                void onRekordboxFile(event.target.files?.[0] ?? null);
+                event.currentTarget.value = "";
+              }}
+            />
+          </label>
+          <p className="guide-line">
+            rekordbox → File → <strong>Export Collection in XML…</strong>
+            {libraryCount != null ? ` · Index: ${libraryCount}` : ""}
+          </p>
+        </article>
+
+        <article className="library-card">
+          <h3>Spotify Features</h3>
+          <p>
+            Key/BPM über Audio Features sind für Dev-Mode-Apps von Spotify
+            gesperrt. Status prüfen — Fallback bleibt rekordbox.
+          </p>
+          <button
+            type="button"
+            className="btn ghost"
+            disabled={busy || draft.tracks.length === 0}
+            onClick={() => void trySpotifyEnrich()}
+          >
+            Spotify prüfen
+          </button>
+        </article>
+
+        <article className="library-card wide">
+          <h3>CSV / Paste</h3>
+          <p>Mixed In Key, Serato oder manuell — Camelot, Open Key, Am/C…</p>
+          <div className="key-import-actions">
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={() => setText(EXAMPLE)}
+            >
+              Beispiel
+            </button>
+            <button
+              type="button"
+              className="btn"
+              disabled={!text.trim() || draft.tracks.length === 0}
+              onClick={() => applyText(text)}
+            >
+              Keys matchen
+            </button>
+          </div>
+          <textarea
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            rows={5}
+            placeholder="Artist,Title,Key,BPM"
+            aria-label="Key CSV Paste"
+          />
+        </article>
+      </div>
+
+      {libraryRows.length > 0 ? (
+        <div className="library-browser">
+          <div className="library-browser-head">
+            <h3>Library Index</h3>
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Library durchsuchen…"
+              aria-label="rekordbox suchen"
+            />
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={rematchFromLibrary}
+              disabled={draft.tracks.length === 0}
+            >
+              Erneut matchen
+            </button>
+          </div>
+          <ul className="library-list">
+            {filteredLibrary.map((row, index) => (
+              <li key={`${row.artist}-${row.title}-${index}`}>
+                <div>
+                  <strong>{row.title}</strong>
+                  <span>{row.artist || "Unknown"}</span>
+                </div>
+                <em>
+                  {row.key || "—"}
+                  {row.bpm ? ` · ${row.bpm}` : ""}
+                </em>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </section>
+  );
+}

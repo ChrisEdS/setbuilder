@@ -227,7 +227,7 @@ export function buildSetPrintHtml(draft: SetDraft): string {
       <div><span>Vibe</span><strong>${escapeHtml(draft.vibe)}</strong></div>
       <div><span>Dauer</span><strong>${filled} / ${draft.durationMinutes}:00 · ${main.length} Tracks</strong></div>
       <div><span>Venue</span><strong>${escapeHtml(draft.venue)}</strong></div>
-      <div><span>Slot</span><strong>${escapeHtml(draft.slot)}</strong></div>
+      <div><span>Slot</span><strong>${escapeHtml(draft.slot)}${draft.slotKind ? ` · ${escapeHtml(draft.slotKind)}` : ""}</strong></div>
       <div><span>Audience</span><strong>${escapeHtml(draft.audience)}</strong></div>
       <div><span>Gear</span><strong>${escapeHtml(draft.gear)}</strong></div>
     </div>

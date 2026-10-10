@@ -1,15 +1,23 @@
 @import "tailwindcss";
 
 :root {
-  --ink: #14201c;
-  --muted: #4d5c56;
-  --paper: #eef3ef;
-  --paper-2: #dfe9e2;
-  --accent: #c8f06c;
-  --accent-ink: #1a2a12;
-  --line: rgba(20, 32, 28, 0.12);
-  --danger: #b42318;
-  --shadow: 0 24px 60px rgba(20, 32, 28, 0.12);
+  /* Brand palette */
+  --mauve: #804a53;
+  --mint: #d9edec;
+  --slate: #708a9f;
+  --cream: #fdfef6;
+  --espresso: #120b06;
+
+  --ink: var(--espresso);
+  --muted: color-mix(in oklab, var(--slate) 78%, var(--espresso));
+  --paper: var(--cream);
+  --paper-2: var(--mint);
+  --accent: var(--mauve);
+  --accent-2: var(--slate);
+  --accent-ink: var(--cream);
+  --line: color-mix(in oklab, var(--slate) 28%, transparent);
+  --danger: #9b3a3a;
+  --shadow: 0 22px 50px color-mix(in oklab, var(--espresso) 14%, transparent);
   --font-display: var(--font-display);
   --font-body: var(--font-body);
 }
@@ -34,9 +42,10 @@ body {
   color: var(--ink);
   font-family: var(--font-body), Georgia, serif;
   background:
-    radial-gradient(1200px 600px at 10% -10%, #d7f2c8 0%, transparent 55%),
-    radial-gradient(900px 500px at 100% 0%, #c9ddd4 0%, transparent 50%),
-    linear-gradient(180deg, #f5f8f4 0%, var(--paper) 40%, #e7efe9 100%);
+    radial-gradient(1100px 520px at 8% -8%, color-mix(in oklab, var(--mint) 80%, white) 0%, transparent 55%),
+    radial-gradient(900px 480px at 100% 0%, color-mix(in oklab, var(--slate) 22%, var(--cream)) 0%, transparent 52%),
+    radial-gradient(700px 380px at 70% 110%, color-mix(in oklab, var(--mauve) 12%, var(--cream)) 0%, transparent 50%),
+    linear-gradient(180deg, #ffffff 0%, var(--cream) 42%, color-mix(in oklab, var(--mint) 35%, var(--cream)) 100%);
 }
 
 a {
@@ -116,7 +125,7 @@ select {
 
 .import-panel {
   background:
-    linear-gradient(135deg, color-mix(in oklab, var(--accent) 28%, white), rgba(255, 255, 255, 0.7));
+    linear-gradient(135deg, color-mix(in oklab, var(--mint) 70%, white), color-mix(in oklab, var(--cream) 80%, white));
 }
 
 .import-panel .panel-head h2 {
@@ -146,7 +155,7 @@ select {
 
 .button-link:hover {
   transform: translateY(-1px);
-  background: #24332d;
+  background: color-mix(in oklab, var(--espresso) 88%, var(--mauve));
 }
 
 .import-row {
@@ -244,8 +253,8 @@ select {
 
 .key-import textarea:focus {
   outline: none;
-  border-color: #7aa36a;
-  box-shadow: 0 0 0 3px rgba(200, 240, 108, 0.35);
+  border-color: var(--slate);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--mint) 70%, transparent);
 }
 
 .file-btn {
@@ -500,7 +509,7 @@ select {
 .mini-bar i {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, #9ed36a, var(--accent));
+  background: linear-gradient(90deg, var(--slate), var(--mauve));
   transition: width 400ms ease;
 }
 
@@ -651,8 +660,8 @@ select {
 .search-row input:focus,
 .set-controls input:focus,
 .set-controls select:focus {
-  border-color: #7aa36a;
-  box-shadow: 0 0 0 3px rgba(200, 240, 108, 0.35);
+  border-color: var(--slate);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--mint) 70%, transparent);
 }
 
 .curve,
@@ -695,7 +704,7 @@ select {
 .curve-bar span {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, #9ed36a, var(--accent));
+  background: linear-gradient(90deg, var(--slate), var(--mauve));
   transition: width 400ms ease;
 }
 
@@ -778,7 +787,7 @@ button {
 .set-actions > button:hover:not(:disabled),
 .result-list > li > button:hover:not(:disabled) {
   transform: translateY(-1px);
-  background: #24332d;
+  background: color-mix(in oklab, var(--espresso) 88%, var(--mauve));
 }
 
 .btn:disabled,
@@ -833,7 +842,8 @@ button {
 }
 
 .banner.status {
-  background: color-mix(in oklab, var(--accent) 35%, white);
+  background: color-mix(in oklab, var(--mint) 55%, white);
+  border-color: color-mix(in oklab, var(--slate) 30%, transparent);
 }
 
 .result-list,
@@ -993,6 +1003,192 @@ button {
   }
 
   .result-list li {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* —— Library + Preview (palette-aware) —— */
+.library-panel,
+.preview-player {
+  border: 1px solid var(--line);
+  background: color-mix(in oklab, var(--mint) 28%, var(--cream));
+  backdrop-filter: blur(8px);
+  padding: 1.1rem 1.15rem 1.25rem;
+  margin-bottom: 1.1rem;
+  box-shadow: var(--shadow);
+}
+
+.library-panel .panel-head h2,
+.preview-player .preview-kicker {
+  margin: 0;
+  font-family: var(--font-display), sans-serif;
+  letter-spacing: -0.03em;
+}
+
+.library-panel .panel-head h2 {
+  font-size: 1.35rem;
+}
+
+.library-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
+
+.library-card {
+  border: 1px solid var(--line);
+  background: color-mix(in oklab, var(--cream) 88%, white);
+  padding: 0.95rem;
+}
+
+.library-card.accent {
+  background: color-mix(in oklab, var(--mauve) 10%, var(--cream));
+  border-color: color-mix(in oklab, var(--mauve) 28%, var(--line));
+}
+
+.library-card.wide {
+  grid-column: 1 / -1;
+}
+
+.library-card h3 {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-display), sans-serif;
+  font-size: 1.05rem;
+}
+
+.library-card p {
+  margin: 0 0 0.75rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.library-browser {
+  margin-top: 0.9rem;
+  border: 1px solid var(--line);
+  background: var(--cream);
+  padding: 0.75rem;
+}
+
+.library-browser-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.65rem;
+}
+
+.library-browser-head h3 {
+  margin: 0;
+  margin-right: auto;
+  font-family: var(--font-display), sans-serif;
+  font-size: 1rem;
+}
+
+.library-browser-head input {
+  min-width: min(100%, 16rem);
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 0.55rem 0.7rem;
+  color: var(--ink);
+}
+
+.library-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+  max-height: 16rem;
+  overflow: auto;
+}
+
+.library-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.library-list strong {
+  display: block;
+  font-size: 0.9rem;
+}
+
+.library-list span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.library-list em {
+  font-style: normal;
+  color: var(--mauve);
+  font-weight: 700;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.preview-player {
+  position: sticky;
+  bottom: 0.75rem;
+  z-index: 20;
+  background: color-mix(in oklab, var(--espresso) 92%, var(--mauve));
+  color: var(--cream);
+  border-color: color-mix(in oklab, var(--slate) 40%, transparent);
+}
+
+.preview-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+  margin-bottom: 0.65rem;
+}
+
+.preview-kicker {
+  margin: 0 0 0.2rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--mint) 70%, white);
+}
+
+.preview-head strong {
+  display: block;
+  font-family: var(--font-display), sans-serif;
+}
+
+.preview-head span {
+  color: color-mix(in oklab, var(--mint) 55%, white);
+  font-size: 0.85rem;
+}
+
+.preview-player .guide-line {
+  color: color-mix(in oklab, var(--mint) 55%, white);
+}
+
+.preview-player .btn.ghost {
+  color: var(--cream);
+  border-color: color-mix(in oklab, var(--cream) 35%, transparent);
+}
+
+
+.hero-meta select {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  padding: 0.65rem 0.75rem;
+}
+
+.brand {
+  color: var(--mauve);
+}
+
+@media (max-width: 900px) {
+  .library-grid {
     grid-template-columns: 1fr;
   }
 }

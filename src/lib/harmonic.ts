@@ -65,15 +65,15 @@ export function camelotColor(input: string): CamelotColor | null {
 export function phaseAccent(phase: string): { bg: string; fg: string } {
   switch (phase) {
     case "open":
-      return { bg: "oklch(0.94 0.03 200)", fg: "oklch(0.38 0.05 200)" };
+      return { bg: "color-mix(in oklab, var(--mint) 70%, white)", fg: "var(--slate)" };
     case "lift":
-      return { bg: "oklch(0.94 0.04 145)", fg: "oklch(0.36 0.07 145)" };
+      return { bg: "color-mix(in oklab, var(--slate) 18%, white)", fg: "var(--espresso)" };
     case "rise":
-      return { bg: "oklch(0.94 0.05 85)", fg: "oklch(0.4 0.08 85)" };
+      return { bg: "color-mix(in oklab, var(--mauve) 14%, white)", fg: "var(--mauve)" };
     case "peak":
-      return { bg: "oklch(0.93 0.06 35)", fg: "oklch(0.4 0.1 35)" };
+      return { bg: "color-mix(in oklab, var(--mauve) 28%, white)", fg: "var(--espresso)" };
     case "release":
-      return { bg: "oklch(0.94 0.03 280)", fg: "oklch(0.38 0.06 280)" };
+      return { bg: "color-mix(in oklab, var(--mint) 55%, var(--cream))", fg: "var(--slate)" };
     default:
       return { bg: "var(--paper)", fg: "var(--muted)" };
   }
@@ -82,15 +82,27 @@ export function phaseAccent(phase: string): { bg: string; fg: string } {
 export function roleAccent(role: string): { tint: string; bar: string } {
   switch (role) {
     case "anchor":
-      return { tint: "oklch(0.97 0.03 35)", bar: "oklch(0.65 0.14 35)" };
+      return {
+        tint: "color-mix(in oklab, var(--mauve) 10%, var(--cream))",
+        bar: "var(--mauve)",
+      };
     case "bridge":
-      return { tint: "oklch(0.97 0.03 230)", bar: "oklch(0.62 0.12 230)" };
+      return {
+        tint: "color-mix(in oklab, var(--slate) 12%, var(--cream))",
+        bar: "var(--slate)",
+      };
     case "groove":
-      return { tint: "oklch(0.97 0.03 145)", bar: "oklch(0.62 0.12 145)" };
+      return {
+        tint: "color-mix(in oklab, var(--mint) 45%, var(--cream))",
+        bar: "color-mix(in oklab, var(--slate) 55%, var(--mint))",
+      };
     case "safety":
-      return { tint: "oklch(0.97 0.02 300)", bar: "oklch(0.6 0.08 300)" };
+      return {
+        tint: "color-mix(in oklab, var(--cream) 85%, var(--espresso))",
+        bar: "color-mix(in oklab, var(--espresso) 55%, var(--slate))",
+      };
     default:
-      return { tint: "#fff", bar: "var(--accent)" };
+      return { tint: "var(--cream)", bar: "var(--accent)" };
   }
 }
 

@@ -36,6 +36,16 @@ export async function POST(request: Request) {
       audience: body.audience,
       gear: body.gear,
     });
+    // Preserve slot kind from client brief when present
+    const bodyWithKind = body as { slotKind?: string };
+    if (
+      bodyWithKind.slotKind === "warmup" ||
+      bodyWithKind.slotKind === "support" ||
+      bodyWithKind.slotKind === "peaktime" ||
+      bodyWithKind.slotKind === "closing"
+    ) {
+      draft.slotKind = bodyWithKind.slotKind;
+    }
 
     const performanceCount = draft.tracks.filter(
       (track) => track.role !== "safety",

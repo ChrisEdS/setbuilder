@@ -264,11 +264,10 @@ function scoreMatch(track: SetTrack, row: KeyImportRow): number {
   return score;
 }
 
-export function applyKeyImport(
+export function applyKeyImportRows(
   draft: SetDraft,
-  text: string,
+  rows: KeyImportRow[],
 ): KeyImportResult {
-  const rows = parseKeyImportText(text);
   if (!rows.length) {
     return {
       matched: 0,
@@ -323,4 +322,11 @@ export function applyKeyImport(
     draft: { ...draft, tracks },
     samples,
   };
+}
+
+export function applyKeyImport(
+  draft: SetDraft,
+  text: string,
+): KeyImportResult {
+  return applyKeyImportRows(draft, parseKeyImportText(text));
 }

@@ -56,16 +56,47 @@ export type SetTrack = {
     | "unknown";
 };
 
+export type SetSlotKind = "warmup" | "support" | "peaktime" | "closing";
+
 export type SetDraft = {
   title: string;
   vibe: string;
   venue: string;
   slot: string;
+  /** Dramaturgie-Rahmen laut Slot (Warm-up / Support / Peak / Closing) */
+  slotKind: SetSlotKind;
   audience: string;
   gear: string;
   durationMinutes: number;
   tracks: SetTrack[];
 };
+
+export const SLOT_KINDS: {
+  id: SetSlotKind;
+  label: string;
+  hint: string;
+}[] = [
+  {
+    id: "warmup",
+    label: "Warm-up",
+    hint: "Atmosphäre, Headroom lassen, kein Peak",
+  },
+  {
+    id: "support",
+    label: "Support",
+    hint: "Boden für den Headliner — Raum lassen",
+  },
+  {
+    id: "peaktime",
+    label: "Peak Time",
+    hint: "Später Peak, Wellen atmen, Kontraste",
+  },
+  {
+    id: "closing",
+    label: "Closing",
+    hint: "Nachhall, bewusst landen oder twist",
+  },
+];
 
 /** Energy map: low → medium → high → peak → release (DJ.Studio prep model) */
 export const PHASES: SetPhase[] = [
@@ -128,48 +159,58 @@ export const DEFAULT_SET: SetDraft = {
   title: "Nachtlinie 01",
   vibe: "Tech House → Melodic Peak",
   venue: "Club, mid-size, guter PA",
-  slot: "Open-to-peak · 60 Min",
+  slot: "Peak Time · 60 Min",
+  slotKind: "peaktime",
   audience: "Locals, dancefloor schon warm",
   gear: "CDJs / USB",
   durationMinutes: 60,
   tracks: [],
 };
 
-/** Reference arc from the DJ.Studio 60-minute example */
+/**
+ * Arc guidance — DJ.Studio + Rambos Magazine + DJLearn dramaturgy.
+ * Peak is a moment, not a plateau; middle breathes in waves (Drive/Density).
+ */
 export const ARC_GUIDE = [
   {
     phase: "open" as SetPhaseId,
     window: "00:00–10:00",
-    focus: "Low–mid energy, enge BPM-Bandbreite, eine Key-Family",
+    focus:
+      "Opener gibt Orientierung — Neugier, ohne alles vorwegzunehmen; Anschluss an DJ davor möglich",
   },
   {
     phase: "lift" as SetPhaseId,
     window: "10:00–25:00",
-    focus: "Vocals/Textures; Stems nur zum Ausdünnen, nicht zum Spektakel",
+    focus:
+      "Drive & Density steigern (nicht nur BPM); kleine Wellen, Raum zum Atmen",
   },
   {
     phase: "rise" as SetPhaseId,
     window: "25:00–35:00",
-    focus: "Leichter BPM-Rise (±2–4), relative Major/Minor-Pivots",
+    focus:
+      "Erwartung aufbauen — ±2–4 BPM / Relative Keys; Überraschung in kleinen Details",
   },
   {
     phase: "peak" as SetPhaseId,
-    window: "35:00–55:00",
-    focus: "Peak-Triplet mit Groove dazwischen + ein bewusster Key-Contrast",
+    window: "35:00–50:00",
+    focus:
+      "Peak Time = maximale Aufmerksamkeit, nicht Dauer-Härte; Kontraste halten Impact lebendig",
   },
   {
     phase: "release" as SetPhaseId,
-    window: "55:00–60:00",
-    focus: "Kontrollierter Release zurück in den Groove — hoch, nicht maxed",
+    window: "50:00–60:00",
+    focus:
+      "Closing/Release mit Nachhall — kontrolliert landen, Floor nicht abrupt killen",
   },
 ];
 
 export const PREP_PRINCIPLES = [
-  "Plan, kein Script — Alternates und Pivot-Tracks markieren",
-  "Harmonik: Micro-Moves in der Key-Family; Contrast erst vor dem Peak",
-  "Nie drei Max-Intensity-Tracks hintereinander — Groove dazwischen",
-  "Transitions als Verben wählen; ein Signature-Move max. 2–3×",
-  "Phrasing in 32/64 — Key/BPM allein rettet Chorus-on-Verse nicht",
+  "Dramaturgie statt Playlist: jeder Track verändert die Wahrnehmung des nächsten",
+  "Slot lesen: Warm-up hat keinen Peak — Peak Time peakt spät und kurz",
+  "Wellen statt Rampe: Drive/Density atmen lassen, nicht nur Tempo pushen",
+  "Plan, kein Script — Safety-Alternates für Floor-Reaktionen bereithalten",
+  "Harmonik unterstützt Flow, ersetzt aber keine Energie-Entscheidung",
+  "Phrasing in 16/32/64 — Key allein rettet Chorus-on-Verse nicht",
 ];
 
 export function formatDuration(ms: number): string {

@@ -8,7 +8,8 @@ import {
   useTransition,
 } from "react";
 import { HarmonicPath } from "@/components/HarmonicPath";
-import { KeyImport } from "@/components/KeyImport";
+import { LibraryPanel } from "@/components/LibraryPanel";
+import { PreviewPlayer } from "@/components/PreviewPlayer";
 import { RoleCrates } from "@/components/RoleCrates";
 import { openSetPdfExport } from "@/lib/export-pdf";
 import { CAMELOT_CODES } from "@/lib/harmonic";
@@ -18,10 +19,12 @@ import {
   DEFAULT_SET,
   PHASES,
   PREP_PRINCIPLES,
+  SLOT_KINDS,
   TRACK_ROLES,
   TRANSITIONS,
   type SetDraft,
   type SetPhaseId,
+  type SetSlotKind,
   type SetTrack,
   type TrackRole,
   type TransitionVerb,
@@ -59,7 +62,15 @@ function readStoredDraft(): SetDraft {
       return cachedDraft;
     }
     const parsed = JSON.parse(raw) as SetDraft;
-    cachedDraft = parsed?.tracks && parsed.title ? parsed : DEFAULT_SET;
+    if (!(parsed?.tracks && parsed.title)) {
+      cachedDraft = DEFAULT_SET;
+      return cachedDraft;
+    }
+    cachedDraft = {
+      ...DEFAULT_SET,
+      ...parsed,
+      slotKind: parsed.slotKind ?? "peaktime",
+    };
     return cachedDraft;
   } catch {
     cachedDraft = DEFAULT_SET;
@@ -231,6 +242,7 @@ export function SetBuilder() {
           vibe: draft.vibe,
           venue: draft.venue,
           slot: draft.slot,
+          slotKind: draft.slotKind,
           audience: draft.audience,
           gear: draft.gear,
         }),
@@ -418,10 +430,10 @@ export function SetBuilder() {
       <header className="hero">
         <div className="hero-copy">
           <p className="brand">SETFORM</p>
-          <h1>Playlist rein — Set raus.</h1>
+          <h1>Dramaturgie statt Playlist.</h1>
           <p className="lede">
-            Spotify-Playlist laden, automatisch auf Open → Lift → Rise → Peak →
-            Release legen, Anchors/Bridges/Safeties markieren, dann feinschleifen.
+            Spotify-Crate laden, Arc nach Slot formen, Keys aus rekordbox
+            matchen — Spannung in Wellen, Peak bewusst spät.
           </p>
         </div>
         <div className="hero-meta" aria-label="Set brief">
@@ -453,7 +465,30 @@ export function SetBuilder() {
             />
           </label>
           <label>
-            <span>Slot / Tageszeit</span>
+            <span>Slot-Art</span>
+            <select
+              value={draft.slotKind ?? "peaktime"}
+              onChange={(e) => {
+                const slotKind = e.target.value as SetSlotKind;
+                const kind = SLOT_KINDS.find((item) => item.id === slotKind);
+                setDraft((c) => ({
+                  ...c,
+                  slotKind,
+                  slot: kind
+                    ? `${kind.label} · ${c.durationMinutes} Min`
+                    : c.slot,
+                }));
+              }}
+            >
+              {SLOT_KINDS.map((kind) => (
+                <option key={kind.id} value={kind.id}>
+                  {kind.label} — {kind.hint}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Slot-Notiz</span>
             <input
               value={draft.slot}
               onChange={(e) =>
@@ -584,7 +619,7 @@ export function SetBuilder() {
       </section>
 
       <section className="principles" aria-label="Advanced prep tips">
-        <h2>Damit das Set sich richtig anfühlt</h2>
+        <h2>Dramaturgie-Prinzipien</h2>
         <ul>
           {PREP_PRINCIPLES.map((item) => (
             <li key={item}>{item}</li>
@@ -662,7 +697,7 @@ export function SetBuilder() {
         }}
       />
 
-      <KeyImport
+      <LibraryPanel
         draft={draft}
         onApply={(next, message) => {
           setDraft(next);
@@ -672,6 +707,15 @@ export function SetBuilder() {
       />
 
       <HarmonicPath tracks={draft.tracks} onHarmonize={harmonizeSet} />
+
+      <PreviewPlayer
+        trackId={focusTrackId}
+        title={draft.tracks.find((track) => track.id === focusTrackId)?.name}
+        artists={draft.tracks
+          .find((track) => track.id === focusTrackId)
+          ?.artists.join(", ")}
+        onClose={() => setFocusTrackId(null)}
+      />
 
       <div className="workspace">
         <section className="panel search-panel">

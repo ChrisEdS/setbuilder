@@ -108,6 +108,7 @@ export function extractSetFromPlaylist(
     vibe: options.vibe?.trim() || `Aus Playlist: ${playlistName}`,
     venue: options.venue ?? DEFAULT_SET.venue,
     slot: options.slot ?? `${durationMinutes} Min · harmonic arc`,
+    slotKind: DEFAULT_SET.slotKind,
     audience: options.audience ?? DEFAULT_SET.audience,
     gear: options.gear ?? DEFAULT_SET.gear,
     durationMinutes,
