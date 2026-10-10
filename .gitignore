@@ -18,10 +18,10 @@
 /.next-standalone/
 /out/
 
-# Mac app build output
-/setform-mac/node_modules/
-/setform-mac/bundle/
-/setform-mac/dist/
+# Desktop app build output
+/desktop/node_modules/
+/desktop/bundle/
+/desktop/dist/
 
 # production
 /build
@@ -38,6 +38,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel

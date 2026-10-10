@@ -12,6 +12,7 @@ execFileSync("npm", ["run", "build"], {
   cwd: repoRoot,
   env: { ...process.env, SETFORM_STANDALONE: "1" },
   stdio: "inherit",
+  shell: process.platform === "win32",
 });
 
 if (!fs.existsSync(path.join(standalone, "server.js"))) {

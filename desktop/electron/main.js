@@ -265,17 +265,15 @@ if (!gotLock) {
   });
 
   app.whenReady().then(async () => {
-    if (process.platform === "darwin" && process.arch !== "arm64") {
-      dialog.showErrorBox(
-        "SETFORM",
-        "Diese App ist für Apple Silicon gebaut (M1, M2, M3, M4).",
-      );
-      app.quit();
-      return;
-    }
     loadEnv();
     const chrome = process.versions.chrome;
-    app.userAgentFallback = `Mozilla/5.0 (Macintosh; ARM Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${chrome} Safari/537.36`;
+    const platformToken =
+      process.platform === "win32"
+        ? "Windows NT 10.0; Win64; x64"
+        : process.platform === "linux"
+          ? "X11; Linux x86_64"
+          : "Macintosh; Intel Mac OS X 10_15_7";
+    app.userAgentFallback = `Mozilla/5.0 (${platformToken}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${chrome} Safari/537.36`;
     installMenu();
     app.setAboutPanelOptions({
       applicationName: "SETFORM",

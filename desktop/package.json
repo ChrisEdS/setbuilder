@@ -1,0 +1,57 @@
+{
+  "name": "setform",
+  "productName": "SETFORM",
+  "version": "0.1.0",
+  "description": "DJ set preparation for Spotify, Tidal, and rekordbox",
+  "author": "SETFORM contributors",
+  "license": "MIT",
+  "main": "electron/main.js",
+  "scripts": {
+    "build": "node scripts/prepare.js",
+    "start": "node scripts/prepare.js && electron .",
+    "dist": "node scripts/prepare.js && electron-builder --publish never"
+  },
+  "devDependencies": {
+    "electron": "^37.2.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "de.setform.desktop",
+    "productName": "SETFORM",
+    "asar": true,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "bundle/setform",
+        "to": "setform"
+      },
+      {
+        "from": "env.example",
+        "to": "env.example"
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.music",
+      "target": ["dmg", "zip"],
+      "darkModeSupport": true
+    },
+    "win": {
+      "target": ["nsis"]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "AudioVideo",
+      "synopsis": "DJ set preparation"
+    }
+  }
+}

@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
   output: desktopBuild ? "standalone" : undefined,
   distDir: desktopBuild ? ".next-standalone" : ".next",
   outputFileTracingExcludes: {
-    "*": [".data/**", ".env*", "setform-mac/**"],
+    "*": [".data/**", ".env*", "desktop/**"],
   },
   cacheComponents: true,
   partialPrefetching: true,

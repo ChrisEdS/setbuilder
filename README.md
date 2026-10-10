@@ -42,9 +42,15 @@ npm run dev
 
 App: [http://127.0.0.1:4317](http://127.0.0.1:4317)
 
-## Mac (Apple Silicon)
+## Desktop (Mac, Windows, Linux)
 
-Die native App liegt in [`setform-mac`](setform-mac/README.md). Auf einem M-Series-Mac in diesem Ordner `npm install` und `npm start`. `npm run dist` erzeugt `SETFORM.app`.
+Die App liegt in [`desktop`](desktop/README.md). `npm start` öffnet das Fenster. `npm run dist` packt sie für das aktuelle System. Ein Git-Tag `v*` baut auf GitHub Mac (Apple Silicon und Intel), Windows und Linux und legt die Dateien ins Release.
+
+Jede Installation braucht eine eigene Spotify- und optional Tidal-Developer-App. Die Keys stehen in `.env.local` oder, in der gepackten App, in den Anwendungsdaten unter `.env`. Vorlage: [`.env.example`](.env.example).
+
+## Lizenz
+
+MIT, siehe [LICENSE](LICENSE).
 
 ## Hosting bei UD Media
 

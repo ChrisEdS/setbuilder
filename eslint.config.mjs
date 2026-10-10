@@ -10,7 +10,7 @@ const eslintConfig = defineConfig([
     // Default ignores of eslint-config-next:
     ".next/**",
     ".next-standalone/**",
-    "setform-mac/**",
+    "desktop/**",
     "**/*.test.ts",
     "out/**",
     "build/**",
