@@ -206,6 +206,21 @@ export function relationLabel(relation: HarmonicRelation): string {
   }
 }
 
+export function mixJoin(
+  from: { keyCamelot: string; bpm: string } | null | undefined,
+  to: { keyCamelot: string; bpm: string },
+): { relation: HarmonicRelation; label: string } | null {
+  if (!from) return null;
+  const relation = harmonicRelation(from.keyCamelot, to.keyCamelot);
+  const delta = bpmDelta(from.bpm, to.bpm);
+  const bpmText =
+    delta == null ? "" : `${delta > 0 ? "+" : ""}${delta} BPM`;
+  return {
+    relation,
+    label: [relationLabel(relation), bpmText].filter(Boolean).join(" · "),
+  };
+}
+
 export function bpmDelta(from: string, to: string): number | null {
   const a = parseBpm(from);
   const b = parseBpm(to);

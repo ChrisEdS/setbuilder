@@ -2,9 +2,9 @@
 
 import {
   camelotColor,
+  harmonicRelation,
   pathStats,
   relationLabel,
-  type HarmonicRelation,
 } from "@/lib/harmonic";
 import { performanceTracks, type SetTrack } from "@/lib/set";
 
@@ -78,8 +78,13 @@ export function HarmonicPath({ tracks, onHarmonize }: Props) {
       ) : (
         <ol className="harm-steps">
           {performance.map((track, index) => {
-            const relation = (track.harmonicFromPrev ||
-              "unknown") as HarmonicRelation;
+            const relation =
+              index === 0
+                ? "unknown"
+                : harmonicRelation(
+                    performance[index - 1].keyCamelot,
+                    track.keyCamelot,
+                  );
             const color = camelotColor(track.keyCamelot);
             return (
               <li key={track.id}>

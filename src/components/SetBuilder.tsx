@@ -23,7 +23,7 @@ import {
 import { openSetPdfExport } from "@/lib/export-pdf";
 import { pickStreamingMatch } from "@/lib/match-link";
 import { swapIntoSlot } from "@/lib/replace-track";
-import { CAMELOT_CODES } from "@/lib/harmonic";
+import { CAMELOT_CODES, mixJoin } from "@/lib/harmonic";
 import { reharmonizeDraft } from "@/lib/extract-set";
 import { looksLikeSpotifyLink } from "@/lib/spotify-link";
 import {
@@ -48,6 +48,13 @@ import {
   setPositionById,
   totalDurationMs,
 } from "@/lib/set";
+
+function MixJoinLine({ tracks, track }: { tracks: SetTrack[]; track: SetTrack }) {
+  const index = tracks.findIndex((item) => item.id === track.id);
+  const join = index > 0 ? mixJoin(tracks[index - 1], track) : null;
+  if (!join) return null;
+  return <p className={`mix-join harm-${join.relation}`}>{join.label}</p>;
+}
 
 type SearchTrack = {
   id: string;
@@ -1297,7 +1304,8 @@ export function SetBuilder() {
         <div className="curve-head">
           <h2>Energiekurve</h2>
           <p>
-            {formatDuration(filledMs)} / {draft.durationMinutes}:00 ·{" "}
+            {formatDuration(filledMs)} / {draft.durationMinutes}:00
+            {filledMs > targetMs ? " · über dem Brief" : ""} ·{" "}
             {mainTracks.length} Performance ·{" "}
             {draft.tracks.filter((track) => track.role === "safety").length}{" "}
             Safety
@@ -1892,6 +1900,9 @@ export function SetBuilder() {
                         </button>
                       </div>
                     </div>
+                    {track.role !== "safety" ? (
+                      <MixJoinLine tracks={mainTracks} track={track} />
+                    ) : null}
                     {replaceFor === track.id ? (
                       <ReplaceMenu
                         tracks={draft.tracks}

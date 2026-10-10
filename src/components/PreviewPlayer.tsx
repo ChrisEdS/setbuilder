@@ -3,9 +3,10 @@
 import { useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { trackFilePath } from "@/lib/export-booth";
+import { mixJoin } from "@/lib/harmonic";
 import { playerEmbed, type PlayableTrack } from "@/lib/player";
 import { stickAudioUrl } from "@/lib/stick-audio";
-import type { SetTrack } from "@/lib/set";
+import { performanceTracks, type SetTrack } from "@/lib/set";
 
 function useIsClient() {
   return useSyncExternalStore(
@@ -16,7 +17,12 @@ function useIsClient() {
 }
 
 type Props = {
-  tracks: Array<PlayableTrack & Partial<Pick<SetTrack, "filePath" | "note" | "uri" | "source">>>;
+  tracks: Array<
+    PlayableTrack &
+      Partial<
+        Pick<SetTrack, "filePath" | "note" | "uri" | "source" | "keyCamelot" | "bpm" | "role">
+      >
+  >;
   currentId: string | null;
   onChange: (id: string) => void;
   onClose: () => void;
@@ -24,8 +30,7 @@ type Props = {
 
 export function PreviewPlayer({ tracks, currentId, onChange, onClose }: Props) {
   const isClient = useIsClient();
-  const index = tracks.findIndex((item) => item.id === currentId);
-  const track = index >= 0 ? tracks[index] : null;
+  const track = tracks.find((item) => item.id === currentId) ?? null;
   if (!isClient || !track) return null;
 
   const embed = playerEmbed(track);
@@ -33,8 +38,20 @@ export function PreviewPlayer({ tracks, currentId, onChange, onClose }: Props) {
     trackFilePath(track),
     track.name,
   );
-  const prev = index > 0 ? tracks[index - 1] : null;
-  const next = index < tracks.length - 1 ? tracks[index + 1] : null;
+  const lane = performanceTracks(tracks as SetTrack[]);
+  const sequence = lane.some((item) => item.id === track.id) ? lane : tracks;
+  const seqIndex = sequence.findIndex((item) => item.id === track.id);
+  const prev = seqIndex > 0 ? sequence[seqIndex - 1] : null;
+  const next =
+    seqIndex >= 0 && seqIndex < sequence.length - 1
+      ? sequence[seqIndex + 1]
+      : null;
+  const nextJoin = next
+    ? mixJoin(
+        { keyCamelot: track.keyCamelot || "", bpm: track.bpm || "" },
+        { keyCamelot: next.keyCamelot || "", bpm: next.bpm || "" },
+      )
+    : null;
 
   return createPortal(
     <aside className="preview-player" aria-label="Player">
@@ -59,8 +76,15 @@ export function PreviewPlayer({ tracks, currentId, onChange, onClose }: Props) {
             <strong title={track.name}>{track.name}</strong>
             <span>
               {(track.artists ?? []).join(", ") || "—"}
+              {track.keyCamelot ? ` · ${track.keyCamelot}` : ""}
+              {track.bpm ? ` · ${track.bpm}` : ""}
               {localAudio ? " · Stick" : embed ? ` · ${embed.label}` : ""}
             </span>
+            {nextJoin ? (
+              <em className={`mix-join harm-${nextJoin.relation}`}>
+                danach {nextJoin.label}
+              </em>
+            ) : null}
           </div>
           <button
             type="button"

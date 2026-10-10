@@ -2,15 +2,18 @@
 
 import { useRef, useState, useTransition, type ReactNode } from "react";
 import { ReplaceMenu } from "@/components/ReplaceMenu";
+import { CAMELOT_CODES, mixJoin } from "@/lib/harmonic";
 import { sourceLabel } from "@/lib/music-link";
 import {
   PHASES,
   TRACK_ROLES,
+  TRANSITIONS,
   formatDuration,
   type SetPhaseId,
   type SetTrack,
   type TrackRole,
   type TrackSource,
+  type TransitionVerb,
 } from "@/lib/set";
 
 type ResolvedTrack = {
@@ -80,6 +83,10 @@ export function ManualArrange({
   const dragIdRef = useRef<string | null>(null);
 
   const performance = tracks.filter((track) => track.role !== "safety");
+  const arranged = [
+    ...performance,
+    ...tracks.filter((track) => track.role === "safety"),
+  ];
 
   function toSetTrack(track: ResolvedTrack): SetTrack {
     return {
@@ -292,8 +299,16 @@ export function ManualArrange({
         </div>
       ) : (
         <ol className="manual-list">
-          {tracks.map((track, index) => {
+          {arranged.map((track, index) => {
             const focused = focusedTrackId === track.id;
+            const previous =
+              track.role === "safety"
+                ? null
+                : performance[performance.findIndex((item) => item.id === track.id) - 1];
+            const join = mixJoin(previous, track);
+            const altHead =
+              track.role === "safety" &&
+              (index === 0 || arranged[index - 1]?.role !== "safety");
             return (
               <li
                 key={track.id}
@@ -323,6 +338,7 @@ export function ManualArrange({
                   setOverId(null);
                 }}
               >
+                {altHead ? <p className="alt-head">Alternativen</p> : null}
                 <span className="manual-index">
                   <button
                     type="button"
@@ -457,6 +473,9 @@ export function ManualArrange({
                     </button>
                   </div>
                 </div>
+                {join ? (
+                  <p className={`mix-join harm-${join.relation}`}>{join.label}</p>
+                ) : null}
                 {replaceFor === track.id && onReplace ? (
                   <ReplaceMenu
                     tracks={tracks}
@@ -485,14 +504,35 @@ export function ManualArrange({
                     placeholder="BPM"
                     aria-label={`BPM ${track.name}`}
                   />
-                  <input
+                  <select
                     value={track.keyCamelot}
                     onChange={(e) =>
                       onPatch(track.id, { keyCamelot: e.target.value })
                     }
-                    placeholder="Key"
                     aria-label={`Key ${track.name}`}
-                  />
+                  >
+                    <option value="">Key</option>
+                    {CAMELOT_CODES.map((code) => (
+                      <option key={code} value={code}>
+                        {code}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={track.transition}
+                    onChange={(e) =>
+                      onPatch(track.id, {
+                        transition: e.target.value as TransitionVerb,
+                      })
+                    }
+                    aria-label={`Transition ${track.name}`}
+                  >
+                    {TRANSITIONS.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 </div>
               </li>

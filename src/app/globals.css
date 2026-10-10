@@ -4328,10 +4328,58 @@ button.drag-handle:active i {
 
 .manual-extra {
   display: grid;
-  grid-template-columns: 6.5rem 7.5rem minmax(9rem, 1fr) auto;
+  grid-template-columns: 6.5rem 7.5rem minmax(9rem, 1fr);
   gap: 0.5rem;
   align-items: center;
   margin-top: 0.15rem;
+}
+
+.mix-join {
+  margin: 0.15rem 0 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.alt-head {
+  grid-column: 1 / -1;
+  margin: 0.85rem 0 0.15rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #b3b3b3;
+}
+
+.preview-meta em.mix-join {
+  display: block;
+  margin-top: 0.2rem;
+}
+
+.harm-same,
+.harm-relative,
+.harm-adjacent,
+.harm-energyBoost,
+.mix-join.harm-same,
+.mix-join.harm-relative,
+.mix-join.harm-adjacent,
+.mix-join.harm-energyBoost {
+  color: #1ed760;
+}
+
+.harm-contrast,
+.mix-join.harm-contrast {
+  color: #fbbf24;
+}
+
+.harm-clash,
+.mix-join.harm-clash {
+  color: #f87171;
+}
+
+.harm-unknown,
+.mix-join.harm-unknown {
+  color: #b3b3b3;
 }
 
 .manual-extra input,

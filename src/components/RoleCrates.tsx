@@ -9,16 +9,16 @@ import {
 } from "react";
 import {
   camelotColor,
+  mixJoin,
   phaseAccent,
-  relationLabel,
   roleAccent,
-  type HarmonicRelation,
 } from "@/lib/harmonic";
 import { rankReplacements } from "@/lib/replace-track";
 import {
   PHASES,
   TRACK_ROLES,
   formatDuration,
+  performanceTracks,
   tracksByRole,
   type SetTrack,
   type TrackRole,
@@ -459,14 +459,8 @@ export function RoleCrates({
                                     {track.why}
                                   </p>
                                 ) : null}
-                                {track.harmonicFromPrev &&
-                                track.harmonicFromPrev !== "unknown" &&
-                                track.role !== "safety" ? (
-                                  <p
-                                    className={`harm harm-${track.harmonicFromPrev as HarmonicRelation}`}
-                                  >
-                                    {relationLabel(track.harmonicFromPrev)}
-                                  </p>
+                                {track.role !== "safety" ? (
+                                  <SetJoin tracks={tracks} track={track} />
                                 ) : null}
                                 {track.safetyAlt ? (
                                   <p
@@ -525,6 +519,14 @@ export function RoleCrates({
       </div>
     </section>
   );
+}
+
+function SetJoin({ tracks, track }: { tracks: SetTrack[]; track: SetTrack }) {
+  const performance = performanceTracks(tracks);
+  const index = performance.findIndex((item) => item.id === track.id);
+  const join = index > 0 ? mixJoin(performance[index - 1], track) : null;
+  if (!join || join.relation === "unknown") return null;
+  return <p className={`harm harm-${join.relation}`}>{join.label}</p>;
 }
 
 function SafetySwap({
