@@ -7,6 +7,10 @@ import {
   useSyncExternalStore,
   useTransition,
 } from "react";
+import { HarmonicPath } from "@/components/HarmonicPath";
+import { RoleCrates } from "@/components/RoleCrates";
+import { CAMELOT_CODES } from "@/lib/harmonic";
+import { reharmonizeDraft } from "@/lib/extract-set";
 import {
   ARC_GUIDE,
   DEFAULT_SET,
@@ -21,6 +25,7 @@ import {
   type TransitionVerb,
   exportSetText,
   formatDuration,
+  performanceTracks,
   phaseDurationMs,
   totalDurationMs,
 } from "@/lib/set";
@@ -36,7 +41,7 @@ type SearchTrack = {
   externalUrl: string;
 };
 
-const STORAGE_KEY = "setform-draft-v2";
+const STORAGE_KEY = "setform-draft-v3";
 const DRAFT_EVENT = "setform-draft";
 
 let cachedRaw: string | null | undefined;
@@ -98,6 +103,8 @@ export function SetBuilder() {
     "http://127.0.0.1:4317/api/auth/callback",
   );
   const [isExtracting, setIsExtracting] = useState(false);
+  const [focusTrackId, setFocusTrackId] = useState<string | null>(null);
+  const [roleFilter, setRoleFilter] = useState<TrackRole | "all">("all");
   const [myPlaylists, setMyPlaylists] = useState<
     Array<{
       id: string;
@@ -250,8 +257,15 @@ export function SetBuilder() {
       }
 
       setDraft(data.draft);
+      setRoleFilter("all");
+      const performanceCount = (data.draft.tracks ?? []).filter(
+        (track) => track.role !== "safety",
+      ).length;
+      const safetyCount = (data.draft.tracks ?? []).filter(
+        (track) => track.role === "safety",
+      ).length;
       setStatus(
-        `Set aus „${data.playlist?.name ?? "Playlist"}“: ${data.playlist?.selected ?? data.draft.tracks.length} Tracks gewählt (von ${data.playlist?.imported ?? "?"} importiert).`,
+        `Set aus „${data.playlist?.name ?? "Playlist"}“: ${performanceCount} Performance-Tracks + ${safetyCount} Safety (Pool: ${data.playlist?.imported ?? "?"}).`,
       );
       await refreshAuthStatus();
     } catch (err) {
@@ -261,19 +275,20 @@ export function SetBuilder() {
     }
   }
 
+  const mainTracks = useMemo(
+    () => performanceTracks(draft.tracks),
+    [draft.tracks],
+  );
   const filledMs = totalDurationMs(draft.tracks);
   const targetMs = draft.durationMinutes * 60_000;
   const fillRatio = Math.min(filledMs / targetMs, 1);
   const activeGuide = ARC_GUIDE.find((item) => item.phase === activePhase);
 
-  const roleCounts = useMemo(() => {
-    return Object.fromEntries(
-      TRACK_ROLES.map((role) => [
-        role.id,
-        draft.tracks.filter((track) => track.role === role.id).length,
-      ]),
-    ) as Record<TrackRole, number>;
-  }, [draft.tracks]);
+  const visibleTimeline = useMemo(() => {
+    if (!draft.tracks.length) return [];
+    if (roleFilter === "all") return mainTracks;
+    return draft.tracks.filter((track) => track.role === roleFilter);
+  }, [draft.tracks, mainTracks, roleFilter]);
 
   function runSearch(nextQuery = query) {
     const trimmed = nextQuery.trim();
@@ -377,7 +392,14 @@ export function SetBuilder() {
 
   function resetSet() {
     setDraft(DEFAULT_SET);
+    setFocusTrackId(null);
     setStatus("Brief zurückgesetzt — Crate ist leer.");
+  }
+
+  function harmonizeSet() {
+    const next = reharmonizeDraft(draft);
+    setDraft(next);
+    setStatus("Set innerhalb der Phasen nach Camelot/BPM neu sortiert.");
   }
 
   return (
@@ -564,7 +586,9 @@ export function SetBuilder() {
           <h2>Energiekurve</h2>
           <p>
             {formatDuration(filledMs)} / {draft.durationMinutes}:00 ·{" "}
-            {draft.tracks.length} Tracks · Crate-Ziel 40–120
+            {mainTracks.length} Performance ·{" "}
+            {draft.tracks.filter((track) => track.role === "safety").length}{" "}
+            Safety
           </p>
         </div>
         <div
@@ -603,26 +627,30 @@ export function SetBuilder() {
         ) : null}
       </section>
 
-      <section className="roles" aria-label="Crate roles">
-        <div className="panel-head">
-          <h2>Crate-Rollen</h2>
-          <p>Anchors · Bridges · Groove · Safety nets</p>
-        </div>
-        <div className="role-grid">
-          {TRACK_ROLES.map((role) => (
-            <button
-              key={role.id}
-              type="button"
-              className={activeRole === role.id ? "role active" : "role"}
-              onClick={() => setActiveRole(role.id)}
-            >
-              <strong>{role.label}</strong>
-              <span>{role.hint}</span>
-              <em>{roleCounts[role.id]}</em>
-            </button>
-          ))}
-        </div>
-      </section>
+      <RoleCrates
+        tracks={draft.tracks}
+        activeRole={activeRole}
+        onSelectRole={(role) => {
+          setActiveRole(role);
+          setRoleFilter(role);
+        }}
+        onFocusTrack={(id) => {
+          setFocusTrackId(id);
+          const track = draft.tracks.find((item) => item.id === id);
+          if (track) {
+            setActivePhase(track.phase);
+            setActiveRole(track.role);
+            setRoleFilter(track.role);
+            requestAnimationFrame(() => {
+              document
+                .getElementById(`track-${id}`)
+                ?.scrollIntoView({ behavior: "smooth", block: "center" });
+            });
+          }
+        }}
+      />
+
+      <HarmonicPath tracks={draft.tracks} onHarmonize={harmonizeSet} />
 
       <div className="workspace">
         <section className="panel search-panel">
@@ -689,10 +717,17 @@ export function SetBuilder() {
             <div className="actions">
               <button
                 type="button"
+                className={roleFilter === "all" ? undefined : "ghost"}
+                onClick={() => setRoleFilter("all")}
+              >
+                Alle
+              </button>
+              <button
+                type="button"
                 onClick={copyExport}
                 disabled={draft.tracks.length === 0}
               >
-                Export kopieren
+                Export
               </button>
               <button type="button" className="ghost" onClick={resetSet}>
                 Reset
@@ -700,18 +735,35 @@ export function SetBuilder() {
             </div>
           </div>
 
-          {draft.tracks.length === 0 ? (
+          <p className="timeline-filter">
+            Filter:{" "}
+            <strong>
+              {roleFilter === "all"
+                ? "Performance-Set"
+                : TRACK_ROLES.find((role) => role.id === roleFilter)?.label}
+            </strong>
+            {" · "}
+            {visibleTimeline.length} Tracks · {formatDuration(
+              visibleTimeline.reduce((sum, track) => sum + track.durationMs, 0),
+            )}
+          </p>
+
+          {visibleTimeline.length === 0 ? (
             <div className="empty">
               <p>Noch kein Set.</p>
               <p>
-                Oben eine Spotify-Playlist einfügen und „Set extrahieren“ —
-                optional danach per Suche nachschärfen.
+                Oben eine eigene Spotify-Playlist wählen und „Set extrahieren“.
+                Danach Keys/BPM setzen und harmonisch sortieren.
               </p>
             </div>
           ) : (
             <ol className="set-list">
-              {draft.tracks.map((track, index) => (
-                <li key={track.id}>
+              {visibleTimeline.map((track, index) => (
+                <li
+                  key={`${track.role}-${track.id}`}
+                  id={`track-${track.id}`}
+                  className={focusTrackId === track.id ? "focused" : undefined}
+                >
                   <div className="set-index">{index + 1}</div>
                   <div className="set-body">
                     <div className="set-title-row">
@@ -719,6 +771,7 @@ export function SetBuilder() {
                       <span>{formatDuration(track.durationMs)}</span>
                     </div>
                     <p>{track.artists.join(", ")}</p>
+                    {track.why ? <p className="why-inline">{track.why}</p> : null}
                     <div className="set-controls">
                       <select
                         value={track.phase}
@@ -740,6 +793,7 @@ export function SetBuilder() {
                         onChange={(e) =>
                           patchTrack(track.id, {
                             role: e.target.value as TrackRole,
+                            why: "Manuell gesetzt",
                           })
                         }
                         aria-label={`Rolle für ${track.name}`}
@@ -773,14 +827,20 @@ export function SetBuilder() {
                         placeholder="BPM"
                         aria-label={`BPM für ${track.name}`}
                       />
-                      <input
+                      <select
                         value={track.keyCamelot}
                         onChange={(e) =>
                           patchTrack(track.id, { keyCamelot: e.target.value })
                         }
-                        placeholder="Key z.B. 8A"
                         aria-label={`Key für ${track.name}`}
-                      />
+                      >
+                        <option value="">Key (Camelot)</option>
+                        {CAMELOT_CODES.map((code) => (
+                          <option key={code} value={code}>
+                            {code}
+                          </option>
+                        ))}
+                      </select>
                       <input
                         value={track.note}
                         onChange={(e) =>

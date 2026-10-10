@@ -40,8 +40,20 @@ export type SetTrack = {
   transition: TransitionVerb;
   bpm: string;
   keyCamelot: string;
+  /** Soft energy prior 0–1 (crate position / analysis) */
+  energy?: number;
   note: string;
+  /** Why this track got this role */
+  why?: string;
   safetyAlt: string;
+  harmonicFromPrev?:
+    | "same"
+    | "relative"
+    | "adjacent"
+    | "energyBoost"
+    | "contrast"
+    | "clash"
+    | "unknown";
 };
 
 export type SetDraft = {
@@ -167,15 +179,28 @@ export function formatDuration(ms: number): string {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
+export function performanceTracks(tracks: SetTrack[]): SetTrack[] {
+  return tracks.filter((track) => track.role !== "safety");
+}
+
 export function totalDurationMs(tracks: SetTrack[]): number {
-  return tracks.reduce((sum, track) => sum + track.durationMs, 0);
+  return performanceTracks(tracks).reduce(
+    (sum, track) => sum + track.durationMs,
+    0,
+  );
 }
 
 export function phaseDurationMs(
   tracks: SetTrack[],
   phase: SetPhaseId,
 ): number {
-  return totalDurationMs(tracks.filter((track) => track.phase === phase));
+  return totalDurationMs(
+    tracks.filter((track) => track.phase === phase && track.role !== "safety"),
+  );
+}
+
+export function tracksByRole(tracks: SetTrack[], role: TrackRole): SetTrack[] {
+  return tracks.filter((track) => track.role === role);
 }
 
 export function exportSetText(draft: SetDraft): string {
@@ -194,7 +219,9 @@ export function exportSetText(draft: SetDraft): string {
   ];
 
   for (const phase of PHASES) {
-    const phaseTracks = draft.tracks.filter((track) => track.phase === phase.id);
+    const phaseTracks = draft.tracks.filter(
+      (track) => track.phase === phase.id && track.role !== "safety",
+    );
     if (phaseTracks.length === 0) continue;
     const guide = ARC_GUIDE.find((item) => item.phase === phase.id);
     lines.push(`## ${phase.label}${guide ? ` (${guide.window})` : ""}`);
@@ -213,6 +240,19 @@ export function exportSetText(draft: SetDraft): string {
       );
       if (track.note) lines.push(`   Cue: ${track.note}`);
       if (track.safetyAlt) lines.push(`   Safety: ${track.safetyAlt}`);
+      lines.push(`   ${track.externalUrl}`);
+    });
+    lines.push("");
+  }
+
+  const safeties = draft.tracks.filter((track) => track.role === "safety");
+  if (safeties.length) {
+    lines.push("## Safety nets");
+    safeties.forEach((track, index) => {
+      lines.push(
+        `${index + 1}. ${track.artists.join(", ")} – ${track.name} (${formatDuration(track.durationMs)})`,
+      );
+      if (track.why) lines.push(`   ${track.why}`);
       lines.push(`   ${track.externalUrl}`);
     });
     lines.push("");

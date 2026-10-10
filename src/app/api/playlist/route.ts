@@ -37,6 +37,11 @@ export async function POST(request: Request) {
       gear: body.gear,
     });
 
+    const performanceCount = draft.tracks.filter(
+      (track) => track.role !== "safety",
+    ).length;
+    const safetyCount = draft.tracks.length - performanceCount;
+
     return NextResponse.json({
       playlist: {
         id: playlist.id,
@@ -44,7 +49,8 @@ export async function POST(request: Request) {
         owner: playlist.owner,
         trackCount: playlist.trackCount,
         imported: playlist.tracks.length,
-        selected: draft.tracks.length,
+        selected: performanceCount,
+        safety: safetyCount,
         externalUrl: playlist.externalUrl,
         imageUrl: playlist.imageUrl,
       },

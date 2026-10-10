@@ -199,38 +199,260 @@ select {
   gap: 0.35rem;
 }
 
-.role-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.65rem;
+.role-crates,
+.harmonic-path {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(8px);
+  padding: 1.1rem 1.15rem 1.25rem;
+  margin-bottom: 1.1rem;
+  box-shadow: var(--shadow);
 }
 
-.role {
-  text-align: left;
+.role-crates .panel-head h2,
+.harmonic-path .panel-head h2 {
+  margin: 0;
+  font-family: var(--font-display), sans-serif;
+  font-size: 1.35rem;
+  letter-spacing: -0.03em;
+}
+
+.crate-columns {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.crate-col {
   border: 1px solid var(--line);
-  background: #fff;
+  background: rgba(255, 255, 255, 0.72);
+  min-height: 12rem;
+  transition: border-color 180ms ease, transform 180ms ease;
+}
+
+.crate-col.active {
+  border-color: color-mix(in oklab, var(--accent) 55%, #14201c);
+  transform: translateY(-2px);
+}
+
+.crate-col-head {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
   padding: 0.75rem;
   cursor: pointer;
-  transition: transform 180ms ease, background 180ms ease;
 }
 
-.role strong {
+.crate-col-head strong {
   display: block;
   font-family: var(--font-display), sans-serif;
+  font-size: 1.05rem;
 }
 
-.role span,
-.role em {
+.crate-col-head span,
+.crate-col-head em {
   display: block;
   margin-top: 0.2rem;
   color: var(--muted);
   font-style: normal;
-  font-size: 0.86rem;
+  font-size: 0.82rem;
 }
 
-.role.active {
-  background: color-mix(in oklab, var(--accent) 55%, white);
-  transform: translateY(-1px);
+.crate-empty {
+  margin: 0;
+  padding: 0.85rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.crate-track-list {
+  list-style: none;
+  margin: 0;
+  padding: 0.45rem;
+  display: grid;
+  gap: 0.45rem;
+  max-height: 28rem;
+  overflow: auto;
+}
+
+.crate-card {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 0.55rem;
+  text-align: left;
+  border: 1px solid transparent;
+  background: #fff;
+  color: var(--ink);
+  padding: 0.45rem;
+  cursor: pointer;
+}
+
+.crate-card:hover {
+  border-color: var(--line);
+  transform: none;
+  background: #fff;
+}
+
+.art-fallback.sm {
+  width: 40px;
+  height: 40px;
+}
+
+.crate-card-body strong {
+  display: block;
+  font-family: var(--font-display), sans-serif;
+  font-size: 0.92rem;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.crate-card-body .artists,
+.why,
+.safety-line,
+.transition-line,
+.why-inline {
+  display: block;
+  margin: 0.15rem 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.crate-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.35rem;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  padding: 0.1rem 0.35rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.pill.key {
+  background: color-mix(in oklab, var(--accent) 45%, white);
+}
+
+.pill.muted {
+  opacity: 0.7;
+}
+
+.harm {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.harm-same,
+.harm-relative,
+.harm-adjacent,
+.harm-energyBoost {
+  color: #2f6b2f;
+}
+
+.harm-contrast {
+  color: #8a5a00;
+}
+
+.harm-clash {
+  color: var(--danger);
+}
+
+.harm-unknown {
+  color: var(--muted);
+}
+
+.harm-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.65rem;
+  margin-bottom: 0.9rem;
+}
+
+.harm-stats div {
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 0.7rem 0.8rem;
+}
+
+.harm-stats strong {
+  display: block;
+  font-family: var(--font-display), sans-serif;
+  font-size: 1.35rem;
+  letter-spacing: -0.03em;
+}
+
+.harm-stats span {
+  color: var(--muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.harm-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 0.45rem;
+  overflow-x: auto;
+  padding-bottom: 0.35rem;
+}
+
+.harm-steps li {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 7.5rem;
+}
+
+.harm-link {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.harm-node {
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 0.55rem 0.6rem;
+}
+
+.harm-node strong {
+  display: block;
+  font-family: var(--font-display), sans-serif;
+  font-size: 1.1rem;
+}
+
+.harm-node span {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.timeline-filter {
+  margin: 0 0 0.85rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.set-list li.focused {
+  border-color: color-mix(in oklab, var(--accent) 60%, #14201c);
+  box-shadow: 0 0 0 3px rgba(200, 240, 108, 0.35);
+  animation: fade-in 280ms ease both;
 }
 
 .guide-line {
@@ -562,11 +784,18 @@ button.danger {
   }
 }
 
+@media (max-width: 1100px) {
+  .crate-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 900px) {
   .hero,
   .workspace,
   .phase-grid,
-  .role-grid {
+  .crate-columns,
+  .harm-stats {
     grid-template-columns: 1fr;
   }
 
