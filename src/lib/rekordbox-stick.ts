@@ -138,8 +138,9 @@ function toSetTrack(
     transition: "unset",
     bpm: track.bpm,
     keyCamelot: track.keyCamelot,
-    note: track.filePath,
+    note: "",
     comment: track.comment,
+    filePath: track.filePath,
     source: "rekordbox",
     why:
       set.kind === "history"

@@ -15,6 +15,8 @@ import { performanceTracks } from "@/lib/set";
 type Props = {
   draft: SetDraft;
   onApply: (draft: SetDraft, message: string) => void;
+  onMatchLinks?: () => void;
+  matchingLinks?: boolean;
 };
 
 type LibraryRow = {
@@ -41,7 +43,7 @@ function toImportRows(rows: LibraryRow[]): KeyImportRow[] {
   }));
 }
 
-export function LibraryPanel({ draft, onApply }: Props) {
+export function LibraryPanel({ draft, onApply, onMatchLinks, matchingLinks }: Props) {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [libraryCount, setLibraryCount] = useState<number | null>(null);
@@ -334,6 +336,8 @@ export function LibraryPanel({ draft, onApply }: Props) {
             draft={draft}
             busy={busy}
             onApply={onApply}
+            onMatchLinks={onMatchLinks}
+            matchingLinks={matchingLinks}
             onIndexed={(rows) => {
               setLibraryRows(rows);
               setLibraryCount(rows.length);

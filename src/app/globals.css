@@ -4030,8 +4030,10 @@ label.btn {
 
 .manual-head-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: flex-end;
+  gap: 0.45rem;
 }
 
 .manual-head-actions .timeline-filter {
@@ -4549,4 +4551,76 @@ button.drag-handle:active i {
   .stick-list li {
     grid-template-columns: 1fr;
   }
+}
+
+.preview-audio {
+  width: 100%;
+  margin-top: 0.35rem;
+}
+
+.replace-menu {
+  margin: 0.35rem 0 0.15rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: #121212;
+}
+
+.replace-menu-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.55rem;
+}
+
+.replace-menu p,
+.replace-menu em,
+.replace-menu span {
+  color: #b3b3b3;
+  font-size: 0.78rem;
+}
+
+.replace-menu ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.replace-menu li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.replace-menu strong,
+.replace-menu span,
+.replace-menu em {
+  display: block;
+}
+
+.replace-menu em {
+  font-style: normal;
+  margin-top: 0.15rem;
+}
+
+.safety-swap {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.safety-swap p {
+  margin: 0;
+  color: #b3b3b3;
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.timeline-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }

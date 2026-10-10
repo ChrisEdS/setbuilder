@@ -2,7 +2,10 @@
 
 import { useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+import { trackFilePath } from "@/lib/export-booth";
 import { playerEmbed, type PlayableTrack } from "@/lib/player";
+import { stickAudioUrl } from "@/lib/stick-audio";
+import type { SetTrack } from "@/lib/set";
 
 function useIsClient() {
   return useSyncExternalStore(
@@ -13,7 +16,7 @@ function useIsClient() {
 }
 
 type Props = {
-  tracks: PlayableTrack[];
+  tracks: Array<PlayableTrack & Partial<Pick<SetTrack, "filePath" | "note" | "uri" | "source">>>;
   currentId: string | null;
   onChange: (id: string) => void;
   onClose: () => void;
@@ -26,6 +29,10 @@ export function PreviewPlayer({ tracks, currentId, onChange, onClose }: Props) {
   if (!isClient || !track) return null;
 
   const embed = playerEmbed(track);
+  const localAudio = stickAudioUrl(
+    trackFilePath(track),
+    track.name,
+  );
   const prev = index > 0 ? tracks[index - 1] : null;
   const next = index < tracks.length - 1 ? tracks[index + 1] : null;
 
@@ -52,7 +59,7 @@ export function PreviewPlayer({ tracks, currentId, onChange, onClose }: Props) {
             <strong title={track.name}>{track.name}</strong>
             <span>
               {(track.artists ?? []).join(", ") || "—"}
-              {embed ? ` · ${embed.label}` : ""}
+              {localAudio ? " · Stick" : embed ? ` · ${embed.label}` : ""}
             </span>
           </div>
           <button
@@ -73,7 +80,9 @@ export function PreviewPlayer({ tracks, currentId, onChange, onClose }: Props) {
             ✕
           </button>
         </div>
-        {embed ? (
+        {localAudio ? (
+          <audio className="preview-audio" src={localAudio} controls autoPlay />
+        ) : embed ? (
           <iframe
             key={embed.src}
             title={`${embed.label} Player`}
@@ -86,6 +95,7 @@ export function PreviewPlayer({ tracks, currentId, onChange, onClose }: Props) {
         ) : (
           <p className="player-fallback">
             Kein Embed für diesen Eintrag.
+            {track.source === "rekordbox" ? " Stick-Ordner wählen, dann spielt die Datei hier." : ""}
             {track.externalUrl ? (
               <>
                 {" "}

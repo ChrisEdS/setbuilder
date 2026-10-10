@@ -55,6 +55,8 @@ export type SetTrack = {
   comment?: string;
   /** Where the track link came from */
   source?: TrackSource;
+  /** Path on a rekordbox stick, when the set was imported from export.pdb */
+  filePath?: string;
   /** Why this track got this role */
   why?: string;
   safetyAlt: string;

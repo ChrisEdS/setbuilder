@@ -6,18 +6,28 @@ import {
   readRekordboxStick,
   type RekordboxStickSet,
 } from "@/lib/rekordbox-stick";
+import { rememberStickFiles } from "@/lib/stick-audio";
 import { formatDuration, type SetDraft } from "@/lib/set";
 
 type Props = {
   draft: SetDraft;
   busy: boolean;
   onApply: (draft: SetDraft, message: string) => void;
+  onMatchLinks?: () => void;
+  matchingLinks?: boolean;
   onIndexed: (
     rows: Array<{ artist: string; title: string; key: string; bpm: string }>,
   ) => void;
 };
 
-export function RekordboxStick({ draft, busy, onApply, onIndexed }: Props) {
+export function RekordboxStick({
+  draft,
+  busy,
+  onApply,
+  onMatchLinks,
+  matchingLinks,
+  onIndexed,
+}: Props) {
   const [localBusy, setLocalBusy] = useState(false);
   const [label, setLabel] = useState<string | null>(null);
   const [sets, setSets] = useState<RekordboxStickSet[]>([]);
@@ -30,6 +40,7 @@ export function RekordboxStick({ draft, busy, onApply, onIndexed }: Props) {
     setError(null);
     try {
       const stick = await readRekordboxStick(files);
+      rememberStickFiles(files);
       setLabel(stick.label);
       setSets(stick.sets);
       onIndexed(
@@ -107,6 +118,16 @@ export function RekordboxStick({ draft, busy, onApply, onIndexed }: Props) {
               }}
             />
           </label>
+          {onMatchLinks ? (
+            <button
+              type="button"
+              className="btn ghost library-file"
+              disabled={pending || matchingLinks || draft.tracks.length === 0}
+              onClick={onMatchLinks}
+            >
+              {matchingLinks ? "Suche…" : "Spotify-Links"}
+            </button>
+          ) : null}
           <label className={"btn ghost library-file" + (pending ? " is-busy" : "")}>
             export.pdb
             <input

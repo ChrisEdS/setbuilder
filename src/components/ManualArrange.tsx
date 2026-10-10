@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition, type ReactNode } from "react";
+import { ReplaceMenu } from "@/components/ReplaceMenu";
 import { sourceLabel } from "@/lib/music-link";
 import {
   PHASES,
@@ -36,9 +37,14 @@ type Props = {
   onMove: (id: string, direction: -1 | 1) => void;
   onReorder: (activeId: string, overId: string) => void;
   onRemove: (id: string) => void;
+  onReplace?: (targetId: string, replacementId: string) => void;
+  onMatchLinks?: () => void;
+  matchingLinks?: boolean;
   onFocus?: (id: string) => void;
   focusedTrackId?: string | null;
   onExportPdf?: () => void;
+  onExportM3u?: () => void;
+  onExportRekordbox?: () => void;
   toolbar?: ReactNode;
 };
 
@@ -52,9 +58,14 @@ export function ManualArrange({
   onMove,
   onReorder,
   onRemove,
+  onReplace,
+  onMatchLinks,
+  matchingLinks,
   onFocus,
   focusedTrackId,
   onExportPdf,
+  onExportM3u,
+  onExportRekordbox,
   toolbar,
 }: Props) {
   const [url, setUrl] = useState("");
@@ -64,6 +75,7 @@ export function ManualArrange({
   const [status, setStatus] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [dragId, setDragId] = useState<string | null>(null);
+  const [replaceFor, setReplaceFor] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const dragIdRef = useRef<string | null>(null);
 
@@ -184,11 +196,35 @@ export function ManualArrange({
           </p>
           <button
             type="button"
+            className="btn ghost"
+            onClick={onMatchLinks}
+            disabled={!onMatchLinks || matchingLinks || tracks.length === 0}
+          >
+            {matchingLinks ? "Suche…" : "Spotify-Links"}
+          </button>
+          <button
+            type="button"
             className="btn"
             onClick={onExportPdf}
             disabled={!onExportPdf || tracks.length === 0}
           >
             PDF
+          </button>
+          <button
+            type="button"
+            className="btn ghost"
+            onClick={onExportM3u}
+            disabled={!onExportM3u || tracks.length === 0}
+          >
+            M3U
+          </button>
+          <button
+            type="button"
+            className="btn ghost"
+            onClick={onExportRekordbox}
+            disabled={!onExportRekordbox || tracks.length === 0}
+          >
+            rekordbox
           </button>
         </div>
       </div>
@@ -400,6 +436,18 @@ export function ManualArrange({
                     <button type="button" onClick={() => onMove(track.id, 1)}>
                       ↓
                     </button>
+                    {track.role !== "safety" && onReplace ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setReplaceFor((current) =>
+                            current === track.id ? null : track.id,
+                          )
+                        }
+                      >
+                        Ersatz
+                      </button>
+                    ) : null}
                     <button
                       type="button"
                       className="danger"
@@ -409,6 +457,14 @@ export function ManualArrange({
                     </button>
                   </div>
                 </div>
+                {replaceFor === track.id && onReplace ? (
+                  <ReplaceMenu
+                    tracks={tracks}
+                    targetId={track.id}
+                    onReplace={onReplace}
+                    onClose={() => setReplaceFor(null)}
+                  />
+                ) : null}
 
                 <label className="manual-comment">
                   <span>Comment</span>

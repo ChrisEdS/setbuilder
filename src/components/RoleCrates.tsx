@@ -14,6 +14,7 @@ import {
   roleAccent,
   type HarmonicRelation,
 } from "@/lib/harmonic";
+import { rankReplacements } from "@/lib/replace-track";
 import {
   PHASES,
   TRACK_ROLES,
@@ -30,6 +31,7 @@ type Props = {
   focusedTrackId?: string | null;
   onSelectRole: (role: TrackRole) => void;
   onFocusTrack?: (id: string) => void;
+  onReplace?: (targetId: string, replacementId: string) => void;
 };
 
 type CratePrefs = {
@@ -136,6 +138,7 @@ export function RoleCrates({
   focusedTrackId,
   onSelectRole,
   onFocusTrack,
+  onReplace,
 }: Props) {
   const prefs = useSyncExternalStore(subscribePrefs, readPrefs, () => DEFAULT_PREFS);
   const dragRef = useRef<{
@@ -473,6 +476,14 @@ export function RoleCrates({
                                     Alt für: {track.safetyAlt}
                                   </p>
                                 ) : null}
+                                {isSafety && onReplace && focusedTrackId ? (
+                                  <SafetySwap
+                                    tracks={tracks}
+                                    targetId={focusedTrackId}
+                                    replacementId={track.id}
+                                    onReplace={onReplace}
+                                  />
+                                ) : null}
                                 {isSafety && track.note ? (
                                   <p className="safety-line" title={track.note}>
                                     Cue: {track.note}
@@ -513,5 +524,30 @@ export function RoleCrates({
         })}
       </div>
     </section>
+  );
+}
+
+function SafetySwap({
+  tracks,
+  targetId,
+  replacementId,
+  onReplace,
+}: {
+  tracks: SetTrack[];
+  targetId: string;
+  replacementId: string;
+  onReplace: (targetId: string, replacementId: string) => void;
+}) {
+  const target = tracks.find((track) => track.id === targetId);
+  if (!target || target.role === "safety") return null;
+  const option = rankReplacements(tracks, targetId).find((item) => item.id === replacementId);
+  if (!option) return null;
+  return (
+    <div className="safety-swap">
+      <p title={option.detail}>{option.detail}</p>
+      <button type="button" className="btn" onClick={() => onReplace(targetId, replacementId)}>
+        Statt Fokus einsetzen
+      </button>
+    </div>
   );
 }

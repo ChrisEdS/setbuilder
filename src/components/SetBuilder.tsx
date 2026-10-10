@@ -12,8 +12,17 @@ import { HarmonicPath } from "@/components/HarmonicPath";
 import { LibraryPanel } from "@/components/LibraryPanel";
 import { ManualArrange } from "@/components/ManualArrange";
 import { PreviewPlayer } from "@/components/PreviewPlayer";
+import { ReplaceMenu } from "@/components/ReplaceMenu";
 import { RoleCrates } from "@/components/RoleCrates";
+import {
+  boothFileName,
+  buildM3u,
+  buildRekordboxXml,
+  downloadText,
+} from "@/lib/export-booth";
 import { openSetPdfExport } from "@/lib/export-pdf";
+import { pickStreamingMatch } from "@/lib/match-link";
+import { swapIntoSlot } from "@/lib/replace-track";
 import { CAMELOT_CODES } from "@/lib/harmonic";
 import { reharmonizeDraft } from "@/lib/extract-set";
 import { looksLikeSpotifyLink } from "@/lib/spotify-link";
@@ -208,6 +217,8 @@ export function SetBuilder() {
   );
   const [isExtracting, setIsExtracting] = useState(false);
   const [focusTrackId, setFocusTrackId] = useState<string | null>(null);
+  const [matchingLinks, setMatchingLinks] = useState(false);
+  const [replaceFor, setReplaceFor] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const dragIdRef = useRef<string | null>(null);
@@ -737,6 +748,104 @@ export function SetBuilder() {
     }
   }
 
+  function exportM3u() {
+    downloadText(
+      boothFileName(draft.title, "m3u"),
+      buildM3u(draft),
+      "audio/x-mpegurl",
+    );
+    setStatus("M3U der Performance-Reihenfolge gespeichert.");
+  }
+
+  function exportRekordbox() {
+    downloadText(
+      boothFileName(draft.title, "xml"),
+      buildRekordboxXml(draft),
+      "application/xml",
+    );
+    setStatus(
+      "rekordbox-XML gespeichert. In rekordbox: File → Import Playlist. Alternativen liegen in der zweiten Playlist.",
+    );
+  }
+
+  function replaceTrack(targetId: string, replacementId: string) {
+    setDraft((current) => ({
+      ...current,
+      tracks: swapIntoSlot(current.tracks, targetId, replacementId),
+    }));
+    setReplaceFor(null);
+    setStatus("Alternative eingesetzt. Der ersetzte Track liegt bei den Alternativen.");
+  }
+
+  async function matchStreamingLinks() {
+    const pending = draft.tracks.filter(
+      (track) => !track.externalUrl && track.name.trim(),
+    );
+    if (!pending.length) {
+      setStatus("Alle Tracks haben schon einen Link.");
+      return;
+    }
+    setMatchingLinks(true);
+    setStatus(`Suche Spotify-Links… 0/${pending.length}`);
+    const patches = new Map<
+      string,
+      { externalUrl: string; imageUrl: string | null }
+    >();
+    let found = 0;
+    try {
+      for (let i = 0; i < pending.length; i += 4) {
+        const chunk = pending.slice(i, i + 4);
+        await Promise.all(
+          chunk.map(async (track) => {
+            const artist = track.artists.filter(
+              (name) => name && name !== "Unknown" && name !== "Tidal",
+            );
+            const query = `${artist.join(" ")} ${track.name}`.trim();
+            const response = await fetch(
+              `/api/search?q=${encodeURIComponent(query)}&market=DE`,
+            );
+            if (!response.ok) return;
+            const data = (await response.json()) as {
+              tracks?: Array<{
+                name: string;
+                artists: string[];
+                externalUrl: string;
+                imageUrl: string | null;
+              }>;
+            };
+            const match = pickStreamingMatch(
+              { name: track.name, artists: track.artists },
+              data.tracks ?? [],
+            );
+            if (!match) return;
+            found += 1;
+            patches.set(track.id, {
+              externalUrl: match.externalUrl,
+              imageUrl: match.imageUrl,
+            });
+          }),
+        );
+        setStatus(`Suche Spotify-Links… ${Math.min(i + 4, pending.length)}/${pending.length}`);
+      }
+      setDraft((current) => ({
+        ...current,
+        tracks: current.tracks.map((track) => {
+          const patch = patches.get(track.id);
+          return patch ? { ...track, ...patch } : track;
+        }),
+      }));
+      setStatus(
+        found
+          ? `${found} Spotify-Links gesetzt, ${pending.length - found} ohne sicheren Treffer.`
+          : "Kein sicherer Spotify-Treffer.",
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Spotify-Suche fehlgeschlagen.");
+    } finally {
+      setMatchingLinks(false);
+    }
+  }
+
   function saveSetup() {
     const name = setupName.trim() || draft.title || "Setup";
     const nextSetup: SavedSetup = {
@@ -1239,6 +1348,7 @@ export function SetBuilder() {
           setActiveRole(role);
           setRoleFilter(role);
         }}
+        onReplace={replaceTrack}
         onFocusTrack={(id) => {
           setFocusTrackId(id);
           const track = draft.tracks.find((item) => item.id === id);
@@ -1257,6 +1367,8 @@ export function SetBuilder() {
 
       <LibraryPanel
         draft={draft}
+        onMatchLinks={() => void matchStreamingLinks()}
+        matchingLinks={matchingLinks}
         onApply={(next, message) => {
           setDraft(next);
           setError(null);
@@ -1308,8 +1420,13 @@ export function SetBuilder() {
           onMove={moveTrack}
           onReorder={reorderTrack}
           onRemove={removeTrack}
+          onReplace={replaceTrack}
+          onMatchLinks={() => void matchStreamingLinks()}
+          matchingLinks={matchingLinks}
           onFocus={(id) => setFocusTrackId(id)}
           onExportPdf={exportPdf}
+          onExportM3u={exportM3u}
+          onExportRekordbox={exportRekordbox}
           toolbar={renderSetups()}
         />
       ) : (
@@ -1558,11 +1675,35 @@ export function SetBuilder() {
               </div>
               <button
                 type="button"
+                className="btn ghost"
+                onClick={() => void matchStreamingLinks()}
+                disabled={matchingLinks || draft.tracks.length === 0}
+              >
+                {matchingLinks ? "Suche…" : "Spotify-Links"}
+              </button>
+              <button
+                type="button"
                 className="btn"
                 onClick={exportPdf}
                 disabled={mainTracks.length === 0}
               >
                 PDF
+              </button>
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={exportM3u}
+                disabled={draft.tracks.length === 0}
+              >
+                M3U
+              </button>
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={exportRekordbox}
+                disabled={draft.tracks.length === 0}
+              >
+                rekordbox
               </button>
               <button
                 type="button"
@@ -1730,6 +1871,18 @@ export function SetBuilder() {
                         >
                           ↓
                         </button>
+                        {track.role !== "safety" ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setReplaceFor((current) =>
+                                current === track.id ? null : track.id,
+                              )
+                            }
+                          >
+                            Ersatz
+                          </button>
+                        ) : null}
                         <button
                           type="button"
                           className="danger"
@@ -1739,6 +1892,14 @@ export function SetBuilder() {
                         </button>
                       </div>
                     </div>
+                    {replaceFor === track.id ? (
+                      <ReplaceMenu
+                        tracks={draft.tracks}
+                        targetId={track.id}
+                        onReplace={replaceTrack}
+                        onClose={() => setReplaceFor(null)}
+                      />
+                    ) : null}
                     {track.why ? (
                       <p className="why-inline">
                         <strong>Warum hier:</strong> {track.why}
@@ -1753,7 +1914,6 @@ export function SetBuilder() {
                         onChange={(e) =>
                           patchTrack(track.id, {
                             comment: e.target.value,
-                            note: e.target.value,
                           })
                         }
                       />

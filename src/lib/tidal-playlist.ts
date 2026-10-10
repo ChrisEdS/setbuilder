@@ -1,7 +1,10 @@
 import type { SpotifyTrack } from "@/lib/spotify";
 import { getTidalAccessToken } from "@/lib/tidal";
 import { getTidalUserAccessToken } from "@/lib/tidal-auth";
-import { tidalKeyToCamelot } from "@/lib/tidal";
+import {
+  tracksFromTidalPage,
+  type TidalIncludedResource,
+} from "@/lib/tidal-playlist-map";
 
 export function parseTidalPlaylistId(input: string): string | null {
   const trimmed = input.trim();
@@ -17,28 +20,6 @@ export function parseTidalPlaylistId(input: string): string | null {
   }
   return null;
 }
-
-function durationMs(value: unknown): number {
-  if (typeof value === "number") return Math.round(value * 1000);
-  if (typeof value !== "string") return 0;
-  const match = value.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?/);
-  if (!match) return 0;
-  const hours = Number(match[1] || 0);
-  const minutes = Number(match[2] || 0);
-  const seconds = Number(match[3] || 0);
-  return Math.round((hours * 3600 + minutes * 60 + seconds) * 1000);
-}
-
-type TidalTrackAttrs = {
-  title?: string;
-  isrc?: string;
-  duration?: string | number;
-  explicit?: boolean;
-  popularity?: number;
-  bpm?: number;
-  key?: string;
-  keyScale?: string;
-};
 
 async function tidalToken(): Promise<string> {
   return (await getTidalUserAccessToken()) || getTidalAccessToken();
@@ -87,7 +68,7 @@ export async function fetchTidalPlaylist(playlistId: string): Promise<{
     Accept: "application/vnd.api+json",
   };
   const metaRes = await fetch(
-    `https://openapi.tidal.com/v2/playlists/${playlistId}?countryCode=DE&include=items`,
+    `https://openapi.tidal.com/v2/playlists/${playlistId}?countryCode=DE`,
     { headers, cache: "no-store" },
   );
   if (!metaRes.ok) {
@@ -98,61 +79,54 @@ export async function fetchTidalPlaylist(playlistId: string): Promise<{
     );
   }
   const meta = (await metaRes.json()) as {
-    data?: {
-      id?: string;
-      attributes?: { title?: string; name?: string };
-      relationships?: { items?: { data?: Array<{ id: string; type: string }> } };
-    };
-    included?: Array<{
-      id: string;
-      type: string;
-      attributes?: TidalTrackAttrs;
-    }>;
+    data?: { id?: string; attributes?: { title?: string; name?: string } };
   };
   const name =
     meta.data?.attributes?.title ||
     meta.data?.attributes?.name ||
     "Tidal Playlist";
-  let included = meta.included ?? [];
-  if (!included.some((item) => item.type === "tracks")) {
-    const itemsRes = await fetch(
-      `https://openapi.tidal.com/v2/playlists/${playlistId}/relationships/items?countryCode=DE&include=tracks`,
-      { headers, cache: "no-store" },
-    );
-    if (itemsRes.ok) {
-      const items = (await itemsRes.json()) as { included?: typeof included };
-      included = items.included ?? included;
-    }
-  }
-  const tracks: SpotifyTrack[] = [];
-  for (const item of included) {
-    if (item.type !== "tracks" || !item.attributes?.title) continue;
-    const attrs = item.attributes;
-    const key = tidalKeyToCamelot(attrs.key, attrs.keyScale);
-    const bpm =
-      typeof attrs.bpm === "number" && Number.isFinite(attrs.bpm)
-        ? String(Math.round(attrs.bpm))
-        : "";
-    tracks.push({
-      id: `tidal:${item.id}`,
-      name: attrs.title ?? "Ohne Titel",
-      uri: `tidal:track:${item.id}`,
-      durationMs: durationMs(attrs.duration),
-      explicit: Boolean(attrs.explicit),
-      artists: ["Tidal"],
-      album: "Tidal",
-      imageUrl: null,
-      externalUrl: `https://tidal.com/browse/track/${item.id}`,
-      popularity: null,
-      isrc: attrs.isrc?.toUpperCase() ?? null,
-      catalogBpm: bpm,
-      catalogKey: key.camelot || "",
-      catalogPopularity:
-        typeof attrs.popularity === "number" ? attrs.popularity : null,
-    });
-  }
+  const tracks = await fetchTidalPlaylistTracks(playlistId, headers);
   if (!tracks.length) {
     throw new Error("Tidal-Playlist enthält keine lesbaren Tracks.");
   }
   return { id: meta.data?.id || playlistId, name, tracks };
+}
+
+async function fetchTidalPlaylistTracks(
+  playlistId: string,
+  headers: { Authorization: string; Accept: string },
+): Promise<SpotifyTrack[]> {
+  const tracks: SpotifyTrack[] = [];
+  let url: string | null =
+    `https://openapi.tidal.com/v2/playlists/${playlistId}/relationships/items?countryCode=DE&include=items.artists,items.albums&page[limit]=20`;
+  for (let page = 0; page < 40 && url; page++) {
+    const response = await fetchTidalPage(url, headers);
+    if (!response) break;
+    const body = (await response.json()) as {
+      data?: Array<{ id?: string; type?: string }>;
+      included?: TidalIncludedResource[];
+      links?: { next?: string };
+    };
+    const pageTracks = tracksFromTidalPage(body.data ?? [], body.included ?? []);
+    tracks.push(...pageTracks);
+    const next = body.links?.next;
+    if (!next || pageTracks.length === 0) break;
+    url = next.startsWith("http") ? next : `https://openapi.tidal.com/v2${next}`;
+    await new Promise((resolve) => setTimeout(resolve, 120));
+  }
+  return tracks;
+}
+
+async function fetchTidalPage(
+  url: string,
+  headers: { Authorization: string; Accept: string },
+): Promise<Response | null> {
+  let wait = 400;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const response = await fetch(url, { headers, cache: "no-store" });
+    if (response.status !== 429) return response.ok ? response : null;
+    await new Promise((resolve) => setTimeout(resolve, wait));
+    wait *= 2;
+  }
+  return null;
 }
