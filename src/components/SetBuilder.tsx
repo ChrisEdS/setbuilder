@@ -136,8 +136,9 @@ function readAuthNote(): string | null {
   return authNoteCache;
 }
 
+const EMPTY_SETUPS: SavedSetup[] = [];
 let setupsRaw: string | null = null;
-let setupsSnap: SavedSetup[] = [];
+let setupsSnap: SavedSetup[] = EMPTY_SETUPS;
 
 function readSetupsSnapshot(): SavedSetup[] {
   const raw = localStorage.getItem(SETUPS_KEY) || "[]";
@@ -193,7 +194,11 @@ export function SetBuilder() {
   const [isPending, startTransition] = useTransition();
   const [hasSearched, setHasSearched] = useState(false);
   const [playlistUrl, setPlaylistUrl] = useState("");
-  const setups = useSyncExternalStore(subscribeSetups, readSetupsSnapshot, () => []);
+  const setups = useSyncExternalStore(
+    subscribeSetups,
+    readSetupsSnapshot,
+    () => EMPTY_SETUPS,
+  );
   const [setupName, setSetupName] = useState(draft.title);
   const [selectedSetup, setSelectedSetup] = useState("");
   const [spotifyConnected, setSpotifyConnected] = useState<boolean | null>(null);
