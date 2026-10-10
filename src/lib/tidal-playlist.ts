@@ -135,7 +135,7 @@ export async function fetchTidalPlaylist(playlistId: string): Promise<{
         : "";
     tracks.push({
       id: `tidal:${item.id}`,
-      name: attrs.title,
+      name: attrs.title ?? "Ohne Titel",
       uri: `tidal:track:${item.id}`,
       durationMs: durationMs(attrs.duration),
       explicit: Boolean(attrs.explicit),

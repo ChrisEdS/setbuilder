@@ -2,10 +2,11 @@ import { createHash, randomBytes } from "crypto";
 import { promises as fs } from "fs";
 import path from "path";
 import { cookies } from "next/headers";
+import { dataPath } from "@/lib/data-dir";
 
 const STATE_COOKIE = "setform_tidal_state";
-const VERIFIER_FILE = path.join(process.cwd(), ".data", "tidal-oauth.json");
-const TOKEN_FILE = path.join(process.cwd(), ".data", "tidal-tokens.json");
+const VERIFIER_FILE = dataPath("tidal-oauth.json");
+const TOKEN_FILE = dataPath("tidal-tokens.json");
 
 export type TidalUserTokens = {
   accessToken: string;

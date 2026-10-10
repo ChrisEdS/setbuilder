@@ -15,7 +15,13 @@
 
 # next.js
 /.next/
+/.next-standalone/
 /out/
+
+# Mac app build output
+/setform-mac/node_modules/
+/setform-mac/bundle/
+/setform-mac/dist/
 
 # production
 /build

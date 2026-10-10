@@ -2,10 +2,11 @@ import { cookies } from "next/headers";
 import { randomBytes } from "crypto";
 import { promises as fs } from "fs";
 import path from "path";
+import { dataPath } from "@/lib/data-dir";
 
 const TOKEN_COOKIE = "setform_spotify_state";
-const TOKEN_FILE = path.join(process.cwd(), ".data", "spotify-tokens.json");
-const STATE_FILE = path.join(process.cwd(), ".data", "oauth-state.json");
+const TOKEN_FILE = dataPath("spotify-tokens.json");
+const STATE_FILE = dataPath("oauth-state.json");
 
 export type SpotifyUserTokens = {
   accessToken: string;

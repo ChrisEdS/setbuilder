@@ -40,6 +40,10 @@ npm run dev
 
 App: [http://127.0.0.1:4317](http://127.0.0.1:4317)
 
+## Mac (Apple Silicon)
+
+Die native App liegt in [`setform-mac`](setform-mac/README.md). Auf einem M-Series-Mac in diesem Ordner `npm install` und `npm start`. `npm run dist` erzeugt `SETFORM.app`.
+
 ## Hosting bei UD Media
 
 Normale Webhosting-Tarife können SETFORM nicht ausliefern. UD Media erlaubt dort kein Node.js, und die App braucht einen dauerhaften Node-Prozess für Login, Playlist-Import und den Player.

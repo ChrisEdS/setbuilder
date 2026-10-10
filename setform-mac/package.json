@@ -1,0 +1,17 @@
+{
+  "name": "setform-mac",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SETFORM als native App für Apple Silicon",
+  "main": "electron/main.js",
+  "author": "SETFORM",
+  "scripts": {
+    "build": "node scripts/prepare.js",
+    "start": "node scripts/prepare.js && electron .",
+    "dist": "node scripts/prepare.js && node scripts/dist.js"
+  },
+  "devDependencies": {
+    "@electron/packager": "^18.4.4",
+    "electron": "^37.2.0"
+  }
+}
