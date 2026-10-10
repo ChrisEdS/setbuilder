@@ -26,18 +26,27 @@ export function getRedirectUri(): string {
   );
 }
 
-export function getAuthorizeUrl(state: string): string {
+export const SPOTIFY_SCOPES = [
+  "playlist-read-private",
+  "playlist-read-collaborative",
+  "user-read-private",
+  "user-read-email",
+  "user-read-playback-state",
+  "user-modify-playback-state",
+  "streaming",
+];
+
+export function getAuthorizeUrl(
+  state: string,
+  options?: { showDialog?: boolean },
+): string {
   const params = new URLSearchParams({
     client_id: requireEnv("SPOTIFY_CLIENT_ID"),
     response_type: "code",
     redirect_uri: getRedirectUri(),
-    scope: [
-      "playlist-read-private",
-      "playlist-read-collaborative",
-      "user-read-private",
-    ].join(" "),
+    scope: SPOTIFY_SCOPES.join(" "),
     state,
-    show_dialog: "false",
+    show_dialog: options?.showDialog ? "true" : "false",
   });
   return `https://accounts.spotify.com/authorize?${params.toString()}`;
 }
@@ -130,7 +139,10 @@ export async function exchangeCodeForTokens(code: string): Promise<SpotifyUserTo
   return tokens;
 }
 
-async function refreshAccessToken(refreshToken: string): Promise<SpotifyUserTokens> {
+async function refreshAccessToken(
+  refreshToken: string,
+  previousScope?: string,
+): Promise<SpotifyUserTokens> {
   const body = new URLSearchParams({
     grant_type: "refresh_token",
     refresh_token: refreshToken,
@@ -165,7 +177,7 @@ async function refreshAccessToken(refreshToken: string): Promise<SpotifyUserToke
     accessToken: data.access_token,
     refreshToken: data.refresh_token || refreshToken,
     expiresAt: Date.now() + data.expires_in * 1000,
-    scope: data.scope,
+    scope: data.scope || previousScope,
   };
   await saveUserTokens(tokens);
   return tokens;
@@ -176,7 +188,10 @@ export async function getUserAccessToken(): Promise<string | null> {
   if (!current) return null;
   if (current.expiresAt > Date.now() + 30_000) return current.accessToken;
   try {
-    const refreshed = await refreshAccessToken(current.refreshToken);
+    const refreshed = await refreshAccessToken(
+      current.refreshToken,
+      current.scope,
+    );
     return refreshed.accessToken;
   } catch {
     await clearUserTokens();
