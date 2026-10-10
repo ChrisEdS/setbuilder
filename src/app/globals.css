@@ -125,6 +125,175 @@ select {
   box-shadow: var(--shadow);
 }
 
+/* Collapsible explainers */
+.explain-fold {
+  border: 1px solid var(--line);
+  background: #fff;
+  margin-bottom: 1.1rem;
+  padding: 0;
+}
+
+.explain-fold.nested {
+  margin: 0.75rem 0 0;
+  border-color: color-mix(in oklab, var(--line) 80%, transparent);
+  background: color-mix(in oklab, var(--mint) 18%, #fff);
+}
+
+.explain-fold > summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  cursor: pointer;
+  list-style: none;
+  padding: 0.95rem 1.15rem;
+  font-family: var(--font-display), sans-serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--espresso);
+}
+
+.explain-fold > summary::-webkit-details-marker {
+  display: none;
+}
+
+.explain-fold > summary::before {
+  content: "+";
+  display: inline-grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-right: 0.55rem;
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  color: var(--slate);
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.explain-fold[open] > summary::before {
+  content: "–";
+}
+
+.explain-fold > summary span {
+  flex: 1;
+}
+
+.explain-fold > summary em {
+  font-style: normal;
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--slate);
+}
+
+.explain-fold[open] > summary {
+  border-bottom: 1px solid var(--line);
+}
+
+.explain-body {
+  padding: 1rem 1.15rem 1.2rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.explain-body p {
+  margin: 0 0 0.85rem;
+}
+
+.explain-body p:last-child {
+  margin-bottom: 0;
+}
+
+.explain-body strong {
+  color: var(--espresso);
+}
+
+.explain-steps {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.explain-steps li {
+  display: grid;
+  gap: 0.2rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.explain-steps li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.explain-steps strong {
+  font-family: var(--font-display), sans-serif;
+  font-size: 0.98rem;
+  letter-spacing: -0.02em;
+}
+
+.explain-steps span {
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.explain-note {
+  margin: 0.85rem 0 0 !important;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.82rem !important;
+}
+
+.explain-note code {
+  font-size: 0.78rem;
+  background: color-mix(in oklab, var(--mint) 40%, #fff);
+  padding: 0.08rem 0.3rem;
+}
+
+.explain-body ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.role-explain {
+  list-style: none;
+  margin: 0;
+  padding: 0 !important;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.role-explain li {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.role-explain strong {
+  font-family: var(--font-display), sans-serif;
+  font-size: 0.95rem;
+}
+
+.role-explain span {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.import-panel .explain-fold {
+  margin: 0.85rem 0 0;
+  border-color: color-mix(in oklab, var(--slate) 22%, transparent);
+}
+
 .import-panel {
   background:
     linear-gradient(135deg, color-mix(in oklab, var(--mint) 70%, white), color-mix(in oklab, var(--cream) 80%, white));
@@ -1237,12 +1406,17 @@ button {
 .harmonic-path,
 .key-import,
 .library-panel,
-.panel {
+.panel,
+.explain-fold {
   box-shadow: none !important;
   backdrop-filter: none;
   background: #fff;
   border: 1px solid var(--line);
   border-radius: 0;
+}
+
+.explain-fold.nested {
+  background: color-mix(in oklab, var(--mint) 18%, #fff);
 }
 
 .hero-meta {
@@ -1260,10 +1434,13 @@ button {
 .role-crates,
 .harmonic-path,
 .library-panel,
-.principles,
 .import-panel,
 .panel {
   padding: 1.25rem 1.3rem 1.35rem;
+  margin-bottom: 1.25rem;
+}
+
+.explain-fold.principles {
   margin-bottom: 1.25rem;
 }
 
@@ -1576,6 +1753,9 @@ button {
 }
 
 .timeline-details summary {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.55rem;
   cursor: pointer;
   color: var(--slate);
   font-size: 0.72rem;
@@ -1588,6 +1768,24 @@ button {
 }
 
 .timeline-details summary::-webkit-details-marker { display: none; }
+
+.timeline-details summary span {
+  color: var(--espresso);
+}
+
+.timeline-details summary em {
+  font-style: normal;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  font-weight: 500;
+  color: var(--slate);
+  font-size: 0.78rem;
+}
+
+.why-inline strong {
+  color: var(--espresso);
+  font-weight: 600;
+}
 
 .timeline-details[open] {
   padding-top: 0.55rem;

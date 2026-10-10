@@ -205,12 +205,32 @@ export const ARC_GUIDE = [
 ];
 
 export const PREP_PRINCIPLES = [
-  "Dramaturgie statt Playlist: jeder Track verändert die Wahrnehmung des nächsten",
-  "Slot lesen: Warm-up hat keinen Peak — Peak Time peakt spät und kurz",
-  "Wellen statt Rampe: Drive/Density atmen lassen, nicht nur Tempo pushen",
-  "Plan, kein Script — Safety-Alternates für Floor-Reaktionen bereithalten",
-  "Harmonik unterstützt Flow, ersetzt aber keine Energie-Entscheidung",
-  "Phrasing in 16/32/64 — Key allein rettet Chorus-on-Verse nicht",
+  "Dramaturgie statt Playlist: jeder Track verändert, wie der nächste wirkt — Reihenfolge ist Story, nicht nur Sammlung.",
+  "Slot lesen: Warm-up peakt nicht. Peak Time peakt spät und kurz. Closing landet bewusst.",
+  "Wellen statt Rampe: Drive und Density atmen lassen — nicht nur BPM hochdrücken.",
+  "Plan, kein Script: Safety-Alternates bereithalten, wenn der Floor dreht.",
+  "Harmonik stützt den Flow — ersetzt aber keine Energie-Entscheidung.",
+  "Phrasing in 16/32/64: Key allein rettet keinen Chorus-on-Verse-Clash.",
+];
+
+/** How playlist → set extraction works (UI explainer) */
+export const EXTRACT_STEPS: { title: string; body: string }[] = [
+  {
+    title: "1. Auf die Brief-Dauer packen",
+    body: "Tracks werden in Playlist-Reihenfolge (Crate-Order) genommen, bis die Ziel-Minuten voll sind. Der Rest landet als Safety.",
+  },
+  {
+    title: "2. Phasen nach Laufzeit",
+    body: "Open → Lift → Rise → Peak → Release bekommen feste Anteile der Set-Länge. Frühe Crate-Tracks starten eher soft, spätere eher peaken.",
+  },
+  {
+    title: "3. Rollen vergeben",
+    body: "Anchor = Signature/Peak-Momente (mit Abstand). Bridge = Key-/BPM-/Mood-Pivot. Groove = Atem zwischen Peaks. Safety = Plan B aus dem Rest.",
+  },
+  {
+    title: "4. Harmonik optional nachziehen",
+    body: "Innerhalb einer Phase sortiert SETFORM nach Camelot + kleinen BPM-Schritten. Ein bewusster Kontrast vor dem Peak-Anchor bleibt erlaubt.",
+  },
 ];
 
 export function formatDuration(ms: number): string {

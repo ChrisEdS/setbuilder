@@ -35,9 +35,30 @@ export function RoleCrates({
   return (
     <section className="role-crates" aria-label="Crate-Rollen Übersicht">
       <div className="panel-head">
-        <h2>Crate-Rollen</h2>
-        <p>Tracks nach Rolle — mit Phase, Harmonic und Why</p>
+        <div>
+          <h2>Crate-Rollen</h2>
+          <p className="timeline-filter">
+            Anchor · Bridge · Groove · Safety — klicken filtert die Timeline
+          </p>
+        </div>
       </div>
+
+      <details className="explain-fold nested">
+        <summary>
+          <span>Rollen kurz erklärt</span>
+          <em>Aufklappen</em>
+        </summary>
+        <div className="explain-body">
+          <ul className="role-explain">
+            {TRACK_ROLES.map((role) => (
+              <li key={role.id}>
+                <strong>{role.label}</strong>
+                <span>{role.hint}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </details>
 
       <div className="crate-columns">
         {TRACK_ROLES.map((role) => {

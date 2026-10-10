@@ -18,6 +18,7 @@ import {
   ARC_GUIDE,
   DEFAULT_SET,
   PHASES,
+  EXTRACT_STEPS,
   PREP_PRINCIPLES,
   SLOT_KINDS,
   TRACK_ROLES,
@@ -611,21 +612,51 @@ export function SetBuilder() {
         {error ? <p className="banner error">{error}</p> : null}
         {status ? <p className="banner status">{status}</p> : null}
 
-        <p className="guide-line">
-          Wichtig: In Spotify Dev Mode gehen nur <strong>eigene</strong> oder
-          collaborative Playlists — keine fremden/editorial Charts. Redirect URI:{" "}
-          <code>{redirectUri}</code>
-        </p>
+        <details className="explain-fold">
+          <summary>
+            <span>So funktioniert die Extraktion</span>
+            <em>Aufklappen</em>
+          </summary>
+          <div className="explain-body">
+            <p>
+              SETFORM baut aus deiner Spotify-Playlist kein zufälliges Mix — es
+              formt eine <strong>Dramaturgie</strong> nach Brief-Dauer und Slot.
+              Die Playlist-Reihenfolge bleibt die Crate-Priorität.
+            </p>
+            <ol className="explain-steps">
+              {EXTRACT_STEPS.map((step) => (
+                <li key={step.title}>
+                  <strong>{step.title}</strong>
+                  <span>{step.body}</span>
+                </li>
+              ))}
+            </ol>
+            <p className="explain-note">
+              Spotify Dev Mode: nur <strong>eigene</strong> oder collaborative
+              Playlists — keine fremden/editorial Charts. Redirect URI:{" "}
+              <code>{redirectUri}</code>
+            </p>
+          </div>
+        </details>
       </section>
 
-      <section className="principles" aria-label="Advanced prep tips">
-        <h2>Dramaturgie-Prinzipien</h2>
-        <ul>
-          {PREP_PRINCIPLES.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-      </section>
+      <details className="explain-fold principles" aria-label="Dramaturgie-Prinzipien">
+        <summary>
+          <span>Dramaturgie-Prinzipien</span>
+          <em>Aufklappen</em>
+        </summary>
+        <div className="explain-body">
+          <p>
+            Diese Regeln steuern, wie SETFORM die Energiekurve denkt — und worauf
+            du beim Feinschliff in der Timeline achten solltest.
+          </p>
+          <ul>
+            {PREP_PRINCIPLES.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      </details>
 
       <section className="curve" aria-label="Energy curve">
         <div className="curve-head">
@@ -895,8 +926,15 @@ export function SetBuilder() {
                   </div>
 
                   <details className="timeline-details">
-                    <summary>Edit</summary>
-                    {track.why ? <p className="why-inline">{track.why}</p> : null}
+                    <summary>
+                      <span>Details</span>
+                      <em>Phase · Rolle · Key · Cue</em>
+                    </summary>
+                    {track.why ? (
+                      <p className="why-inline" title={track.why}>
+                        <strong>Warum hier:</strong> {track.why}
+                      </p>
+                    ) : null}
                     <div className="set-controls">
                       <select
                         value={track.phase}

@@ -23,7 +23,12 @@ export function HarmonicPath({ tracks, onHarmonize }: Props) {
   return (
     <section className="harmonic-path" aria-label="Harmonic path">
       <div className="panel-head">
-        <h2>Harmonic Path</h2>
+        <div>
+          <h2>Harmonic Path</h2>
+          <p className="timeline-filter">
+            Camelot-Nachbarschaft entlang der Performance-Tracks
+          </p>
+        </div>
         <div className="actions">
           <button
             type="button"
@@ -117,25 +122,38 @@ export function HarmonicPath({ tracks, onHarmonize }: Props) {
         </ol>
       )}
 
-      <div className="camelot-legend" aria-label="Camelot Farben">
-        {Array.from({ length: 12 }, (_, i) => {
-          const n = i + 1;
-          const a = camelotColor(`${n}A`)!;
-          const b = camelotColor(`${n}B`)!;
-          return (
-            <span key={n} className="legend-pair">
-              <i style={{ background: a.solid }} title={`${n}A`} />
-              <i style={{ background: b.solid }} title={`${n}B`} />
-              <em>{n}</em>
-            </span>
-          );
-        })}
-      </div>
-
-      <p className="guide-line">
-        Farben folgen dem Camelot Wheel (1–12). A = Moll (kräftiger), B = Dur
-        (heller). Keys in der Timeline setzen, dann sortieren.
-      </p>
+      <details className="explain-fold nested">
+        <summary>
+          <span>Camelot &amp; Mix-Score erklärt</span>
+          <em>Aufklappen</em>
+        </summary>
+        <div className="explain-body">
+          <p>
+            <strong>Mix-Score</strong> misst, wie gut aufeinanderfolgende Keys
+            zusammenpassen (gleiche Key, Relative, ±1 Camelot = gut). Clashes
+            sind große Sprünge — oft Absicht vor einem Peak, sonst Feinschliff.
+          </p>
+          <p>
+            Farben folgen dem Camelot Wheel (1–12). <strong>A</strong> = Moll
+            (kräftiger), <strong>B</strong> = Dur (heller). Keys in der Timeline
+            oder Key Library setzen, dann „Harmonisch sortieren“.
+          </p>
+          <div className="camelot-legend" aria-label="Camelot Farben">
+            {Array.from({ length: 12 }, (_, i) => {
+              const n = i + 1;
+              const a = camelotColor(`${n}A`)!;
+              const b = camelotColor(`${n}B`)!;
+              return (
+                <span key={n} className="legend-pair">
+                  <i style={{ background: a.solid }} title={`${n}A`} />
+                  <i style={{ background: b.solid }} title={`${n}B`} />
+                  <em>{n}</em>
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      </details>
     </section>
   );
 }
