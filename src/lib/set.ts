@@ -26,6 +26,13 @@ export type SetPhase = {
   share: number;
 };
 
+export type TrackSource =
+  | "spotify"
+  | "tidal"
+  | "soundcloud"
+  | "beatport"
+  | "manual";
+
 export type SetTrack = {
   id: string;
   name: string;
@@ -43,6 +50,10 @@ export type SetTrack = {
   /** Soft energy prior 0–1 (crate position / analysis) */
   energy?: number;
   note: string;
+  /** Free-form DJ comment for manual arrange */
+  comment?: string;
+  /** Where the track link came from */
+  source?: TrackSource;
   /** Why this track got this role */
   why?: string;
   safetyAlt: string;

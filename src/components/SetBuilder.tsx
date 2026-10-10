@@ -9,6 +9,7 @@ import {
 } from "react";
 import { HarmonicPath } from "@/components/HarmonicPath";
 import { LibraryPanel } from "@/components/LibraryPanel";
+import { ManualArrange } from "@/components/ManualArrange";
 import { PreviewPlayer } from "@/components/PreviewPlayer";
 import { RoleCrates } from "@/components/RoleCrates";
 import { openSetPdfExport } from "@/lib/export-pdf";
@@ -49,15 +50,27 @@ type SearchTrack = {
   externalUrl: string;
 };
 
-const STORAGE_KEY = "setform-draft-v3";
+const STORAGE_KEY = "setform-draft-v4";
 const DRAFT_EVENT = "setform-draft";
 
 let cachedRaw: string | null | undefined;
 let cachedDraft: SetDraft = DEFAULT_SET;
 
+function normalizeTrack(track: SetTrack): SetTrack {
+  return {
+    ...track,
+    comment: track.comment ?? "",
+    source: track.source ?? "spotify",
+    note: track.note ?? "",
+    safetyAlt: track.safetyAlt ?? "",
+  };
+}
+
 function readStoredDraft(): SetDraft {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw =
+      localStorage.getItem(STORAGE_KEY) ??
+      localStorage.getItem("setform-draft-v3");
     if (raw === cachedRaw) return cachedDraft;
     cachedRaw = raw;
     if (!raw) {
@@ -73,6 +86,7 @@ function readStoredDraft(): SetDraft {
       ...DEFAULT_SET,
       ...parsed,
       slotKind: parsed.slotKind ?? "peaktime",
+      tracks: (parsed.tracks ?? []).map(normalizeTrack),
     };
     return cachedDraft;
   } catch {
@@ -124,6 +138,9 @@ export function SetBuilder() {
   const [isExtracting, setIsExtracting] = useState(false);
   const [focusTrackId, setFocusTrackId] = useState<string | null>(null);
   const [roleFilter, setRoleFilter] = useState<TrackRole | "all">("all");
+  const [workspaceMode, setWorkspaceMode] = useState<"auto" | "manual">(
+    "manual",
+  );
   const [myPlaylists, setMyPlaylists] = useState<
     Array<{
       id: string;
@@ -427,6 +444,8 @@ export function SetBuilder() {
       bpm: "",
       keyCamelot: "",
       note: "",
+      comment: "",
+      source: "spotify",
       safetyAlt: "",
     };
 
@@ -437,6 +456,17 @@ export function SetBuilder() {
     setStatus(
       `+ ${track.name} → ${PHASES.find((p) => p.id === activePhase)?.label} / ${activeRole}`,
     );
+  }
+
+  function addTracksBulk(incoming: SetTrack[]) {
+    setDraft((current) => {
+      const seen = new Set(current.tracks.map((track) => track.id));
+      const fresh = incoming
+        .map(normalizeTrack)
+        .filter((track) => !seen.has(track.id));
+      if (!fresh.length) return current;
+      return { ...current, tracks: [...current.tracks, ...fresh] };
+    });
   }
 
   function addAllResults() {
@@ -462,6 +492,8 @@ export function SetBuilder() {
       bpm: "",
       keyCamelot: "",
       note: "",
+      comment: "",
+      source: "spotify" as const,
       safetyAlt: "",
     }));
     setDraft((current) => ({
@@ -855,6 +887,43 @@ export function SetBuilder() {
         onClose={() => setFocusTrackId(null)}
       />
 
+      <div className="workspace-switch" role="tablist" aria-label="Workspace">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={workspaceMode === "manual"}
+          className={
+            workspaceMode === "manual" ? "seg-item active" : "seg-item"
+          }
+          onClick={() => setWorkspaceMode("manual")}
+        >
+          Manual Arrange
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={workspaceMode === "auto"}
+          className={workspaceMode === "auto" ? "seg-item active" : "seg-item"}
+          onClick={() => setWorkspaceMode("auto")}
+        >
+          Crate + Timeline
+        </button>
+      </div>
+
+      {workspaceMode === "manual" ? (
+        <ManualArrange
+          tracks={draft.tracks}
+          positions={positions}
+          activePhase={activePhase}
+          activeRole={activeRole}
+          focusedTrackId={focusTrackId}
+          onAddTracks={addTracksBulk}
+          onPatch={patchTrack}
+          onMove={moveTrack}
+          onRemove={removeTrack}
+          onFocus={(id) => setFocusTrackId(id)}
+        />
+      ) : (
       <div className="workspace">
         <section className="panel search-panel">
           <div className="panel-head">
@@ -1204,6 +1273,7 @@ export function SetBuilder() {
           )}
         </section>
       </div>
+      )}
     </div>
   );
 }

@@ -1,0 +1,369 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { sourceLabel } from "@/lib/music-link";
+import {
+  PHASES,
+  TRACK_ROLES,
+  formatDuration,
+  type SetPhaseId,
+  type SetTrack,
+  type TrackRole,
+  type TrackSource,
+} from "@/lib/set";
+
+type ResolvedTrack = {
+  id: string;
+  name: string;
+  artists: string[];
+  album: string;
+  durationMs: number;
+  uri: string;
+  externalUrl: string;
+  imageUrl: string | null;
+  source: TrackSource;
+  bpm?: string;
+  keyCamelot?: string;
+};
+
+type Props = {
+  tracks: SetTrack[];
+  positions: Map<string, string>;
+  activePhase: SetPhaseId;
+  activeRole: TrackRole;
+  onAddTracks: (tracks: SetTrack[]) => void;
+  onPatch: (id: string, patch: Partial<SetTrack>) => void;
+  onMove: (id: string, direction: -1 | 1) => void;
+  onRemove: (id: string) => void;
+  onFocus?: (id: string) => void;
+  focusedTrackId?: string | null;
+};
+
+export function ManualArrange({
+  tracks,
+  positions,
+  activePhase,
+  activeRole,
+  onAddTracks,
+  onPatch,
+  onMove,
+  onRemove,
+  onFocus,
+  focusedTrackId,
+}: Props) {
+  const [url, setUrl] = useState("");
+  const [title, setTitle] = useState("");
+  const [artist, setArtist] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  const performance = tracks.filter((track) => track.role !== "safety");
+
+  function toSetTrack(track: ResolvedTrack): SetTrack {
+    return {
+      id: track.id,
+      name: track.name,
+      artists: track.artists,
+      album: track.album,
+      durationMs: track.durationMs,
+      uri: track.uri,
+      externalUrl: track.externalUrl,
+      imageUrl: track.imageUrl,
+      phase: activePhase,
+      role: activeRole,
+      transition: "unset",
+      bpm: track.bpm || "",
+      keyCamelot: track.keyCamelot || "",
+      note: "",
+      comment: "",
+      source: track.source,
+      safetyAlt: "",
+    };
+  }
+
+  function addManualEntry() {
+    const name = title.trim();
+    if (!name) {
+      setError("Titel fehlt.");
+      return;
+    }
+    const link = url.trim();
+    const id = `manual:${Date.now().toString(36)}`;
+    const next: SetTrack = {
+      id,
+      name,
+      artists: [artist.trim() || "Unknown"],
+      album: "Manual",
+      durationMs: 0,
+      uri: link || id,
+      externalUrl: link || "",
+      imageUrl: null,
+      phase: activePhase,
+      role: activeRole,
+      transition: "unset",
+      bpm: "",
+      keyCamelot: "",
+      note: "",
+      comment: "",
+      source: "manual",
+      safetyAlt: "",
+    };
+    onAddTracks([next]);
+    setTitle("");
+    setArtist("");
+    setUrl("");
+    setError(null);
+    setStatus(`+ ${name} manuell ergänzt`);
+  }
+
+  function importLink() {
+    const trimmed = url.trim();
+    if (!trimmed) {
+      setError("Link von Spotify, Tidal, SoundCloud oder Beatport einfügen.");
+      return;
+    }
+    setError(null);
+    setStatus(null);
+    startTransition(async () => {
+      try {
+        const response = await fetch("/api/resolve-link", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: trimmed }),
+        });
+        const data = (await response.json()) as {
+          tracks?: ResolvedTrack[];
+          label?: string;
+          message?: string;
+          error?: string;
+        };
+        if (!response.ok) {
+          throw new Error(data.error || "Link konnte nicht geladen werden.");
+        }
+        const incoming = (data.tracks ?? []).map(toSetTrack);
+        if (!incoming.length) {
+          throw new Error("Keine Tracks im Link gefunden.");
+        }
+        onAddTracks(incoming);
+        setUrl("");
+        setStatus(
+          data.message ||
+            `+ ${incoming.length} von ${sourceLabel(incoming[0]?.source)} geladen`,
+        );
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Link konnte nicht geladen werden.",
+        );
+      }
+    });
+  }
+
+  return (
+    <section className="panel manual-panel" aria-label="Manual Arrange">
+      <div className="panel-head">
+        <div>
+          <h2>Manual Arrange</h2>
+          <p className="timeline-filter">
+            Links aus Spotify · Tidal · SoundCloud · Beatport — reorder &amp;
+            Comments
+          </p>
+        </div>
+        <p className="timeline-filter">
+          {performance.length} Tracks · aktiv{" "}
+          {PHASES.find((p) => p.id === activePhase)?.label}/{activeRole}
+        </p>
+      </div>
+
+      <div className="manual-add">
+        <div className="manual-add-grid">
+          <label>
+            <span>Track-Link</span>
+            <input
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="spotify / tidal / soundcloud / beatport URL"
+              aria-label="Music link"
+            />
+          </label>
+          <button
+            type="button"
+            className="btn"
+            disabled={pending}
+            onClick={importLink}
+          >
+            {pending ? "Lade…" : "Link laden"}
+          </button>
+        </div>
+
+        <div className="manual-add-grid manual-manual-row">
+          <label>
+            <span>Oder manuell</span>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Titel"
+              aria-label="Manual title"
+            />
+          </label>
+          <label>
+            <span>Artist</span>
+            <input
+              value={artist}
+              onChange={(e) => setArtist(e.target.value)}
+              placeholder="Artist"
+              aria-label="Manual artist"
+            />
+          </label>
+          <button type="button" className="btn ghost" onClick={addManualEntry}>
+            Eintrag +
+          </button>
+        </div>
+
+        {error ? <p className="banner error">{error}</p> : null}
+        {status ? <p className="banner status">{status}</p> : null}
+      </div>
+
+      {tracks.length === 0 ? (
+        <div className="empty">
+          <p>Noch leer.</p>
+          <p>
+            Link einfügen oder Titel/Artist tippen — dann sortieren und Comments
+            schreiben.
+          </p>
+        </div>
+      ) : (
+        <ol className="manual-list">
+          {tracks.map((track, index) => {
+            const focused = focusedTrackId === track.id;
+            return (
+              <li
+                key={track.id}
+                className={focused ? "manual-row focused" : "manual-row"}
+                id={`manual-${track.id}`}
+              >
+                <div className="manual-row-main">
+                  <button
+                    type="button"
+                    className="manual-select"
+                    onClick={() => onFocus?.(track.id)}
+                  >
+                    <span className="set-index">
+                      {positions.get(track.id) ?? index + 1}
+                    </span>
+                    {track.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={track.imageUrl} alt="" width={44} height={44} />
+                    ) : (
+                      <div className="art-fallback sm" />
+                    )}
+                    <span className="manual-copy">
+                      <strong>{track.name}</strong>
+                      <span>
+                        {track.artists.join(", ")}
+                        {track.durationMs
+                          ? ` · ${formatDuration(track.durationMs)}`
+                          : ""}
+                      </span>
+                    </span>
+                  </button>
+
+                  <div className="manual-meta">
+                    <em className={`source-pill source-${track.source || "manual"}`}>
+                      {sourceLabel(track.source)}
+                    </em>
+                    <select
+                      value={track.phase}
+                      onChange={(e) =>
+                        onPatch(track.id, {
+                          phase: e.target.value as SetPhaseId,
+                        })
+                      }
+                      aria-label={`Phase ${track.name}`}
+                    >
+                      {PHASES.map((phase) => (
+                        <option key={phase.id} value={phase.id}>
+                          {phase.label}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={track.role}
+                      onChange={(e) =>
+                        onPatch(track.id, {
+                          role: e.target.value as TrackRole,
+                        })
+                      }
+                      aria-label={`Rolle ${track.name}`}
+                    >
+                      {TRACK_ROLES.map((role) => (
+                        <option key={role.id} value={role.id}>
+                          {role.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="timeline-tools">
+                    <button type="button" onClick={() => onMove(track.id, -1)}>
+                      ↑
+                    </button>
+                    <button type="button" onClick={() => onMove(track.id, 1)}>
+                      ↓
+                    </button>
+                    <button
+                      type="button"
+                      className="danger"
+                      onClick={() => onRemove(track.id)}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+
+                <label className="manual-comment">
+                  <span>Comment</span>
+                  <textarea
+                    value={track.comment || ""}
+                    rows={2}
+                    placeholder="Cue, Energy, Vocal rein, Floor-Notiz…"
+                    onChange={(e) =>
+                      onPatch(track.id, { comment: e.target.value })
+                    }
+                  />
+                </label>
+
+                <div className="manual-extra">
+                  <input
+                    value={track.bpm}
+                    onChange={(e) => onPatch(track.id, { bpm: e.target.value })}
+                    placeholder="BPM"
+                    aria-label={`BPM ${track.name}`}
+                  />
+                  <input
+                    value={track.keyCamelot}
+                    onChange={(e) =>
+                      onPatch(track.id, { keyCamelot: e.target.value })
+                    }
+                    placeholder="Key"
+                    aria-label={`Key ${track.name}`}
+                  />
+                  {track.externalUrl ? (
+                    <a
+                      href={track.externalUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="timeline-link"
+                    >
+                      Öffnen
+                    </a>
+                  ) : null}
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </section>
+  );
+}
