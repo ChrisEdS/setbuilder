@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   applyKeyImport,
   applyKeyImportRows,
@@ -22,6 +22,8 @@ type LibraryRow = {
   key: string;
   bpm: string;
 };
+
+type SourceTab = "rekordbox" | "tidal" | "csv" | "spotify";
 
 const EXAMPLE = `Artist,Title,Key,BPM
 Floating Points,Ratio - Edit,8A,122
@@ -45,6 +47,9 @@ export function LibraryPanel({ draft, onApply }: Props) {
   const [query, setQuery] = useState("");
   const [libraryRows, setLibraryRows] = useState<LibraryRow[]>([]);
   const [spotifyNote, setSpotifyNote] = useState<string | null>(null);
+  const [tidalNote, setTidalNote] = useState<string | null>(null);
+  const [tidalConfigured, setTidalConfigured] = useState<boolean | null>(null);
+  const [source, setSource] = useState<SourceTab>("rekordbox");
 
   const keyStats = useMemo(() => {
     const main = performanceTracks(draft.tracks);
@@ -67,8 +72,23 @@ export function LibraryPanel({ draft, onApply }: Props) {
       .slice(0, 48);
   }, [libraryRows, query]);
 
-  function applyText(source: string) {
-    const result = applyKeyImport(draft, source);
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/enrich/tidal")
+      .then((response) => response.json())
+      .then((data: { configured?: boolean }) => {
+        if (!cancelled) setTidalConfigured(Boolean(data.configured));
+      })
+      .catch(() => {
+        if (!cancelled) setTidalConfigured(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function applyText(sourceText: string) {
+    const result = applyKeyImport(draft, sourceText);
     if (!result.rows) {
       onApply(
         draft,
@@ -117,6 +137,70 @@ export function LibraryPanel({ draft, onApply }: Props) {
     }
   }
 
+  async function tryTidalEnrich() {
+    const tracks = performanceTracks(draft.tracks).slice(0, 40);
+    if (!tracks.length) {
+      setTidalNote("Zuerst ein Set extrahieren.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const response = await fetch("/api/enrich/tidal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tracks: tracks.map((track) => ({
+            id: track.id,
+            name: track.name,
+            artists: track.artists,
+          })),
+        }),
+      });
+      const data = (await response.json()) as {
+        available?: boolean;
+        message?: string;
+        enrichments?: Array<{
+          spotifyId: string;
+          keyCamelot: string;
+          bpm: string;
+        }>;
+      };
+
+      const enrichments = data.enrichments ?? [];
+      if (!data.available || enrichments.length === 0) {
+        const message =
+          data.message ||
+          "Tidal Keys nicht verfügbar — Client-IDs setzen oder rekordbox nutzen.";
+        setTidalNote(message);
+        onApply(draft, message);
+        return;
+      }
+
+      const byId = new Map(
+        enrichments.map((item) => [item.spotifyId, item] as const),
+      );
+      const nextTracks = draft.tracks.map((track) => {
+        const hit = byId.get(track.id);
+        if (!hit) return track;
+        return {
+          ...track,
+          keyCamelot: hit.keyCamelot || track.keyCamelot,
+          bpm: hit.bpm || track.bpm,
+        };
+      });
+      const message =
+        data.message || `Tidal: ${enrichments.length} Keys übernommen`;
+      setTidalNote(message);
+      onApply({ ...draft, tracks: nextTracks }, message);
+    } catch {
+      const message = "Tidal Enrichment fehlgeschlagen.";
+      setTidalNote(message);
+      onApply(draft, message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function trySpotifyEnrich() {
     setBusy(true);
     try {
@@ -160,10 +244,42 @@ export function LibraryPanel({ draft, onApply }: Props) {
     keyStats.total === 0
       ? "Noch kein Set — zuerst Playlist extrahieren"
       : keyStats.share === 0
-        ? "Keys fehlen noch — rekordbox XML laden"
+        ? "Keys fehlen noch"
         : keyStats.share < 100
           ? `${keyStats.keyed} von ${keyStats.total} Tracks mit Key`
           : "Alle Performance-Tracks haben Keys";
+
+  const sources: {
+    id: SourceTab;
+    label: string;
+    hint: string;
+  }[] = [
+    {
+      id: "rekordbox",
+      label: "rekordbox",
+      hint: "XML · CSV · DB",
+    },
+    {
+      id: "tidal",
+      label: "Tidal",
+      hint:
+        tidalConfigured === null
+          ? "…"
+          : tidalConfigured
+            ? "Catalog Keys"
+            : "IDs nötig",
+    },
+    {
+      id: "csv",
+      label: "CSV",
+      hint: "Paste",
+    },
+    {
+      id: "spotify",
+      label: "Spotify",
+      hint: "oft gesperrt",
+    },
+  ];
 
   return (
     <section className="library-panel" aria-label="Key Library">
@@ -175,7 +291,7 @@ export function LibraryPanel({ draft, onApply }: Props) {
         <div className="library-meter" aria-label="Key-Abdeckung">
           <strong>{keyStats.share}%</strong>
           <span>
-            {keyStats.keyed}/{keyStats.total || "—"} Keys
+            {keyStats.keyed}/{keyStats.total || "—"}
           </span>
         </div>
       </div>
@@ -187,113 +303,160 @@ export function LibraryPanel({ draft, onApply }: Props) {
         aria-valuemin={0}
         aria-valuemax={100}
       >
-        <i style={{ width: `${Math.max(keyStats.share, keyStats.total ? 2 : 0)}%` }} />
+        <i
+          style={{
+            width: `${Math.max(keyStats.share, keyStats.total ? 2 : 0)}%`,
+          }}
+        />
       </div>
 
-      <div className="library-primary">
-        <div className="library-primary-copy">
-          <span className="library-badge">Empfohlen</span>
-          <h3>rekordbox Collection</h3>
-          <p>
-            Exportiere deine Collection als XML und match Key/BPM per
-            Artist/Title aufs Spotify-Set. Unverschlüsselte{" "}
-            <code>master.db</code> und CSV gehen auch.
-          </p>
-        </div>
-        <div className="library-primary-actions">
-          <label
-            className={
-              "btn file-btn library-file" + (busy ? " is-busy" : "")
-            }
+      <div className="seg library-source-seg" role="tablist" aria-label="Key-Quelle">
+        {sources.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            role="tab"
+            aria-selected={source === item.id}
+            className={source === item.id ? "seg-item active" : "seg-item"}
+            onClick={() => setSource(item.id)}
           >
-            {busy ? "Lade…" : "Collection laden"}
-            <input
-              type="file"
-              accept=".xml,.db,.sqlite,.csv,.txt,.tsv"
-              hidden
-              disabled={busy}
-              onChange={(event) => {
-                void onRekordboxFile(event.target.files?.[0] ?? null);
-                event.currentTarget.value = "";
-              }}
-            />
-          </label>
-          <p className="library-path">
-            rekordbox → File → <strong>Export Collection in XML…</strong>
-            {libraryCount != null ? (
-              <>
-                {" "}
-                · Index <strong>{libraryCount}</strong>
-              </>
-            ) : null}
-          </p>
-        </div>
+            {item.label}
+            <i>{item.hint}</i>
+          </button>
+        ))}
       </div>
 
-      <div className="library-folds">
-        <details className="explain-fold nested">
-          <summary>
-            <span>Spotify Audio Features</span>
-            <em>Meist gesperrt</em>
-          </summary>
-          <div className="explain-body">
-            <p>
-              Key/BPM über Spotify Audio Features sind für Dev-Mode-Apps
-              aktuell blockiert. Kurz prüfen — Fallback bleibt rekordbox.
-            </p>
-            <div className="library-inline-actions">
-              <button
-                type="button"
-                className="btn ghost"
-                disabled={busy || draft.tracks.length === 0}
-                onClick={() => void trySpotifyEnrich()}
-              >
-                Status prüfen
-              </button>
-              {spotifyNote ? (
-                <span className="library-inline-status">{spotifyNote}</span>
+      <div className="library-source-pane" role="tabpanel">
+        {source === "rekordbox" ? (
+          <div className="library-pane-grid">
+            <div>
+              <h3>rekordbox Collection</h3>
+              <p>
+                Empfohlen: Collection als XML exportieren. Keys/BPM werden per
+                Artist/Title aufs Spotify-Set gematcht. Unverschlüsselte{" "}
+                <code>master.db</code> und CSV gehen auch.
+              </p>
+              <p className="library-path">
+                rekordbox → File → <strong>Export Collection in XML…</strong>
+                {libraryCount != null ? (
+                  <>
+                    {" "}
+                    · Index <strong>{libraryCount}</strong>
+                  </>
+                ) : null}
+              </p>
+            </div>
+            <label
+              className={
+                "btn file-btn library-file" + (busy ? " is-busy" : "")
+              }
+            >
+              {busy ? "Lade…" : "Collection laden"}
+              <input
+                type="file"
+                accept=".xml,.db,.sqlite,.csv,.txt,.tsv"
+                hidden
+                disabled={busy}
+                onChange={(event) => {
+                  void onRekordboxFile(event.target.files?.[0] ?? null);
+                  event.currentTarget.value = "";
+                }}
+              />
+            </label>
+          </div>
+        ) : null}
+
+        {source === "tidal" ? (
+          <div className="library-pane-grid">
+            <div>
+              <h3>Tidal Catalog</h3>
+              <p>
+                Tidal liefert Key, Scale und BPM. Matching zuerst per{" "}
+                <strong>ISRC</strong> (über Spotify-Track-Metadaten), sonst
+                Artist/Title — Ergebnis als Camelot + BPM im Set.
+              </p>
+              <p className="library-path">
+                {tidalConfigured
+                  ? "Client Credentials gesetzt."
+                  : "TIDAL_CLIENT_ID + TIDAL_CLIENT_SECRET in .env.local (developer.tidal.com)."}
+              </p>
+              {tidalNote ? (
+                <p className="library-inline-status">{tidalNote}</p>
               ) : null}
             </div>
+            <button
+              type="button"
+              className="btn library-file"
+              disabled={
+                busy || draft.tracks.length === 0 || tidalConfigured === false
+              }
+              onClick={() => void tryTidalEnrich()}
+            >
+              {busy ? "Lade…" : "Keys von Tidal holen"}
+            </button>
           </div>
-        </details>
+        ) : null}
 
-        <details className="explain-fold nested">
-          <summary>
-            <span>CSV / Paste</span>
-            <em>Mixed In Key · Serato</em>
-          </summary>
-          <div className="explain-body">
-            <p>
-              Eine Zeile pro Track: Artist, Title, Key, BPM. Camelot (
-              <code>8A</code>), Open Key oder klassisch (<code>Am</code>,{" "}
-              <code>C</code>) werden erkannt.
-            </p>
-            <div className="library-inline-actions">
-              <button
-                type="button"
-                className="btn ghost"
-                onClick={() => setText(EXAMPLE)}
-              >
-                Beispiel laden
-              </button>
-              <button
-                type="button"
-                className="btn"
-                disabled={!text.trim() || draft.tracks.length === 0}
-                onClick={() => applyText(text)}
-              >
-                Keys matchen
-              </button>
+        {source === "csv" ? (
+          <div className="library-csv-pane">
+            <div className="library-pane-grid">
+              <div>
+                <h3>CSV / Paste</h3>
+                <p>
+                  Mixed In Key, Serato oder manuell — Camelot (<code>8A</code>),
+                  Open Key oder <code>Am</code>/<code>C</code>.
+                </p>
+              </div>
+              <div className="library-inline-actions">
+                <button
+                  type="button"
+                  className="btn ghost"
+                  onClick={() => setText(EXAMPLE)}
+                >
+                  Beispiel
+                </button>
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={!text.trim() || draft.tracks.length === 0}
+                  onClick={() => applyText(text)}
+                >
+                  Keys matchen
+                </button>
+              </div>
             </div>
             <textarea
               value={text}
               onChange={(event) => setText(event.target.value)}
-              rows={4}
+              rows={5}
               placeholder={"Artist,Title,Key,BPM\n…"}
               aria-label="Key CSV Paste"
             />
           </div>
-        </details>
+        ) : null}
+
+        {source === "spotify" ? (
+          <div className="library-pane-grid">
+            <div>
+              <h3>Spotify Audio Features</h3>
+              <p>
+                Key/BPM über Audio Features sind für Dev-Mode-Apps meist
+                gesperrt. Tidal oder rekordbox sind die praktikablen Quellen.
+              </p>
+              {spotifyNote ? (
+                <p className="library-inline-status">{spotifyNote}</p>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              className="btn ghost library-file"
+              disabled={busy || draft.tracks.length === 0}
+              onClick={() => void trySpotifyEnrich()}
+            >
+              Status prüfen
+            </button>
+          </div>
+        ) : null}
       </div>
 
       {libraryRows.length > 0 ? (
@@ -335,10 +498,10 @@ export function LibraryPanel({ draft, onApply }: Props) {
         </div>
       ) : (
         <div className="library-empty">
-          <strong>Noch kein Index</strong>
+          <strong>Noch kein rekordbox-Index</strong>
           <span>
-            Lade eine rekordbox-XML — danach kannst du hier suchen und erneut
-            matchen.
+            Optional — nach XML-Import kannst du hier suchen und erneut matchen.
+            Tidal braucht keinen Index.
           </span>
         </div>
       )}

@@ -555,6 +555,25 @@ select {
   background: var(--paper-2);
 }
 
+.crate-title-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.4rem;
+  align-items: start;
+}
+
+.crate-set-num {
+  font-style: normal;
+  font-family: var(--font-display), sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--slate);
+  padding-top: 0.15rem;
+  min-width: 1.4rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .crate-card-body strong {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -934,6 +953,32 @@ select {
   margin-bottom: 0.85rem;
 }
 
+.crate-mode-seg {
+  margin: 0 0 0.75rem;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.crate-source-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+  margin: 0 0 0.75rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--line);
+  background: color-mix(in oklab, var(--mint) 28%, #fff);
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.crate-source-bar span {
+  font-weight: 600;
+  color: var(--espresso);
+}
+
 button {
   cursor: pointer;
 }
@@ -1244,63 +1289,77 @@ button {
   transition: width 320ms ease;
 }
 
-.library-primary {
+.library-source-seg {
+  width: 100%;
+  margin-bottom: 0.75rem;
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.25rem;
+  padding: 0.25rem;
+}
+
+.library-source-seg .seg-item {
+  display: grid;
+  gap: 0.12rem;
+  justify-items: center;
+  padding: 0.55rem 0.35rem !important;
+  text-align: center;
+  line-height: 1.15;
+}
+
+.library-source-seg .seg-item i {
+  font-style: normal;
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.7;
+  font-weight: 600;
+}
+
+.library-source-pane {
+  border: 1px solid var(--line);
+  background: color-mix(in oklab, var(--mint) 22%, #fff);
+  padding: 1.1rem 1.15rem 1.15rem;
+  margin-bottom: 0.75rem;
+  min-height: 8.5rem;
+}
+
+.library-pane-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
   gap: 1.25rem;
   align-items: end;
-  padding: 1.15rem 1.2rem 1.2rem;
-  border: 1px solid var(--line);
-  background: color-mix(in oklab, var(--mint) 32%, #fff);
-  margin-bottom: 0.65rem;
 }
 
-.library-badge {
-  display: inline-block;
-  margin-bottom: 0.55rem;
-  padding: 0.2rem 0.45rem;
-  background: var(--espresso);
-  color: #fff;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.library-primary h3 {
+.library-source-pane h3 {
   margin: 0 0 0.4rem;
   font-family: var(--font-display), sans-serif;
-  font-size: 1.2rem;
+  font-size: 1.15rem;
   font-weight: 600;
   letter-spacing: -0.03em;
 }
 
-.library-primary p {
+.library-source-pane p {
   margin: 0;
   color: var(--muted);
   font-size: 0.9rem;
   line-height: 1.45;
-  max-width: 42ch;
+  max-width: 48ch;
 }
 
-.library-primary code,
+.library-source-pane code,
 .explain-body code {
   font-size: 0.82em;
   background: rgba(255, 255, 255, 0.75);
   padding: 0.05rem 0.28rem;
 }
 
-.library-primary-actions {
-  display: grid;
-  gap: 0.55rem;
-  justify-items: stretch;
-}
-
 .library-file {
-  width: 100%;
+  min-width: 11rem;
   justify-content: center;
   text-align: center;
   cursor: pointer;
+  align-self: end;
 }
 
 .library-file.is-busy {
@@ -1309,20 +1368,10 @@ button {
 }
 
 .library-path {
-  margin: 0;
-  color: var(--slate);
-  font-size: 0.78rem;
+  margin: 0.65rem 0 0 !important;
+  color: var(--slate) !important;
+  font-size: 0.78rem !important;
   line-height: 1.4;
-}
-
-.library-folds {
-  display: grid;
-  gap: 0.45rem;
-  margin-bottom: 0.75rem;
-}
-
-.library-folds .explain-fold {
-  margin: 0;
 }
 
 .library-inline-actions {
@@ -1330,15 +1379,21 @@ button {
   flex-wrap: wrap;
   gap: 0.45rem;
   align-items: center;
-  margin-bottom: 0.75rem;
+  justify-content: flex-end;
 }
 
 .library-inline-status {
-  color: var(--slate);
-  font-size: 0.82rem;
+  margin: 0.65rem 0 0 !important;
+  color: var(--slate) !important;
+  font-size: 0.82rem !important;
 }
 
-.library-folds textarea {
+.library-csv-pane {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.library-csv-pane textarea {
   width: 100%;
   border: 1px solid var(--line);
   background: #fff;
@@ -1350,7 +1405,7 @@ button {
   border-radius: 2px;
 }
 
-.library-folds textarea:focus {
+.library-csv-pane textarea:focus {
   outline: none;
   border-color: var(--slate);
   box-shadow: 0 0 0 3px color-mix(in oklab, var(--mint) 70%, transparent);
@@ -1524,9 +1579,21 @@ button {
 }
 
 @media (max-width: 900px) {
-  .library-primary {
+  .library-source-seg {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .library-pane-grid {
     grid-template-columns: 1fr;
     align-items: start;
+  }
+
+  .library-file {
+    width: 100%;
+  }
+
+  .library-inline-actions {
+    justify-content: flex-start;
   }
 }
 

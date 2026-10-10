@@ -14,6 +14,7 @@ import { RoleCrates } from "@/components/RoleCrates";
 import { openSetPdfExport } from "@/lib/export-pdf";
 import { CAMELOT_CODES } from "@/lib/harmonic";
 import { reharmonizeDraft } from "@/lib/extract-set";
+import { looksLikeSpotifyLink } from "@/lib/spotify-link";
 import {
   ARC_GUIDE,
   DEFAULT_SET,
@@ -33,6 +34,7 @@ import {
   formatDuration,
   performanceTracks,
   phaseDurationMs,
+  setPositionById,
   totalDurationMs,
 } from "@/lib/set";
 
@@ -106,6 +108,9 @@ export function SetBuilder() {
   const [activePhase, setActivePhase] = useState<SetPhaseId>("open");
   const [activeRole, setActiveRole] = useState<TrackRole>("anchor");
   const [query, setQuery] = useState("tech house");
+  const [linkUrl, setLinkUrl] = useState("");
+  const [crateMode, setCrateMode] = useState<"search" | "link">("search");
+  const [crateSource, setCrateSource] = useState<string | null>(null);
   const [results, setResults] = useState<SearchTrack[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
@@ -305,6 +310,11 @@ export function SetBuilder() {
     return draft.tracks.filter((track) => track.role === roleFilter);
   }, [draft.tracks, mainTracks, roleFilter]);
 
+  const positions = useMemo(
+    () => setPositionById(draft.tracks),
+    [draft.tracks],
+  );
+
   function runSearch(nextQuery = query) {
     const trimmed = nextQuery.trim();
     if (trimmed.length < 2) {
@@ -312,11 +322,18 @@ export function SetBuilder() {
       return;
     }
 
+    if (looksLikeSpotifyLink(trimmed)) {
+      setCrateMode("link");
+      setLinkUrl(trimmed);
+      void importCrateLink(trimmed);
+      return;
+    }
+
     setError(null);
     setStatus(null);
+    setCrateSource(null);
     setHasSearched(true);
     startTransition(async () => {
-      // search uses client-credentials and is independent of playlist OAuth
       try {
         const response = await fetch(
           `/api/search?q=${encodeURIComponent(trimmed)}&market=DE`,
@@ -333,6 +350,58 @@ export function SetBuilder() {
       } catch (err) {
         setResults([]);
         setError(err instanceof Error ? err.message : "Suche fehlgeschlagen.");
+      }
+    });
+  }
+
+  async function importCrateLink(rawUrl = linkUrl) {
+    const trimmed = rawUrl.trim();
+    if (!trimmed) {
+      setError("Spotify-Link einfügen (Track, Playlist oder Album).");
+      return;
+    }
+
+    setError(null);
+    setStatus(null);
+    setHasSearched(true);
+    startTransition(async () => {
+      try {
+        const response = await fetch("/api/crate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: trimmed }),
+        });
+        const data = (await response.json()) as {
+          kind?: "track" | "playlist" | "album";
+          label?: string;
+          tracks?: SearchTrack[];
+          error?: string;
+          code?: string;
+        };
+        if (!response.ok) {
+          if (data.code === "AUTH_REQUIRED") {
+            setSpotifyConnected(false);
+          }
+          throw new Error(data.error || "Link konnte nicht geladen werden.");
+        }
+        const tracks = data.tracks ?? [];
+        setResults(tracks);
+        setCrateSource(
+          data.kind && data.label
+            ? `${data.kind === "track" ? "Track" : data.kind === "album" ? "Album" : "Playlist"}: ${data.label}`
+            : null,
+        );
+        setStatus(
+          tracks.length === 1
+            ? "Track geladen — mit + zum Set hinzufügen."
+            : `${tracks.length} Tracks geladen — einzeln oder alle hinzufügen.`,
+        );
+      } catch (err) {
+        setResults([]);
+        setCrateSource(null);
+        setError(
+          err instanceof Error ? err.message : "Link konnte nicht geladen werden.",
+        );
       }
     });
   }
@@ -367,6 +436,40 @@ export function SetBuilder() {
     }));
     setStatus(
       `+ ${track.name} → ${PHASES.find((p) => p.id === activePhase)?.label} / ${activeRole}`,
+    );
+  }
+
+  function addAllResults() {
+    const fresh = results.filter(
+      (track) => !draft.tracks.some((item) => item.id === track.id),
+    );
+    if (!fresh.length) {
+      setStatus("Alle Treffer sind schon im Set.");
+      return;
+    }
+    const mapped: SetTrack[] = fresh.map((track) => ({
+      id: track.id,
+      name: track.name,
+      artists: track.artists,
+      album: track.album,
+      durationMs: track.durationMs,
+      uri: track.uri,
+      externalUrl: track.externalUrl,
+      imageUrl: track.imageUrl,
+      phase: activePhase,
+      role: activeRole,
+      transition: "unset" as const,
+      bpm: "",
+      keyCamelot: "",
+      note: "",
+      safetyAlt: "",
+    }));
+    setDraft((current) => ({
+      ...current,
+      tracks: [...current.tracks, ...mapped],
+    }));
+    setStatus(
+      `+ ${mapped.length} Tracks → ${PHASES.find((p) => p.id === activePhase)?.label} / ${activeRole}`,
     );
   }
 
@@ -706,6 +809,7 @@ export function SetBuilder() {
 
       <RoleCrates
         tracks={draft.tracks}
+        positions={positions}
         activeRole={activeRole}
         focusedTrackId={focusTrackId}
         onSelectRole={(role) => {
@@ -757,27 +861,93 @@ export function SetBuilder() {
               {activeRole}
             </p>
           </div>
-          <form
-            className="search-row"
-            onSubmit={(e) => {
-              e.preventDefault();
-              runSearch();
-            }}
-          >
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Artist, Track, Genre…"
-              aria-label="Spotify Suche"
-            />
-            <button type="submit" disabled={isPending}>
-              {isPending ? "Suche…" : "Suchen"}
+
+          <div className="seg crate-mode-seg" role="tablist" aria-label="Crate-Quelle">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={crateMode === "search"}
+              className={crateMode === "search" ? "seg-item active" : "seg-item"}
+              onClick={() => setCrateMode("search")}
+            >
+              Suche
             </button>
-          </form>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={crateMode === "link"}
+              className={crateMode === "link" ? "seg-item active" : "seg-item"}
+              onClick={() => setCrateMode("link")}
+            >
+              Link / Playlist
+            </button>
+          </div>
+
+          {crateMode === "search" ? (
+            <form
+              className="search-row"
+              onSubmit={(e) => {
+                e.preventDefault();
+                runSearch();
+              }}
+            >
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Artist, Track, Genre… oder Spotify-Link"
+                aria-label="Spotify Suche"
+              />
+              <button type="submit" disabled={isPending}>
+                {isPending ? "Suche…" : "Suchen"}
+              </button>
+            </form>
+          ) : (
+            <form
+              className="search-row"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void importCrateLink();
+              }}
+            >
+              <input
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                placeholder="open.spotify.com/track|playlist|album/… "
+                aria-label="Spotify Link"
+              />
+              <button type="submit" disabled={isPending}>
+                {isPending ? "Lade…" : "Laden"}
+              </button>
+            </form>
+          )}
+
+          {crateSource ? (
+            <div className="crate-source-bar">
+              <span>{crateSource}</span>
+              {results.length > 1 ? (
+                <button
+                  type="button"
+                  className="btn ghost"
+                  onClick={addAllResults}
+                  disabled={results.length === 0}
+                >
+                  Alle + ({results.length})
+                </button>
+              ) : null}
+            </div>
+          ) : null}
 
           {!hasSearched ? (
             <div className="empty">
-              <p>Starte mit einer Suche — z. B. „tech house“, Artist oder Track.</p>
+              <p>
+                {crateMode === "search"
+                  ? "Suche starten — oder Spotify-Link einfügen."
+                  : "Track-, Playlist- oder Album-Link laden. Playlists: eigene/collaborative in Dev Mode."}
+              </p>
+            </div>
+          ) : results.length === 0 ? (
+            <div className="empty">
+              <p>Keine Tracks geladen.</p>
             </div>
           ) : (
             <ul className="result-list">
@@ -878,7 +1048,7 @@ export function SetBuilder() {
             </div>
           ) : (
             <ol className="set-list timeline-list">
-              {visibleTimeline.map((track, index) => (
+              {visibleTimeline.map((track) => (
                 <li
                   key={`${track.role}-${track.id}`}
                   id={`track-${track.id}`}
@@ -893,7 +1063,9 @@ export function SetBuilder() {
                     className="timeline-main"
                     onClick={() => setFocusTrackId(track.id)}
                   >
-                    <span className="set-index">{index + 1}</span>
+                    <span className="set-index">
+                      {positions.get(track.id) ?? "—"}
+                    </span>
                     <span className="timeline-copy">
                       <strong>{track.name}</strong>
                       <span>

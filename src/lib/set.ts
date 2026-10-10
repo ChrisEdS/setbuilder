@@ -264,6 +264,23 @@ export function tracksByRole(tracks: SetTrack[], role: TrackRole): SetTrack[] {
   return tracks.filter((track) => track.role === role);
 }
 
+/**
+ * Stable set position labels that survive role filters.
+ * Performance tracks: 1…n in set order. Safety crate: S1…Sn.
+ */
+export function setPositionById(tracks: SetTrack[]): Map<string, string> {
+  const map = new Map<string, string>();
+  performanceTracks(tracks).forEach((track, index) => {
+    map.set(track.id, String(index + 1));
+  });
+  tracks
+    .filter((track) => track.role === "safety")
+    .forEach((track, index) => {
+      map.set(track.id, `S${index + 1}`);
+    });
+  return map;
+}
+
 export function exportSetText(draft: SetDraft): string {
   const lines = [
     draft.title,

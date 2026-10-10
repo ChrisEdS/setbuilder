@@ -19,6 +19,7 @@ import {
 
 type Props = {
   tracks: SetTrack[];
+  positions: Map<string, string>;
   activeRole: TrackRole;
   focusedTrackId?: string | null;
   onSelectRole: (role: TrackRole) => void;
@@ -27,6 +28,7 @@ type Props = {
 
 export function RoleCrates({
   tracks,
+  positions,
   activeRole,
   focusedTrackId,
   onSelectRole,
@@ -116,7 +118,12 @@ export function RoleCrates({
                             <div className="art-fallback sm" />
                           )}
                           <div className="crate-card-body">
-                            <strong title={track.name}>{track.name}</strong>
+                            <div className="crate-title-row">
+                              <em className="crate-set-num">
+                                {positions.get(track.id) ?? "—"}
+                              </em>
+                              <strong title={track.name}>{track.name}</strong>
+                            </div>
                             <span className="artists" title={track.artists.join(", ")}>
                               {track.artists.join(", ")}
                             </span>

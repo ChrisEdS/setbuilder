@@ -75,6 +75,97 @@ type SpotifySearchTrack = {
   external_urls?: { spotify?: string };
 };
 
+function mapApiTrack(track: SpotifySearchTrack): SpotifyTrack {
+  return {
+    id: track.id,
+    name: track.name,
+    uri: track.uri,
+    durationMs: track.duration_ms,
+    explicit: track.explicit,
+    artists: track.artists.map((artist) => artist.name),
+    album: track.album.name,
+    imageUrl: track.album.images?.[0]?.url ?? null,
+    externalUrl:
+      track.external_urls?.spotify ??
+      `https://open.spotify.com/track/${track.id}`,
+  };
+}
+
+export async function fetchTrackById(
+  id: string,
+  market = "DE",
+): Promise<SpotifyTrack> {
+  const token = await getSpotifyAccessToken();
+  const response = await fetch(
+    `https://api.spotify.com/v1/tracks/${id}?market=${encodeURIComponent(market)}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    },
+  );
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Track laden fehlgeschlagen (${response.status}): ${body}`);
+  }
+  const track = (await response.json()) as SpotifySearchTrack;
+  return mapApiTrack(track);
+}
+
+export async function fetchAlbumTracks(
+  albumId: string,
+  market = "DE",
+): Promise<{ albumName: string; tracks: SpotifyTrack[] }> {
+  const token = await getSpotifyAccessToken();
+  const metaRes = await fetch(
+    `https://api.spotify.com/v1/albums/${albumId}?market=${encodeURIComponent(market)}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    },
+  );
+  if (!metaRes.ok) {
+    const body = await metaRes.text();
+    throw new Error(`Album laden fehlgeschlagen (${metaRes.status}): ${body}`);
+  }
+  const meta = (await metaRes.json()) as {
+    name?: string;
+    images?: { url: string }[];
+    tracks?: { items?: SpotifySearchTrack[]; next?: string | null };
+  };
+  const albumRef = {
+    name: meta.name || "Album",
+    images: meta.images,
+  };
+
+  const tracks: SpotifyTrack[] = [];
+  for (const item of meta.tracks?.items ?? []) {
+    if (item?.id) {
+      tracks.push(mapApiTrack({ ...item, album: albumRef }));
+    }
+  }
+
+  let next = meta.tracks?.next ?? null;
+  while (next) {
+    const pageRes = await fetch(next, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!pageRes.ok) break;
+    const page = (await pageRes.json()) as {
+      items?: SpotifySearchTrack[];
+      next?: string | null;
+    };
+    for (const item of page.items ?? []) {
+      if (item?.id) {
+        tracks.push(mapApiTrack({ ...item, album: albumRef }));
+      }
+    }
+    next = page.next ?? null;
+  }
+
+  return { albumName: meta.name || "Album", tracks };
+}
+
 export async function searchTracks(
   query: string,
   market = "DE",
@@ -104,15 +195,5 @@ export async function searchTracks(
     tracks?: { items?: SpotifySearchTrack[] };
   };
 
-  return (data.tracks?.items ?? []).map((track) => ({
-    id: track.id,
-    name: track.name,
-    uri: track.uri,
-    durationMs: track.duration_ms,
-    explicit: track.explicit,
-    artists: track.artists.map((artist) => artist.name),
-    album: track.album.name,
-    imageUrl: track.album.images?.[0]?.url ?? null,
-    externalUrl: track.external_urls?.spotify ?? `https://open.spotify.com/track/${track.id}`,
-  }));
+  return (data.tracks?.items ?? []).map(mapApiTrack);
 }

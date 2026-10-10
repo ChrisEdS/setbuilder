@@ -7,7 +7,7 @@ Spotify-gestützter DJ-Set-Builder nach dem [DJ.Studio Prep-Workflow](https://dj
 - **Playlist → Set**: eigene Spotify-Playlist laden und entlang Open → Lift → Rise → Peak → Release extrahieren
 - **Crate-Rollen-Board**: Anchor / Bridge / Groove / Safety mit Why-Infos, Phase, Key, Transition
 - **Dramaturgie**: Slot-Arten (Warm-up / Support / Peak / Closing), Wellen statt Rampe
-- **Key Library**: rekordbox XML/DB durchsuchen, CSV/Paste, Spotify-Features-Status
+- **Key Library**: rekordbox XML/DB, **Tidal Keys** (Catalog Key/BPM per ISRC), CSV/Paste, Spotify-Features-Status
 - **Harmonic Path**: Camelot-Kompatibilität, Mix-Score, „Harmonisch sortieren“
 - **Preview**: Spotify-Embed-Player pro Track
 - **Export**: PDF + Text inkl. Safety-Crate
@@ -24,6 +24,10 @@ Spotify-gestützter DJ-Set-Builder nach dem [DJ.Studio Prep-Workflow](https://dj
 SPOTIFY_CLIENT_ID=…
 SPOTIFY_CLIENT_SECRET=…
 SPOTIFY_REDIRECT_URI=http://127.0.0.1:4317/api/auth/callback
+
+# Optional — Keys/BPM aus dem Tidal Catalog (developer.tidal.com)
+TIDAL_CLIENT_ID=…
+TIDAL_CLIENT_SECRET=…
 ```
 
 5. Install & run:
