@@ -19,7 +19,7 @@ export async function GET() {
       canStream: false,
       reason: "SCOPE",
       message:
-        "Der Login darf nur Playlists lesen. Einmal neu verbinden, dann spielt Premium in voller Länge.",
+        "Streaming ist noch nicht freigegeben. Einmal neu verbinden und danach den Track erneut starten.",
     });
   }
 

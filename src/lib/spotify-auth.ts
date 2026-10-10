@@ -5,6 +5,7 @@ import path from "path";
 
 const TOKEN_COOKIE = "setform_spotify_state";
 const TOKEN_FILE = path.join(process.cwd(), ".data", "spotify-tokens.json");
+const STATE_FILE = path.join(process.cwd(), ".data", "oauth-state.json");
 
 export type SpotifyUserTokens = {
   accessToken: string;
@@ -53,6 +54,12 @@ export function getAuthorizeUrl(
 
 export async function createOAuthState(): Promise<string> {
   const state = randomBytes(16).toString("hex");
+  await ensureDataDir();
+  await fs.writeFile(
+    STATE_FILE,
+    JSON.stringify({ state, expiresAt: Date.now() + 10 * 60_000 }),
+    "utf8",
+  );
   const jar = await cookies();
   jar.set(TOKEN_COOKIE, state, {
     httpOnly: true,
@@ -68,7 +75,22 @@ export async function consumeOAuthState(expected: string | null): Promise<boolea
   const jar = await cookies();
   const stored = jar.get(TOKEN_COOKIE)?.value;
   jar.delete(TOKEN_COOKIE);
-  return Boolean(expected && stored && expected === stored);
+
+  let fileState: string | null = null;
+  try {
+    const raw = JSON.parse(await fs.readFile(STATE_FILE, "utf8")) as {
+      state?: string;
+      expiresAt?: number;
+    };
+    if (raw.expiresAt && raw.expiresAt > Date.now()) fileState = raw.state ?? null;
+    await fs.unlink(STATE_FILE);
+  } catch {
+    fileState = null;
+  }
+
+  return Boolean(
+    expected && (expected === stored || expected === fileState),
+  );
 }
 
 async function ensureDataDir() {

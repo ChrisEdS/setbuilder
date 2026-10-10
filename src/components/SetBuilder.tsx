@@ -105,6 +105,27 @@ function subscribeDraft(onStoreChange: () => void) {
   };
 }
 
+let authNoteCache: string | null | undefined;
+
+function readAuthNote(): string | null {
+  if (authNoteCache !== undefined) return authNoteCache;
+  const params = new URLSearchParams(window.location.search);
+  const auth = params.get("auth");
+  if (auth === "ok") {
+    authNoteCache =
+      "Spotify ist neu verbunden. Track nochmal starten — dann läuft Premium in voller Länge.";
+  } else if (auth === "error") {
+    const message = params.get("message") || "unbekannt";
+    authNoteCache =
+      message === "invalid_state"
+        ? "Der Spotify-Login ist nicht zurückgekommen. Einmal neu verbinden und warten, bis die Seite wieder da ist."
+        : `Spotify-Login fehlgeschlagen: ${message}`;
+  } else {
+    authNoteCache = null;
+  }
+  return authNoteCache;
+}
+
 function persistDraft(draft: SetDraft) {
   const raw = JSON.stringify(draft);
   localStorage.setItem(STORAGE_KEY, raw);
@@ -141,6 +162,11 @@ export function SetBuilder() {
   const [workspaceMode, setWorkspaceMode] = useState<"auto" | "manual">(
     "manual",
   );
+  const authNote = useSyncExternalStore(
+    () => () => {},
+    readAuthNote,
+    () => null,
+  );
   const [myPlaylists, setMyPlaylists] = useState<
     Array<{
       id: string;
@@ -151,6 +177,14 @@ export function SetBuilder() {
       externalUrl: string;
     }>
   >([]);
+
+  useEffect(() => {
+    if (!window.location.search.includes("auth=")) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("auth");
+    url.searchParams.delete("message");
+    window.history.replaceState({}, "", `${url.pathname}${url.search}`);
+  }, []);
 
   function setDraft(updater: SetDraft | ((current: SetDraft) => SetDraft)) {
     const next = typeof updater === "function" ? updater(draft) : updater;
@@ -563,6 +597,7 @@ export function SetBuilder() {
 
   return (
     <div className="set-shell">
+      {authNote ? <p className="banner status">{authNote}</p> : null}
       <header className="hero">
         <div className="hero-copy">
           <p className="brand">SETFORM</p>
