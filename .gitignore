@@ -1,0 +1,4 @@
+.cursor/mcp.json
+.env
+.env.*
+!.env.example
