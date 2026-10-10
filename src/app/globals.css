@@ -153,6 +153,30 @@ select {
   margin-bottom: 0.55rem;
 }
 
+.playlist-picker {
+  margin-bottom: 0.75rem;
+}
+
+.playlist-picker label {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.playlist-picker span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.playlist-picker select {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  padding: 0.65rem 0.75rem;
+}
+
 .import-panel code {
   font-size: 0.85rem;
   background: rgba(255, 255, 255, 0.7);

@@ -98,6 +98,16 @@ export function SetBuilder() {
     "http://127.0.0.1:4317/api/auth/callback",
   );
   const [isExtracting, setIsExtracting] = useState(false);
+  const [myPlaylists, setMyPlaylists] = useState<
+    Array<{
+      id: string;
+      name: string;
+      owner: string;
+      trackCount: number;
+      owned: boolean;
+      externalUrl: string;
+    }>
+  >([]);
 
   function setDraft(updater: SetDraft | ((current: SetDraft) => SetDraft)) {
     const next = typeof updater === "function" ? updater(draft) : updater;
@@ -111,33 +121,84 @@ export function SetBuilder() {
         connected?: boolean;
         redirectUri?: string;
       };
-      setSpotifyConnected(Boolean(data.connected));
+      const connected = Boolean(data.connected);
+      setSpotifyConnected(connected);
       if (data.redirectUri) setRedirectUri(data.redirectUri);
+      if (connected) await loadMyPlaylists();
+      else setMyPlaylists([]);
     } catch {
       setSpotifyConnected(false);
     }
   }
 
+  async function loadMyPlaylists() {
+    try {
+      const response = await fetch("/api/playlists");
+      const data = (await response.json()) as {
+        owned?: Array<{
+          id: string;
+          name: string;
+          owner: string;
+          trackCount: number;
+          owned: boolean;
+          externalUrl: string;
+        }>;
+        error?: string;
+      };
+      if (!response.ok) return;
+      setMyPlaylists(data.owned ?? []);
+    } catch {
+      // picker is optional
+    }
+  }
+
   useEffect(() => {
+    let cancelled = false;
     const params = new URLSearchParams(window.location.search);
     const auth = params.get("auth");
     const message = params.get("message") || "unknown";
     if (auth) window.history.replaceState({}, "", "/");
 
-    fetch("/api/auth/status")
-      .then((response) => response.json())
-      .then((data: { connected?: boolean; redirectUri?: string }) => {
-        setSpotifyConnected(Boolean(data.connected));
+    (async () => {
+      try {
+        const response = await fetch("/api/auth/status");
+        const data = (await response.json()) as {
+          connected?: boolean;
+          redirectUri?: string;
+        };
+        if (cancelled) return;
+        const connected = Boolean(data.connected);
+        setSpotifyConnected(connected);
         if (data.redirectUri) setRedirectUri(data.redirectUri);
+        if (connected) {
+          const listRes = await fetch("/api/playlists");
+          const listData = (await listRes.json()) as {
+            owned?: Array<{
+              id: string;
+              name: string;
+              owner: string;
+              trackCount: number;
+              owned: boolean;
+              externalUrl: string;
+            }>;
+          };
+          if (!cancelled && listRes.ok) setMyPlaylists(listData.owned ?? []);
+        }
         if (auth === "ok") {
           setStatus(
-            "Spotify verbunden — Playlist-URL einfügen und Set extrahieren.",
+            "Spotify verbunden — wähle eine eigene Playlist und extrahiere das Set.",
           );
         } else if (auth === "error") {
           setError(`Spotify-Login fehlgeschlagen: ${message}`);
         }
-      })
-      .catch(() => setSpotifyConnected(false));
+      } catch {
+        if (!cancelled) setSpotifyConnected(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function extractFromPlaylist() {
@@ -225,6 +286,7 @@ export function SetBuilder() {
     setStatus(null);
     setHasSearched(true);
     startTransition(async () => {
+      // search uses client-credentials and is independent of playlist OAuth
       try {
         const response = await fetch(
           `/api/search?q=${encodeURIComponent(trimmed)}&market=DE`,
@@ -422,6 +484,7 @@ export function SetBuilder() {
               onClick={async () => {
                 await fetch("/api/auth/logout", { method: "POST" });
                 setSpotifyConnected(false);
+                setMyPlaylists([]);
                 setStatus("Spotify getrennt.");
               }}
             >
@@ -433,6 +496,31 @@ export function SetBuilder() {
             </a>
           )}
         </div>
+
+        {spotifyConnected && myPlaylists.length > 0 ? (
+          <div className="playlist-picker">
+            <label>
+              <span>Eigene Playlists</span>
+              <select
+                value=""
+                onChange={(e) => {
+                  const id = e.target.value;
+                  if (!id) return;
+                  setPlaylistUrl(`https://open.spotify.com/playlist/${id}`);
+                  setError(null);
+                }}
+                aria-label="Eigene Playlist wählen"
+              >
+                <option value="">Playlist wählen…</option>
+                {myPlaylists.map((playlist) => (
+                  <option key={playlist.id} value={playlist.id}>
+                    {playlist.name} ({playlist.trackCount})
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        ) : null}
 
         <form
           className="search-row import-row"
@@ -447,16 +535,18 @@ export function SetBuilder() {
             placeholder="https://open.spotify.com/playlist/…"
             aria-label="Spotify Playlist URL"
           />
-          <button type="submit" disabled={isExtracting}>
+          <button type="submit" disabled={isExtracting || !playlistUrl.trim()}>
             {isExtracting ? "Extrahiere…" : "Set extrahieren"}
           </button>
         </form>
 
+        {error ? <p className="banner error">{error}</p> : null}
+        {status ? <p className="banner status">{status}</p> : null}
+
         <p className="guide-line">
-          Redirect URI in der Spotify App muss exakt sein:{" "}
+          Wichtig: In Spotify Dev Mode gehen nur <strong>eigene</strong> oder
+          collaborative Playlists — keine fremden/editorial Charts. Redirect URI:{" "}
           <code>{redirectUri}</code>
-          {" · "}Playlist muss für deinen Account lesbar sein (eigene oder
-          collaborative). Dauer oben steuert, wie lang das extrahierte Set wird.
         </p>
       </section>
 
@@ -560,9 +650,6 @@ export function SetBuilder() {
               {isPending ? "Suche…" : "Suchen"}
             </button>
           </form>
-
-          {error ? <p className="banner error">{error}</p> : null}
-          {status ? <p className="banner status">{status}</p> : null}
 
           {!hasSearched ? (
             <div className="empty">

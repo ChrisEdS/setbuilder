@@ -62,6 +62,15 @@ export async function POST(request: Request) {
         { status: 401 },
       );
     }
+    if (message.startsWith("PLAYLIST_FORBIDDEN")) {
+      return NextResponse.json(
+        {
+          error: message.replace(/^PLAYLIST_FORBIDDEN:\s*/, ""),
+          code: "PLAYLIST_FORBIDDEN",
+        },
+        { status: 403 },
+      );
+    }
     return NextResponse.json({ error: message }, { status: 502 });
   }
 }
