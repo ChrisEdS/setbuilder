@@ -314,6 +314,7 @@ export function SetBuilder() {
           selected: number;
           trackCount: number;
           tidalMatched?: number;
+          tidalKeyed?: number;
         };
       };
 
@@ -337,11 +338,15 @@ export function SetBuilder() {
         (track) => track.role === "safety",
       ).length;
       const tidalMatched = data.playlist?.tidalMatched ?? 0;
+      const tidalKeyed = data.playlist?.tidalKeyed ?? 0;
+      const tidalNote =
+        tidalMatched === 0
+          ? " Tidal ohne Treffer."
+          : tidalKeyed > 0
+            ? ` Tidal: ${tidalKeyed} mit Key/BPM, ${tidalMatched} gematcht.`
+            : ` Tidal: ${tidalMatched} Tracks über Popularität sortiert. Key/BPM gibt diese App nicht zurück.`;
       setStatus(
-        `Set aus „${data.playlist?.name ?? "Playlist"}“: ${performanceCount} Performance-Tracks + ${safetyCount} Safety (Pool: ${data.playlist?.imported ?? "?"})` +
-          (tidalMatched
-            ? `. Tidal: ${tidalMatched} Tracks mit Key/BPM.`
-            : ". Keine Tidal-Keys — Reihenfolge bleibt näher an der Playlist."),
+        `Set aus „${data.playlist?.name ?? "Playlist"}“: ${performanceCount} Performance-Tracks + ${safetyCount} Safety (Pool: ${data.playlist?.imported ?? "?"}).${tidalNote}`,
       );
       await refreshAuthStatus();
     } catch (err) {

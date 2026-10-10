@@ -158,7 +158,9 @@ function toHit(
     attrs.bpm != null && Number.isFinite(attrs.bpm)
       ? String(Math.round(attrs.bpm))
       : "";
-  if (!mapped.camelot && !bpm) return null;
+  const popularity =
+    typeof attrs.popularity === "number" ? attrs.popularity : null;
+  if (!mapped.camelot && !bpm && popularity == null) return null;
   return {
     tidalId: track.id,
     title: attrs.title,
@@ -167,8 +169,7 @@ function toHit(
     keyCamelot: mapped.camelot,
     bpm,
     isrc: attrs.isrc,
-    popularity:
-      typeof attrs.popularity === "number" ? attrs.popularity : null,
+    popularity,
     match,
   };
 }
@@ -253,22 +254,24 @@ export async function searchTidalTrack(
   return null;
 }
 
-/** Match Spotify tracks to Tidal catalog key, BPM and popularity via ISRC. */
+/** Match Spotify tracks to the Tidal catalog via ISRC. */
 export async function attachTidalCatalog(
   tracks: SpotifyTrack[],
-): Promise<{ tracks: SpotifyTrack[]; matched: number }> {
-  if (!tidalConfigured()) return { tracks, matched: 0 };
+): Promise<{ tracks: SpotifyTrack[]; matched: number; keyed: number }> {
+  if (!tidalConfigured()) return { tracks, matched: 0, keyed: 0 };
   const isrcs = tracks
     .map((track) => track.isrc)
     .filter((isrc): isrc is string => Boolean(isrc));
-  if (!isrcs.length) return { tracks, matched: 0 };
+  if (!isrcs.length) return { tracks, matched: 0, keyed: 0 };
 
   const byIsrc = await lookupTidalByIsrcs(isrcs);
   let matched = 0;
+  let keyed = 0;
   const next = tracks.map((track) => {
     const hit = track.isrc ? byIsrc.get(track.isrc.toUpperCase()) : undefined;
     if (!hit) return track;
     matched += 1;
+    if (hit.keyCamelot || hit.bpm) keyed += 1;
     return {
       ...track,
       catalogBpm: hit.bpm || track.catalogBpm,
@@ -276,5 +279,5 @@ export async function attachTidalCatalog(
       catalogPopularity: hit.popularity ?? track.catalogPopularity ?? null,
     };
   });
-  return { tracks: next, matched };
+  return { tracks: next, matched, keyed };
 }

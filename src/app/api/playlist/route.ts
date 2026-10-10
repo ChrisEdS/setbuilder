@@ -29,14 +29,17 @@ export async function POST(request: Request) {
 
     const playlist = await fetchPlaylist(playlistId);
     let tidalMatched = 0;
+    let tidalKeyed = 0;
     let tracks = playlist.tracks;
     if (tidalConfigured()) {
       try {
         const tidal = await attachTidalCatalog(tracks);
         tracks = tidal.tracks;
         tidalMatched = tidal.matched;
+        tidalKeyed = tidal.keyed;
       } catch {
         tidalMatched = 0;
+        tidalKeyed = 0;
       }
     }
     const draft = extractSetFromPlaylist(tracks, playlist.name, {
@@ -74,6 +77,7 @@ export async function POST(request: Request) {
         selected: performanceCount,
         safety: safetyCount,
         tidalMatched,
+        tidalKeyed,
         externalUrl: playlist.externalUrl,
         imageUrl: playlist.imageUrl,
       },

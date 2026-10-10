@@ -245,6 +245,7 @@ export async function fetchPlaylist(playlistId: string): Promise<SpotifyPlaylist
     seen.add(track.id);
     return true;
   });
+  const withIsrc = await hydrateIsrcs(unique, token);
 
   return {
     id: meta.id,
@@ -257,6 +258,46 @@ export async function fetchPlaylist(playlistId: string): Promise<SpotifyPlaylist
     externalUrl:
       meta.external_urls?.spotify ??
       `https://open.spotify.com/playlist/${meta.id}`,
-    tracks: unique,
+    tracks: withIsrc,
   };
+}
+
+/** Playlist items often omit ISRC. The tracks endpoint has it. */
+async function hydrateIsrcs(
+  tracks: SpotifyTrack[],
+  token: string,
+): Promise<SpotifyTrack[]> {
+  const byId = new Map(tracks.map((track) => [track.id, track]));
+  for (let i = 0; i < tracks.length; i += 50) {
+    const chunk = tracks.slice(i, i + 50).map((track) => track.id);
+    const response = await fetch(
+      `https://api.spotify.com/v1/tracks?ids=${chunk.join(",")}&market=DE`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      },
+    );
+    if (!response.ok) continue;
+    const data = (await response.json()) as {
+      tracks?: Array<{
+        id?: string;
+        popularity?: number;
+        external_ids?: { isrc?: string };
+      } | null>;
+    };
+    for (const row of data.tracks ?? []) {
+      if (!row?.id) continue;
+      const current = byId.get(row.id);
+      if (!current) continue;
+      byId.set(row.id, {
+        ...current,
+        popularity:
+          typeof row.popularity === "number"
+            ? row.popularity
+            : current.popularity,
+        isrc: row.external_ids?.isrc?.toUpperCase() ?? current.isrc ?? null,
+      });
+    }
+  }
+  return tracks.map((track) => byId.get(track.id) ?? track);
 }

@@ -73,10 +73,13 @@ export function extractSetFromPlaylist(
   normalizeBpmEnergy(pool);
 
   const selected = packTracks(pool, targetMs);
-  const arranged = arrangeByCatalogEnergy(selected);
-  const phased = arranged.some((track) => track.bpm)
-    ? arranged
-    : assignPhasesByDuration(selected, targetMs);
+  const catalogCount = selected.filter(
+    (track) => track.bpm || track.catalogPopularity != null,
+  ).length;
+  const phased =
+    catalogCount >= 4
+      ? arrangeByCatalogEnergy(selected)
+      : assignPhasesByDuration(selected, targetMs);
 
   // Harmonize inside each phase, keep phase sequence intact
   const byPhase = new Map<SetPhaseId, Enriched[]>();
