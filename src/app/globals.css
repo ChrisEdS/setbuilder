@@ -338,6 +338,14 @@ textarea {
   flex-wrap: wrap;
   gap: 0.5rem;
   margin: 0.75rem 0;
+  align-items: center;
+}
+
+.import-actions .btn.ghost,
+.import-actions a.button-link {
+  min-height: 40px;
+  padding: 0 1rem !important;
+  border-radius: 999px !important;
 }
 
 a.button-link.tidal-login {
