@@ -17,6 +17,7 @@ Spotify-gestützter DJ-Set-Builder nach dem [DJ.Studio Prep-Workflow](https://dj
 1. Spotify Developer App anlegen und **Web API** aktivieren
 2. Redirect URI **exakt** eintragen:
    `http://127.0.0.1:4317/api/auth/callback`
+   Tidal-Login zusätzlich: `http://127.0.0.1:4317/api/auth/tidal/callback`
 3. Dich selbst als User der App hinzufügen (Development Mode)
 4. `.env.local` anlegen:
 

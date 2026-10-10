@@ -154,6 +154,7 @@ export function SetBuilder() {
   const [hasSearched, setHasSearched] = useState(false);
   const [playlistUrl, setPlaylistUrl] = useState("");
   const [spotifyConnected, setSpotifyConnected] = useState<boolean | null>(null);
+  const [tidalConnected, setTidalConnected] = useState<boolean | null>(null);
   const [redirectUri, setRedirectUri] = useState(
     "http://127.0.0.1:4317/api/auth/callback",
   );
@@ -207,6 +208,9 @@ export function SetBuilder() {
       if (data.redirectUri) setRedirectUri(data.redirectUri);
       if (connected) await loadMyPlaylists();
       else setMyPlaylists([]);
+      const tidalRes = await fetch("/api/auth/tidal/status");
+      const tidal = (await tidalRes.json()) as { connected?: boolean };
+      setTidalConnected(Boolean(tidal.connected));
     } catch {
       setSpotifyConnected(false);
     }
@@ -248,6 +252,9 @@ export function SetBuilder() {
           redirectUri?: string;
         };
         if (cancelled) return;
+        const tidalRes = await fetch("/api/auth/tidal/status");
+        const tidal = (await tidalRes.json()) as { connected?: boolean };
+        if (!cancelled) setTidalConnected(Boolean(tidal.connected));
         const connected = Boolean(data.connected);
         setSpotifyConnected(connected);
         if (data.redirectUri) setRedirectUri(data.redirectUri);
@@ -293,7 +300,8 @@ export function SetBuilder() {
     setStatus(null);
     setIsExtracting(true);
     try {
-      const response = await fetch("/api/playlist", {
+      const tidalPlaylist = playlistUrl.toLowerCase().includes("tidal.com");
+      const response = await fetch(tidalPlaylist ? "/api/playlist/tidal" : "/api/playlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -754,11 +762,28 @@ export function SetBuilder() {
                 setStatus("Spotify getrennt.");
               }}
             >
-              Trennen
+              Spotify trennen
             </button>
           ) : (
             <a className="button-link" href="/api/auth/login">
               Mit Spotify verbinden
+            </a>
+          )}
+          {tidalConnected ? (
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={async () => {
+                await fetch("/api/auth/tidal/logout", { method: "POST" });
+                setTidalConnected(false);
+                setStatus("Tidal getrennt.");
+              }}
+            >
+              Tidal trennen
+            </button>
+          ) : (
+            <a className="button-link tidal-login" href="/api/auth/tidal/login">
+              Mit Tidal verbinden
             </a>
           )}
         </div>
@@ -798,8 +823,8 @@ export function SetBuilder() {
           <input
             value={playlistUrl}
             onChange={(e) => setPlaylistUrl(e.target.value)}
-            placeholder="https://open.spotify.com/playlist/…"
-            aria-label="Spotify Playlist URL"
+            placeholder="Spotify- oder Tidal-Playlist-Link"
+            aria-label="Playlist URL"
           />
           <button type="submit" disabled={isExtracting || !playlistUrl.trim()}>
             {isExtracting ? "Extrahiere…" : "Set extrahieren"}

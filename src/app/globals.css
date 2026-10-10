@@ -335,8 +335,15 @@ textarea {
 
 .import-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin: 0.75rem 0;
+}
+
+a.button-link.tidal-login {
+  background: #00ffff !important;
+  border-color: #00ffff !important;
+  color: #121212 !important;
 }
 
 .button-link {
