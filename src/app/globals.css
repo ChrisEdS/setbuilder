@@ -474,6 +474,7 @@ select {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
   transition: border-color 160ms ease;
 }
 
@@ -499,10 +500,29 @@ select {
   gap: 0.15rem;
   align-items: start;
   border-bottom: 1px solid var(--line);
+  flex: 0 0 auto;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: #fff;
+}
+
+.crate-col.is-safety .crate-col-head-row {
+  background: color-mix(in oklab, var(--mint) 28%, #fff);
 }
 
 .crate-col.is-collapsed .crate-col-head-row {
   border-bottom: 0;
+}
+
+.crate-col-body {
+  flex: 0 0 auto;
+  height: var(--crate-h, 260px);
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .crate-col-head {
@@ -607,13 +627,12 @@ select {
 .crate-track-list {
   list-style: none;
   margin: 0;
-  padding: 0.25rem 0.55rem 0.15rem;
+  padding: 0.25rem 0.55rem 0.35rem;
   display: grid;
   gap: 0;
-  height: var(--crate-h, 260px);
+  height: auto;
   max-height: none;
-  overflow: auto;
-  overscroll-behavior: contain;
+  overflow: visible;
 }
 
 .crate-resize {
@@ -622,12 +641,14 @@ select {
   justify-content: center;
   width: 100%;
   height: 0.9rem;
+  flex: 0 0 auto;
   border: 0;
   border-top: 1px solid var(--line);
   background: color-mix(in oklab, var(--mint) 35%, #fff);
   cursor: ns-resize;
   touch-action: none;
   padding: 0;
+  z-index: 2;
 }
 
 .crate-resize span {

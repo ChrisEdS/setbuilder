@@ -344,6 +344,7 @@ export function RoleCrates({
 
               {isOpen ? (
                 <>
+                  <div className="crate-col-body">
                   {roleTracks.length === 0 ? (
                     <p className="crate-empty">
                       {isSafety
@@ -479,6 +480,7 @@ export function RoleCrates({
                       })}
                     </ul>
                   )}
+                  </div>
 
                   <button
                     type="button"
