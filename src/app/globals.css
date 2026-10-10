@@ -4000,32 +4000,35 @@ label.btn {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding: 1.15rem 0 1.25rem;
   display: grid;
-  grid-template-columns: 2.6rem minmax(0, 1fr);
-  column-gap: 0.65rem;
+  grid-template-columns: 4.6rem minmax(0, 1fr);
+  column-gap: 0.85rem;
   align-items: start;
 }
 
 .manual-index {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
-  gap: 0.2rem;
-  height: 52px;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  height: 48px;
   margin: 0;
   padding: 0;
   line-height: 1;
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
-  color: #b3b3b3 !important;
-  font-size: 0.75rem;
-  letter-spacing: 0;
   user-select: none;
 }
 
 .manual-index em {
   font-style: normal;
-  color: #b3b3b3;
+  font-family: var(--font-display), sans-serif;
+  font-size: 1.35rem;
+  font-weight: 650;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  min-width: 1.7rem;
+  text-align: right;
+  line-height: 1;
 }
 
 button.drag-handle {
