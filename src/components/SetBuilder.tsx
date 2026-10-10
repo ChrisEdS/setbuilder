@@ -922,9 +922,10 @@ export function SetBuilder() {
           onMove={moveTrack}
           onRemove={removeTrack}
           onFocus={(id) => setFocusTrackId(id)}
+          onExportPdf={exportPdf}
         />
       ) : (
-      <div className="workspace">
+      <div className="workspace crate-stack">
         <section className="panel search-panel">
           <div className="panel-head">
             <h2>Spotify Crate füllen</h2>
@@ -1119,113 +1120,123 @@ export function SetBuilder() {
               </p>
             </div>
           ) : (
-            <ol className="set-list timeline-list">
+            <ol className="manual-list">
               {visibleTimeline.map((track) => (
                 <li
                   key={`${track.role}-${track.id}`}
                   id={`track-${track.id}`}
                   className={
                     focusTrackId === track.id
-                      ? "timeline-row focused"
-                      : "timeline-row"
+                      ? "manual-row focused"
+                      : "manual-row"
                   }
                 >
-                  <button
-                    type="button"
-                    className="timeline-main"
-                    onClick={() => setFocusTrackId(track.id)}
-                  >
-                    <span className="set-index">
-                      {positions.get(track.id) ?? "—"}
-                    </span>
-                    <span className="timeline-copy">
-                      <strong>{track.name}</strong>
-                      <span>
-                        {track.artists.join(", ")}
-                        {track.keyCamelot ? ` · ${track.keyCamelot}` : ""}
-                        {track.bpm ? ` · ${track.bpm}` : ""}
-                      </span>
-                    </span>
-                    <span className="timeline-meta">
-                      <em>{PHASES.find((p) => p.id === track.phase)?.label}</em>
-                      <em>{track.role}</em>
-                      <em>{formatDuration(track.durationMs)}</em>
-                    </span>
-                  </button>
-
-                  <div className="timeline-tools">
-                    <button type="button" onClick={() => moveTrack(track.id, -1)}>
-                      ↑
-                    </button>
-                    <button type="button" onClick={() => moveTrack(track.id, 1)}>
-                      ↓
-                    </button>
-                    <button
-                      type="button"
-                      className="danger"
-                      onClick={() => removeTrack(track.id)}
-                    >
-                      ✕
-                    </button>
-                  </div>
-
-                  <details className="timeline-details">
-                    <summary>
-                      <span>Details</span>
-                      <em>Phase · Rolle · Key · Cue</em>
-                    </summary>
+                  <span className="manual-index">
+                    {positions.get(track.id) ?? "—"}
+                  </span>
+                  <div className="manual-body">
+                    <div className="manual-row-main">
+                      <button
+                        type="button"
+                        className="manual-select"
+                        onClick={() => setFocusTrackId(track.id)}
+                      >
+                        {track.imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={track.imageUrl}
+                            alt=""
+                            width={48}
+                            height={48}
+                          />
+                        ) : (
+                          <div className="art-fallback sm" />
+                        )}
+                        <span className="manual-copy">
+                          <strong>{track.name}</strong>
+                          <span>
+                            {track.artists.join(", ")}
+                            {track.durationMs
+                              ? ` · ${formatDuration(track.durationMs)}`
+                              : ""}
+                          </span>
+                        </span>
+                      </button>
+                      <div className="manual-meta">
+                        <select
+                          value={track.phase}
+                          onChange={(e) =>
+                            patchTrack(track.id, {
+                              phase: e.target.value as SetPhaseId,
+                            })
+                          }
+                          aria-label={`Phase für ${track.name}`}
+                        >
+                          {PHASES.map((phase) => (
+                            <option key={phase.id} value={phase.id}>
+                              {phase.label}
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          value={track.role}
+                          onChange={(e) =>
+                            patchTrack(track.id, {
+                              role: e.target.value as TrackRole,
+                              why: "Manuell gesetzt",
+                            })
+                          }
+                          aria-label={`Rolle für ${track.name}`}
+                        >
+                          {TRACK_ROLES.map((role) => (
+                            <option key={role.id} value={role.id}>
+                              {role.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="timeline-tools">
+                        <button
+                          type="button"
+                          onClick={() => moveTrack(track.id, -1)}
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveTrack(track.id, 1)}
+                        >
+                          ↓
+                        </button>
+                        <button
+                          type="button"
+                          className="danger"
+                          onClick={() => removeTrack(track.id)}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
                     {track.why ? (
-                      <p className="why-inline" title={track.why}>
+                      <p className="why-inline">
                         <strong>Warum hier:</strong> {track.why}
                       </p>
                     ) : null}
-                    <div className="set-controls">
-                      <select
-                        value={track.phase}
+                    <label className="manual-comment">
+                      <span>Comment</span>
+                      <textarea
+                        value={track.comment || track.note || ""}
+                        rows={2}
+                        placeholder="Cue, Energy, Vocal rein, Floor-Notiz…"
                         onChange={(e) =>
                           patchTrack(track.id, {
-                            phase: e.target.value as SetPhaseId,
+                            comment: e.target.value,
+                            note: e.target.value,
                           })
                         }
-                        aria-label={`Phase für ${track.name}`}
-                      >
-                        {PHASES.map((phase) => (
-                          <option key={phase.id} value={phase.id}>
-                            {phase.label}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        value={track.role}
-                        onChange={(e) =>
-                          patchTrack(track.id, {
-                            role: e.target.value as TrackRole,
-                            why: "Manuell gesetzt",
-                          })
-                        }
-                        aria-label={`Rolle für ${track.name}`}
-                      >
-                        {TRACK_ROLES.map((role) => (
-                          <option key={role.id} value={role.id}>
-                            {role.label}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        value={track.transition}
-                        onChange={(e) =>
-                          patchTrack(track.id, {
-                            transition: e.target.value as TransitionVerb,
-                          })
-                        }
-                        aria-label={`Transition für ${track.name}`}
-                      >
-                        {TRANSITIONS.map((item) => (
-                          <option key={item.id} value={item.id}>
-                            {item.label}
-                          </option>
-                        ))}
-                      </select>
+                      />
+                    </label>
+                    <div className="manual-extra">
                       <input
                         value={track.bpm}
                         onChange={(e) =>
@@ -1248,25 +1259,31 @@ export function SetBuilder() {
                           </option>
                         ))}
                       </select>
-                      <input
-                        value={track.note}
+                      <select
+                        value={track.transition}
                         onChange={(e) =>
-                          patchTrack(track.id, { note: e.target.value })
+                          patchTrack(track.id, {
+                            transition: e.target.value as TransitionVerb,
+                          })
                         }
-                        placeholder="Cue / Transition"
-                        aria-label={`Cue für ${track.name}`}
-                        className="full"
-                      />
+                        aria-label={`Transition für ${track.name}`}
+                      >
+                        {TRANSITIONS.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.label}
+                          </option>
+                        ))}
+                      </select>
+                      <a
+                        className="timeline-link"
+                        href={track.externalUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Öffnen
+                      </a>
                     </div>
-                    <a
-                      className="timeline-link"
-                      href={track.externalUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      In Spotify öffnen
-                    </a>
-                  </details>
+                  </div>
                 </li>
               ))}
             </ol>

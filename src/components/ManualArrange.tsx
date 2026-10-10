@@ -37,6 +37,7 @@ type Props = {
   onRemove: (id: string) => void;
   onFocus?: (id: string) => void;
   focusedTrackId?: string | null;
+  onExportPdf?: () => void;
 };
 
 export function ManualArrange({
@@ -50,6 +51,7 @@ export function ManualArrange({
   onRemove,
   onFocus,
   focusedTrackId,
+  onExportPdf,
 }: Props) {
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
@@ -169,10 +171,20 @@ export function ManualArrange({
             Comments
           </p>
         </div>
-        <p className="timeline-filter">
-          {performance.length} Tracks · aktiv{" "}
-          {PHASES.find((p) => p.id === activePhase)?.label}/{activeRole}
-        </p>
+        <div className="manual-head-actions">
+          <p className="timeline-filter">
+            {performance.length} Tracks · aktiv{" "}
+            {PHASES.find((p) => p.id === activePhase)?.label}/{activeRole}
+          </p>
+          <button
+            type="button"
+            className="btn"
+            onClick={onExportPdf}
+            disabled={!onExportPdf || tracks.length === 0}
+          >
+            PDF
+          </button>
+        </div>
       </div>
 
       <div className="manual-add">
@@ -242,18 +254,19 @@ export function ManualArrange({
                 className={focused ? "manual-row focused" : "manual-row"}
                 id={`manual-${track.id}`}
               >
+                <span className="manual-index">
+                  {positions.get(track.id) ?? index + 1}
+                </span>
+                <div className="manual-body">
                 <div className="manual-row-main">
                   <button
                     type="button"
                     className="manual-select"
                     onClick={() => onFocus?.(track.id)}
                   >
-                    <span className="set-index">
-                      {positions.get(track.id) ?? index + 1}
-                    </span>
                     {track.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={track.imageUrl} alt="" width={44} height={44} />
+                      <img src={track.imageUrl} alt="" width={48} height={48} />
                     ) : (
                       <div className="art-fallback sm" />
                     )}
@@ -358,6 +371,7 @@ export function ManualArrange({
                       Öffnen
                     </a>
                   ) : null}
+                </div>
                 </div>
               </li>
             );

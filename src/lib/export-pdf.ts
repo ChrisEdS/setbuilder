@@ -1,11 +1,14 @@
 import { relationLabel } from "@/lib/harmonic";
+import { sourceLabel } from "@/lib/music-link";
 import {
   ARC_GUIDE,
   PHASES,
   formatDuration,
   performanceTracks,
+  setPositionById,
   totalDurationMs,
   type SetDraft,
+  type SetTrack,
 } from "@/lib/set";
 
 function escapeHtml(value: string): string {
@@ -16,10 +19,60 @@ function escapeHtml(value: string): string {
     .replaceAll('"', "&quot;");
 }
 
+function trackNotes(track: SetTrack): string {
+  const comment = track.comment?.trim() || track.note?.trim() || "";
+  const bits = [
+    track.why ? `<div class="why">${escapeHtml(track.why)}</div>` : "",
+    comment ? `<div class="cue">${escapeHtml(comment)}</div>` : "",
+    track.safetyAlt
+      ? `<div class="cue">Safety: ${escapeHtml(track.safetyAlt)}</div>`
+      : "",
+    track.externalUrl
+      ? `<div class="link">${escapeHtml(sourceLabel(track.source))} · ${escapeHtml(track.externalUrl)}</div>`
+      : "",
+  ];
+  return bits.join("");
+}
+
 export function buildSetPrintHtml(draft: SetDraft): string {
   const main = performanceTracks(draft.tracks);
   const safeties = draft.tracks.filter((track) => track.role === "safety");
   const filled = formatDuration(totalDurationMs(draft.tracks));
+  const positions = setPositionById(draft.tracks);
+
+  const orderRows = draft.tracks
+    .map((track) => {
+      return `<tr>
+        <td class="num">${escapeHtml(positions.get(track.id) ?? "—")}</td>
+        <td>
+          <strong>${escapeHtml(track.name)}</strong><br/>
+          <span class="muted">${escapeHtml(track.artists.join(", ") || "—")}</span>
+          ${trackNotes(track)}
+        </td>
+        <td>${escapeHtml(PHASES.find((phase) => phase.id === track.phase)?.label ?? track.phase)}</td>
+        <td>${escapeHtml(track.role)}</td>
+        <td>${escapeHtml(sourceLabel(track.source))}</td>
+        <td>${escapeHtml(track.keyCamelot || "—")}</td>
+        <td>${escapeHtml(track.bpm || "—")}</td>
+        <td>${track.durationMs ? formatDuration(track.durationMs) : "—"}</td>
+      </tr>`;
+    })
+    .join("");
+
+  const orderBlock = draft.tracks.length
+    ? `<section class="phase">
+        <h2>Set-Reihenfolge</h2>
+        <p class="focus">Manuelle Reihenfolge inkl. Comments und Quell-Links.</p>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>Track</th><th>Phase</th><th>Rolle</th><th>Quelle</th><th>Key</th><th>BPM</th><th>Dauer</th>
+            </tr>
+          </thead>
+          <tbody>${orderRows}</tbody>
+        </table>
+      </section>`
+    : "";
 
   const phaseBlocks = PHASES.map((phase) => {
     const tracks = main.filter((track) => track.phase === phase.id);
@@ -36,9 +89,7 @@ export function buildSetPrintHtml(draft: SetDraft): string {
           <td>
             <strong>${escapeHtml(track.name)}</strong><br/>
             <span class="muted">${escapeHtml(track.artists.join(", "))}</span>
-            ${track.why ? `<div class="why">${escapeHtml(track.why)}</div>` : ""}
-            ${track.note ? `<div class="cue">Cue: ${escapeHtml(track.note)}</div>` : ""}
-            ${track.safetyAlt ? `<div class="cue">Safety: ${escapeHtml(track.safetyAlt)}</div>` : ""}
+            ${trackNotes(track)}
           </td>
           <td>${escapeHtml(track.role)}</td>
           <td>${escapeHtml(track.keyCamelot || "—")}</td>
@@ -173,7 +224,7 @@ export function buildSetPrintHtml(draft: SetDraft): string {
     }
     td.num { width: 24px; color: var(--muted); }
     .muted { color: var(--muted); }
-    .why, .cue { margin-top: 3px; font-size: 11px; color: var(--muted); }
+    .why, .cue, .link { margin-top: 3px; font-size: 11px; color: var(--muted); word-break: break-all; }
     .safety { margin: 8px 0 0; padding-left: 18px; }
     .footer {
       margin-top: 28px;
@@ -231,6 +282,7 @@ export function buildSetPrintHtml(draft: SetDraft): string {
       <div><span>Audience</span><strong>${escapeHtml(draft.audience)}</strong></div>
       <div><span>Gear</span><strong>${escapeHtml(draft.gear)}</strong></div>
     </div>
+    ${orderBlock}
     ${phaseBlocks}
     ${safetyBlock}
     <div class="footer">
