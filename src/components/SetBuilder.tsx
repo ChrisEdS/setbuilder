@@ -1096,25 +1096,45 @@ export function SetBuilder() {
       <div className="workspace crate-stack">
         <section className="panel search-panel">
           <div className="panel-head">
-            <h2>Crate füllen</h2>
+            <h2>
+              Crate füllen · {crateService === "tidal" ? "Tidal" : "Spotify"}
+            </h2>
             <p>
               Aktiv: {PHASES.find((p) => p.id === activePhase)?.label} /{" "}
               {activeRole}
             </p>
           </div>
 
-          <div className="seg crate-mode-seg" role="tablist" aria-label="Crate-Dienst">
+          <div className="seg crate-service-seg" role="tablist" aria-label="Crate-Dienst">
             <button
               type="button"
-              className={crateService === "spotify" ? "seg-item active" : "seg-item"}
-              onClick={() => setCrateService("spotify")}
+              className={
+                crateService === "spotify"
+                  ? "seg-item active source-spotify"
+                  : "seg-item"
+              }
+              onClick={() => {
+                setCrateService("spotify");
+                setResults([]);
+                setCrateSource(null);
+                setHasSearched(false);
+              }}
             >
               Spotify
             </button>
             <button
               type="button"
-              className={crateService === "tidal" ? "seg-item active" : "seg-item"}
-              onClick={() => setCrateService("tidal")}
+              className={
+                crateService === "tidal"
+                  ? "seg-item active source-tidal"
+                  : "seg-item"
+              }
+              onClick={() => {
+                setCrateService("tidal");
+                setResults([]);
+                setCrateSource(null);
+                setHasSearched(false);
+              }}
             >
               Tidal
             </button>
@@ -1253,8 +1273,17 @@ export function SetBuilder() {
                     <div>
                       <strong>{track.name}</strong>
                       <span>
-                        {track.artists.join(", ")} ·{" "}
-                        {formatDuration(track.durationMs)}
+                        <em
+                          className={`source-pill source-${track.source || crateService}`}
+                        >
+                          {track.source === "tidal" || crateService === "tidal"
+                            ? "Tidal"
+                            : "Spotify"}
+                        </em>
+                        {track.artists.join(", ")}
+                        {track.durationMs
+                          ? ` · ${formatDuration(track.durationMs)}`
+                          : ""}
                       </span>
                     </div>
                   </div>

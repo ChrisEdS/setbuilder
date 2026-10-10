@@ -4195,6 +4195,22 @@ button.drag-handle:active i {
 
 .source-spotify { background: #1ed760; color: #121212; }
 .source-tidal { background: #00ffff; color: #121212; }
+
+.crate-service-seg .seg-item.active.source-spotify {
+  background: #1ed760 !important;
+  color: #121212 !important;
+  border-color: #1ed760 !important;
+}
+
+.crate-service-seg .seg-item.active.source-tidal {
+  background: #00ffff !important;
+  color: #121212 !important;
+  border-color: #00ffff !important;
+}
+
+.search-panel .source-pill {
+  margin-right: 0.4rem;
+}
 .source-soundcloud { background: #ff5500; color: #fff; }
 .source-beatport { background: #94d500; color: #121212; }
 .source-manual { background: #444; color: #fff; }
