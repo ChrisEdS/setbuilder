@@ -341,36 +341,89 @@ textarea {
   margin-bottom: 1.1rem;
 }
 
+.manual-panel .setups-bar {
+  margin: 0 0 1rem;
+}
+
+.setups-bar .panel-head {
+  margin-bottom: 0.9rem;
+}
+
 .setups-bar .panel-head h2 {
   margin: 0;
   font-size: 1.2rem;
 }
 
-.setups-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.55rem;
-  align-items: end;
-}
-
-.setups-row label {
+.setups-grid {
   display: grid;
-  gap: 0.3rem;
-  min-width: min(100%, 14rem);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
 }
 
-.setups-row label span {
-  font-size: 0.68rem;
+.setup-card {
+  display: grid;
+  gap: 0.7rem;
+  align-content: start;
+  min-width: 0;
+  padding: 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: #121212;
+}
+
+.setup-card h3 {
+  margin: 0;
+  font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #b3b3b3;
 }
 
-.setups-row input,
-.setups-row select {
-  height: 40px;
-  min-height: 40px;
+.setup-card p {
+  margin: 0;
+  color: #b3b3b3;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.setup-field {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.setup-field span {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #fff;
+}
+
+.setup-field input,
+.setup-field select,
+.setup-card .btn {
+  width: 100%;
+  height: 42px;
+  min-height: 42px !important;
+}
+
+.setup-actions {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.setup-actions .btn {
+  flex: 1;
+}
+
+@media (max-width: 900px) {
+  .setups-grid,
+  .manual-extra {
+    grid-template-columns: 1fr;
+  }
 }
 
 .import-actions {
@@ -4271,25 +4324,41 @@ button.drag-handle:active i {
 }
 
 .manual-extra {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 6.5rem 7.5rem minmax(9rem, 1fr) auto;
   gap: 0.5rem;
   align-items: center;
-  margin-top: 0.1rem;
+  margin-top: 0.15rem;
 }
 
 .manual-extra input,
+.manual-extra select,
 .manual-meta select {
-  height: 40px;
-  min-height: 40px !important;
+  width: 100%;
+  height: 42px;
+  min-height: 42px !important;
+  margin: 0;
   padding: 0 0.75rem !important;
-  line-height: 1;
-  font-size: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 8px !important;
+  background: #121212 !important;
+  color: #fff !important;
+  font-size: 0.88rem;
   font-weight: 600;
+  line-height: 1.2;
 }
 
-.manual-extra input {
-  width: 5.75rem;
+.manual-extra .timeline-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  margin: 0;
+  padding: 0 0.9rem;
+  border: 1px solid rgba(30, 215, 96, 0.45);
+  border-radius: 999px;
+  text-decoration: none;
+  white-space: nowrap;
 }
 
 .manual-extra .timeline-link {

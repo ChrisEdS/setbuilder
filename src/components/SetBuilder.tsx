@@ -834,6 +834,90 @@ export function SetBuilder() {
     setStatus("Set innerhalb der Phasen nach Camelot/BPM neu sortiert.");
   }
 
+  function renderSetups() {
+    return (
+      <section className="setups-bar" aria-label="Gespeicherte Einstellungen">
+        <div className="panel-head">
+          <h2>Einstellungen</h2>
+          <p>Brief, Tracks, Comments, Keys und BPM</p>
+        </div>
+        <div className="setups-grid">
+          <div className="setup-card">
+            <h3>Speichern</h3>
+            <label className="setup-field">
+              <span>Name</span>
+              <input
+                value={setupName}
+                onChange={(event) => setSetupName(event.target.value)}
+                aria-label="Setup-Name"
+              />
+            </label>
+            <button type="button" className="btn" onClick={saveSetup}>
+              Speichern
+            </button>
+          </div>
+          <div className="setup-card">
+            <h3>Laden</h3>
+            <label className="setup-field">
+              <span>Gespeicherter Stand</span>
+              <select
+                value={selectedSetup}
+                onChange={(event) => setSelectedSetup(event.target.value)}
+                aria-label="Gespeichertes Setup"
+              >
+                <option value="">Wählen…</option>
+                {setups.map((setup) => (
+                  <option key={setup.id} value={setup.id}>
+                    {setup.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="setup-actions">
+              <button
+                type="button"
+                className="btn ghost"
+                disabled={!selectedSetup}
+                onClick={() => loadSetup()}
+              >
+                Laden
+              </button>
+              <button
+                type="button"
+                className="btn ghost"
+                disabled={!selectedSetup}
+                onClick={deleteSetup}
+              >
+                Löschen
+              </button>
+            </div>
+          </div>
+          <div className="setup-card">
+            <h3>Datei</h3>
+            <p>JSON sichern oder auf einem anderen Rechner öffnen.</p>
+            <div className="setup-actions">
+              <button type="button" className="btn ghost" onClick={downloadSetup}>
+                Herunterladen
+              </button>
+              <label className="btn ghost file-btn">
+                Öffnen
+                <input
+                  type="file"
+                  accept="application/json,.json"
+                  hidden
+                  onChange={(event) => {
+                    uploadSetup(event.target.files?.[0] ?? null);
+                    event.currentTarget.value = "";
+                  }}
+                />
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <div className="set-shell">
       {authNote ? <p className="banner status">{authNote}</p> : null}
@@ -942,71 +1026,7 @@ export function SetBuilder() {
         </div>
       </header>
 
-      <section className="setups-bar" aria-label="Gespeicherte Einstellungen">
-        <div className="panel-head">
-          <h2>Einstellungen</h2>
-          <p>Brief, Tracks, Comments, Keys und BPM</p>
-        </div>
-        <div className="setups-row">
-          <label>
-            <span>Name</span>
-            <input
-              value={setupName}
-              onChange={(event) => setSetupName(event.target.value)}
-              aria-label="Setup-Name"
-            />
-          </label>
-          <button type="button" className="btn" onClick={saveSetup}>
-            Speichern
-          </button>
-          <label>
-            <span>Gespeichert</span>
-            <select
-              value={selectedSetup}
-              onChange={(event) => setSelectedSetup(event.target.value)}
-              aria-label="Gespeichertes Setup"
-            >
-              <option value="">Wählen…</option>
-              {setups.map((setup) => (
-                <option key={setup.id} value={setup.id}>
-                  {setup.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
-            type="button"
-            className="btn ghost"
-            disabled={!selectedSetup}
-            onClick={() => loadSetup()}
-          >
-            Laden
-          </button>
-          <button
-            type="button"
-            className="btn ghost"
-            disabled={!selectedSetup}
-            onClick={deleteSetup}
-          >
-            Löschen
-          </button>
-          <button type="button" className="btn ghost" onClick={downloadSetup}>
-            Datei
-          </button>
-          <label className="btn ghost file-btn">
-            Öffnen
-            <input
-              type="file"
-              accept="application/json,.json"
-              hidden
-              onChange={(event) => {
-                uploadSetup(event.target.files?.[0] ?? null);
-                event.currentTarget.value = "";
-              }}
-            />
-          </label>
-        </div>
-      </section>
+      {renderSetups()}
 
       <section className="import-panel" aria-label="Playlist import">
         <div className="panel-head">
@@ -1285,6 +1305,7 @@ export function SetBuilder() {
           onRemove={removeTrack}
           onFocus={(id) => setFocusTrackId(id)}
           onExportPdf={exportPdf}
+          toolbar={renderSetups()}
         />
       ) : (
       <div className="workspace crate-stack">

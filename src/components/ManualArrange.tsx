@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useRef, useState, useTransition, type ReactNode } from "react";
 import { sourceLabel } from "@/lib/music-link";
 import {
   PHASES,
@@ -39,6 +39,7 @@ type Props = {
   onFocus?: (id: string) => void;
   focusedTrackId?: string | null;
   onExportPdf?: () => void;
+  toolbar?: ReactNode;
 };
 
 export function ManualArrange({
@@ -54,6 +55,7 @@ export function ManualArrange({
   onFocus,
   focusedTrackId,
   onExportPdf,
+  toolbar,
 }: Props) {
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
@@ -190,6 +192,8 @@ export function ManualArrange({
           </button>
         </div>
       </div>
+
+      {toolbar}
 
       <div className="manual-add">
         <div className="manual-form">
