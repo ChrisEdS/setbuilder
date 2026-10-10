@@ -2,9 +2,8 @@
 
 import {
   useCallback,
-  useEffect,
   useRef,
-  useState,
+  useSyncExternalStore,
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from "react";
@@ -56,12 +55,19 @@ const DEFAULT_OPEN: Record<TrackRole, boolean> = {
   safety: true,
 };
 
-function readPrefs(): CratePrefs {
+const DEFAULT_PREFS: CratePrefs = {
+  open: DEFAULT_OPEN,
+  heights: DEFAULT_HEIGHT,
+  wide: "safety",
+};
+
+let cachedRaw: string | null | undefined;
+let cachedPrefs: CratePrefs = DEFAULT_PREFS;
+const listeners = new Set<() => void>();
+
+function parsePrefs(raw: string | null): CratePrefs {
+  if (!raw) return { ...DEFAULT_PREFS, open: { ...DEFAULT_OPEN }, heights: { ...DEFAULT_HEIGHT } };
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return { open: { ...DEFAULT_OPEN }, heights: { ...DEFAULT_HEIGHT }, wide: "safety" };
-    }
     const parsed = JSON.parse(raw) as Partial<CratePrefs>;
     const wide =
       parsed.wide === null ||
@@ -77,8 +83,40 @@ function readPrefs(): CratePrefs {
       wide,
     };
   } catch {
-    return { open: { ...DEFAULT_OPEN }, heights: { ...DEFAULT_HEIGHT }, wide: "safety" };
+    return { ...DEFAULT_PREFS, open: { ...DEFAULT_OPEN }, heights: { ...DEFAULT_HEIGHT } };
   }
+}
+
+function readPrefs(): CratePrefs {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw === cachedRaw) return cachedPrefs;
+    cachedRaw = raw;
+    cachedPrefs = parsePrefs(raw);
+    return cachedPrefs;
+  } catch {
+    return cachedPrefs;
+  }
+}
+
+function writePrefs(next: CratePrefs) {
+  cachedPrefs = next;
+  cachedRaw = JSON.stringify(next);
+  try {
+    localStorage.setItem(STORAGE_KEY, cachedRaw);
+  } catch {
+    // ignore quota
+  }
+  listeners.forEach((listener) => listener());
+}
+
+function subscribePrefs(listener: () => void) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+function updatePrefs(updater: (current: CratePrefs) => CratePrefs) {
+  writePrefs(updater(readPrefs()));
 }
 
 export function RoleCrates({
@@ -89,44 +127,29 @@ export function RoleCrates({
   onSelectRole,
   onFocusTrack,
 }: Props) {
-  const [prefs, setPrefs] = useState<CratePrefs>({
-    open: DEFAULT_OPEN,
-    heights: DEFAULT_HEIGHT,
-    wide: "safety",
-  });
-  const [hydrated, setHydrated] = useState(false);
+  const prefs = useSyncExternalStore(subscribePrefs, readPrefs, () => DEFAULT_PREFS);
   const dragRef = useRef<{
     role: TrackRole;
     startY: number;
     startH: number;
   } | null>(null);
 
-  useEffect(() => {
-    setPrefs(readPrefs());
-    setHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
-  }, [prefs, hydrated]);
-
   const setOpen = useCallback((role: TrackRole, open: boolean) => {
-    setPrefs((current) => ({
+    updatePrefs((current) => ({
       ...current,
       open: { ...current.open, [role]: open },
     }));
   }, []);
 
   const toggleOpen = useCallback((role: TrackRole) => {
-    setPrefs((current) => ({
+    updatePrefs((current) => ({
       ...current,
       open: { ...current.open, [role]: !current.open[role] },
     }));
   }, []);
 
   const setWide = useCallback((role: TrackRole | null) => {
-    setPrefs((current) => ({
+    updatePrefs((current) => ({
       ...current,
       wide: current.wide === role ? null : role,
       open:
@@ -137,13 +160,13 @@ export function RoleCrates({
   }, []);
 
   const expandAll = () =>
-    setPrefs((current) => ({
+    updatePrefs((current) => ({
       ...current,
       open: { anchor: true, bridge: true, groove: true, safety: true },
     }));
 
   const collapseAll = () =>
-    setPrefs((current) => ({
+    updatePrefs((current) => ({
       ...current,
       open: { anchor: false, bridge: false, groove: false, safety: false },
       wide: null,
@@ -171,7 +194,7 @@ export function RoleCrates({
       MAX_HEIGHT,
       Math.max(MIN_HEIGHT, drag.startH + delta),
     );
-    setPrefs((current) => ({
+    updatePrefs((current) => ({
       ...current,
       heights: { ...current.heights, [drag.role]: next },
     }));
