@@ -50,9 +50,9 @@ select {
 }
 
 .set-shell {
-  width: min(1180px, calc(100% - 2rem));
+  width: min(1280px, calc(100% - 1.5rem));
   margin: 0 auto;
-  padding: 2rem 0 4rem;
+  padding: 1.75rem 0 4rem;
   animation: rise 700ms ease-out both;
 }
 
@@ -225,31 +225,49 @@ select {
 
 .crate-col {
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--crate-tint, rgba(255, 255, 255, 0.85));
   min-height: 12rem;
-  transition: border-color 180ms ease, transform 180ms ease;
+  overflow: hidden;
+  transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
 }
 
 .crate-col.active {
-  border-color: color-mix(in oklab, var(--accent) 55%, #14201c);
+  border-color: color-mix(in oklab, var(--crate-bar, var(--accent)) 55%, #14201c);
+  box-shadow: 0 12px 28px rgba(20, 32, 28, 0.08);
   transform: translateY(-2px);
 }
 
 .crate-col-head {
+  position: relative;
   width: 100%;
   text-align: left;
   border: 0;
   border-bottom: 1px solid var(--line);
   background: transparent;
   color: var(--ink);
-  padding: 0.75rem;
+  padding: 0.85rem 0.8rem 0.75rem;
   cursor: pointer;
+}
+
+.crate-col-head:hover,
+.crate-col-head:focus-visible {
+  background: rgba(255, 255, 255, 0.45);
+  transform: none;
+}
+
+.crate-bar {
+  display: block;
+  width: 2.25rem;
+  height: 4px;
+  margin-bottom: 0.55rem;
+  background: var(--crate-bar, var(--accent));
 }
 
 .crate-col-head strong {
   display: block;
   font-family: var(--font-display), sans-serif;
-  font-size: 1.05rem;
+  font-size: 1.08rem;
+  letter-spacing: -0.02em;
 }
 
 .crate-col-head span,
@@ -258,7 +276,14 @@ select {
   margin-top: 0.2rem;
   color: var(--muted);
   font-style: normal;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
+}
+
+.crate-col-head em {
+  font-family: var(--font-display), sans-serif;
+  font-size: 0.95rem;
+  color: var(--ink);
+  margin-top: 0.35rem;
 }
 
 .crate-empty {
@@ -271,43 +296,58 @@ select {
 .crate-track-list {
   list-style: none;
   margin: 0;
-  padding: 0.45rem;
+  padding: 0.5rem;
   display: grid;
-  gap: 0.45rem;
-  max-height: 28rem;
+  gap: 0.5rem;
+  max-height: 32rem;
   overflow: auto;
 }
 
 .crate-card {
   width: 100%;
   display: grid;
-  grid-template-columns: 40px 1fr;
-  gap: 0.55rem;
+  grid-template-columns: 44px 1fr;
+  gap: 0.6rem;
   text-align: left;
-  border: 1px solid transparent;
-  background: #fff;
+  border: 1px solid rgba(20, 32, 28, 0.08);
+  background: rgba(255, 255, 255, 0.92);
   color: var(--ink);
-  padding: 0.45rem;
+  padding: 0.55rem;
   cursor: pointer;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
 }
 
-.crate-card:hover {
-  border-color: var(--line);
+.crate-card:hover,
+.crate-card:focus-visible {
+  border-color: color-mix(in oklab, var(--crate-bar, var(--accent)) 40%, #14201c);
+  background: #fff;
   transform: none;
+  box-shadow: 0 8px 18px rgba(20, 32, 28, 0.06);
+}
+
+.crate-card.is-focused {
+  border-color: color-mix(in oklab, var(--crate-bar, var(--accent)) 65%, #14201c);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--crate-bar, var(--accent)) 35%, white);
   background: #fff;
 }
 
+.crate-card img,
 .art-fallback.sm {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  background: var(--paper-2);
 }
 
 .crate-card-body strong {
-  display: block;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
   font-family: var(--font-display), sans-serif;
-  font-size: 0.92rem;
+  font-size: 0.95rem;
   letter-spacing: -0.02em;
-  line-height: 1.15;
+  line-height: 1.2;
 }
 
 .crate-card-body .artists,
@@ -315,8 +355,11 @@ select {
 .safety-line,
 .transition-line,
 .why-inline {
-  display: block;
-  margin: 0.15rem 0 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0.18rem 0 0;
   color: var(--muted);
   font-size: 0.78rem;
   line-height: 1.35;
@@ -325,27 +368,38 @@ select {
 .crate-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem;
-  margin-top: 0.35rem;
+  gap: 0.28rem;
+  margin-top: 0.4rem;
 }
 
 .pill {
   display: inline-flex;
   align-items: center;
+  gap: 0.28rem;
   border: 1px solid var(--line);
   background: var(--paper);
-  padding: 0.1rem 0.35rem;
-  font-size: 0.7rem;
-  letter-spacing: 0.02em;
+  padding: 0.12rem 0.4rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
+  font-weight: 600;
 }
 
 .pill.key {
-  background: color-mix(in oklab, var(--accent) 45%, white);
+  font-variant-numeric: tabular-nums;
 }
 
 .pill.muted {
-  opacity: 0.7;
+  border-style: dashed;
+  opacity: 0.85;
+}
+
+.key-dot {
+  display: inline-block;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  flex: 0 0 auto;
 }
 
 .harm {
@@ -380,7 +434,7 @@ select {
   margin-bottom: 0.9rem;
 }
 
-.harm-stats div {
+.harm-stats > div {
   border: 1px solid var(--line);
   background: #fff;
   padding: 0.7rem 0.8rem;
@@ -400,47 +454,113 @@ select {
   text-transform: uppercase;
 }
 
+.mini-bar {
+  margin-top: 0.45rem;
+  height: 4px;
+  background: var(--paper-2);
+  overflow: hidden;
+}
+
+.mini-bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #9ed36a, var(--accent));
+  transition: width 400ms ease;
+}
+
+.mini-bar i.mid {
+  background: linear-gradient(90deg, #e0b34d, #f0d27a);
+}
+
+.mini-bar i.bad {
+  background: linear-gradient(90deg, #c45b4a, #e08a7c);
+}
+
 .harm-steps {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
-  gap: 0.45rem;
+  gap: 0.5rem;
   overflow-x: auto;
-  padding-bottom: 0.35rem;
+  padding-bottom: 0.45rem;
+  scroll-snap-type: x proximity;
 }
 
 .harm-steps li {
   display: grid;
   gap: 0.3rem;
-  min-width: 7.5rem;
+  min-width: 8rem;
+  scroll-snap-align: start;
 }
 
 .harm-link {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--muted);
+  font-weight: 600;
 }
 
 .harm-node {
   border: 1px solid var(--line);
   background: #fff;
-  padding: 0.55rem 0.6rem;
+  padding: 0.6rem 0.65rem;
+  min-height: 4.4rem;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.harm-node.keyed {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
 }
 
 .harm-node strong {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   font-family: var(--font-display), sans-serif;
-  font-size: 1.1rem;
+  font-size: 1.15rem;
 }
 
 .harm-node span {
-  display: block;
-  margin-top: 0.2rem;
-  color: var(--muted);
-  font-size: 0.78rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-top: 0.25rem;
+  color: inherit;
+  opacity: 0.75;
+  font-size: 0.76rem;
   line-height: 1.3;
+}
+
+.camelot-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.65rem;
+  margin: 0.85rem 0 0.35rem;
+  padding: 0.65rem 0.7rem;
+  border: 1px dashed var(--line);
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.legend-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.legend-pair i {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+}
+
+.legend-pair em {
+  font-style: normal;
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-left: 0.1rem;
 }
 
 .timeline-filter {
@@ -599,33 +719,62 @@ select {
 }
 
 button {
+  cursor: pointer;
+}
+
+.btn,
+.search-row > button,
+.import-row > button,
+.actions > button,
+.set-actions > button,
+.result-list > li > button {
   border: 1px solid var(--ink);
   background: var(--ink);
   color: #f4faf4;
   padding: 0.65rem 0.95rem;
-  cursor: pointer;
   transition: transform 160ms ease, background 160ms ease, opacity 160ms ease;
 }
 
-button:hover:not(:disabled) {
+.btn:hover:not(:disabled),
+.search-row > button:hover:not(:disabled),
+.import-row > button:hover:not(:disabled),
+.actions > button:hover:not(:disabled),
+.set-actions > button:hover:not(:disabled),
+.result-list > li > button:hover:not(:disabled) {
   transform: translateY(-1px);
   background: #24332d;
 }
 
-button:disabled {
+.btn:disabled,
+.search-row > button:disabled,
+.import-row > button:disabled,
+.actions > button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
 
-button.ghost {
+.btn.ghost,
+.actions > button.ghost,
+.set-actions > button.ghost {
   background: transparent;
   color: var(--ink);
 }
 
-button.danger {
+.btn.ghost:hover:not(:disabled),
+.actions > button.ghost:hover:not(:disabled) {
+  background: rgba(20, 32, 28, 0.05);
+}
+
+.btn.danger,
+.set-actions > button.danger {
   background: transparent;
   color: var(--danger);
   border-color: color-mix(in oklab, var(--danger) 45%, white);
+}
+
+.set-actions > button {
+  padding: 0.4rem 0.65rem;
+  font-size: 0.88rem;
 }
 
 .actions {

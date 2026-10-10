@@ -1,7 +1,11 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import {
+  camelotColor,
+  phaseAccent,
   relationLabel,
+  roleAccent,
   type HarmonicRelation,
 } from "@/lib/harmonic";
 import {
@@ -16,6 +20,7 @@ import {
 type Props = {
   tracks: SetTrack[];
   activeRole: TrackRole;
+  focusedTrackId?: string | null;
   onSelectRole: (role: TrackRole) => void;
   onFocusTrack?: (id: string) => void;
 };
@@ -23,6 +28,7 @@ type Props = {
 export function RoleCrates({
   tracks,
   activeRole,
+  focusedTrackId,
   onSelectRole,
   onFocusTrack,
 }: Props) {
@@ -30,23 +36,31 @@ export function RoleCrates({
     <section className="role-crates" aria-label="Crate-Rollen Übersicht">
       <div className="panel-head">
         <h2>Crate-Rollen</h2>
-        <p>Welche Tracks wo gelandet sind — und warum</p>
+        <p>Tracks nach Rolle — mit Phase, Harmonic und Why</p>
       </div>
 
       <div className="crate-columns">
         {TRACK_ROLES.map((role) => {
           const roleTracks = tracksByRole(tracks, role.id);
           const active = activeRole === role.id;
+          const accent = roleAccent(role.id);
           return (
             <div
               key={role.id}
               className={active ? "crate-col active" : "crate-col"}
+              style={
+                {
+                  ["--crate-tint" as string]: accent.tint,
+                  ["--crate-bar" as string]: accent.bar,
+                } as CSSProperties
+              }
             >
               <button
                 type="button"
                 className="crate-col-head"
                 onClick={() => onSelectRole(role.id)}
               >
+                <span className="crate-bar" aria-hidden />
                 <strong>{role.label}</strong>
                 <span>{role.hint}</span>
                 <em>{roleTracks.length}</em>
@@ -56,64 +70,103 @@ export function RoleCrates({
                 <p className="crate-empty">Noch keine Tracks</p>
               ) : (
                 <ul className="crate-track-list">
-                  {roleTracks.map((track) => (
-                    <li key={`${role.id}-${track.id}`}>
-                      <button
-                        type="button"
-                        className="crate-card"
-                        onClick={() => onFocusTrack?.(track.id)}
-                      >
-                        {track.imageUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={track.imageUrl} alt="" width={40} height={40} />
-                        ) : (
-                          <div className="art-fallback sm" />
-                        )}
-                        <div className="crate-card-body">
-                          <strong>{track.name}</strong>
-                          <span className="artists">
-                            {track.artists.join(", ")}
-                          </span>
-                          <div className="crate-meta">
-                            <span className="pill">
-                              {PHASES.find((p) => p.id === track.phase)?.label}
+                  {roleTracks.map((track) => {
+                    const keyColor = camelotColor(track.keyCamelot);
+                    const phaseColor = phaseAccent(track.phase);
+                    const focused = focusedTrackId === track.id;
+                    return (
+                      <li key={`${role.id}-${track.id}`}>
+                        <button
+                          type="button"
+                          className={
+                            focused ? "crate-card is-focused" : "crate-card"
+                          }
+                          onClick={() => onFocusTrack?.(track.id)}
+                        >
+                          {track.imageUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={track.imageUrl}
+                              alt=""
+                              width={44}
+                              height={44}
+                            />
+                          ) : (
+                            <div className="art-fallback sm" />
+                          )}
+                          <div className="crate-card-body">
+                            <strong title={track.name}>{track.name}</strong>
+                            <span className="artists" title={track.artists.join(", ")}>
+                              {track.artists.join(", ")}
                             </span>
-                            <span className="pill">
-                              {formatDuration(track.durationMs)}
-                            </span>
-                            {track.keyCamelot ? (
-                              <span className="pill key">{track.keyCamelot}</span>
-                            ) : (
-                              <span className="pill muted">Key?</span>
-                            )}
-                            {track.bpm ? (
-                              <span className="pill">{track.bpm} BPM</span>
+                            <div className="crate-meta">
+                              <span
+                                className="pill phase"
+                                style={{
+                                  background: phaseColor.bg,
+                                  color: phaseColor.fg,
+                                  borderColor: "transparent",
+                                }}
+                              >
+                                {PHASES.find((p) => p.id === track.phase)?.label}
+                              </span>
+                              <span className="pill">
+                                {formatDuration(track.durationMs)}
+                              </span>
+                              {keyColor ? (
+                                <span
+                                  className="pill key"
+                                  style={{
+                                    background: keyColor.bg,
+                                    color: keyColor.fg,
+                                    borderColor: keyColor.border,
+                                  }}
+                                  title={`Camelot ${track.keyCamelot}`}
+                                >
+                                  <i
+                                    className="key-dot"
+                                    style={{ background: keyColor.solid }}
+                                  />
+                                  {track.keyCamelot}
+                                </span>
+                              ) : (
+                                <span className="pill muted" title="Key noch setzen">
+                                  Key offen
+                                </span>
+                              )}
+                              {track.bpm ? (
+                                <span className="pill">{track.bpm}</span>
+                              ) : null}
+                            </div>
+                            {track.why ? (
+                              <p className="why" title={track.why}>
+                                {track.why}
+                              </p>
+                            ) : null}
+                            {track.harmonicFromPrev &&
+                            track.harmonicFromPrev !== "unknown" &&
+                            track.role !== "safety" ? (
+                              <p
+                                className={`harm harm-${track.harmonicFromPrev as HarmonicRelation}`}
+                              >
+                                {relationLabel(track.harmonicFromPrev)}
+                              </p>
+                            ) : null}
+                            {track.safetyAlt ? (
+                              <p className="safety-line" title={track.safetyAlt}>
+                                Alt: {track.safetyAlt}
+                              </p>
+                            ) : null}
+                            {track.transition !== "unset" ? (
+                              <p className="transition-line">
+                                → {track.transition}
+                              </p>
                             ) : null}
                           </div>
-                          {track.why ? (
-                            <p className="why">{track.why}</p>
-                          ) : null}
-                          {track.harmonicFromPrev &&
-                          track.harmonicFromPrev !== "unknown" &&
-                          track.role !== "safety" ? (
-                            <p
-                              className={`harm harm-${track.harmonicFromPrev as HarmonicRelation}`}
-                            >
-                              {relationLabel(track.harmonicFromPrev)}
-                            </p>
-                          ) : null}
-                          {track.safetyAlt ? (
-                            <p className="safety-line">Alt: {track.safetyAlt}</p>
-                          ) : null}
-                          {track.transition !== "unset" ? (
-                            <p className="transition-line">
-                              → {track.transition}
-                            </p>
-                          ) : null}
-                        </div>
-                      </button>
-                    </li>
-                  ))}
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>

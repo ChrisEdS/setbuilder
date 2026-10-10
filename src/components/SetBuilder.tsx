@@ -9,6 +9,7 @@ import {
 } from "react";
 import { HarmonicPath } from "@/components/HarmonicPath";
 import { RoleCrates } from "@/components/RoleCrates";
+import { openSetPdfExport } from "@/lib/export-pdf";
 import { CAMELOT_CODES } from "@/lib/harmonic";
 import { reharmonizeDraft } from "@/lib/extract-set";
 import {
@@ -390,6 +391,15 @@ export function SetBuilder() {
     setStatus("Set-Export inkl. Cue-/Safety-Notizen kopiert.");
   }
 
+  function exportPdf() {
+    try {
+      openSetPdfExport(draft);
+      setStatus("PDF-Ansicht geöffnet — im Dialog „Als PDF speichern“ wählen.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "PDF-Export fehlgeschlagen.");
+    }
+  }
+
   function resetSet() {
     setDraft(DEFAULT_SET);
     setFocusTrackId(null);
@@ -630,6 +640,7 @@ export function SetBuilder() {
       <RoleCrates
         tracks={draft.tracks}
         activeRole={activeRole}
+        focusedTrackId={focusTrackId}
         onSelectRole={(role) => {
           setActiveRole(role);
           setRoleFilter(role);
@@ -717,19 +728,28 @@ export function SetBuilder() {
             <div className="actions">
               <button
                 type="button"
-                className={roleFilter === "all" ? undefined : "ghost"}
+                className={roleFilter === "all" ? "btn" : "btn ghost"}
                 onClick={() => setRoleFilter("all")}
               >
                 Alle
               </button>
               <button
                 type="button"
+                className="btn"
+                onClick={exportPdf}
+                disabled={mainTracks.length === 0}
+              >
+                PDF
+              </button>
+              <button
+                type="button"
+                className="btn ghost"
                 onClick={copyExport}
                 disabled={draft.tracks.length === 0}
               >
-                Export
+                Text
               </button>
-              <button type="button" className="ghost" onClick={resetSet}>
+              <button type="button" className="btn ghost" onClick={resetSet}>
                 Reset
               </button>
             </div>

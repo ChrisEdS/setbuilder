@@ -9,7 +9,7 @@ Spotify-gestützter DJ-Set-Builder nach dem [DJ.Studio Prep-Workflow](https://dj
 - **Harmonic Path**: Camelot-Kompatibilität, Mix-Score, „Harmonisch sortieren“
 - **Brief**: Venue, Slot, Audience, Gear, Dauer
 - **Spotify-Suche** zum Nachschärfen
-- **Export** inkl. Safety-Crate
+- **Export**: PDF (Druckdialog) und Text-Copy inkl. Safety-Crate
 
 ## Setup
 

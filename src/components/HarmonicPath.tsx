@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  camelotColor,
   pathStats,
   relationLabel,
   type HarmonicRelation,
@@ -17,13 +18,19 @@ export function HarmonicPath({ tracks, onHarmonize }: Props) {
   const stats = pathStats(performance);
   const coverage =
     stats.total === 0 ? 0 : Math.round((stats.keyed / stats.total) * 100);
+  const scorePct = stats.avg == null ? null : Math.round(stats.avg * 100);
 
   return (
     <section className="harmonic-path" aria-label="Harmonic path">
       <div className="panel-head">
         <h2>Harmonic Path</h2>
         <div className="actions">
-          <button type="button" onClick={onHarmonize} disabled={performance.length < 2}>
+          <button
+            type="button"
+            className="btn"
+            onClick={onHarmonize}
+            disabled={performance.length < 2}
+          >
             Harmonisch sortieren
           </button>
         </div>
@@ -33,10 +40,27 @@ export function HarmonicPath({ tracks, onHarmonize }: Props) {
         <div>
           <strong>{coverage}%</strong>
           <span>Keys gesetzt</span>
+          <div className="mini-bar" aria-hidden>
+            <i style={{ width: `${coverage}%` }} />
+          </div>
         </div>
         <div>
-          <strong>{stats.avg == null ? "—" : `${Math.round(stats.avg * 100)}%`}</strong>
+          <strong>{scorePct == null ? "—" : `${scorePct}%`}</strong>
           <span>Mix-Score</span>
+          <div className="mini-bar" aria-hidden>
+            <i
+              className={
+                scorePct == null
+                  ? undefined
+                  : scorePct >= 75
+                    ? "ok"
+                    : scorePct >= 50
+                      ? "mid"
+                      : "bad"
+              }
+              style={{ width: `${scorePct ?? 0}%` }}
+            />
+          </div>
         </div>
         <div>
           <strong>{stats.clashes}</strong>
@@ -51,6 +75,7 @@ export function HarmonicPath({ tracks, onHarmonize }: Props) {
           {performance.map((track, index) => {
             const relation = (track.harmonicFromPrev ||
               "unknown") as HarmonicRelation;
+            const color = camelotColor(track.keyCamelot);
             return (
               <li key={track.id}>
                 {index > 0 ? (
@@ -60,9 +85,28 @@ export function HarmonicPath({ tracks, onHarmonize }: Props) {
                 ) : (
                   <span className="harm-link start">Start</span>
                 )}
-                <div className="harm-node">
-                  <strong>{track.keyCamelot || "—"}</strong>
-                  <span>
+                <div
+                  className={color ? "harm-node keyed" : "harm-node"}
+                  style={
+                    color
+                      ? {
+                          background: color.bg,
+                          borderColor: color.border,
+                          color: color.fg,
+                        }
+                      : undefined
+                  }
+                >
+                  <strong>
+                    {color ? (
+                      <i
+                        className="key-dot"
+                        style={{ background: color.solid }}
+                      />
+                    ) : null}
+                    {track.keyCamelot || "—"}
+                  </strong>
+                  <span title={`${track.artists.join(", ")} – ${track.name}`}>
                     {track.name}
                     {track.bpm ? ` · ${track.bpm}` : ""}
                   </span>
@@ -73,10 +117,24 @@ export function HarmonicPath({ tracks, onHarmonize }: Props) {
         </ol>
       )}
 
+      <div className="camelot-legend" aria-label="Camelot Farben">
+        {Array.from({ length: 12 }, (_, i) => {
+          const n = i + 1;
+          const a = camelotColor(`${n}A`)!;
+          const b = camelotColor(`${n}B`)!;
+          return (
+            <span key={n} className="legend-pair">
+              <i style={{ background: a.solid }} title={`${n}A`} />
+              <i style={{ background: b.solid }} title={`${n}B`} />
+              <em>{n}</em>
+            </span>
+          );
+        })}
+      </div>
+
       <p className="guide-line">
-        Camelot: gleiche Key, Relative (8A↔8B), ±1 Nachbar, Energy Boost (+1).
-        Keys/BPM in der Timeline setzen — dann „Harmonisch sortieren“. Spotify
-        liefert Audio-Features in Dev Mode nicht mehr.
+        Farben folgen dem Camelot Wheel (1–12). A = Moll (kräftiger), B = Dur
+        (heller). Keys in der Timeline setzen, dann sortieren.
       </p>
     </section>
   );
