@@ -787,6 +787,14 @@ export function SetBuilder() {
             </a>
           )}
         </div>
+        {tidalConnected ? null : (
+          <p className="import-hint">
+            Tidal-Fehler 11102: In der Tidal-App unter Settings die Redirect-URI{" "}
+            <code>http://127.0.0.1:4317/api/auth/tidal/callback</code> eintragen
+            und die Scopes <code>user.read</code> und <code>playlists.read</code>{" "}
+            aktivieren. Die URI muss exakt so dastehen.
+          </p>
+        )}
 
         {spotifyConnected && myPlaylists.length > 0 ? (
           <div className="playlist-picker">

@@ -346,6 +346,18 @@ a.button-link.tidal-login {
   color: #121212 !important;
 }
 
+.import-hint {
+  margin: 0 0 0.85rem;
+  color: #b3b3b3;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.import-hint code {
+  color: #fff;
+  font-size: 0.78rem;
+}
+
 .button-link {
   display: inline-flex;
   align-items: center;
@@ -4302,7 +4314,7 @@ button.drag-handle:active i {
   }
 
   .manual-row {
-    grid-template-columns: 1.4rem minmax(0, 1fr);
+    grid-template-columns: 4.6rem minmax(0, 1fr);
     gap: 0.55rem;
   }
 
@@ -4314,4 +4326,41 @@ button.drag-handle:active i {
     justify-content: flex-start;
     flex-wrap: wrap;
   }
+}
+
+.harm-steps {
+  align-items: stretch;
+}
+
+.harm-steps li {
+  display: grid;
+  grid-template-rows: 2.6rem minmax(5.4rem, auto);
+  gap: 0.35rem;
+  min-width: 9.2rem;
+  align-items: stretch;
+}
+
+.harm-link {
+  display: flex;
+  align-items: flex-end;
+  min-height: 2.6rem;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.harm-node {
+  height: 100%;
+  min-height: 5.4rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  box-sizing: border-box;
+}
+
+.harm-node strong {
+  min-height: 1.5rem;
+}
+
+.harm-node span {
+  min-height: 2.5rem;
 }
