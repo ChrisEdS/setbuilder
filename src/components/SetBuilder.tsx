@@ -849,6 +849,9 @@ export function SetBuilder() {
         artists={draft.tracks
           .find((track) => track.id === focusTrackId)
           ?.artists.join(", ")}
+        imageUrl={
+          draft.tracks.find((track) => track.id === focusTrackId)?.imageUrl
+        }
         onClose={() => setFocusTrackId(null)}
       />
 
