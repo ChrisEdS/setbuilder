@@ -53,6 +53,14 @@ type SearchTrack = {
 };
 
 const STORAGE_KEY = "setform-draft-v4";
+const SETUPS_KEY = "setform-setups-v1";
+
+type SavedSetup = {
+  id: string;
+  name: string;
+  savedAt: string;
+  draft: SetDraft;
+};
 const DRAFT_EVENT = "setform-draft";
 
 let cachedRaw: string | null | undefined;
@@ -128,6 +136,33 @@ function readAuthNote(): string | null {
   return authNoteCache;
 }
 
+let setupsRaw: string | null = null;
+let setupsSnap: SavedSetup[] = [];
+
+function readSetupsSnapshot(): SavedSetup[] {
+  const raw = localStorage.getItem(SETUPS_KEY) || "[]";
+  if (raw === setupsRaw) return setupsSnap;
+  setupsRaw = raw;
+  try {
+    const parsed = JSON.parse(raw) as SavedSetup[];
+    setupsSnap = Array.isArray(parsed) ? parsed : [];
+  } catch {
+    setupsSnap = [];
+  }
+  return setupsSnap;
+}
+
+function subscribeSetups(onStoreChange: () => void) {
+  window.addEventListener("setform-setups", onStoreChange);
+  return () => window.removeEventListener("setform-setups", onStoreChange);
+}
+
+function writeSetups(setups: SavedSetup[]) {
+  localStorage.setItem(SETUPS_KEY, JSON.stringify(setups));
+  setupsRaw = null;
+  window.dispatchEvent(new Event("setform-setups"));
+}
+
 function persistDraft(draft: SetDraft) {
   const raw = JSON.stringify(draft);
   localStorage.setItem(STORAGE_KEY, raw);
@@ -158,6 +193,9 @@ export function SetBuilder() {
   const [isPending, startTransition] = useTransition();
   const [hasSearched, setHasSearched] = useState(false);
   const [playlistUrl, setPlaylistUrl] = useState("");
+  const setups = useSyncExternalStore(subscribeSetups, readSetupsSnapshot, () => []);
+  const [setupName, setSetupName] = useState(draft.title);
+  const [selectedSetup, setSelectedSetup] = useState("");
   const [spotifyConnected, setSpotifyConnected] = useState<boolean | null>(null);
   const [tidalConnected, setTidalConnected] = useState<boolean | null>(null);
   const [redirectUri, setRedirectUri] = useState(
@@ -694,6 +732,96 @@ export function SetBuilder() {
     }
   }
 
+  function saveSetup() {
+    const name = setupName.trim() || draft.title || "Setup";
+    const nextSetup: SavedSetup = {
+      id:
+        setups.find((item) => item.name === name)?.id ||
+        `setup-${Date.now().toString(36)}`,
+      name,
+      savedAt: new Date().toISOString(),
+      draft,
+    };
+    const next = [
+      nextSetup,
+      ...setups.filter((item) => item.id !== nextSetup.id && item.name !== name),
+    ];
+    writeSetups(next);
+    setSelectedSetup(nextSetup.id);
+    setSetupName(name);
+    setStatus(`„${name}“ gespeichert.`);
+  }
+
+  function loadSetup(id = selectedSetup) {
+    const setup = setups.find((item) => item.id === id);
+    if (!setup) return;
+    const next = {
+      ...DEFAULT_SET,
+      ...setup.draft,
+      tracks: (setup.draft.tracks ?? []).map(normalizeTrack),
+    };
+    setDraft(next);
+    setSetupName(setup.name);
+    setFocusTrackId(null);
+    setStatus(`„${setup.name}“ geladen.`);
+  }
+
+  function deleteSetup() {
+    const setup = setups.find((item) => item.id === selectedSetup);
+    if (!setup) return;
+    const next = setups.filter((item) => item.id !== setup.id);
+    writeSetups(next);
+    setSelectedSetup("");
+    setStatus(`„${setup.name}“ gelöscht.`);
+  }
+
+  function downloadSetup() {
+    const name = (setupName.trim() || draft.title || "setform").replace(
+      /[^\w\-]+/g,
+      "-",
+    );
+    const blob = new Blob([JSON.stringify({ name, draft }, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${name}.setform.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setStatus("Einstellungsdatei heruntergeladen.");
+  }
+
+  function uploadSetup(file: File | null) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(String(reader.result)) as {
+          name?: string;
+          draft?: SetDraft;
+          title?: string;
+          tracks?: SetTrack[];
+        };
+        const incoming = parsed.draft ?? (parsed.tracks ? (parsed as SetDraft) : null);
+        if (!incoming?.tracks || !incoming.title) {
+          throw new Error("Datei enthält kein SETFORM-Setup.");
+        }
+        const name = parsed.name || incoming.title;
+        setSetupName(name);
+        setDraft({
+          ...DEFAULT_SET,
+          ...incoming,
+          tracks: incoming.tracks.map(normalizeTrack),
+        });
+        setStatus(`„${name}“ aus Datei geladen.`);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Datei ungültig.");
+      }
+    };
+    reader.readAsText(file);
+  }
+
   function resetSet() {
     setDraft(DEFAULT_SET);
     setFocusTrackId(null);
@@ -813,6 +941,72 @@ export function SetBuilder() {
           </label>
         </div>
       </header>
+
+      <section className="setups-bar" aria-label="Gespeicherte Einstellungen">
+        <div className="panel-head">
+          <h2>Einstellungen</h2>
+          <p>Brief, Tracks, Comments, Keys und BPM</p>
+        </div>
+        <div className="setups-row">
+          <label>
+            <span>Name</span>
+            <input
+              value={setupName}
+              onChange={(event) => setSetupName(event.target.value)}
+              aria-label="Setup-Name"
+            />
+          </label>
+          <button type="button" className="btn" onClick={saveSetup}>
+            Speichern
+          </button>
+          <label>
+            <span>Gespeichert</span>
+            <select
+              value={selectedSetup}
+              onChange={(event) => setSelectedSetup(event.target.value)}
+              aria-label="Gespeichertes Setup"
+            >
+              <option value="">Wählen…</option>
+              {setups.map((setup) => (
+                <option key={setup.id} value={setup.id}>
+                  {setup.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            className="btn ghost"
+            disabled={!selectedSetup}
+            onClick={() => loadSetup()}
+          >
+            Laden
+          </button>
+          <button
+            type="button"
+            className="btn ghost"
+            disabled={!selectedSetup}
+            onClick={deleteSetup}
+          >
+            Löschen
+          </button>
+          <button type="button" className="btn ghost" onClick={downloadSetup}>
+            Datei
+          </button>
+          <label className="btn ghost file-btn">
+            Öffnen
+            <input
+              type="file"
+              accept="application/json,.json"
+              hidden
+              onChange={(event) => {
+                uploadSetup(event.target.files?.[0] ?? null);
+                event.currentTarget.value = "";
+              }}
+            />
+          </label>
+        </div>
+      </section>
 
       <section className="import-panel" aria-label="Playlist import">
         <div className="panel-head">

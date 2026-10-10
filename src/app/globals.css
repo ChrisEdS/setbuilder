@@ -333,6 +333,46 @@ textarea {
   letter-spacing: -0.03em;
 }
 
+.setups-bar {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #181818;
+  border-radius: 10px;
+  padding: 1.1rem 1.2rem 1.2rem;
+  margin-bottom: 1.1rem;
+}
+
+.setups-bar .panel-head h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.setups-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: end;
+}
+
+.setups-row label {
+  display: grid;
+  gap: 0.3rem;
+  min-width: min(100%, 14rem);
+}
+
+.setups-row label span {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #b3b3b3;
+}
+
+.setups-row input,
+.setups-row select {
+  height: 40px;
+  min-height: 40px;
+}
+
 .import-actions {
   display: flex;
   flex-wrap: wrap;
