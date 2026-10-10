@@ -91,6 +91,7 @@ textarea {
   margin: 0 auto;
   padding: 1.75rem 0 4rem;
   animation: rise 700ms ease-out both;
+  transform: none;
 }
 
 .hero {
@@ -1340,11 +1341,9 @@ button {
 @keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(14px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
@@ -3527,6 +3526,20 @@ label.btn:hover {
 
 .player-fallback a {
   color: #1ed760;
+}
+
+.preview-player {
+  position: fixed !important;
+  inset: auto 0 0 0 !important;
+  z-index: 80 !important;
+  width: 100% !important;
+  transform: none !important;
+  display: block !important;
+  pointer-events: auto !important;
+}
+
+.manual-row-main {
+  cursor: pointer;
 }
 
 .timeline-tools button.is-playing {

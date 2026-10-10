@@ -1,6 +1,16 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { playerEmbed, type PlayableTrack } from "@/lib/player";
+
+function useIsClient() {
+  return useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+}
 
 type Props = {
   tracks: PlayableTrack[];
@@ -10,15 +20,16 @@ type Props = {
 };
 
 export function PreviewPlayer({ tracks, currentId, onChange, onClose }: Props) {
+  const isClient = useIsClient();
   const index = tracks.findIndex((track) => track.id === currentId);
   const track = index >= 0 ? tracks[index] : null;
-  if (!track) return null;
+  if (!isClient || !track) return null;
 
   const embed = playerEmbed(track);
   const prev = index > 0 ? tracks[index - 1] : null;
   const next = index < tracks.length - 1 ? tracks[index + 1] : null;
 
-  return (
+  return createPortal(
     <aside className="preview-player" aria-label="Player">
       <div className="preview-dock">
         <div className="preview-now">
@@ -40,7 +51,7 @@ export function PreviewPlayer({ tracks, currentId, onChange, onClose }: Props) {
           <div className="preview-meta">
             <strong title={track.name}>{track.name}</strong>
             <span>
-              {track.artists.join(", ") || "—"}
+              {(track.artists ?? []).join(", ") || "—"}
               {embed ? ` · ${embed.label}` : ""}
             </span>
           </div>
@@ -86,6 +97,7 @@ export function PreviewPlayer({ tracks, currentId, onChange, onClose }: Props) {
           </p>
         )}
       </div>
-    </aside>
+    </aside>,
+    document.body,
   );
 }

@@ -260,7 +260,10 @@ export function ManualArrange({
                   {positions.get(track.id) ?? index + 1}
                 </span>
                 <div className="manual-body">
-                <div className="manual-row-main">
+                <div
+                  className="manual-row-main"
+                  onClick={() => onFocus?.(track.id)}
+                >
                   <button
                     type="button"
                     className="manual-select"
