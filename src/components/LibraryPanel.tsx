@@ -44,12 +44,14 @@ export function LibraryPanel({ draft, onApply }: Props) {
   const [libraryCount, setLibraryCount] = useState<number | null>(null);
   const [query, setQuery] = useState("");
   const [libraryRows, setLibraryRows] = useState<LibraryRow[]>([]);
+  const [spotifyNote, setSpotifyNote] = useState<string | null>(null);
 
-  const keyedShare = useMemo(() => {
+  const keyStats = useMemo(() => {
     const main = performanceTracks(draft.tracks);
-    if (!main.length) return 0;
     const keyed = main.filter((track) => track.keyCamelot).length;
-    return Math.round((keyed / main.length) * 100);
+    const total = main.length;
+    const share = total ? Math.round((keyed / total) * 100) : 0;
+    return { keyed, total, share };
   }, [draft.tracks]);
 
   const filteredLibrary = useMemo(() => {
@@ -106,7 +108,9 @@ export function LibraryPanel({ draft, onApply }: Props) {
     } catch (error) {
       onApply(
         draft,
-        error instanceof Error ? error.message : "rekordbox Import fehlgeschlagen.",
+        error instanceof Error
+          ? error.message
+          : "rekordbox Import fehlgeschlagen.",
       );
     } finally {
       setBusy(false);
@@ -128,15 +132,17 @@ export function LibraryPanel({ draft, onApply }: Props) {
         available?: boolean;
         message?: string;
       };
-      onApply(
-        draft,
+      const message =
         data.message ||
-          (data.available
-            ? "Spotify Features ok"
-            : "Spotify Key-Import nicht verfügbar"),
-      );
+        (data.available
+          ? "Spotify Features ok"
+          : "Spotify Key-Import nicht verfügbar");
+      setSpotifyNote(message);
+      onApply(draft, message);
     } catch {
-      onApply(draft, "Spotify Enrichment fehlgeschlagen.");
+      const message = "Spotify Enrichment fehlgeschlagen.";
+      setSpotifyNote(message);
+      onApply(draft, message);
     } finally {
       setBusy(false);
     }
@@ -150,23 +156,57 @@ export function LibraryPanel({ draft, onApply }: Props) {
     );
   }
 
+  const statusLabel =
+    keyStats.total === 0
+      ? "Noch kein Set — zuerst Playlist extrahieren"
+      : keyStats.share === 0
+        ? "Keys fehlen noch — rekordbox XML laden"
+        : keyStats.share < 100
+          ? `${keyStats.keyed} von ${keyStats.total} Tracks mit Key`
+          : "Alle Performance-Tracks haben Keys";
+
   return (
     <section className="library-panel" aria-label="Key Library">
-      <div className="panel-head">
-        <h2>Key Library</h2>
-        <p>{keyedShare}% des Sets haben Keys</p>
+      <div className="panel-head library-head">
+        <div>
+          <h2>Key Library</h2>
+          <p className="timeline-filter">{statusLabel}</p>
+        </div>
+        <div className="library-meter" aria-label="Key-Abdeckung">
+          <strong>{keyStats.share}%</strong>
+          <span>
+            {keyStats.keyed}/{keyStats.total || "—"} Keys
+          </span>
+        </div>
       </div>
 
-      <div className="library-grid">
-        <article className="library-card accent">
-          <h3>rekordbox durchsuchen</h3>
+      <div
+        className="library-progress"
+        role="progressbar"
+        aria-valuenow={keyStats.share}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <i style={{ width: `${Math.max(keyStats.share, keyStats.total ? 2 : 0)}%` }} />
+      </div>
+
+      <div className="library-primary">
+        <div className="library-primary-copy">
+          <span className="library-badge">Empfohlen</span>
+          <h3>rekordbox Collection</h3>
           <p>
-            Collection-XML (empfohlen), CSV oder unverschlüsselte{" "}
-            <code>master.db</code>. Danach per Artist/Title aufs Spotify-Set
-            matchen.
+            Exportiere deine Collection als XML und match Key/BPM per
+            Artist/Title aufs Spotify-Set. Unverschlüsselte{" "}
+            <code>master.db</code> und CSV gehen auch.
           </p>
-          <label className={"btn file-btn" + (busy ? " is-busy" : "")}>
-            {busy ? "Lade…" : "Datei wählen"}
+        </div>
+        <div className="library-primary-actions">
+          <label
+            className={
+              "btn file-btn library-file" + (busy ? " is-busy" : "")
+            }
+          >
+            {busy ? "Lade…" : "Collection laden"}
             <input
               type="file"
               accept=".xml,.db,.sqlite,.csv,.txt,.tsv"
@@ -178,66 +218,95 @@ export function LibraryPanel({ draft, onApply }: Props) {
               }}
             />
           </label>
-          <p className="guide-line">
+          <p className="library-path">
             rekordbox → File → <strong>Export Collection in XML…</strong>
-            {libraryCount != null ? ` · Index: ${libraryCount}` : ""}
+            {libraryCount != null ? (
+              <>
+                {" "}
+                · Index <strong>{libraryCount}</strong>
+              </>
+            ) : null}
           </p>
-        </article>
+        </div>
+      </div>
 
-        <article className="library-card">
-          <h3>Spotify Features</h3>
-          <p>
-            Key/BPM über Audio Features sind für Dev-Mode-Apps von Spotify
-            gesperrt. Status prüfen — Fallback bleibt rekordbox.
-          </p>
-          <button
-            type="button"
-            className="btn ghost"
-            disabled={busy || draft.tracks.length === 0}
-            onClick={() => void trySpotifyEnrich()}
-          >
-            Spotify prüfen
-          </button>
-        </article>
-
-        <article className="library-card wide">
-          <h3>CSV / Paste</h3>
-          <p>Mixed In Key, Serato oder manuell — Camelot, Open Key, Am/C…</p>
-          <div className="key-import-actions">
-            <button
-              type="button"
-              className="btn ghost"
-              onClick={() => setText(EXAMPLE)}
-            >
-              Beispiel
-            </button>
-            <button
-              type="button"
-              className="btn"
-              disabled={!text.trim() || draft.tracks.length === 0}
-              onClick={() => applyText(text)}
-            >
-              Keys matchen
-            </button>
+      <div className="library-folds">
+        <details className="explain-fold nested">
+          <summary>
+            <span>Spotify Audio Features</span>
+            <em>Meist gesperrt</em>
+          </summary>
+          <div className="explain-body">
+            <p>
+              Key/BPM über Spotify Audio Features sind für Dev-Mode-Apps
+              aktuell blockiert. Kurz prüfen — Fallback bleibt rekordbox.
+            </p>
+            <div className="library-inline-actions">
+              <button
+                type="button"
+                className="btn ghost"
+                disabled={busy || draft.tracks.length === 0}
+                onClick={() => void trySpotifyEnrich()}
+              >
+                Status prüfen
+              </button>
+              {spotifyNote ? (
+                <span className="library-inline-status">{spotifyNote}</span>
+              ) : null}
+            </div>
           </div>
-          <textarea
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-            rows={5}
-            placeholder="Artist,Title,Key,BPM"
-            aria-label="Key CSV Paste"
-          />
-        </article>
+        </details>
+
+        <details className="explain-fold nested">
+          <summary>
+            <span>CSV / Paste</span>
+            <em>Mixed In Key · Serato</em>
+          </summary>
+          <div className="explain-body">
+            <p>
+              Eine Zeile pro Track: Artist, Title, Key, BPM. Camelot (
+              <code>8A</code>), Open Key oder klassisch (<code>Am</code>,{" "}
+              <code>C</code>) werden erkannt.
+            </p>
+            <div className="library-inline-actions">
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={() => setText(EXAMPLE)}
+              >
+                Beispiel laden
+              </button>
+              <button
+                type="button"
+                className="btn"
+                disabled={!text.trim() || draft.tracks.length === 0}
+                onClick={() => applyText(text)}
+              >
+                Keys matchen
+              </button>
+            </div>
+            <textarea
+              value={text}
+              onChange={(event) => setText(event.target.value)}
+              rows={4}
+              placeholder={"Artist,Title,Key,BPM\n…"}
+              aria-label="Key CSV Paste"
+            />
+          </div>
+        </details>
       </div>
 
       {libraryRows.length > 0 ? (
         <div className="library-browser">
           <div className="library-browser-head">
-            <h3>Library Index</h3>
+            <h3>
+              Library Index
+              <span>{libraryRows.length} Tracks</span>
+            </h3>
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Library durchsuchen…"
+              placeholder="Artist, Title oder Key…"
               aria-label="rekordbox suchen"
             />
             <button
@@ -264,7 +333,15 @@ export function LibraryPanel({ draft, onApply }: Props) {
             ))}
           </ul>
         </div>
-      ) : null}
+      ) : (
+        <div className="library-empty">
+          <strong>Noch kein Index</strong>
+          <span>
+            Lade eine rekordbox-XML — danach kannst du hier suchen und erneut
+            matchen.
+          </span>
+        </div>
+      )}
     </section>
   );
 }
