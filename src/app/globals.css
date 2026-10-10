@@ -4019,6 +4019,21 @@ label.btn {
   color: #b3b3b3 !important;
   font-size: 0.9rem;
   letter-spacing: 0;
+  cursor: grab;
+  user-select: none;
+}
+
+.manual-index:active {
+  cursor: grabbing;
+}
+
+.manual-row.is-dragging {
+  opacity: 0.4;
+}
+
+.manual-row.is-over {
+  background: rgba(30, 215, 96, 0.08);
+  box-shadow: inset 0 2px 0 #1ed760;
 }
 
 .manual-body {

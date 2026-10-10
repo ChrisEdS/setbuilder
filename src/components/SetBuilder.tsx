@@ -158,6 +158,8 @@ export function SetBuilder() {
   );
   const [isExtracting, setIsExtracting] = useState(false);
   const [focusTrackId, setFocusTrackId] = useState<string | null>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
   const [roleFilter, setRoleFilter] = useState<TrackRole | "all">("all");
   const [workspaceMode, setWorkspaceMode] = useState<"auto" | "manual">(
     "manual",
@@ -579,6 +581,19 @@ export function SetBuilder() {
     });
   }
 
+  function reorderTrack(activeId: string, overId: string) {
+    if (!activeId || activeId === overId) return;
+    setDraft((current) => {
+      const from = current.tracks.findIndex((track) => track.id === activeId);
+      const to = current.tracks.findIndex((track) => track.id === overId);
+      if (from < 0 || to < 0) return current;
+      const tracks = [...current.tracks];
+      const [item] = tracks.splice(from, 1);
+      tracks.splice(to, 0, item);
+      return { ...current, tracks };
+    });
+  }
+
   async function copyExport() {
     await navigator.clipboard.writeText(exportSetText(draft));
     setStatus("Set-Export inkl. Cue-/Safety-Notizen kopiert.");
@@ -960,6 +975,7 @@ export function SetBuilder() {
           onAddTracks={addTracksBulk}
           onPatch={patchTrack}
           onMove={moveTrack}
+          onReorder={reorderTrack}
           onRemove={removeTrack}
           onFocus={(id) => setFocusTrackId(id)}
           onExportPdf={exportPdf}
@@ -1165,13 +1181,41 @@ export function SetBuilder() {
                 <li
                   key={`${track.role}-${track.id}`}
                   id={`track-${track.id}`}
-                  className={
-                    focusTrackId === track.id
-                      ? "manual-row focused"
-                      : "manual-row"
-                  }
+                  className={[
+                    "manual-row",
+                    focusTrackId === track.id ? "focused" : "",
+                    dragId === track.id ? "is-dragging" : "",
+                    overId === track.id && dragId !== track.id ? "is-over" : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = "move";
+                    if (overId !== track.id) setOverId(track.id);
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    const from = event.dataTransfer.getData("text/plain");
+                    if (from) reorderTrack(from, track.id);
+                    setDragId(null);
+                    setOverId(null);
+                  }}
                 >
-                  <span className="manual-index">
+                  <span
+                    className="manual-index"
+                    draggable
+                    title="Ziehen zum Sortieren"
+                    onDragStart={(event) => {
+                      event.dataTransfer.setData("text/plain", track.id);
+                      event.dataTransfer.effectAllowed = "move";
+                      setDragId(track.id);
+                    }}
+                    onDragEnd={() => {
+                      setDragId(null);
+                      setOverId(null);
+                    }}
+                  >
                     {positions.get(track.id) ?? "—"}
                   </span>
                   <div className="manual-body">
@@ -1188,6 +1232,7 @@ export function SetBuilder() {
                             alt=""
                             width={48}
                             height={48}
+                            draggable={false}
                           />
                         ) : (
                           <div className="art-fallback sm" />

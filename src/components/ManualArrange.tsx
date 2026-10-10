@@ -34,6 +34,7 @@ type Props = {
   onAddTracks: (tracks: SetTrack[]) => void;
   onPatch: (id: string, patch: Partial<SetTrack>) => void;
   onMove: (id: string, direction: -1 | 1) => void;
+  onReorder: (activeId: string, overId: string) => void;
   onRemove: (id: string) => void;
   onFocus?: (id: string) => void;
   focusedTrackId?: string | null;
@@ -48,6 +49,7 @@ export function ManualArrange({
   onAddTracks,
   onPatch,
   onMove,
+  onReorder,
   onRemove,
   onFocus,
   focusedTrackId,
@@ -59,6 +61,8 @@ export function ManualArrange({
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
 
   const performance = tracks.filter((track) => track.role !== "safety");
 
@@ -167,8 +171,7 @@ export function ManualArrange({
         <div>
           <h2>Manual Arrange</h2>
           <p className="timeline-filter">
-            Links aus Spotify · Tidal · SoundCloud · Beatport — reorder &amp;
-            Comments
+            Links aus Spotify · Tidal · SoundCloud · Beatport — Zeile an der Nummer ziehen
           </p>
         </div>
         <div className="manual-head-actions">
@@ -253,10 +256,42 @@ export function ManualArrange({
             return (
               <li
                 key={track.id}
-                className={focused ? "manual-row focused" : "manual-row"}
                 id={`manual-${track.id}`}
+                className={[
+                  "manual-row",
+                  focused ? "focused" : "",
+                  dragId === track.id ? "is-dragging" : "",
+                  overId === track.id && dragId !== track.id ? "is-over" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = "move";
+                  if (overId !== track.id) setOverId(track.id);
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  const from = event.dataTransfer.getData("text/plain");
+                  if (from) onReorder(from, track.id);
+                  setDragId(null);
+                  setOverId(null);
+                }}
               >
-                <span className="manual-index">
+                <span
+                  className="manual-index"
+                  draggable
+                  title="Ziehen zum Sortieren"
+                  onDragStart={(event) => {
+                    event.dataTransfer.setData("text/plain", track.id);
+                    event.dataTransfer.effectAllowed = "move";
+                    setDragId(track.id);
+                  }}
+                  onDragEnd={() => {
+                    setDragId(null);
+                    setOverId(null);
+                  }}
+                >
                   {positions.get(track.id) ?? index + 1}
                 </span>
                 <div className="manual-body">
@@ -271,7 +306,13 @@ export function ManualArrange({
                   >
                     {track.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={track.imageUrl} alt="" width={48} height={48} />
+                      <img
+                        src={track.imageUrl}
+                        alt=""
+                        width={48}
+                        height={48}
+                        draggable={false}
+                      />
                     ) : (
                       <div className="art-fallback sm" />
                     )}
