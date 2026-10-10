@@ -3,6 +3,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   useSyncExternalStore,
   useTransition,
@@ -160,6 +161,7 @@ export function SetBuilder() {
   const [focusTrackId, setFocusTrackId] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+  const dragIdRef = useRef<string | null>(null);
   const [roleFilter, setRoleFilter] = useState<TrackRole | "all">("all");
   const [workspaceMode, setWorkspaceMode] = useState<"auto" | "manual">(
     "manual",
@@ -1196,27 +1198,44 @@ export function SetBuilder() {
                   }}
                   onDrop={(event) => {
                     event.preventDefault();
-                    const from = event.dataTransfer.getData("text/plain");
+                    const from =
+                      event.dataTransfer.getData("text/plain") ||
+                      dragIdRef.current ||
+                      "";
                     if (from) reorderTrack(from, track.id);
+                    dragIdRef.current = null;
                     setDragId(null);
                     setOverId(null);
                   }}
                 >
-                  <span
-                    className="manual-index"
-                    draggable
-                    title="Ziehen zum Sortieren"
-                    onDragStart={(event) => {
-                      event.dataTransfer.setData("text/plain", track.id);
-                      event.dataTransfer.effectAllowed = "move";
-                      setDragId(track.id);
-                    }}
-                    onDragEnd={() => {
-                      setDragId(null);
-                      setOverId(null);
-                    }}
-                  >
-                    {positions.get(track.id) ?? "—"}
+                  <span className="manual-index">
+                    <button
+                      type="button"
+                      className="drag-handle"
+                      draggable
+                      aria-label={`${track.name} verschieben`}
+                      title="Hier ziehen"
+                      onDragStart={(event) => {
+                        event.dataTransfer.setData("text/plain", track.id);
+                        event.dataTransfer.effectAllowed = "move";
+                        dragIdRef.current = track.id;
+                        const id = track.id;
+                        requestAnimationFrame(() => setDragId(id));
+                      }}
+                      onDragEnd={() => {
+                        dragIdRef.current = null;
+                        setDragId(null);
+                        setOverId(null);
+                      }}
+                    >
+                      <i />
+                      <i />
+                      <i />
+                      <i />
+                      <i />
+                      <i />
+                    </button>
+                    <em>{positions.get(track.id) ?? "—"}</em>
                   </span>
                   <div className="manual-body">
                     <div className="manual-row-main">

@@ -4000,31 +4000,67 @@ label.btn {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding: 1.15rem 0 1.25rem;
   display: grid;
-  grid-template-columns: 2rem minmax(0, 1fr);
+  grid-template-columns: 2.6rem minmax(0, 1fr);
   column-gap: 0.65rem;
   align-items: start;
 }
 
 .manual-index {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: flex-end;
-  height: 48px;
+  justify-content: center;
+  gap: 0.2rem;
+  height: 52px;
   margin: 0;
   padding: 0;
   line-height: 1;
-  text-align: right;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   color: #b3b3b3 !important;
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   letter-spacing: 0;
-  cursor: grab;
   user-select: none;
 }
 
-.manual-index:active {
+.manual-index em {
+  font-style: normal;
+  color: #b3b3b3;
+}
+
+button.drag-handle {
+  display: grid !important;
+  grid-template-columns: 3px 3px;
+  gap: 2px;
+  place-content: center;
+  width: 22px !important;
+  height: 18px !important;
+  min-height: 18px !important;
+  padding: 0 !important;
+  border-radius: 4px !important;
+  border: 1px solid rgba(255, 255, 255, 0.45) !important;
+  background: #3a3a3a !important;
+  cursor: grab;
+}
+
+button.drag-handle i {
+  width: 3px;
+  height: 3px;
+  border-radius: 99px;
+  background: #fff;
+  display: block;
+}
+
+button.drag-handle:hover,
+button.drag-handle:active {
+  background: #1ed760 !important;
+  border-color: #1ed760 !important;
   cursor: grabbing;
+}
+
+button.drag-handle:hover i,
+button.drag-handle:active i {
+  background: #121212;
 }
 
 .manual-row.is-dragging {
