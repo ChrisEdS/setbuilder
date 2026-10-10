@@ -1,0 +1,13 @@
+services:
+  setform:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    volumes:
+      - setform-data:/app/.data
+    restart: unless-stopped
+
+volumes:
+  setform-data:
