@@ -1528,12 +1528,12 @@ export function SetBuilder() {
   return (
     <div className="set-shell">
       {authNote ? <p className="banner status">{authNote}</p> : null}
+      <div className="topbar">
+        <LanguageSwitch />
+      </div>
       <header className="hero">
         <div className="hero-copy">
-          <div className="brand-row">
-            <p className="brand">SETFORM</p>
-            <LanguageSwitch />
-          </div>
+          <p className="brand">SETFORM</p>
           <h1>{t("builder.hero.title")}</h1>
           <p className="lede">{t("builder.hero.lede")}</p>
         </div>
