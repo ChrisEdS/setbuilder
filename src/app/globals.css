@@ -5610,3 +5610,50 @@ details[open] > summary > .fold-toggle::after {
     min-width: 0;
   }
 }
+
+/* Crate cards: a track can be removed right in its role column. */
+.crate-item {
+  position: relative;
+}
+
+.crate-remove {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  width: 26px;
+  height: 26px;
+  min-height: 0 !important;
+  padding: 0 !important;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  background: #1b1b1b !important;
+  color: #b3b3b3 !important;
+  font-size: 0.7rem;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.crate-item:hover .crate-remove,
+.crate-item:focus-within .crate-remove {
+  opacity: 1;
+}
+
+.crate-remove:hover,
+.crate-remove:focus-visible {
+  color: #f87171 !important;
+  border-color: rgba(248, 113, 113, 0.5) !important;
+}
+
+@media (hover: none) {
+  .crate-remove {
+    opacity: 1;
+  }
+}
+
+/* Keep the title clear of the remove button. */
+.crate-item .crate-title-row {
+  padding-right: 1.9rem;
+}

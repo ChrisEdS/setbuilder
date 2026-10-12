@@ -34,6 +34,7 @@ type Props = {
   onFocusTrack?: (id: string) => void;
   onMoveRole?: (trackId: string, role: TrackRole) => void;
   onReplace?: (targetId: string, replacementId: string) => void;
+  onRemove?: (id: string) => void;
 };
 
 type CratePrefs = {
@@ -142,6 +143,7 @@ export function RoleCrates({
   onFocusTrack,
   onMoveRole,
   onReplace,
+  onRemove,
 }: Props) {
   const prefs = useSyncExternalStore(subscribePrefs, readPrefs, () => DEFAULT_PREFS);
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -418,7 +420,7 @@ export function RoleCrates({
                         const phaseColor = phaseAccent(track.phase);
                         const focused = focusedTrackId === track.id;
                         return (
-                          <li key={`${role.id}-${track.id}`}>
+                          <li key={`${role.id}-${track.id}`} className="crate-item">
                             <button
                               type="button"
                               draggable={Boolean(onMoveRole)}
@@ -476,7 +478,7 @@ export function RoleCrates({
                                 </span>
                                 <div className="crate-meta">
                                   <span
-                                    className="pill phase"
+                                    className="pill phase-pill"
                                     style={{
                                       background: phaseColor.bg,
                                       color: phaseColor.fg,
@@ -557,6 +559,17 @@ export function RoleCrates({
                                 ) : null}
                               </div>
                             </button>
+                            {onRemove ? (
+                              <button
+                                type="button"
+                                className="crate-remove"
+                                aria-label={`${track.name} aus dem Set entfernen`}
+                                title="Aus dem Set entfernen"
+                                onClick={() => onRemove(track.id)}
+                              >
+                                ✕
+                              </button>
+                            ) : null}
                           </li>
                         );
                       })}

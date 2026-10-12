@@ -904,6 +904,7 @@ export function SetBuilder() {
   }
 
   function removeTrack(id: string) {
+    setFocusTrackId((current) => (current === id ? null : current));
     setDraft((current) => ({
       ...current,
       tracks: current.tracks.filter((track) => track.id !== id),
@@ -1509,6 +1510,7 @@ export function SetBuilder() {
           setRoleFilter(role);
         }}
         onReplace={replaceTrack}
+        onRemove={removeTrack}
         onMoveRole={(id, role) => {
           patchTrack(id, { role, why: "Manuell gesetzt" });
           setActiveRole(role);
