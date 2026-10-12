@@ -240,7 +240,7 @@ export function LibraryPanel({
     const result = applyKeyImportRows(draft, toImportRows(libraryRows));
     onApply(
       result.draft,
-      `${result.matched}/${result.rows} aus der Stick-Bibliothek zugeordnet`,
+      `Key und BPM neu geschrieben: ${result.matched} von ${trackCount(draft.tracks.length)} gefunden.`,
     );
   }
 
@@ -469,20 +469,28 @@ export function LibraryPanel({
               placeholder="Artist, Titel oder Key…"
               aria-label="rekordbox suchen"
             />
-            <button
-              type="button"
-              className="btn ghost"
-              onClick={rematchFromLibrary}
-              disabled={draft.tracks.length === 0}
-            >
-              Keys neu zuordnen
-            </button>
+            <span className="tip tip-end">
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={rematchFromLibrary}
+                disabled={draft.tracks.length === 0}
+              >
+                Keys &amp; BPM neu schreiben
+              </button>
+              <span className="tip-bubble" role="tooltip">
+                Schreibt Key und BPM aus dieser Liste in die Tracks deiner Setliste.
+                Gefunden wird über Artist und Titel. Vorhandene Werte werden
+                überschrieben. Tracks ohne Treffer und leere Felder in der Liste
+                lassen den alten Wert stehen.
+              </span>
+            </span>
           </div>
           <p className="section-note">
             Alle Tracks aus der geladenen Rekordbox-Datenbank mit Key und BPM.
-            Nur zum Nachschauen: Das Set ändert sich erst, wenn du „Keys neu
-            zuordnen“ drückst. Das gleicht Artist und Titel der Setliste mit
-            dieser Liste ab und trägt fehlende Keys und BPM ein. Nützlich, wenn
+            Nur zum Nachschauen: Das Set ändert sich erst, wenn du „Keys &
+            BPM neu schreiben“ drückst. Das gleicht Artist und Titel der Setliste
+            mit dieser Liste ab und schreibt Key und BPM neu in die Tracks. Nützlich, wenn
             du nach dem Laden Tracks ergänzt hast.
           </p>
           <ul className="library-list">
