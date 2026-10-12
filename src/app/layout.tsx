@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Manrope, Space_Grotesk } from "next/font/google";
+import { I18nProvider } from "@/lib/i18n/react";
 import "./globals.css";
 
 const display = Space_Grotesk({
@@ -17,7 +18,7 @@ const body = Manrope({
 export const metadata: Metadata = {
   title: "SETFORM — DJ Set Prep",
   description:
-    "Set-Vorbereitung für DJs: Rekordbox-Stick laden, Bogen nach Slot und Dauer legen, Key und BPM prüfen, als PDF, M3U oder rekordbox exportieren.",
+    "DJ set prep for rekordbox: load a stick or collection, shape the arc by slot and duration, check energy, key and BPM, export as rekordbox XML, PDF or M3U. / Set-Vorbereitung für rekordbox.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -26,7 +27,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="de"
       className={`${display.variable} ${body.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <I18nProvider>{children}</I18nProvider>
+      </body>
     </html>
   );
 }

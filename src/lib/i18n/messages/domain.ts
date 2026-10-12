@@ -1,0 +1,83 @@
+// Area "domain": the fixed vocabulary of a set (slots, phases, roles, transitions).
+// Phase names and the role names Anchor / Bridge / Groove stay English in both languages.
+const de = {
+  "domain.slot.warmup.label": "Warm-up",
+  "domain.slot.warmup.hint": "Atmosphäre, Headroom lassen, kein Peak",
+  "domain.slot.support.label": "Support",
+  "domain.slot.support.hint": "Boden für den Headliner — Raum lassen",
+  "domain.slot.peaktime.label": "Peak Time",
+  "domain.slot.peaktime.hint": "Später Peak, Wellen atmen, Kontraste",
+  "domain.slot.closing.label": "Closing",
+  "domain.slot.closing.hint": "Nachhall, bewusst landen oder Twist",
+
+  "domain.phase.open.label": "Open",
+  "domain.phase.open.hint": "Low–mid · Headroom lassen",
+  "domain.phase.lift.label": "Lift",
+  "domain.phase.lift.hint": "Textures · Vocals einführen",
+  "domain.phase.rise.label": "Rise",
+  "domain.phase.rise.hint": "BPM/Mood anheben",
+  "domain.phase.peak.label": "Peak",
+  "domain.phase.peak.hint": "Impact + Groove abwechseln",
+  "domain.phase.release.label": "Release",
+  "domain.phase.release.hint": "Kontrolliert landen, nicht maxen",
+
+  "domain.role.anchor.label": "Anchor",
+  "domain.role.anchor.hint": "Crowd-Connector / Signature",
+  "domain.role.bridge.label": "Bridge",
+  "domain.role.bridge.hint": "Pivot: Key, BPM, Energie",
+  "domain.role.groove.label": "Groove",
+  "domain.role.groove.hint": "Atem zwischen Peaks",
+  "domain.role.safety.label": "Alternativen",
+  "domain.role.safety.hint": "Plan B wenn der Floor dreht",
+
+  "domain.transition.unset": "Übergang wählen…",
+  "domain.transition.long-blend": "Long blend",
+  "domain.transition.eq-swap": "EQ swap",
+  "domain.transition.echo-out": "Echo-out",
+  "domain.transition.break-to-drop": "Break → drop",
+  "domain.transition.stem-vocal": "Stem vocal overlay",
+  "domain.transition.loop-filter": "Loop + filter rise",
+  "domain.transition.power-reset": "Power-down reset",
+} as const;
+
+const en: Record<keyof typeof de, string> = {
+  "domain.slot.warmup.label": "Warm-up",
+  "domain.slot.warmup.hint": "Atmosphere, leave headroom, no peak",
+  "domain.slot.support.label": "Support",
+  "domain.slot.support.hint": "Set the stage for the headliner — leave room",
+  "domain.slot.peaktime.label": "Peak Time",
+  "domain.slot.peaktime.hint": "Late peak, let the waves breathe, contrasts",
+  "domain.slot.closing.label": "Closing",
+  "domain.slot.closing.hint": "Afterglow, land on purpose or add a twist",
+
+  "domain.phase.open.label": "Open",
+  "domain.phase.open.hint": "Low–mid · leave headroom",
+  "domain.phase.lift.label": "Lift",
+  "domain.phase.lift.hint": "Textures · bring in vocals",
+  "domain.phase.rise.label": "Rise",
+  "domain.phase.rise.hint": "Raise BPM and mood",
+  "domain.phase.peak.label": "Peak",
+  "domain.phase.peak.hint": "Alternate impact and groove",
+  "domain.phase.release.label": "Release",
+  "domain.phase.release.hint": "Land under control, don't max out",
+
+  "domain.role.anchor.label": "Anchor",
+  "domain.role.anchor.hint": "Crowd connector / signature",
+  "domain.role.bridge.label": "Bridge",
+  "domain.role.bridge.hint": "Pivot: key, BPM, energy",
+  "domain.role.groove.label": "Groove",
+  "domain.role.groove.hint": "Room to breathe between peaks",
+  "domain.role.safety.label": "Alternatives",
+  "domain.role.safety.hint": "Plan B when the floor turns",
+
+  "domain.transition.unset": "Choose transition…",
+  "domain.transition.long-blend": "Long blend",
+  "domain.transition.eq-swap": "EQ swap",
+  "domain.transition.echo-out": "Echo-out",
+  "domain.transition.break-to-drop": "Break → drop",
+  "domain.transition.stem-vocal": "Stem vocal overlay",
+  "domain.transition.loop-filter": "Loop + filter rise",
+  "domain.transition.power-reset": "Power-down reset",
+};
+
+export const domain = { de, en };

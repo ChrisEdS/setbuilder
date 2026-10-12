@@ -5717,3 +5717,49 @@ body {
   hyphens: auto;
 }
 
+
+/* Language switch */
+.brand-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.lang-switch {
+  display: inline-flex;
+  flex: none;
+  margin-top: 0.35rem;
+  padding: 2px;
+  border: 1px solid #3a3a3a;
+  border-radius: 999px;
+  background: #1a1a1a;
+}
+
+.lang-switch button {
+  min-height: 0 !important;
+  padding: 0.28rem 0.7rem !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  color: #b3b3b3 !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.lang-switch button:hover {
+  color: #fff !important;
+}
+
+.lang-switch button.is-active {
+  background: #fff !important;
+  color: #121212 !important;
+}
+
+.lang-switch button:focus-visible {
+  outline: 2px solid #1ed760;
+  outline-offset: 1px;
+}
+

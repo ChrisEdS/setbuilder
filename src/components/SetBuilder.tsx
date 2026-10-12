@@ -1,5 +1,6 @@
 "use client";
 
+import { LanguageSwitch } from "@/components/LanguageSwitch";
 import {
   useEffect,
   useMemo,
@@ -1382,7 +1383,10 @@ export function SetBuilder() {
       {authNote ? <p className="banner status">{authNote}</p> : null}
       <header className="hero">
         <div className="hero-copy">
-          <p className="brand">SETFORM</p>
+          <div className="brand-row">
+            <p className="brand">SETFORM</p>
+            <LanguageSwitch />
+          </div>
           <h1>Dramaturgie statt Playlist.</h1>
           <p className="lede">
             SETFORM formt aus dem Rekordbox-Stick ein Set. Playlist oder
