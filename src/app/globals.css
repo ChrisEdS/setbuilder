@@ -6051,3 +6051,24 @@ details[open] > summary > .fold-toggle::after {
 }
 
 
+
+/* Toolbar: wrap instead of overflowing when there are many actions. */
+.crate-view-bar .takeaway,
+.crate-view-bar .takeaway-row {
+  flex-wrap: wrap !important;
+  min-width: 0;
+  row-gap: 0.5rem;
+}
+.crate-view-bar .takeaway-row > * {
+  min-width: 0;
+}
+.crate-view-bar .takeaway-group,
+.crate-view-bar .takeaway-row .group {
+  flex-wrap: wrap;
+}
+
+.crate-view-bar .takeaway-exports {
+  flex-wrap: wrap;
+  row-gap: 0.5rem;
+}
+
