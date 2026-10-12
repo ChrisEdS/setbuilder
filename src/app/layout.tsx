@@ -17,7 +17,7 @@ const body = Manrope({
 export const metadata: Metadata = {
   title: "SETFORM — DJ Set Prep",
   description:
-    "Spotify-gestützter Set-Builder nach dem DJ.Studio Prep-Workflow: Brief, Crate, Energiekurve, Transitions.",
+    "Set-Vorbereitung für DJs: Rekordbox-Stick laden, Bogen nach Slot und Dauer legen, Key und BPM prüfen, als PDF, M3U oder rekordbox exportieren.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

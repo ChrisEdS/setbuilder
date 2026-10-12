@@ -108,7 +108,7 @@ export const SLOT_KINDS: {
   {
     id: "closing",
     label: "Closing",
-    hint: "Nachhall, bewusst landen oder twist",
+    hint: "Nachhall, bewusst landen oder Twist",
   },
 ];
 
@@ -249,16 +249,16 @@ export const PREP_PRINCIPLES: { title: string; body: string }[] = [
     body: "Drive und Dichte sollen atmen. Nicht jede Stelle muss lauter oder schneller sein als die vorherige. Ein ruhigerer Track nach einem Höhepunkt macht den nächsten Peak wieder hörbar.",
   },
   {
-    title: "Plan, kein Script",
+    title: "Plan, kein Skript",
     body: "Der Floor kann drehen. Alternativen liegen bereit, damit du einen Track tauschen kannst, ohne den Bogen neu zu erfinden. Die gespielte Reihenfolge bleibt die Performance, die Alternativen sind Plan B.",
   },
   {
     title: "Harmonik stützt den Flow",
-    body: "Gleiche Key, Relative und Nachbar-Keys tragen einen Übergang. Ein Clash kann Absicht sein, besonders vor einem Peak. Die Key entscheidet nicht allein, ob der Moment stimmt. Slot und Energie kommen zuerst.",
+    body: "Gleicher Key, Relative und Nachbar-Keys tragen einen Übergang. Ein Clash kann Absicht sein, besonders vor einem Peak. Der Key entscheidet nicht allein, ob der Moment stimmt. Slot und Energie kommen zuerst.",
   },
   {
     title: "In Phrasen mischen",
-    body: "Ein sauberer Übergang sitzt auf 16, 32 oder 64 Takten. Eine passende Camelot-Key rettet keinen Chorus, der mitten in eine Strophe fällt.",
+    body: "Ein sauberer Übergang sitzt auf 16, 32 oder 64 Takten. Ein passender Camelot-Key rettet keinen Chorus, der mitten in eine Strophe fällt.",
   },
 ];
 
@@ -270,15 +270,15 @@ export const EXTRACT_STEPS: { title: string; body: string }[] = [
   },
   {
     title: "2. Einen Bogen legen",
-    body: "Spotify gibt im Dev Mode keine Audio-Features frei. Der Bogen entsteht aus BPM, wo sie da ist, und aus der Katalog-Popularität, oft von Tidal per ISRC. Langsamer und unbekannter öffnet, präsenter peakt, Release kommt wieder runter. Key und BPM von Tidal fehlen oft in der Schnittstelle. Verlässlich kommen sie aus rekordbox oder vom Stick.",
+    body: "Spotify gibt im Dev Mode keine Audio-Features frei. Der Bogen entsteht deshalb aus der BPM, wo sie vorhanden ist, und aus der Katalog-Popularität (oft von Tidal per ISRC). Langsamer und unbekannter öffnet, präsenter peakt, im Release wird es wieder ruhiger. Key und BPM liefert die Tidal-Schnittstelle oft nicht. Verlässlich kommen sie aus rekordbox oder vom Stick.",
   },
   {
     title: "3. Rollen vergeben",
-    body: "Anchor sind die Signature-Momente, mit Abstand im Peak. Bridge markiert einen Wechsel von Phase, Key oder BPM. Groove ist der Atem dazwischen. Alternativen sind Plan B aus dem Rest der Playlist.",
+    body: "Anchor sind die Signature-Momente, im Peak mit Abstand gesetzt. Bridge markiert einen Wechsel von Phase, Key oder BPM. Groove ist der Atem dazwischen. Alternativen sind Plan B aus dem Rest der Playlist.",
   },
   {
     title: "4. Harmonik nachziehen",
-    body: "„Harmonisch sortieren“ ordnet innerhalb einer Phase nach Camelot und kleinen BPM-Schritten. Ein bewusster Kontrast vor dem Peak-Anchor bleibt erlaubt. Die Live-Zeile unter jedem Track zeigt den tatsächlichen Übergang, auch nachdem du selbst gezogen oder die Key geändert hast.",
+    body: "„Harmonisch sortieren“ ordnet innerhalb einer Phase nach Camelot und kleinen BPM-Schritten. Ein bewusster Kontrast vor dem Peak-Anchor bleibt erlaubt. Die Live-Zeile unter jedem Track zeigt den tatsächlichen Übergang, auch nachdem du selbst gezogen oder einen Key geändert hast.",
   },
 ];
 

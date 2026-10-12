@@ -206,7 +206,7 @@ export async function fetchPlaylist(playlistId: string): Promise<SpotifyPlaylist
 
   if (!canReadItems) {
     throw new Error(
-      "PLAYLIST_FORBIDDEN: Diese Playlist gehört dir nicht. Wähle eine eigene Playlist aus der Liste oder mach sie collaborative.",
+      "PLAYLIST_FORBIDDEN: Diese Playlist gehört dir nicht. Wähle eine eigene Playlist aus der Liste oder mach sie kollaborativ.",
     );
   }
 
@@ -223,7 +223,7 @@ export async function fetchPlaylist(playlistId: string): Promise<SpotifyPlaylist
       const body = await pageRes.text();
       if (pageRes.status === 403 || pageRes.status === 404) {
         throw new Error(
-          "PLAYLIST_FORBIDDEN: Trackliste nicht lesbar. Nur eigene oder collaborative Playlists funktionieren in Dev Mode.",
+          "PLAYLIST_FORBIDDEN: Trackliste nicht lesbar. Im Dev Mode funktionieren nur eigene oder kollaborative Playlists.",
         );
       }
       throw new Error(`Playlist-Tracks fehlgeschlagen (${pageRes.status}): ${body}`);

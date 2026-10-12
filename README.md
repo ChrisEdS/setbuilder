@@ -1,18 +1,18 @@
 # SETFORM
 
-Spotify-gestützter DJ-Set-Builder nach dem [DJ.Studio Prep-Workflow](https://dj.studio/blog/dj-set-preparation#crafting-a-dj-set-that-feels-right-advanced-tips): Brief → Crate → Energiekurve → Transitions → Export.
+SETFORM bereitet DJ-Sets vor: Rekordbox-Stick oder Playlist laden, den Bogen nach Slot und Dauer legen, Key und BPM prüfen und das Set als PDF, M3U oder rekordbox-XML mitnehmen. Der Ablauf folgt dem [DJ.Studio Prep-Workflow](https://dj.studio/blog/dj-set-preparation#crafting-a-dj-set-that-feels-right-advanced-tips): Brief → Crate → Energiekurve → Transitions → Export.
 
 ## Features
 
 - **Playlist → Set**: eigene Spotify-Playlist laden und entlang Open → Lift → Rise → Peak → Release extrahieren
-- **Crate-Rollen-Board**: Anchor / Bridge / Groove / Safety mit Why-Infos, Phase, Key, Transition
+- **Crate-Rollen-Board**: Anchor / Bridge / Groove / Alternativen mit Begründung, Phase, Key, Transition
 - **Dramaturgie**: Slot-Arten (Warm-up / Support / Peak / Closing), Wellen statt Rampe
-- **Key Library**: rekordbox XML/DB, **Rekordbox-Stick** (`export.pdb`: Playlists und History als Set, Dateien vom Stick abspielbar, Spotify-Links dazu), **Tidal Keys** (Catalog Key/BPM per ISRC), CSV/Paste, Spotify-Features-Status
+- **Key-Quellen**: rekordbox XML/DB, **Rekordbox-Stick** (`export.pdb`: Playlists und History als Set, Dateien vom Stick abspielbar, Spotify-Links dazu), **Tidal Keys** (Catalog Key/BPM per ISRC), CSV/Paste, Spotify-Features-Status
 - **Export zurück**: M3U und rekordbox-XML der Performance-Reihenfolge, Alternativen als zweite Playlist
 - **Ersatz**: Alternative aus der Crate einsetzen, mit Key- und BPM-Abstand zu Vorgänger und Nachfolger
 - **Harmonic Path**: Camelot-Kompatibilität, Mix-Score, „Harmonisch sortieren“
 - **Preview**: Spotify-Embed-Player pro Track
-- **Export**: PDF + Text inkl. Safety-Crate
+- **Export**: PDF und Text, inklusive Alternativen
 
 ## Setup
 
@@ -21,7 +21,7 @@ Spotify-gestützter DJ-Set-Builder nach dem [DJ.Studio Prep-Workflow](https://dj
    `http://127.0.0.1:4317/api/auth/callback`
    Tidal-Login zusätzlich: `http://127.0.0.1:4317/api/auth/tidal/callback`
 3. Dich selbst als User der App hinzufügen (Development Mode)
-4. `.env.local` anlegen:
+4. Zugangsdaten unter **Einstellungen** in der App eintragen (die App schreibt sie nach `.env.local`) oder die Datei selbst anlegen:
 
 ```bash
 SPOTIFY_CLIENT_ID=…

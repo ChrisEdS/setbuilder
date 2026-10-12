@@ -64,7 +64,7 @@ export function SetTakeaway({
           <span className="takeaway-label">Mitnehmen</span>
           <Tip
             disabled={!canExport}
-            text="Druckansicht mit Brief, Spielreihenfolge, Startzeit, Key, BPM, Übergang, Comment und Alternativen. Im Dialog „Als PDF speichern“ wählen."
+            text="Druckansicht mit Brief, Spielreihenfolge, Startzeit, Key, BPM, Übergang, Kommentar und Alternativen. Im Dialog „Als PDF speichern“ wählen."
           >
             <button
               type="button"
@@ -104,7 +104,7 @@ export function SetTakeaway({
           {onCopyText ? (
             <Tip
               disabled={!canExport}
-              text="Set als Text in die Zwischenablage, mit Brief, Comments und Prinzipien."
+              text="Set als Text in die Zwischenablage, mit Brief, Kommentaren und Prinzipien."
             >
               <button
                 type="button"

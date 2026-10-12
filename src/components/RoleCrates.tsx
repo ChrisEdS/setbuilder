@@ -251,9 +251,10 @@ export function RoleCrates({
       <div className="panel-head crate-toolbar-head">
         <div>
           <h2>Crate-Rollen</h2>
-          <p className="timeline-filter">
-            Titel in eine andere Rolle ziehen. Höhe am unteren Rand —
-            Alternativen extra groß möglich
+          <p className="section-note">
+            Titel in eine andere Rolle ziehen. Die Höhe aller Spalten lässt
+            sich am unteren Rand ändern, „Alternativen groß“ verbreitert die
+            Alternativen.
           </p>
         </div>
         <div className="crate-toolbar">
@@ -407,7 +408,7 @@ export function RoleCrates({
                       {dropRole === role.id
                         ? "Hier ablegen"
                         : isSafety
-                          ? "Noch keine Alternativen — bei Extraktion landen Reste hier, oder manuell als Alternativen setzen."
+                          ? "Noch keine Alternativen. Beim Extrahieren landen übrige Tracks hier, oder du setzt Tracks selbst auf die Rolle Alternativen."
                           : "Noch keine Tracks"}
                     </p>
                   ) : (

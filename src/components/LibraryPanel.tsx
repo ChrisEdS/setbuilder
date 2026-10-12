@@ -103,7 +103,7 @@ export function LibraryPanel({
     if (!result.rows) {
       onApply(
         draft,
-        "Kein Key-Import erkannt — rekordbox XML/DB, CSV oder Paste nutzen.",
+        "Kein Key-Import erkannt — rekordbox XML/DB, CSV oder eingefügte Tabelle nutzen.",
       );
       return;
     }
@@ -181,7 +181,7 @@ export function LibraryPanel({
       if (!data.available || enrichments.length === 0) {
         const message =
           data.message ||
-          "Tidal Keys nicht verfügbar — Client-IDs setzen oder rekordbox nutzen.";
+          "Tidal-Keys nicht verfügbar — Zugangsdaten unter Einstellungen eintragen oder rekordbox nutzen.";
         setTidalNote(message);
         onApply(draft, message);
         return;
@@ -253,7 +253,7 @@ export function LibraryPanel({
 
   const statusLabel =
     keyStats.total === 0
-      ? "Noch kein Set — zuerst Playlist extrahieren"
+      ? "Noch kein Set — zuerst eine Playlist vom Stick laden"
       : keyStats.share === 0
         ? "Keys fehlen noch"
         : keyStats.share < 100
@@ -271,7 +271,7 @@ export function LibraryPanel({
       label: "Tidal",
       note: tidalConfigured
         ? "Tidal schreibt Key und BPM an die Tracks, zuerst über die ISRC."
-        : "Dafür fehlen TIDAL_CLIENT_ID und TIDAL_CLIENT_SECRET in der Umgebung.",
+        : "Tidal-Zugangsdaten fehlen. Unter Einstellungen eintragen.",
     },
     {
       id: "csv",
@@ -383,8 +383,8 @@ export function LibraryPanel({
               </p>
               <p className="library-path">
                 {tidalConfigured
-                  ? "Client Credentials gesetzt."
-                  : "TIDAL_CLIENT_ID + TIDAL_CLIENT_SECRET in .env.local (developer.tidal.com)."}
+                  ? "Zugangsdaten vorhanden."
+                  : "Zugangsdaten fehlen. Unter Einstellungen eintragen."}
               </p>
               {tidalNote ? (
                 <p className="library-inline-status">{tidalNote}</p>
@@ -475,7 +475,7 @@ export function LibraryPanel({
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Artist, Title oder Key…"
+              placeholder="Artist, Titel oder Key…"
               aria-label="rekordbox suchen"
             />
             <button

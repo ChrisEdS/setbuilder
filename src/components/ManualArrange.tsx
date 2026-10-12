@@ -206,9 +206,9 @@ export function ManualArrange({
         <div>
           <h2>Manual Arrange</h2>
           <p className="section-note">
-            Link oder Titel eintragen, an der Nummer sortieren. Links suchen
-            hängt fehlende Spotify-Adressen an. PDF, M3U und rekordbox nehmen
-            das Set mit.
+            Link oder Titel eintragen, die Reihenfolge über die Nummer ändern.
+            „Links suchen“ ergänzt fehlende Spotify-Adressen. PDF, M3U und
+            rekordbox exportieren das Set.
           </p>
           <p className="head-meta">
             {performance.length} in der Performance · neue Tracks:{" "}
@@ -240,8 +240,8 @@ export function ManualArrange({
             <input
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="spotify / tidal / soundcloud / beatport URL"
-              aria-label="Music link"
+              placeholder="Spotify-, Tidal-, SoundCloud- oder Beatport-Link"
+              aria-label="Track-Link"
             />
           </label>
           <button
@@ -260,7 +260,7 @@ export function ManualArrange({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Titel"
-              aria-label="Manual title"
+              aria-label="Titel"
             />
           </label>
           <label className="manual-field">
@@ -269,7 +269,7 @@ export function ManualArrange({
               value={artist}
               onChange={(e) => setArtist(e.target.value)}
               placeholder="Artist"
-              aria-label="Manual artist"
+              aria-label="Artist"
             />
           </label>
           <button
@@ -289,8 +289,8 @@ export function ManualArrange({
         <div className="empty">
           <p>Noch leer.</p>
           <p>
-            Link einfügen oder Titel/Artist tippen — dann sortieren und Comments
-            schreiben.
+            Link einfügen oder Titel und Artist eintippen, dann die Reihenfolge
+            ordnen und Kommentare schreiben.
           </p>
         </div>
       ) : (

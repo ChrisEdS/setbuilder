@@ -488,14 +488,14 @@ export function SetBuilder() {
             ? ` Tidal: ${tidalKeyed} mit Key/BPM, ${tidalMatched} gematcht.`
             : ` Tidal: ${tidalMatched} Tracks über Popularität sortiert. Key/BPM gibt diese App nicht zurück.`;
       setStatus(
-        `Set aus „${data.playlist?.name ?? "Playlist"}“: ${performanceCount} Performance-Tracks + ${safetyCount} Safety (Pool: ${data.playlist?.imported ?? "?"}).${tidalNote}`,
+        `Set aus „${data.playlist?.name ?? "Playlist"}“: ${performanceCount} Performance-Tracks + ${safetyCount} Alternativen (Pool: ${data.playlist?.imported ?? "?"}).${tidalNote}`,
       );
       await refreshAuthStatus();
     } catch (err) {
       fail(
         "playlist",
         err instanceof Error ? err.message : "Extraktion fehlgeschlagen.",
-        "Den Link prüfen. Im Spotify Dev Mode gehen nur eigene oder collaborative Playlists.",
+        "Den Link prüfen. Im Spotify Dev Mode gehen nur eigene oder kollaborative Playlists.",
       );
     } finally {
       setIsExtracting(false);
@@ -938,7 +938,7 @@ export function SetBuilder() {
 
   async function copyExport() {
     await navigator.clipboard.writeText(exportSetText(draft));
-    setStatus("Set-Export inkl. Cue-/Safety-Notizen kopiert.");
+    setStatus("Set als Text kopiert, mit Cue-Notizen und Alternativen.");
   }
 
   function exportPdf() {
@@ -1813,7 +1813,7 @@ export function SetBuilder() {
                     ? "Suche starten. Ein Link im Feld wird direkt geladen."
                     : crateService === "tidal"
                       ? "Playlist- oder Track-Link einfügen."
-                      : "Track-, Playlist- oder Album-Link. Playlists: eigene oder collaborative, im Dev Mode."}
+                      : "Track-, Playlist- oder Album-Link. Playlists: eigene oder kollaborative, im Dev Mode."}
               </p>
             </div>
           ) : results.length === 0 ? (
@@ -1930,7 +1930,7 @@ export function SetBuilder() {
             <div className="empty">
               <p>Noch kein Set.</p>
               <p>
-                Playlist extrahieren, Keys matchen, dann Timeline feinschleifen.
+                Zuerst eine Playlist vom Stick laden, dann Keys prüfen und die Timeline feinschleifen.
               </p>
             </div>
           ) : (
@@ -2260,11 +2260,11 @@ export function SetBuilder() {
         </p>
         {tidalConnected ? null : (
           <p className="import-hint">
-            Tidal-Fehler 1002: In der Entwickler-App müssen genau diese Scopes
-            an sein: <code>user.read</code> und <code>playlists.read</code>.
-            Redirect-URI exakt{" "}
-            <code>{redirectUri.replace("/callback", "/tidal/callback")}</code>. Danach
-            speichern und den Login neu starten.
+            Tidal einrichten: In der Entwickler-App die Scopes{" "}
+            <code>user.read</code> und <code>playlists.read</code> einschalten
+            und die Redirect URI exakt eintragen:{" "}
+            <code>{redirectUri.replace("/callback", "/tidal/callback")}</code>.
+            Fehler 1002 beim Login heißt: ein Scope fehlt.
           </p>
         )}
 
@@ -2332,9 +2332,9 @@ export function SetBuilder() {
               ))}
             </ol>
             <p className="explain-note">
-              Spotify Dev Mode: nur <strong>eigene</strong> oder collaborative
-              Playlists — keine fremden/editorial Charts. Redirect URI:{" "}
-              <code>{redirectUri}</code>
+              Spotify Dev Mode: nur <strong>eigene</strong> oder kollaborative
+              Playlists, keine fremden oder Editorial-Charts. Die Redirect URI
+              steht unter Einstellungen.
             </p>
           </div>
         </details>

@@ -104,7 +104,7 @@ export function ConnectionSetup({
         data.spotifyConfigured ? "Spotify bereit" : "Spotify fehlt",
       );
       setMessage(
-        "Gespeichert. Mit Spotify verbinden und Mit Tidal verbinden benutzen jetzt diese Zugangsdaten.",
+        "Gespeichert. „Mit Spotify verbinden“ und „Mit Tidal verbinden“ nutzen jetzt diese Zugangsdaten.",
       );
     } catch (err) {
       setError({
@@ -119,9 +119,8 @@ export function ConnectionSetup({
   return (
     <div className="setups-connect">
       <p className="setups-connect-note">
-        Zugangsdaten bleiben auf diesem Rechner. Die Datei musst du nicht
-        suchen. Beatport hat keinen Entwickler-Login — den Track-Link direkt
-        einfügen.
+        Zugangsdaten werden nur auf diesem Rechner gespeichert. Beatport
+        braucht keinen Login, Track-Links lassen sich direkt einfügen.
       </p>
 
       <section className="setup-card">

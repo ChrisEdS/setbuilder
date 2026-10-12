@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     const playlistId = parseTidalPlaylistId(body.url || "");
     if (!playlistId) {
       return NextResponse.json(
-        { error: "Ungültiger Tidal-Link. Erwarte tidal.com/browse/playlist/…" },
+        { error: "Ungültiger Tidal-Link. Erwartet wird tidal.com/browse/playlist/…" },
         { status: 400 },
       );
     }

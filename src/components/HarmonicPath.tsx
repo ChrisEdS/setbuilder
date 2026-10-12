@@ -141,8 +141,9 @@ export function HarmonicPath({ tracks, onHarmonize }: Props) {
           </p>
           <p>
             Farben folgen dem Camelot Wheel (1–12). <strong>A</strong> = Moll
-            (kräftiger), <strong>B</strong> = Dur (heller). Keys in der Timeline
-            oder Key Library setzen, dann „Harmonisch sortieren“.
+            (kräftiger), <strong>B</strong> = Dur (heller). Keys im
+            Rekordbox-Bereich importieren oder in der Timeline setzen, dann
+            „Harmonisch sortieren“.
           </p>
           <div className="camelot-legend" aria-label="Camelot Farben">
             {Array.from({ length: 12 }, (_, i) => {

@@ -106,7 +106,7 @@ export function KeyImport({ draft, onApply }: Props) {
 
           <p className="guide-line">
             Matching läuft über Artist + Title gegen dein aktuelles Set
-            (Performance + Safety). Danach „Harmonisch sortieren“.
+            (Performance + Alternativen). Danach „Harmonisch sortieren“.
           </p>
         </div>
       ) : null}
