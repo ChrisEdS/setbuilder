@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import {
   PHASE_ENERGY,
   energyFitsPhase,
@@ -96,7 +97,32 @@ export function EnergyPath({ tracks }: Props) {
                     {backup < 2 ? " · mind. 2 empfohlen" : ""}
                   </em>
                 </div>
-                <ol className="energy-bars">
+                <div className="energy-bars-wrap">
+                  <div
+                    className="energy-band"
+                    aria-hidden
+                    style={{
+                      bottom: `${22 + band.min * 8}px`,
+                      height: `${(band.max - band.min) * 8}px`,
+                    }}
+                  >
+                    <span>Ziel</span>
+                  </div>
+                <ol
+                  className="energy-bars"
+                  style={
+                    {
+                      "--bars-h": `${
+                        44 +
+                        Math.max(
+                          band.max,
+                          ...group.map((track) => track.energyLevel ?? 0),
+                        ) *
+                          8
+                      }px`,
+                    } as CSSProperties
+                  }
+                >
                   {group.map((track) => {
                     const index = performance.indexOf(track);
                     const prev = index > 0 ? performance[index - 1] : null;
@@ -124,6 +150,7 @@ export function EnergyPath({ tracks }: Props) {
                     );
                   })}
                 </ol>
+                </div>
               </div>
             );
           })}

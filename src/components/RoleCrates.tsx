@@ -493,9 +493,11 @@ export function RoleCrates({
                                         ?.label
                                     }
                                   </span>
-                                  <span className="pill">
-                                    {formatDuration(track.durationMs)}
-                                  </span>
+                                  {track.durationMs > 0 ? (
+                                    <span className="pill">
+                                      {formatDuration(track.durationMs)}
+                                    </span>
+                                  ) : null}
                                   {keyColor ? (
                                     <span
                                       className="pill key"

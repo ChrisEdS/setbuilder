@@ -1865,7 +1865,7 @@ export function SetBuilder() {
                 [
                   ["list", "Setliste", "Die Reihenfolge des Abends. Hier sortierst du von Hand und schreibst Kommentare."],
                   ["roles", "Rollen", "Anchor, Bridge, Groove und Alternativen als Spalten. Titel zwischen Rollen ziehen."],
-                  ["keys", "Bogen", "Energiekurve nach Phasen und Camelot-Keys entlang der Reihenfolge, mit Mix-Score und Clashes."],
+                  ["keys", "Bogen", "Phasen im Slot, Energie pro Track und Camelot-Keys entlang der Reihenfolge, mit Mix-Score und Clashes."],
                 ] as const
               ).map(([id, label, hint]) => (
                 <button
@@ -2301,7 +2301,7 @@ export function SetBuilder() {
             <div className="crate-view">
       <section className="curve" aria-label="Energy curve">
         <div className="curve-head">
-          <h2>Energiekurve</h2>
+          <h2>Phasen im Slot</h2>
           <p>
             {formatDuration(filledMs)} / {draft.durationMinutes}:00
             {filledMs > targetMs ? " · über dem Brief" : ""} ·{" "}

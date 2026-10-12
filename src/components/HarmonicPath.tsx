@@ -26,7 +26,7 @@ export function HarmonicPath({ tracks, onHarmonize, embedded }: Props) {
     <section className="harmonic-path" aria-label="Harmonic path">
       <div className="panel-head">
         <div>
-          {embedded ? null : <h2>Harmonic Path</h2>}
+          {embedded ? <h3>Key-Verlauf</h3> : <h2>Harmonic Path</h2>}
           <p className="section-note">
             Camelot entlang der gespielten Reihenfolge. „Harmonisch sortieren“
             rückt verwandte Keys zusammen und folgt dabei der Energie, soweit
@@ -126,8 +126,8 @@ export function HarmonicPath({ tracks, onHarmonize, embedded }: Props) {
                     {track.keyCamelot || "—"}
                   </strong>
                   <span title={`${track.artists.join(", ")} – ${track.name}`}>
-                    {track.name}
-                    {track.bpm ? ` · ${track.bpm}` : ""}
+                    <b className="harm-name">{track.name}</b>
+                    {track.bpm ? <small>{track.bpm} BPM</small> : null}
                   </span>
                 </div>
               </li>

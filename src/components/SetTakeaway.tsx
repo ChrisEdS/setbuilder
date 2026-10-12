@@ -20,14 +20,17 @@ type Props = {
 function Tip({
   text,
   disabled,
+  end,
   children,
 }: {
   text: string;
   disabled?: boolean;
+  /** Open the bubble to the left, for buttons near the right edge. */
+  end?: boolean;
   children: ReactNode;
 }) {
   return (
-    <span className="tip" tabIndex={disabled ? 0 : undefined}>
+    <span className={end ? "tip tip-end" : "tip"} tabIndex={disabled ? 0 : undefined}>
       {children}
       <span className="tip-bubble" role="tooltip">
         {text}
@@ -94,6 +97,7 @@ export function SetTakeaway({
             </button>
           </Tip>
           <Tip
+            end
             disabled={!canExport}
             text="XML für rekordbox: File → Import Playlist. Die Performance ist eine Playlist, die Alternativen eine zweite."
           >
@@ -108,6 +112,7 @@ export function SetTakeaway({
           </Tip>
           {onCopyText ? (
             <Tip
+              end
               disabled={!canExport}
               text="Set als Text in die Zwischenablage, mit Brief, Kommentaren und Prinzipien."
             >

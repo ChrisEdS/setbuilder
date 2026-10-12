@@ -5,7 +5,7 @@ SETFORM bereitet DJ-Sets vor: Rekordbox-Stick oder Playlist laden, den Bogen nac
 ## Features
 
 - **Playlist → Set**: eigene Spotify-Playlist laden und entlang Open → Lift → Rise → Peak → Release extrahieren
-- **Set bauen**: Musik per Link, Suche, von Hand oder automatisch aus einer Playlist hinzufügen; Ansichten Setliste, Rollen und Bogen (Energiekurve plus Key-Pfad); „Auf Slot kürzen“ legt überzählige Tracks unter Alternativen
+- **Set bauen**: Musik per Link, Suche, von Hand oder automatisch aus einer Playlist hinzufügen; Ansichten Setliste, Rollen und Bogen (Phasen im Slot, Energie-Verlauf, Key-Verlauf); „Auf Slot kürzen“ legt überzählige Tracks unter Alternativen
 - **Rollen**: Anchor / Bridge / Groove / Alternativen mit Begründung, Phase, Key, Transition
 - **Dramaturgie**: Slot-Arten (Warm-up / Support / Peak / Closing), Wellen statt Rampe
 - **Key-Quellen**: rekordbox XML/DB, **Rekordbox-Stick** (`export.pdb`: Playlists und History als Set, Dateien vom Stick abspielbar, Spotify-Links dazu), **Tidal Keys** (Catalog Key/BPM per ISRC), CSV/Paste, Spotify-Features-Status
@@ -88,7 +88,7 @@ Danach:
 
 1. In SETFORM auf **Mit Spotify verbinden**
 2. Playlist-URL einfügen (`open.spotify.com/playlist/…`)
-3. **Set extrahieren** — Tracks werden nach Dauer gepackt und auf die Energiekurve gelegt
+3. **Set extrahieren** — Tracks werden nach Dauer gepackt und auf die Phasen des Bogens gelegt
 
 
 ## Optional: Spotify MCP in Cursor

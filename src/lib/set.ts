@@ -155,7 +155,7 @@ export const PHASES: SetPhase[] = [
 
 export const TRACK_ROLES: { id: TrackRole; label: string; hint: string }[] = [
   { id: "anchor", label: "Anchor", hint: "Crowd-Connector / Signature" },
-  { id: "bridge", label: "Bridge", hint: "Wechsel von Phase, Key, BPM oder Energie" },
+  { id: "bridge", label: "Bridge", hint: "Pivot: Key, BPM, Energie" },
   { id: "groove", label: "Groove", hint: "Atem zwischen Peaks" },
   {
     id: "safety",

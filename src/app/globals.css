@@ -6132,7 +6132,7 @@ details[open] > summary > .fold-toggle::after {
   gap: 4px;
   flex: 0 0 64px;
   min-width: 64px;
-  height: 128px;
+  height: var(--bars-h, 128px);
   text-align: center;
 }
 .energy-bars li i {
@@ -6167,10 +6167,100 @@ details[open] > summary > .fold-toggle::after {
 }
 .energy-name {
   overflow: hidden;
+  height: 18px;
   color: var(--muted);
   font-size: 0.75rem;
+  line-height: 18px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Target band of the phase, drawn behind the bars (bar tops should land inside) */
+.energy-bars-wrap {
+  position: relative;
+}
+.energy-band {
+  position: absolute;
+  right: 0;
+  left: 0;
+  border-top: 1px dashed rgba(251, 191, 36, 0.55);
+  border-bottom: 1px dashed rgba(251, 191, 36, 0.55);
+  background: rgba(251, 191, 36, 0.07);
+  pointer-events: none;
+}
+.energy-band span {
+  position: absolute;
+  right: 6px;
+  bottom: 2px;
+  color: #e0b23a;
+  font-size: 0.6875rem;
+}
+
+/* Setliste: the comment field starts as one line and grows when you type */
+.manual-comment textarea {
+  min-height: 44px !important;
+  height: 44px;
+  transition: height 0.15s var(--ease);
+}
+.manual-comment textarea:focus {
+  height: 96px;
+}
+
+/* Narrow screens: selects and tooltips must not widen the page */
+.library-add-bar label {
+  min-width: 0;
+  max-width: 100%;
+}
+.library-add-bar select {
+  min-width: 0;
+  max-width: 100%;
+  text-overflow: ellipsis;
+}
+@media (max-width: 600px) {
+  .library-add-bar label {
+    flex: 1 1 100%;
+  }
+  .library-add-bar select {
+    flex: 1 1 auto;
+  }
+}
+.tip-bubble {
+  max-width: min(260px, calc(100vw - 32px));
+}
+
+/* Bogen: Key-Verlauf as a card like the Energie-Verlauf above it */
+.crate-view .harmonic-path.harmonic-path {
+  margin: 14px 0 0 !important;
+  padding: 14px !important;
+  border: 1px solid var(--line) !important;
+  border-radius: var(--radius) !important;
+  background: var(--surface) !important;
+}
+.harmonic-path .panel-head h3 {
+  margin: 0 0 4px;
+}
+/* Long titles end in an ellipsis instead of being cut mid-line */
+.harm-node {
+  min-width: 0;
+  overflow: hidden;
+}
+.harm-node > span {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+.harm-node .harm-name,
+.harm-node small {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+body {
+  overflow-x: clip; /* A hidden tooltip never adds a horizontal scrollbar */
 }
 
 /* Setliste: BPM, Key, Energie, Übergang in einer Reihe */
