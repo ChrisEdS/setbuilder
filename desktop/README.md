@@ -30,9 +30,17 @@ Ergebnis unter `desktop/dist/`:
 - Windows: NSIS-Installer
 - Linux: AppImage und `.deb`
 
-Für eine andere Architektur als die des Build-Rechners die Flags von electron-builder setzen, zum Beispiel `npx electron-builder --mac --x64 --publish never`. Der Server-Build davor muss trotzdem auf einem passenden System liegen. GitHub Actions macht das pro System, siehe `.github/workflows/desktop.yml`. Ein Tag `v0.1.0` lädt die Dateien als Release hoch.
+Für eine andere Architektur als die des Build-Rechners die Flags von electron-builder setzen, zum Beispiel `npx electron-builder --mac --x64 --publish never`. Der Server-Build davor muss trotzdem auf einem passenden System liegen. GitHub Actions macht das pro System, siehe `.github/workflows/desktop.yml`. Ein Tag `v*` lädt die Dateien als Release hoch.
 
-Ohne Apple- und Windows-Zertifikat sind die Pakete unsigniert. macOS: Rechtsklick → Öffnen. Windows: SmartScreen-Hinweis. Linux startet die AppImage direkt.
+Ohne Apple- und Windows-Zertifikat sind die Pakete unsigniert. Linux startet die AppImage direkt. Windows zeigt SmartScreen, „Trotzdem ausführen“ setzt die Installation fort.
+
+macOS hängt an Browser-Downloads das Attribut `com.apple.quarantine`. Die Meldung lautet dann „SETFORM.app is damaged and can’t be opened“. Die App ist nicht beschädigt. Nach dem Entpacken:
+
+```bash
+xattr -dr com.apple.quarantine ~/Downloads/SETFORM.app
+```
+
+Danach öffnet sie per Doppelklick. Mit Notarisierung entfällt das.
 
 ## Signierung
 

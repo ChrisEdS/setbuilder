@@ -2,6 +2,7 @@ import { relationLabel } from "@/lib/harmonic";
 import { sourceLabel } from "@/lib/music-link";
 import {
   ARC_GUIDE,
+  phaseWindowLabel,
   PHASES,
   formatDuration,
   performanceTracks,
@@ -102,7 +103,7 @@ export function buildSetPrintHtml(draft: SetDraft): string {
       .join("");
 
     return `<section class="phase">
-      <h2>${escapeHtml(phase.label)}${guide ? ` <span>${escapeHtml(guide.window)}</span>` : ""}</h2>
+      <h2>${escapeHtml(phase.label)} <span>${escapeHtml(phaseWindowLabel(draft.durationMinutes, phase.id))}</span></h2>
       ${guide ? `<p class="focus">${escapeHtml(guide.focus)}</p>` : ""}
       <table>
         <thead>

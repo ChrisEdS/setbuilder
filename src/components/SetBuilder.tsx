@@ -45,6 +45,7 @@ import {
   formatDuration,
   performanceTracks,
   phaseDurationMs,
+  phaseWindowLabel,
   setPositionById,
   totalDurationMs,
 } from "@/lib/set";
@@ -1047,8 +1048,10 @@ export function SetBuilder() {
           <p className="brand">SETFORM</p>
           <h1>Dramaturgie statt Playlist.</h1>
           <p className="lede">
-            Spotify-Crate laden, Arc nach Slot formen, Keys aus rekordbox
-            matchen — Spannung in Wellen, Peak bewusst spät.
+            SETFORM macht aus einer Playlist ein Set. Du lädst Tracks von
+            Spotify, Tidal oder einem Rekordbox-Stick, formst den Bogen nach
+            Slot und Dauer und siehst an Key und BPM, ob der Übergang zum
+            nächsten Track trägt.
           </p>
         </div>
         <div className="hero-meta" aria-label="Set brief">
@@ -1261,9 +1264,9 @@ export function SetBuilder() {
           </summary>
           <div className="explain-body">
             <p>
-              SETFORM baut aus deiner Spotify-Playlist kein zufälliges Mix — es
-              formt eine <strong>Dramaturgie</strong> nach Brief-Dauer und Slot.
-              Die Playlist-Reihenfolge bleibt die Crate-Priorität.
+              SETFORM nimmt eine Playlist und legt daraus ein Set mit Dauer,
+              Phasen und Übergängen. Die Playlist ist das Material, die
+              Performance-Reihenfolge ist die Geschichte des Abends.
             </p>
             <ol className="explain-steps">
               {EXTRACT_STEPS.map((step) => (
@@ -1289,12 +1292,15 @@ export function SetBuilder() {
         </summary>
         <div className="explain-body">
           <p>
-            Diese Regeln steuern, wie SETFORM die Energiekurve denkt — und worauf
-            du beim Feinschliff in der Timeline achten solltest.
+            Diese Prinzipien bestimmen, wie SETFORM den Bogen legt und worauf du
+            in der Timeline achten solltest.
           </p>
-          <ul>
+          <ul className="explain-steps">
             {PREP_PRINCIPLES.map((item) => (
-              <li key={item}>{item}</li>
+              <li key={item.title}>
+                <strong>{item.title}</strong>
+                <span>{item.body}</span>
+              </li>
             ))}
           </ul>
         </div>
@@ -1308,7 +1314,7 @@ export function SetBuilder() {
             {filledMs > targetMs ? " · über dem Brief" : ""} ·{" "}
             {mainTracks.length} Performance ·{" "}
             {draft.tracks.filter((track) => track.role === "safety").length}{" "}
-            Safety
+            Alternativen
           </p>
         </div>
         <div
@@ -1342,7 +1348,10 @@ export function SetBuilder() {
         </div>
         {activeGuide ? (
           <p className="guide-line">
-            <strong>{activeGuide.window}</strong> — {activeGuide.focus}
+            <strong>
+              {phaseWindowLabel(draft.durationMinutes, activePhase)}
+            </strong>{" "}
+            — {activeGuide.focus}
           </p>
         ) : null}
       </section>

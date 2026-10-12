@@ -189,65 +189,96 @@ export const DEFAULT_SET: SetDraft = {
  * Arc guidance — DJ.Studio + Rambos Magazine + DJLearn dramaturgy.
  * Peak is a moment, not a plateau; middle breathes in waves (Drive/Density).
  */
-export const ARC_GUIDE = [
+export const ARC_GUIDE: {
+  phase: SetPhaseId;
+  focus: string;
+}[] = [
   {
-    phase: "open" as SetPhaseId,
-    window: "00:00–10:00",
+    phase: "open",
     focus:
-      "Opener gibt Orientierung — Neugier, ohne alles vorwegzunehmen; Anschluss an DJ davor möglich",
+      "Der Opener gibt Orientierung und lässt Headroom. Neugier, ohne den Abend vorwegzunehmen. Ein Anschluss an das Set davor ist möglich.",
   },
   {
-    phase: "lift" as SetPhaseId,
-    window: "10:00–25:00",
+    phase: "lift",
     focus:
-      "Drive & Density steigern (nicht nur BPM); kleine Wellen, Raum zum Atmen",
+      "Drive und Dichte steigen in kleinen Wellen. Nicht nur das Tempo hochziehen: der Floor soll mitkommen und zwischendurch atmen.",
   },
   {
-    phase: "rise" as SetPhaseId,
-    window: "25:00–35:00",
+    phase: "rise",
     focus:
-      "Erwartung aufbauen — ±2–4 BPM / Relative Keys; Überraschung in kleinen Details",
+      "Hier entsteht Erwartung. Kleine BPM-Schritte und verwandte Keys tragen. Die Überraschung sitzt im Detail, nicht im Bruch.",
   },
   {
-    phase: "peak" as SetPhaseId,
-    window: "35:00–50:00",
+    phase: "peak",
     focus:
-      "Peak Time = maximale Aufmerksamkeit, nicht Dauer-Härte; Kontraste halten Impact lebendig",
+      "Peak Time ist der Moment der größten Aufmerksamkeit, keine Dauer-Härte. Kontraste halten den Impact lebendig.",
   },
   {
-    phase: "release" as SetPhaseId,
-    window: "50:00–60:00",
+    phase: "release",
     focus:
-      "Closing/Release mit Nachhall — kontrolliert landen, Floor nicht abrupt killen",
+      "Closing und Release lassen den Abend nachklingen. Kontrolliert landen, den Floor nicht abrupt abwürgen.",
   },
 ];
 
-export const PREP_PRINCIPLES = [
-  "Dramaturgie statt Playlist: jeder Track verändert, wie der nächste wirkt — Reihenfolge ist Story, nicht nur Sammlung.",
-  "Slot lesen: Warm-up peakt nicht. Peak Time peakt spät und kurz. Closing landet bewusst.",
-  "Wellen statt Rampe: Drive und Density atmen lassen — nicht nur BPM hochdrücken.",
-  "Plan, kein Script: Safety-Alternates bereithalten, wenn der Floor dreht.",
-  "Harmonik stützt den Flow — ersetzt aber keine Energie-Entscheidung.",
-  "Phrasing in 16/32/64: Key allein rettet keinen Chorus-on-Verse-Clash.",
+export function phaseWindowLabel(
+  durationMinutes: number,
+  phaseId: SetPhaseId,
+): string {
+  let start = 0;
+  for (const phase of PHASES) {
+    const end = start + durationMinutes * phase.share;
+    if (phase.id === phaseId) {
+      return `${Math.round(start)}–${Math.round(end)} min`;
+    }
+    start = end;
+  }
+  return "";
+}
+
+export const PREP_PRINCIPLES: { title: string; body: string }[] = [
+  {
+    title: "Dramaturgie statt Playlist",
+    body: "Die Reihenfolge ist die Geschichte des Abends. Jeder Track verändert, wie der nächste wirkt. Eine starke Sammlung in der Reihenfolge der Playlist ist noch kein Set.",
+  },
+  {
+    title: "Den Slot lesen",
+    body: "Warm-up baut Atmosphäre und lässt Headroom. Support trägt den Floor, ohne dem Headliner den Peak zu nehmen. Peak Time setzt den Höhepunkt spät und hält ihn kurz. Closing landet bewusst, statt einfach aufzuhören.",
+  },
+  {
+    title: "Wellen statt Rampe",
+    body: "Drive und Dichte sollen atmen. Nicht jede Stelle muss lauter oder schneller sein als die vorherige. Ein ruhigerer Track nach einem Höhepunkt macht den nächsten Peak wieder hörbar.",
+  },
+  {
+    title: "Plan, kein Script",
+    body: "Der Floor kann drehen. Alternativen liegen bereit, damit du einen Track tauschen kannst, ohne den Bogen neu zu erfinden. Die gespielte Reihenfolge bleibt die Performance, die Alternativen sind Plan B.",
+  },
+  {
+    title: "Harmonik stützt den Flow",
+    body: "Gleiche Key, Relative und Nachbar-Keys tragen einen Übergang. Ein Clash kann Absicht sein, besonders vor einem Peak. Die Key entscheidet nicht allein, ob der Moment stimmt. Slot und Energie kommen zuerst.",
+  },
+  {
+    title: "In Phrasen mischen",
+    body: "Ein sauberer Übergang sitzt auf 16, 32 oder 64 Takten. Eine passende Camelot-Key rettet keinen Chorus, der mitten in eine Strophe fällt.",
+  },
 ];
 
 /** How playlist → set extraction works (UI explainer) */
 export const EXTRACT_STEPS: { title: string; body: string }[] = [
   {
     title: "1. Auf die Brief-Dauer packen",
-    body: "Tracks werden bis zur Ziel-Dauer gepackt. Der Rest landet als Safety.",
+    body: "SETFORM nimmt Tracks aus der Playlist, bis die Ziel-Dauer des Briefs ungefähr erreicht ist. Was nicht in die Performance passt, bleibt als Alternative liegen.",
   },
   {
-    title: "2. Energie aus Tidal, nicht aus der Playlist-Position",
-    body: "Spotify sperrt Audio-Features. Tidal liefert Key, BPM und Popularität per ISRC. Daraus entsteht der Bogen: langsamer und unbekannter öffnet, schneller und präsenter peakt, Release kommt wieder runter.",
+    title: "2. Einen Bogen legen",
+    body: "Spotify gibt im Dev Mode keine Audio-Features frei. Der Bogen entsteht aus BPM, wo sie da ist, und aus der Katalog-Popularität, oft von Tidal per ISRC. Langsamer und unbekannter öffnet, präsenter peakt, Release kommt wieder runter. Key und BPM von Tidal fehlen oft in der Schnittstelle. Verlässlich kommen sie aus rekordbox oder vom Stick.",
   },
   {
     title: "3. Rollen vergeben",
-    body: "Anchor = Signature/Peak-Momente (mit Abstand). Bridge = Key-/BPM-/Mood-Pivot. Groove = Atem zwischen Peaks. Safety = Plan B aus dem Rest.",
+    body: "Anchor sind die Signature-Momente, mit Abstand im Peak. Bridge markiert einen Wechsel von Phase, Key oder BPM. Groove ist der Atem dazwischen. Alternativen sind Plan B aus dem Rest der Playlist.",
   },
   {
-    title: "4. Harmonik optional nachziehen",
-    body: "Innerhalb einer Phase sortiert SETFORM nach Camelot + kleinen BPM-Schritten. Ein bewusster Kontrast vor dem Peak-Anchor bleibt erlaubt.",
+    title: "4. Harmonik nachziehen",
+    body: "„Harmonisch sortieren“ ordnet innerhalb einer Phase nach Camelot und kleinen BPM-Schritten. Ein bewusster Kontrast vor dem Peak-Anchor bleibt erlaubt. Die Live-Zeile unter jedem Track zeigt den tatsächlichen Übergang, auch nachdem du selbst gezogen oder die Key geändert hast.",
   },
 ];
 
@@ -310,7 +341,7 @@ export function exportSetText(draft: SetDraft): string {
     `Ziel: ${draft.durationMinutes} min · Ist: ${formatDuration(totalDurationMs(draft.tracks))}`,
     "",
     "Prep-Prinzipien:",
-    ...PREP_PRINCIPLES.map((item) => `• ${item}`),
+    ...PREP_PRINCIPLES.flatMap((item) => [`• ${item.title}`, `  ${item.body}`]),
     "",
   ];
 
@@ -320,7 +351,9 @@ export function exportSetText(draft: SetDraft): string {
     );
     if (phaseTracks.length === 0) continue;
     const guide = ARC_GUIDE.find((item) => item.phase === phase.id);
-    lines.push(`## ${phase.label}${guide ? ` (${guide.window})` : ""}`);
+    lines.push(
+      `## ${phase.label} (${phaseWindowLabel(draft.durationMinutes, phase.id)})`,
+    );
     if (guide) lines.push(guide.focus);
     phaseTracks.forEach((track, index) => {
       const meta = [

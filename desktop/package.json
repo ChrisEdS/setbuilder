@@ -1,7 +1,7 @@
 {
   "name": "setform",
   "productName": "SETFORM",
-  "version": "0.1.2",
+  "version": "0.1.4",
   "description": "DJ set preparation for Spotify, Tidal, and rekordbox",
   "homepage": "https://github.com/ChrisEdS/setform",
   "author": {
@@ -37,7 +37,12 @@
     "extraResources": [
       {
         "from": "bundle/setform",
-        "to": "setform"
+        "to": "setform",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "bundle/setform/node_modules",
+        "to": "setform/node_modules"
       },
       {
         "from": "env.example",

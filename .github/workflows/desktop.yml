@@ -61,6 +61,13 @@ jobs:
           WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
           WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
 
+      - name: Server modules shipped
+        shell: bash
+        run: |
+          found=$(find desktop/dist -type d -path '*/setform/node_modules/next' | head -1)
+          test -n "$found"
+          test -f "$found/package.json"
+
       - name: Upload package
         uses: actions/upload-artifact@v4
         with:

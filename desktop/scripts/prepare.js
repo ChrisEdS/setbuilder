@@ -21,7 +21,19 @@ if (!fs.existsSync(path.join(standalone, "server.js"))) {
 }
 
 fs.rmSync(target, { recursive: true, force: true });
-fs.cpSync(standalone, target, { recursive: true });
+fs.cpSync(standalone, target, { recursive: true, dereference: true });
+
+const nextPackage = path.join(target, "node_modules", "next", "package.json");
+if (!fs.existsSync(nextPackage)) {
+  throw new Error(
+    `Standalone-Bundle ohne next: ${nextPackage}. Die gepackte App könnte den Server nicht starten.`,
+  );
+}
+if (fs.lstatSync(path.join(target, "node_modules")).isSymbolicLink()) {
+  throw new Error(
+    "node_modules ist ein Symlink. Die App würde auf den Build-Rechner zeigen.",
+  );
+}
 
 const staticSrc = path.join(repoRoot, distDirName, "static");
 const staticDest = path.join(target, distDirName, "static");
