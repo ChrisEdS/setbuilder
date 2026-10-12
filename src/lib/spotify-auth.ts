@@ -28,15 +28,8 @@ export function getRedirectUri(): string {
   );
 }
 
-export const SPOTIFY_SCOPES = [
-  "playlist-read-private",
-  "playlist-read-collaborative",
-  "user-read-private",
-  "user-read-email",
-  "user-read-playback-state",
-  "user-modify-playback-state",
-  "streaming",
-];
+// Only what the app uses: reading the user's own and collaborative playlists.
+export const SPOTIFY_SCOPES = ["playlist-read-private", "playlist-read-collaborative"];
 
 export function getAuthorizeUrl(
   state: string,
