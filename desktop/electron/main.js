@@ -71,6 +71,23 @@ function remember(chunk) {
   serverLog = (serverLog + chunk.toString()).slice(-6000);
 }
 
+function probeServer() {
+  return new Promise((resolve) => {
+    const req = http.get(
+      { hostname: APP_HOST, port: PORT, path: "/", timeout: 800 },
+      (res) => {
+        res.resume();
+        resolve(res.statusCode != null && res.statusCode < 500);
+      },
+    );
+    req.on("timeout", () => {
+      req.destroy();
+      resolve(false);
+    });
+    req.on("error", () => resolve(false));
+  });
+}
+
 function waitForServer() {
   const started = Date.now();
   return new Promise((resolve, reject) => {
@@ -298,12 +315,22 @@ if (!gotLock) {
       credits: "DJ-Set-Vorbereitung",
     });
     try {
-      startServer();
-      await waitForServer();
+      const alreadyRunning = await probeServer();
+      if (!alreadyRunning) {
+        startServer();
+        await waitForServer();
+      }
       createWindow();
       warnIfCredentialsMissing();
     } catch (error) {
-      dialog.showErrorBox("SETFORM", error instanceof Error ? error.message : String(error));
+      const raw = error instanceof Error ? error.message : String(error);
+      const busy = raw.includes("EADDRINUSE");
+      dialog.showErrorBox(
+        "SETFORM",
+        busy
+          ? `Port ${PORT} ist schon belegt. Beende den anderen SETFORM- oder Dev-Server und starte die App erneut.`
+          : raw,
+      );
       app.quit();
     }
   });
