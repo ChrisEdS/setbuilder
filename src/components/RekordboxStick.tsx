@@ -6,6 +6,7 @@ import {
   applyStickSet,
   readRekordboxStick,
   type RekordboxStickSet,
+  type StickTrack,
 } from "@/lib/rekordbox-stick";
 import { rememberStickFiles } from "@/lib/stick-audio";
 import { formatDuration, trackCount, type SetDraft } from "@/lib/set";
@@ -15,7 +16,13 @@ type Props = {
   busy: boolean;
   onApply: (draft: SetDraft, message: string) => void;
   onIndexed: (
-    rows: Array<{ artist: string; title: string; key: string; bpm: string }>,
+    rows: Array<{
+      artist: string;
+      title: string;
+      key: string;
+      bpm: string;
+      stick?: StickTrack;
+    }>,
   ) => void;
 };
 
@@ -46,6 +53,7 @@ export function RekordboxStick({
           title: track.title,
           key: track.keyCamelot || track.keyRaw,
           bpm: track.bpm,
+          stick: track,
         })),
       );
       if (!stick.sets.length) {

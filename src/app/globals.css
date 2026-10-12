@@ -5941,3 +5941,83 @@ details[open] > summary > .fold-toggle::after {
 }
 
 
+
+/* Library list: play, role/phase target, add to set. */
+.library-add-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 0.9rem;
+  margin: 0.6rem 0 0.5rem;
+  color: #c4c4c4;
+  font-size: 0.8rem;
+}
+.library-add-bar > span {
+  font-weight: 600;
+  color: #e6e6e6;
+}
+.library-add-bar label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.library-add-bar select {
+  background: #1c1c1c;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.8rem;
+}
+.library-list li {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.75rem;
+}
+.library-list li:not(:has(.lib-play)) {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+.lib-play {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: transparent;
+  color: #fff;
+  font-size: 0.7rem;
+  line-height: 1;
+  padding: 0 0 0 2px;
+  cursor: pointer;
+}
+.lib-play:hover:not(:disabled) {
+  background: #fff;
+  color: #121212;
+}
+.lib-play:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.lib-add {
+  padding: 0.3rem 0.75rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+
+/* Library explainer: full width, visually separated from the list. */
+.library-browser > .section-note {
+  max-width: none !important;
+  width: 100%;
+  margin: 0 0 0.75rem !important;
+  padding: 0.65rem 0.85rem !important;
+  border: 0 !important;
+  border-left: 2px solid rgba(255, 255, 255, 0.22) !important;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #c4c4c4 !important;
+  font-size: 0.8rem !important;
+  line-height: 1.5 !important;
+}
+
+

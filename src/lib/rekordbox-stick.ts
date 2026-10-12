@@ -2,7 +2,13 @@ import { distributeRoles } from "@/lib/extract-set";
 import { stickAudioUrl } from "@/lib/stick-audio";
 import { parseKeyValue } from "@/lib/key-import";
 import { parseRekordboxPdb, type PdbLibrary, type PdbTrack } from "@/lib/rekordbox-pdb";
-import { PHASES, type SetDraft, type SetPhaseId, type SetTrack } from "@/lib/set";
+import {
+  PHASES,
+  type SetDraft,
+  type SetPhaseId,
+  type SetTrack,
+  type TrackRole,
+} from "@/lib/set";
 
 export type StickTrack = {
   id: string;
@@ -129,6 +135,37 @@ function coverUrl(artworkPath: string | undefined): string | null {
   // Prefer the larger _m variant (a1_m.jpg), fall back to the 80px original.
   const large = artworkPath.replace(/(\.[a-z]+)$/i, "_m$1");
   return stickAudioUrl(large) || stickAudioUrl(artworkPath);
+}
+
+/** A track picked from the stick library, placed into a chosen phase and role. */
+export function libraryTrackToSetTrack(
+  row: { artist: string; title: string; key: string; bpm: string; stick?: StickTrack },
+  phase: SetPhaseId,
+  role: TrackRole,
+): SetTrack {
+  const stick = row.stick;
+  const slug = `${row.artist}-${row.title}`.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  return {
+    id: `rekordbox:lib:${stick ? stick.id : slug}`,
+    name: row.title,
+    artists: [row.artist || "Unknown"],
+    album: stick?.album || "rekordbox",
+    durationMs: stick?.durationMs ?? 0,
+    uri: stick?.filePath || `rekordbox:${slug}`,
+    externalUrl: "",
+    imageUrl: coverUrl(stick?.artworkPath),
+    phase,
+    role,
+    transition: "unset",
+    bpm: stick?.bpm || row.bpm,
+    keyCamelot: stick?.keyCamelot || parseKeyValue(row.key) || "",
+    note: "",
+    comment: stick?.comment || "",
+    filePath: stick?.filePath || "",
+    source: "rekordbox",
+    why: "Aus der Stick-Bibliothek ins Set gelegt",
+    safetyAlt: "",
+  };
 }
 
 function toSetTrack(

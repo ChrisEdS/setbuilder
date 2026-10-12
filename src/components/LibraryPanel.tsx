@@ -9,12 +9,26 @@ import {
 } from "@/lib/key-import";
 import { parseRekordboxFile } from "@/lib/rekordbox";
 import { RekordboxStick } from "@/components/RekordboxStick";
-import type { SetDraft } from "@/lib/set";
-import { performanceTracks, trackCount } from "@/lib/set";
+import { libraryTrackToSetTrack, type StickTrack } from "@/lib/rekordbox-stick";
+import { stickFileCount } from "@/lib/stick-audio";
+import {
+  PHASES,
+  TRACK_ROLES,
+  performanceTracks,
+  trackCount,
+  type SetDraft,
+  type SetPhaseId,
+  type SetTrack,
+  type TrackRole,
+} from "@/lib/set";
 
 type Props = {
   draft: SetDraft;
   onApply: (draft: SetDraft, message: string) => void;
+  /** Put a library track into the set (Crate). */
+  onAddTrack?: (track: SetTrack) => void;
+  /** Play a library track in the player dock. */
+  onPlayTrack?: (track: SetTrack) => void;
 };
 
 type LibraryRow = {
@@ -22,6 +36,7 @@ type LibraryRow = {
   title: string;
   key: string;
   bpm: string;
+  stick?: StickTrack;
 };
 
 type SourceTab = "rekordbox" | "tidal" | "csv" | "spotify";
@@ -44,7 +59,11 @@ function toImportRows(rows: LibraryRow[]): KeyImportRow[] {
 export function LibraryPanel({
   draft,
   onApply,
+  onAddTrack,
+  onPlayTrack,
 }: Props) {
+  const [addPhase, setAddPhase] = useState<SetPhaseId>("open");
+  const [addRole, setAddRole] = useState<TrackRole>("groove");
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [libraryCount, setLibraryCount] = useState<number | null>(null);
@@ -460,7 +479,7 @@ export function LibraryPanel({
         <div className="library-browser">
           <div className="library-browser-head">
             <h3>
-              Bibliothek vom Stick
+              Bibliothek
               <span>{trackCount(libraryRows.length)}</span>
             </h3>
             <input
@@ -487,25 +506,88 @@ export function LibraryPanel({
             </span>
           </div>
           <p className="section-note">
-            Alle Tracks aus der geladenen Rekordbox-Datenbank mit Key und BPM.
-            Nur zum Nachschauen: Das Set ändert sich erst, wenn du „Keys &
-            BPM neu schreiben“ drückst. Das gleicht Artist und Titel der Setliste
-            mit dieser Liste ab und schreibt Key und BPM neu in die Tracks. Nützlich, wenn
-            du nach dem Laden Tracks ergänzt hast.
+            Alle Tracks aus der geladenen Rekordbox-Datenbank. Mit ▶ hörst du
+            rein, mit „+ Ins Set“ legst du einen Track in Phase und Rolle
+            deiner Wahl. „Keys &amp; BPM neu schreiben“ gleicht die Setliste mit
+            dieser Liste ab.
           </p>
+          {onAddTrack ? (
+            <div className="library-add-bar">
+              <span>Beim Hinzufügen</span>
+              <label>
+                Phase
+                <select
+                  value={addPhase}
+                  onChange={(event) => setAddPhase(event.target.value as SetPhaseId)}
+                >
+                  {PHASES.map((phase) => (
+                    <option key={phase.id} value={phase.id}>
+                      {phase.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Rolle
+                <select
+                  value={addRole}
+                  onChange={(event) => setAddRole(event.target.value as TrackRole)}
+                >
+                  {TRACK_ROLES.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          ) : null}
           <ul className="library-list">
-            {filteredLibrary.map((row, index) => (
-              <li key={`${row.artist}-${row.title}-${index}`}>
-                <div>
-                  <strong>{row.title}</strong>
-                  <span>{row.artist || "Unknown"}</span>
-                </div>
-                <em>
-                  {row.key || "—"}
-                  {row.bpm ? ` · ${row.bpm}` : ""}
-                </em>
-              </li>
-            ))}
+            {filteredLibrary.map((row, index) => {
+              const canPlay =
+                Boolean(onPlayTrack) && Boolean(row.stick?.filePath) && stickFileCount() > 0;
+              return (
+                <li key={`${row.artist}-${row.title}-${index}`}>
+                  {onPlayTrack ? (
+                    <button
+                      type="button"
+                      className="lib-play"
+                      disabled={!canPlay}
+                      aria-label={`${row.title} abspielen`}
+                      title={
+                        canPlay
+                          ? "Abspielen"
+                          : "Nur mit gewähltem Stick-Ordner abspielbar"
+                      }
+                      onClick={() =>
+                        onPlayTrack?.(libraryTrackToSetTrack(row, addPhase, addRole))
+                      }
+                    >
+                      ▶
+                    </button>
+                  ) : null}
+                  <div>
+                    <strong>{row.title}</strong>
+                    <span>{row.artist || "Unknown"}</span>
+                  </div>
+                  <em>
+                    {row.key || "—"}
+                    {row.bpm ? ` · ${row.bpm}` : ""}
+                  </em>
+                  {onAddTrack ? (
+                    <button
+                      type="button"
+                      className="btn ghost lib-add"
+                      onClick={() =>
+                        onAddTrack(libraryTrackToSetTrack(row, addPhase, addRole))
+                      }
+                    >
+                      + Ins Set
+                    </button>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         </div>
       ) : source === "rekordbox" ? (

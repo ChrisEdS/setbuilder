@@ -241,6 +241,7 @@ export function SetBuilder() {
   const [tidalConnected, setTidalConnected] = useState<boolean | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
   const [focusTrackId, setFocusTrackId] = useState<string | null>(null);
+  const [libraryPreview, setLibraryPreview] = useState<SetTrack | null>(null);
   const [matchingLinks, setMatchingLinks] = useState(false);
   const [replaceFor, setReplaceFor] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
@@ -860,6 +861,28 @@ export function SetBuilder() {
     );
   }
 
+  function addLibraryTrack(track: SetTrack) {
+    const same = draft.tracks.some(
+      (item) =>
+        item.id === track.id ||
+        (item.name.toLowerCase() === track.name.toLowerCase() &&
+          item.artists.join(",").toLowerCase() === track.artists.join(",").toLowerCase()),
+    );
+    if (same) {
+      setStatus(`${track.name} ist schon im Set.`);
+      return;
+    }
+    addTracksBulk([track]);
+    setStatus(
+      `+ ${track.name} → ${PHASES.find((p) => p.id === track.phase)?.label} / ${TRACK_ROLES.find((r) => r.id === track.role)?.label}`,
+    );
+  }
+
+  function playLibraryTrack(track: SetTrack) {
+    setLibraryPreview(track);
+    setFocusTrackId(track.id);
+  }
+
   function patchTrack(id: string, patch: Partial<SetTrack>) {
     setDraft((current) => ({
       ...current,
@@ -1426,6 +1449,8 @@ export function SetBuilder() {
         </summary>
         <LibraryPanel
           draft={draft}
+          onAddTrack={addLibraryTrack}
+          onPlayTrack={playLibraryTrack}
           onApply={(next, message) => {
             setDraft(next);
             clearNotice();
@@ -2312,7 +2337,11 @@ export function SetBuilder() {
       </details>
 
       <PreviewPlayer
-        tracks={draft.tracks}
+        tracks={
+          libraryPreview && !draft.tracks.some((item) => item.id === libraryPreview.id)
+            ? [...draft.tracks, libraryPreview]
+            : draft.tracks
+        }
         currentId={focusTrackId}
         onChange={(id) => setFocusTrackId(id)}
         onClose={() => setFocusTrackId(null)}
