@@ -5,7 +5,8 @@ SETFORM bereitet DJ-Sets vor: Rekordbox-Stick oder Playlist laden, den Bogen nac
 ## Features
 
 - **Playlist → Set**: eigene Spotify-Playlist laden und entlang Open → Lift → Rise → Peak → Release extrahieren
-- **Crate-Rollen-Board**: Anchor / Bridge / Groove / Alternativen mit Begründung, Phase, Key, Transition
+- **Crate**: Musik per Link, Suche, von Hand oder automatisch aus einer Playlist hinzufügen; Ansichten Setliste, Rollen und Key-Pfad
+- **Rollen**: Anchor / Bridge / Groove / Alternativen mit Begründung, Phase, Key, Transition
 - **Dramaturgie**: Slot-Arten (Warm-up / Support / Peak / Closing), Wellen statt Rampe
 - **Key-Quellen**: rekordbox XML/DB, **Rekordbox-Stick** (`export.pdb`: Playlists und History als Set, Dateien vom Stick abspielbar, Spotify-Links dazu), **Tidal Keys** (Catalog Key/BPM per ISRC), CSV/Paste, Spotify-Features-Status
 - **Export zurück**: M3U und rekordbox-XML der Performance-Reihenfolge, Alternativen als zweite Playlist

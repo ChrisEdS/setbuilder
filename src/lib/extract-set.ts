@@ -391,7 +391,7 @@ function appendSafetyCrates(
     keyCamelot: track.keyCamelot,
     energy: track.energy,
     note: "Plan B — nur wenn der Raum dreht",
-    why: "Safety net aus Playlist-Rest (nicht in der Haupt-Timeline)",
+    why: "Safety net aus Playlist-Rest (nicht in der Performance-Reihenfolge)",
     safetyAlt: "",
     harmonicFromPrev: "unknown" as HarmonicRelation,
   }));

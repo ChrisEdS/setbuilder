@@ -26,6 +26,8 @@ import {
 } from "@/lib/set";
 
 type Props = {
+  /** Rendered inside the Crate workspace: no own heading. */
+  embedded?: boolean;
   tracks: SetTrack[];
   positions: Map<string, string>;
   activeRole: TrackRole;
@@ -135,6 +137,7 @@ function updatePrefs(updater: (current: CratePrefs) => CratePrefs) {
 }
 
 export function RoleCrates({
+  embedded,
   tracks,
   positions,
   activeRole,
@@ -252,7 +255,7 @@ export function RoleCrates({
     <section className="role-crates" aria-label="Crate-Rollen Übersicht">
       <div className="panel-head crate-toolbar-head">
         <div>
-          <h2>Crate-Rollen</h2>
+          {embedded ? null : <h2>Crate-Rollen</h2>}
           <p className="section-note">
             Titel in eine andere Rolle ziehen. Die Höhe aller Spalten lässt
             sich am unteren Rand ändern, „Alternativen groß“ verbreitert die

@@ -11,9 +11,11 @@ import { performanceTracks, type SetTrack } from "@/lib/set";
 type Props = {
   tracks: SetTrack[];
   onHarmonize: () => void;
+  /** Rendered inside the Crate workspace: no own heading. */
+  embedded?: boolean;
 };
 
-export function HarmonicPath({ tracks, onHarmonize }: Props) {
+export function HarmonicPath({ tracks, onHarmonize, embedded }: Props) {
   const performance = performanceTracks(tracks);
   const stats = pathStats(performance);
   const coverage =
@@ -24,22 +26,24 @@ export function HarmonicPath({ tracks, onHarmonize }: Props) {
     <section className="harmonic-path" aria-label="Harmonic path">
       <div className="panel-head">
         <div>
-          <h2>Harmonic Path</h2>
+          {embedded ? null : <h2>Harmonic Path</h2>}
           <p className="section-note">
-            Camelot entlang der gespielten Reihenfolge. Sortieren rückt
-            verwandte Keys zusammen, ein Clash vor dem Peak bleibt erlaubt.
+            Camelot entlang der gespielten Reihenfolge. „Harmonisch sortieren“
+            rückt verwandte Keys zusammen, ein Clash vor dem Peak bleibt erlaubt.
           </p>
         </div>
-        <div className="actions">
-          <button
-            type="button"
-            className="btn"
-            onClick={onHarmonize}
-            disabled={performance.length < 2}
-          >
-            Harmonisch sortieren
-          </button>
-        </div>
+        {embedded ? null : (
+          <div className="actions">
+            <button
+              type="button"
+              className="btn"
+              onClick={onHarmonize}
+              disabled={performance.length < 2}
+            >
+              Harmonisch sortieren
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="harm-stats">
@@ -145,7 +149,7 @@ export function HarmonicPath({ tracks, onHarmonize }: Props) {
           <p>
             Farben folgen dem Camelot Wheel (1–12). <strong>A</strong> = Moll
             (kräftiger), <strong>B</strong> = Dur (heller). Keys im
-            Rekordbox-Bereich importieren oder in der Timeline setzen, dann
+            Rekordbox-Bereich importieren oder in der Setliste setzen, dann
             „Harmonisch sortieren“.
           </p>
           <div className="camelot-legend" aria-label="Camelot Farben">

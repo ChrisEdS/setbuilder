@@ -12,7 +12,6 @@ import { ConnectionSetup } from "@/components/ConnectionSetup";
 import { FieldNoticeView, type FieldNotice } from "@/components/FieldNotice";
 import { HarmonicPath } from "@/components/HarmonicPath";
 import { LibraryPanel } from "@/components/LibraryPanel";
-import { ManualArrange } from "@/components/ManualArrange";
 import { PreviewPlayer } from "@/components/PreviewPlayer";
 import { ReplaceMenu } from "@/components/ReplaceMenu";
 import { SetTakeaway } from "@/components/SetTakeaway";
@@ -28,7 +27,7 @@ import { pickStreamingMatch } from "@/lib/match-link";
 import { swapIntoSlot } from "@/lib/replace-track";
 import { CAMELOT_CODES, mixJoin } from "@/lib/harmonic";
 import { reharmonizeDraft } from "@/lib/extract-set";
-import { looksLikeMusicLink, parseMusicLink, sourceLabel } from "@/lib/music-link";
+import { looksLikeMusicLink, sourceLabel } from "@/lib/music-link";
 import {
   ARC_GUIDE,
   DEFAULT_SET,
@@ -212,10 +211,13 @@ export function SetBuilder() {
   const [activeRole, setActiveRole] = useState<TrackRole>("anchor");
   const [query, setQuery] = useState("tech house");
   const [linkUrl, setLinkUrl] = useState("");
-  const [crateMode, setCrateMode] = useState<"search" | "link">("search");
-  const [crateService, setCrateService] = useState<
-    "spotify" | "tidal" | "beatport"
-  >("spotify");
+  const [addTab, setAddTab] = useState<"search" | "link" | "manual" | "auto">(
+    "link",
+  );
+  const [crateView, setCrateView] = useState<"list" | "roles" | "keys">("list");
+  const [manualTitle, setManualTitle] = useState("");
+  const [manualArtist, setManualArtist] = useState("");
+  const [manualLink, setManualLink] = useState("");
   const [tidalPlaylists, setTidalPlaylists] = useState<
     Array<{ id: string; name: string; trackCount: number | null }>
   >([]);
@@ -228,7 +230,6 @@ export function SetBuilder() {
   const [isPending, startTransition] = useTransition();
   const [hasSearched, setHasSearched] = useState(false);
   const [playlistUrl, setPlaylistUrl] = useState("");
-  const [beatportUrl, setBeatportUrl] = useState("");
   const setups = useSyncExternalStore(
     subscribeSetups,
     readSetupsSnapshot,
@@ -238,7 +239,6 @@ export function SetBuilder() {
   const [selectedSetup, setSelectedSetup] = useState("");
   const [spotifyConnected, setSpotifyConnected] = useState<boolean | null>(null);
   const [tidalConnected, setTidalConnected] = useState<boolean | null>(null);
-  const [redirectUri, setRedirectUri] = useState("/api/auth/callback");
   const [isExtracting, setIsExtracting] = useState(false);
   const [focusTrackId, setFocusTrackId] = useState<string | null>(null);
   const [matchingLinks, setMatchingLinks] = useState(false);
@@ -247,11 +247,15 @@ export function SetBuilder() {
   const [overId, setOverId] = useState<string | null>(null);
   const dragIdRef = useRef<string | null>(null);
   const [roleFilter, setRoleFilter] = useState<TrackRole | "all">("all");
-  const [workspaceMode, setWorkspaceMode] = useState<"auto" | "manual">(
-    "manual",
-  );
   const [settingsNote, setSettingsNote] = useState("Sichern · Verbinden");
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // Feedback like "+ Titel → Peak / Anchor" is a toast: it follows the scroll and fades after a while.
+  useEffect(() => {
+    if (!status) return;
+    const timer = window.setTimeout(() => setStatus(null), 8000);
+    return () => window.clearTimeout(timer);
+  }, [status]);
 
   function noteSettings(note: string) {
     setSettingsNote(note);
@@ -310,7 +314,6 @@ export function SetBuilder() {
       };
       const connected = Boolean(data.connected);
       setSpotifyConnected(connected);
-      if (data.redirectUri) setRedirectUri(data.redirectUri);
       if (connected) await loadMyPlaylists();
       else setMyPlaylists([]);
       const tidalRes = await fetch("/api/auth/tidal/status");
@@ -378,7 +381,6 @@ export function SetBuilder() {
         }
         const connected = Boolean(data.connected);
         setSpotifyConnected(connected);
-        if (data.redirectUri) setRedirectUri(data.redirectUri);
         if (connected) {
           const listRes = await fetch("/api/playlists");
           const listData = (await listRes.json()) as {
@@ -534,22 +536,9 @@ export function SetBuilder() {
     }
 
     if (looksLikeMusicLink(trimmed)) {
-      const parsed = parseMusicLink(trimmed);
-      if (parsed?.source === "beatport") setCrateService("beatport");
-      if (parsed?.source === "tidal") setCrateService("tidal");
-      if (parsed?.source === "spotify") setCrateService("spotify");
-      setCrateMode("link");
+      setAddTab("link");
       setLinkUrl(trimmed);
       void importCrateLink(trimmed);
-      return;
-    }
-
-    if (crateService === "beatport") {
-      fail(
-        "crate",
-        "Beatport durchsucht SETFORM nicht.",
-        "Auf Link / Playlist wechseln und einen beatport.com/track/… Link einfügen.",
-      );
       return;
     }
 
@@ -587,7 +576,7 @@ export function SetBuilder() {
     clearNotice();
     setStatus(null);
     setHasSearched(true);
-    setCrateService("tidal");
+    setAddTab("link");
     startTransition(async () => {
       try {
         const response = await fetch("/api/crate/tidal", {
@@ -616,84 +605,19 @@ export function SetBuilder() {
     });
   }
 
-  async function loadBeatportIntoSet() {
-    const trimmed = beatportUrl.trim();
-    if (!trimmed.toLowerCase().includes("beatport.com")) {
-      fail(
-        "beatport",
-        "Das ist kein Beatport-Track-Link.",
-        "Die Adresse aus dem Browser kopieren. Sie muss beatport.com/track/ oder /release/ enthalten.",
-      );
-      return;
-    }
-    clearNotice();
-    setStatus(null);
-    startTransition(async () => {
-      try {
-        const response = await fetch("/api/resolve-link", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: trimmed }),
-        });
-        const data = (await response.json()) as {
-          tracks?: SearchTrack[];
-          message?: string;
-          error?: string;
-        };
-        if (!response.ok) throw new Error(data.error || "Beatport-Link fehlgeschlagen.");
-        const incoming = data.tracks ?? [];
-        if (!incoming.length) throw new Error("Keine Tracks im Beatport-Link.");
-        addTracksBulk(
-          incoming.map((track) => ({
-            id: track.id,
-            name: track.name,
-            artists: track.artists,
-            album: track.album,
-            durationMs: track.durationMs,
-            uri: track.uri,
-            externalUrl: track.externalUrl,
-            imageUrl: track.imageUrl,
-            phase: activePhase,
-            role: activeRole,
-            transition: "unset" as const,
-            bpm: "",
-            keyCamelot: "",
-            note: "",
-            comment: "",
-            source: "beatport" as const,
-            safetyAlt: "",
-          })),
-        );
-        setBeatportUrl("");
-        setStatus(
-          data.message ||
-            `${incoming.length} von Beatport in ${PHASES.find((phase) => phase.id === activePhase)?.label} gelegt.`,
-        );
-      } catch (err) {
-        fail(
-          "beatport",
-          err instanceof Error ? err.message : "Beatport-Link fehlgeschlagen.",
-          "Den Link im Browser öffnen. Steht der Titel in der Adresse, hier noch einmal einfügen.",
-        );
-      }
-    });
-  }
-
   async function importCrateLink(rawUrl = linkUrl) {
     const trimmed = rawUrl.trim();
     if (!trimmed) {
       fail(
         "crate",
         "Playlist- oder Track-Link fehlt.",
-        "Einen Spotify-, Tidal- oder Beatport-Link ins Feld einfügen.",
+        "Einen Link von Spotify, Tidal, Beatport oder SoundCloud ins Feld einfügen.",
       );
       return;
     }
-    if (
-      crateService === "beatport" ||
-      trimmed.toLowerCase().includes("beatport.com")
-    ) {
-      setCrateService("beatport");
+    const lower = trimmed.toLowerCase();
+    if (lower.includes("beatport.com") || lower.includes("soundcloud.com")) {
+      const store = lower.includes("soundcloud.com") ? "SoundCloud" : "Beatport";
       setHasSearched(true);
       clearNotice();
       setStatus(null);
@@ -711,15 +635,15 @@ export function SetBuilder() {
             error?: string;
           };
           if (!response.ok) {
-            throw new Error(data.error || "Beatport-Link fehlgeschlagen.");
+            throw new Error(data.error || `${store}-Link fehlgeschlagen.`);
           }
           const tracks = data.tracks ?? [];
           setResults(tracks);
-          setCrateSource(data.label ? `Beatport: ${data.label}` : "Beatport");
+          setCrateSource(data.label ? `${store}: ${data.label}` : store);
           setStatus(
             data.message ||
               (tracks.length
-                ? "Beatport geladen — mit + dazu ins Set."
+                ? `${store} geladen — mit + dazu ins Set.`
                 : "Keine Tracks im Link."),
           );
         } catch (err) {
@@ -727,7 +651,7 @@ export function SetBuilder() {
           setCrateSource(null);
           fail(
             "crate",
-            err instanceof Error ? err.message : "Beatport-Link fehlgeschlagen.",
+            err instanceof Error ? err.message : `${store}-Link fehlgeschlagen.`,
             "Den Link im Browser öffnen. Steht der Titel in der Adresse, hier noch einmal einfügen.",
           );
         }
@@ -735,7 +659,7 @@ export function SetBuilder() {
       return;
     }
 
-    if (crateService === "tidal" || trimmed.toLowerCase().includes("tidal.com")) {
+    if (lower.includes("tidal.com")) {
       setHasSearched(true);
       startTransition(async () => {
         try {
@@ -891,6 +815,48 @@ export function SetBuilder() {
     }));
     setStatus(
       `+ ${trackCount(mapped.length)} → ${PHASES.find((p) => p.id === activePhase)?.label} / ${activeRole}`,
+    );
+  }
+
+  function addManualEntry() {
+    const name = manualTitle.trim();
+    if (!name) {
+      fail(
+        "crate",
+        "Titel fehlt.",
+        "Einen Titel eintragen. Artist und Link dürfen leer bleiben.",
+      );
+      return;
+    }
+    const link = manualLink.trim();
+    const id = `manual:${Date.now().toString(36)}`;
+    addTracksBulk([
+      {
+        id,
+        name,
+        artists: [manualArtist.trim() || "Unknown"],
+        album: "Manual",
+        durationMs: 0,
+        uri: link || id,
+        externalUrl: link,
+        imageUrl: null,
+        phase: activePhase,
+        role: activeRole,
+        transition: "unset",
+        bpm: "",
+        keyCamelot: "",
+        note: "",
+        comment: "",
+        source: "manual",
+        safetyAlt: "",
+      },
+    ]);
+    setManualTitle("");
+    setManualArtist("");
+    setManualLink("");
+    clearNotice();
+    setStatus(
+      `+ ${name} → ${PHASES.find((p) => p.id === activePhase)?.label} / ${TRACK_ROLES.find((r) => r.id === activeRole)?.label}`,
     );
   }
 
@@ -1253,6 +1219,70 @@ export function SetBuilder() {
     );
   }
 
+  function renderConnection() {
+    const spotifyState =
+      spotifyConnected === null
+        ? "wird geprüft"
+        : spotifyConnected
+          ? "verbunden"
+          : "nicht verbunden";
+    const tidalState =
+      tidalConnected === null
+        ? "wird geprüft"
+        : tidalConnected
+          ? "verbunden"
+          : "nicht verbunden";
+    return (
+      <div className="crate-connect">
+        <div className="import-actions">
+          {spotifyConnected ? (
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={async () => {
+                await fetch("/api/auth/logout", { method: "POST" });
+                setSpotifyConnected(false);
+                setMyPlaylists([]);
+                setStatus("Spotify getrennt.");
+              }}
+            >
+              Spotify trennen
+            </button>
+          ) : (
+            <a className="button-link" href="/api/auth/login">
+              Mit Spotify verbinden
+            </a>
+          )}
+          {tidalConnected ? (
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={async () => {
+                await fetch("/api/auth/tidal/logout", { method: "POST" });
+                setTidalConnected(false);
+                setStatus("Tidal getrennt.");
+              }}
+            >
+              Tidal trennen
+            </button>
+          ) : (
+            <a className="button-link tidal-login" href="/api/auth/tidal/login">
+              Mit Tidal verbinden
+            </a>
+          )}
+        </div>
+        <p className="head-meta">
+          Spotify {spotifyState} · Tidal {tidalState}
+        </p>
+        {spotifyConnected && tidalConnected ? null : (
+          <p className="import-hint">
+            Die Zugangsdaten für Spotify und Tidal stehen unter Einstellungen.
+          </p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="set-shell">
       {authNote ? <p className="banner status">{authNote}</p> : null}
@@ -1427,7 +1457,7 @@ export function SetBuilder() {
           <div className="explain-body">
             <p>
               Diese Prinzipien bestimmen, wie SETFORM den Bogen legt und worauf
-              du in der Timeline achten solltest.
+              du in der Setliste achten solltest.
             </p>
             <ul className="explain-steps">
               {PREP_PRINCIPLES.map((item) => (
@@ -1497,425 +1527,422 @@ export function SetBuilder() {
 
       <details className="explain-fold section-fold" open>
         <summary>
-          <span>Crate-Rollen</span>
-          <em>{trackCount(draft.tracks.length)}</em>
+          <span>Crate</span>
+          <em>
+            {mainTracks.length} Performance ·{" "}
+            {draft.tracks.length - mainTracks.length} Alternativen
+          </em>
         </summary>
-      <RoleCrates
-        tracks={draft.tracks}
-        positions={positions}
-        activeRole={activeRole}
-        focusedTrackId={focusTrackId}
-        onSelectRole={(role) => {
-          setActiveRole(role);
-          setRoleFilter(role);
-        }}
-        onReplace={replaceTrack}
-        onRemove={removeTrack}
-        onMoveRole={(id, role) => {
-          patchTrack(id, { role, why: "Manuell gesetzt" });
-          setActiveRole(role);
-          setRoleFilter(role);
-        }}
-        onFocusTrack={(id) => {
-          setFocusTrackId(id);
-          const track = draft.tracks.find((item) => item.id === id);
-          if (track) {
-            setActivePhase(track.phase);
-            setActiveRole(track.role);
-            setRoleFilter(track.role);
-            requestAnimationFrame(() => {
-              document
-                .getElementById(`track-${id}`)
-                ?.scrollIntoView({ behavior: "smooth", block: "center" });
-            });
-          }
-        }}
-      />
-      </details>
-
-      <details className="explain-fold section-fold">
-        <summary>
-          <span>Harmonic Path</span>
-          <em>Key-Prüfung</em>
-        </summary>
-        <HarmonicPath tracks={draft.tracks} onHarmonize={harmonizeSet} />
-      </details>
-
-      <PreviewPlayer
-        tracks={draft.tracks}
-        currentId={focusTrackId}
-        onChange={(id) => setFocusTrackId(id)}
-        onClose={() => setFocusTrackId(null)}
-      />
-
-      <div className="workspace-switch" role="tablist" aria-label="Workspace">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={workspaceMode === "manual"}
-          className={
-            workspaceMode === "manual" ? "seg-item active" : "seg-item"
-          }
-          onClick={() => setWorkspaceMode("manual")}
-          title="Tracks von Hand oder per Link sortieren, dann als PDF, M3U oder rekordbox mitnehmen."
-        >
-          Manual Arrange
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={workspaceMode === "auto"}
-          className={workspaceMode === "auto" ? "seg-item active" : "seg-item"}
-          onClick={() => setWorkspaceMode("auto")}
-          title="Optional: Tracks von Spotify, Tidal oder Beatport dazunehmen, dann in der Timeline feinschleifen."
-        >
-          Crate + Timeline
-        </button>
-      </div>
-
-      {workspaceMode === "manual" ? (
-        <details className="explain-fold section-fold" open>
-          <summary>
-            <span>Manual Arrange</span>
-            <em>{mainTracks.length} in der Performance</em>
-          </summary>
-        <ManualArrange
-          tracks={draft.tracks}
-          positions={positions}
-          activePhase={activePhase}
-          activeRole={activeRole}
-          focusedTrackId={focusTrackId}
-          onAddTracks={addTracksBulk}
-          onPatch={patchTrack}
-          onMove={moveTrack}
-          onReorder={reorderTrack}
-          onRemove={removeTrack}
-          onReplace={replaceTrack}
-          onMatchLinks={() => void matchStreamingLinks()}
-          matchingLinks={matchingLinks}
-          linkAlert={localNotice("library")}
-          exportAlert={localNotice("export")}
-          onFocus={(id) => setFocusTrackId(id)}
-          onExportPdf={exportPdf}
-          onExportM3u={exportM3u}
-          onExportRekordbox={exportRekordbox}
-        />
-        </details>
-      ) : (
-      <div className="workspace crate-stack">
-        <details className="explain-fold section-fold" open>
-          <summary>
-            <span>Crate ergänzen</span>
-            <em>{PHASES.find((phase) => phase.id === activePhase)?.label}</em>
-          </summary>
-        <section className="panel search-panel">
-          <div className="panel-head">
-            <h2>Crate ergänzen</h2>
-            <p className="head-meta">
-              Neue Tracks: {PHASES.find((p) => p.id === activePhase)?.label} ·{" "}
-              {TRACK_ROLES.find((role) => role.id === activeRole)?.label}
-            </p>
-          </div>
-
-          <div className="seg crate-service-seg" role="tablist" aria-label="Crate-Dienst">
-            <button
-              type="button"
-              title="Katalog durchsuchen oder einen Spotify-Link laden."
-              className={
-                crateService === "spotify"
-                  ? "seg-item active source-spotify"
-                  : "seg-item"
-              }
-              onClick={() => {
-                setCrateService("spotify");
-                setResults([]);
-                setCrateSource(null);
-                setHasSearched(false);
-              }}
-            >
-              Spotify
-            </button>
-            <button
-              type="button"
-              title="Eigene Playlist wählen oder einen Tidal-Link einfügen."
-              className={
-                crateService === "tidal"
-                  ? "seg-item active source-tidal"
-                  : "seg-item"
-              }
-              onClick={() => {
-                setCrateService("tidal");
-                setResults([]);
-                setCrateSource(null);
-                setHasSearched(false);
-              }}
-            >
-              Tidal
-            </button>
-            <button
-              type="button"
-              title="Track- oder Release-Link von beatport.com. Den Katalog gibt Beatport ohne Login nicht frei."
-              className={
-                crateService === "beatport"
-                  ? "seg-item active source-beatport"
-                  : "seg-item"
-              }
-              onClick={() => {
-                setCrateService("beatport");
-                setCrateMode("link");
-                setResults([]);
-                setCrateSource(null);
-                setHasSearched(false);
-              }}
-            >
-              Beatport
-            </button>
-          </div>
-          <p className="crate-service-note">
-            {crateService === "spotify"
-              ? "Optional. Katalog durchsuchen oder einen Track-, Playlist- oder Album-Link laden."
-              : crateService === "tidal"
-                ? "Eigene Playlist wählen oder einen Tidal-Link einfügen."
-                : "Beatport gibt den Katalog ohne Login nicht frei. Ein Track- oder Release-Link reicht, der Titel kommt aus der Adresse."}
-          </p>
-
-          {crateService === "tidal" ? (
-            <div className="playlist-picker">
-              <label>
-                <span>Eigene Tidal-Playlists</span>
-                <select
-                  value=""
-                  aria-label="Tidal Playlist wählen"
-                  onChange={(event) => {
-                    const id = event.target.value;
-                    if (!id) return;
-                    const picked = tidalPlaylists.find((item) => item.id === id);
-                    void loadTidalCrate(id, picked?.name);
-                  }}
-                >
-                  <option value="">
-                    {tidalConnected
-                      ? tidalPlaylists.length
-                        ? "Playlist laden…"
-                        : "Keine Playlists gefunden"
-                      : "Zuerst mit Tidal verbinden"}
-                  </option>
-                  {tidalPlaylists.map((playlist) => (
-                    <option key={playlist.id} value={playlist.id}>
-                      {playlist.name}
-                      {playlist.trackCount != null ? ` (${playlist.trackCount})` : ""}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-          ) : null}
-
-          {crateService === "beatport" ? null : (
-          <div className="seg crate-mode-seg" role="tablist" aria-label="Crate-Quelle">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={crateMode === "search"}
-              className={crateMode === "search" ? "seg-item active" : "seg-item"}
-              onClick={() => setCrateMode("search")}
-            >
-              Suche
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={crateMode === "link"}
-              className={crateMode === "link" ? "seg-item active" : "seg-item"}
-              onClick={() => setCrateMode("link")}
-            >
-              Link / Playlist
-            </button>
-          </div>
-          )}
-
-          {crateService !== "beatport" && crateMode === "search" ? (
-            <form
-              className="search-row"
-              onSubmit={(e) => {
-                e.preventDefault();
-                runSearch();
-              }}
-            >
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={
-                  crateService === "tidal"
-                    ? "Artist, Track… oder tidal.com-Link"
-                    : "Artist, Track, Genre… oder Spotify-Link"
-                }
-                aria-label={
-                  crateService === "tidal" ? "Tidal Suche" : "Spotify Suche"
-                }
-              />
-              <button type="submit" disabled={isPending}>
-                {isPending ? "Suche…" : "Suchen"}
-              </button>
-            </form>
-          ) : (
-            <form
-              className="search-row"
-              onSubmit={(e) => {
-                e.preventDefault();
-                void importCrateLink();
-              }}
-            >
-              <input
-                value={linkUrl}
-                onChange={(e) => setLinkUrl(e.target.value)}
-                placeholder={
-                  crateService === "beatport"
-                    ? "beatport.com/track/… oder /release/…"
-                    : crateService === "tidal"
-                      ? "tidal.com/browse/playlist/… oder /track/…"
-                      : "open.spotify.com/track, /playlist oder /album"
-                }
-                aria-label={
-                  crateService === "beatport"
-                    ? "Beatport Link"
-                    : crateService === "tidal"
-                      ? "Tidal Link"
-                      : "Spotify Link"
-                }
-              />
-              <button type="submit" disabled={isPending}>
-                {isPending ? "Lade…" : "Laden"}
-              </button>
-            </form>
-          )}
-          <FieldNoticeView notice={localNotice("crate")} />
-
-          {crateSource ? (
-            <div className="crate-source-bar">
-              <span>{crateSource}</span>
-              {results.length > 1 ? (
-                <button
-                  type="button"
-                  className="btn ghost"
-                  onClick={addAllResults}
-                  disabled={results.length === 0}
-                >
-                  Alle + ({results.length})
-                </button>
-              ) : null}
-            </div>
-          ) : null}
-
-          {!hasSearched ? (
-            <div className="empty">
-              <p>
-                {crateService === "beatport"
-                  ? "Link einfügen und laden. Danach den Track mit + dazu in die Phase legen."
-                  : crateMode === "search"
-                    ? "Suche starten. Ein Link im Feld wird direkt geladen."
-                    : crateService === "tidal"
-                      ? "Playlist- oder Track-Link einfügen."
-                      : "Track-, Playlist- oder Album-Link. Playlists: eigene oder kollaborative, im Dev Mode."}
-              </p>
-            </div>
-          ) : results.length === 0 ? (
-            <div className="empty">
-              <p>Keine Tracks geladen.</p>
-            </div>
-          ) : (
-            <ul className="result-list">
-              {results.map((track) => (
-                <li key={track.id}>
-                  <div className="track-main">
-                    {track.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={track.imageUrl} alt="" width={48} height={48} />
-                    ) : (
-                      <div className="art-fallback" />
-                    )}
-                    <div>
-                      <strong>{track.name}</strong>
-                      <span>
-                        <em
-                          className={`source-pill source-${track.source || crateService}`}
-                        >
-                          {sourceLabel(track.source || crateService)}
-                        </em>
-                        {track.artists.join(", ")}
-                        {track.durationMs
-                          ? ` · ${formatDuration(track.durationMs)}`
-                          : ""}
-                      </span>
-                    </div>
-                  </div>
-                  <button type="button" onClick={() => addTrack(track)}>
-                    + dazu
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-        </details>
-
-        <details className="explain-fold section-fold" open>
-          <summary>
-            <span>Set-Timeline</span>
-            <em>{trackCount(visibleTimeline.length)}</em>
-          </summary>
-        <section className="panel set-panel timeline-panel">
+        <section className="crate-workspace" aria-label="Crate">
           <div className="panel-head">
             <div>
-              <h2>Set-Timeline</h2>
-              <p className="timeline-filter">
-                {roleFilter === "all"
-                  ? "Performance-Set"
-                  : TRACK_ROLES.find((role) => role.id === roleFilter)?.label}
-                {" · "}
-                {trackCount(visibleTimeline.length)} ·{" "}
-                {formatDuration(
-                  visibleTimeline.reduce(
-                    (sum, track) => sum + track.durationMs,
-                    0,
-                  ),
-                )}
+              <h2>Crate</h2>
+              <p className="section-note">
+                Hier kommt Musik rein und bekommt eine Phase und eine Rolle.
+                Danach ordnest du das Set von Hand oder lässt es nach Key
+                sortieren.
               </p>
             </div>
-            <div className="actions timeline-actions">
-              <div className="seg" role="group" aria-label="Timeline-Filter">
-                <button
-                  type="button"
-                  className={roleFilter === "all" ? "seg-item active" : "seg-item"}
-                  title="Performance-Reihenfolge, ohne die Alternativen."
-                  onClick={() => setRoleFilter("all")}
-                >
-                  Alle
-                </button>
-                {TRACK_ROLES.map((role) => (
-                  <button
-                    key={role.id}
-                    type="button"
-                    className={
-                      roleFilter === role.id ? "seg-item active" : "seg-item"
+          </div>
+
+          <details className="explain-fold nested crate-add" open>
+            <summary>
+              <span>Musik hinzufügen</span>
+              <em className="fold-toggle" />
+            </summary>
+            <div className="explain-body crate-add-body">
+              {addTab === "auto" ? null : (
+                <div className="add-target">
+                  <span className="add-target-label">Neue Tracks landen in</span>
+                  <select
+                    value={activePhase}
+                    onChange={(event) =>
+                      setActivePhase(event.target.value as SetPhaseId)
                     }
-                    title={role.hint}
-                    onClick={() => setRoleFilter(role.id)}
+                    aria-label="Phase für neue Tracks"
                   >
-                    {role.label}
+                    {PHASES.map((phase) => (
+                      <option key={phase.id} value={phase.id}>
+                        {phase.label}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={activeRole}
+                    onChange={(event) =>
+                      setActiveRole(event.target.value as TrackRole)
+                    }
+                    aria-label="Rolle für neue Tracks"
+                  >
+                    {TRACK_ROLES.map((role) => (
+                      <option key={role.id} value={role.id}>
+                        {role.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="seg crate-add-tabs" role="tablist" aria-label="Wie Musik hinzufügen">
+                {(
+                  [
+                    ["link", "Link", "Track, Playlist oder Album von Spotify, Tidal, Beatport oder SoundCloud."],
+                    ["search", "Suche", "Den Spotify-Katalog nach Artist, Titel oder Genre durchsuchen."],
+                    ["manual", "Von Hand", "Titel und Artist selbst eintragen."],
+                    ["auto", "Automatisch", "Eine ganze Playlist als fertiges Set verteilen lassen."],
+                  ] as const
+                ).map(([id, label, hint]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    role="tab"
+                    aria-selected={addTab === id}
+                    className={addTab === id ? "seg-item active" : "seg-item"}
+                    title={hint}
+                    onClick={() => {
+                      setAddTab(id);
+                      clearNotice();
+                    }}
+                  >
+                    {label}
                   </button>
                 ))}
               </div>
-              <SetTakeaway
-                canMatch={draft.tracks.length > 0}
-                canExport={draft.tracks.length > 0}
-                matchingLinks={matchingLinks}
-                onMatchLinks={() => void matchStreamingLinks()}
-                onExportPdf={exportPdf}
-                onExportM3u={exportM3u}
-                onExportRekordbox={exportRekordbox}
-                onCopyText={() => void copyExport()}
-                extra={
+
+              {addTab === "search" ? (
+                <>
+                  <form
+                    className="search-row"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      runSearch();
+                    }}
+                  >
+                    <input
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                      placeholder="Artist, Titel oder Genre"
+                      aria-label="Spotify-Suche"
+                    />
+                    <button type="submit" disabled={isPending}>
+                      {isPending ? "Suche…" : "Suchen"}
+                    </button>
+                  </form>
+                  <p className="import-hint">
+                    Durchsucht den Spotify-Katalog. Ein Link im Feld wird direkt geladen.
+                  </p>
+                </>
+              ) : null}
+
+              {addTab === "link" ? (
+                <>
+                  <form
+                    className="search-row"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      void importCrateLink();
+                    }}
+                  >
+                    <input
+                      value={linkUrl}
+                      onChange={(event) => setLinkUrl(event.target.value)}
+                      placeholder="Link von Spotify, Tidal, Beatport oder SoundCloud"
+                      aria-label="Link"
+                    />
+                    <button type="submit" disabled={isPending}>
+                      {isPending ? "Lade…" : "Laden"}
+                    </button>
+                  </form>
+                  {tidalConnected && tidalPlaylists.length > 0 ? (
+                    <div className="playlist-picker">
+                      <label>
+                        <span>Eigene Tidal-Playlists</span>
+                        <select
+                          value=""
+                          aria-label="Tidal-Playlist wählen"
+                          onChange={(event) => {
+                            const id = event.target.value;
+                            if (!id) return;
+                            const picked = tidalPlaylists.find((item) => item.id === id);
+                            void loadTidalCrate(id, picked?.name);
+                          }}
+                        >
+                          <option value="">Playlist laden…</option>
+                          {tidalPlaylists.map((playlist) => (
+                            <option key={playlist.id} value={playlist.id}>
+                              {playlist.name}
+                              {playlist.trackCount != null ? ` (${playlist.trackCount})` : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                  ) : null}
+                  {spotifyConnected && myPlaylists.length > 0 ? (
+                    <div className="playlist-picker">
+                      <label>
+                        <span>Eigene Spotify-Playlists</span>
+                        <select
+                          value=""
+                          aria-label="Spotify-Playlist wählen"
+                          onChange={(event) => {
+                            const id = event.target.value;
+                            if (!id) return;
+                            const url = `https://open.spotify.com/playlist/${id}`;
+                            setLinkUrl(url);
+                            void importCrateLink(url);
+                          }}
+                        >
+                          <option value="">Playlist laden…</option>
+                          {myPlaylists.map((playlist) => (
+                            <option key={playlist.id} value={playlist.id}>
+                              {playlist.name} ({playlist.trackCount})
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                  ) : null}
+                  {renderConnection()}
+                  <p className="import-hint">
+                    Beatport und SoundCloud brauchen keinen Login, der Titel kommt aus der
+                    Adresse. Key und BPM stehen dort nicht. Spotify liefert im Dev Mode nur
+                    eigene oder kollaborative Playlists.
+                  </p>
+                </>
+              ) : null}
+
+              {addTab === "search" || addTab === "link" ? (
+                <>
+                  <FieldNoticeView notice={localNotice("crate")} />
+                  {crateSource ? (
+                    <div className="crate-source-bar">
+                      <span>{crateSource}</span>
+                      {results.length > 1 ? (
+                        <button
+                          type="button"
+                          className="btn ghost"
+                          onClick={addAllResults}
+                        >
+                          Alle + ({results.length})
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {!hasSearched ? (
+                    <div className="empty">
+                      <p>
+                        {addTab === "search"
+                          ? "Suche starten. Treffer lassen sich einzeln oder alle auf einmal hinzufügen."
+                          : "Link einfügen und laden. Danach einzeln oder alle ins Set legen."}
+                      </p>
+                    </div>
+                  ) : results.length === 0 ? (
+                    <div className="empty">
+                      <p>Keine Tracks geladen.</p>
+                    </div>
+                  ) : (
+                    <ul className="result-list">
+                      {results.map((track) => (
+                        <li key={track.id}>
+                          <div className="track-main">
+                            {track.imageUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={track.imageUrl} alt="" width={48} height={48} />
+                            ) : (
+                              <div className="art-fallback" />
+                            )}
+                            <div>
+                              <strong>{track.name}</strong>
+                              <span>
+                                <em
+                                  className={`source-pill source-${track.source || "spotify"}`}
+                                >
+                                  {sourceLabel(track.source || "spotify")}
+                                </em>
+                                {track.artists.join(", ")}
+                                {track.durationMs
+                                  ? ` · ${formatDuration(track.durationMs)}`
+                                  : ""}
+                              </span>
+                            </div>
+                          </div>
+                          <button type="button" onClick={() => addTrack(track)}>
+                            + dazu
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
+              ) : null}
+
+              {addTab === "manual" ? (
+                <>
+                  <form
+                    className="manual-form"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      addManualEntry();
+                    }}
+                  >
+                    <label className="manual-field">
+                      <span>Titel</span>
+                      <input
+                        value={manualTitle}
+                        onChange={(event) => setManualTitle(event.target.value)}
+                        placeholder="Titel"
+                        aria-label="Titel"
+                      />
+                    </label>
+                    <label className="manual-field">
+                      <span>Artist</span>
+                      <input
+                        value={manualArtist}
+                        onChange={(event) => setManualArtist(event.target.value)}
+                        placeholder="Artist"
+                        aria-label="Artist"
+                      />
+                    </label>
+                    <label className="manual-field is-wide">
+                      <span>Link (optional)</span>
+                      <input
+                        value={manualLink}
+                        onChange={(event) => setManualLink(event.target.value)}
+                        placeholder="Adresse zum Track, zum Beispiel für den Player"
+                        aria-label="Link"
+                      />
+                    </label>
+                    <button type="submit" className="btn manual-form-btn">
+                      Hinzufügen
+                    </button>
+                  </form>
+                  <FieldNoticeView notice={localNotice("crate")} />
+                </>
+              ) : null}
+
+              {addTab === "auto" ? (
+                <>
+                  <p className="section-note">
+                    SETFORM nimmt eine Playlist und verteilt die Tracks nach Dauer,
+                    Phasen und Rollen auf das Set.
+                  </p>
+                  {draft.tracks.length > 0 ? (
+                    <p className="import-hint">
+                      Das aktuelle Set mit {trackCount(draft.tracks.length)} wird dabei
+                      ersetzt.
+                    </p>
+                  ) : null}
+                  {spotifyConnected && myPlaylists.length > 0 ? (
+                    <div className="playlist-picker">
+                      <label>
+                        <span>Eigene Playlists</span>
+                        <select
+                          value=""
+                          onChange={(event) => {
+                            const id = event.target.value;
+                            if (!id) return;
+                            setPlaylistUrl(`https://open.spotify.com/playlist/${id}`);
+                            clearNotice();
+                          }}
+                          aria-label="Eigene Playlist wählen"
+                        >
+                          <option value="">Playlist wählen…</option>
+                          {myPlaylists.map((playlist) => (
+                            <option key={playlist.id} value={playlist.id}>
+                              {playlist.name} ({playlist.trackCount})
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                  ) : null}
+                  <form
+                    className="search-row"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      void extractFromPlaylist();
+                    }}
+                  >
+                    <input
+                      value={playlistUrl}
+                      onChange={(event) => setPlaylistUrl(event.target.value)}
+                      placeholder="Spotify- oder Tidal-Playlist-Link"
+                      aria-label="Playlist-Link"
+                    />
+                    <button type="submit" disabled={isExtracting || !playlistUrl.trim()}>
+                      {isExtracting ? "Extrahiere…" : "Set extrahieren"}
+                    </button>
+                  </form>
+                  <FieldNoticeView notice={localNotice("playlist")} />
+                  {renderConnection()}
+                  <details className="explain-fold nested">
+                    <summary>
+                      <span>So funktioniert die Extraktion</span>
+                      <em className="fold-toggle" />
+                    </summary>
+                    <div className="explain-body">
+                      <ol className="explain-steps">
+                        {EXTRACT_STEPS.map((step) => (
+                          <li key={step.title}>
+                            <strong>{step.title}</strong>
+                            <span>{step.body}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  </details>
+                </>
+              ) : null}
+            </div>
+          </details>
+
+          <div className="crate-view-bar">
+            <div className="seg" role="tablist" aria-label="Ansicht">
+              {(
+                [
+                  ["list", "Setliste", "Die Reihenfolge des Abends. Hier sortierst du von Hand und schreibst Kommentare."],
+                  ["roles", "Rollen", "Anchor, Bridge, Groove und Alternativen als Spalten. Titel zwischen Rollen ziehen."],
+                  ["keys", "Key-Pfad", "Camelot-Keys entlang der Reihenfolge, mit Mix-Score und Clashes."],
+                ] as const
+              ).map(([id, label, hint]) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  aria-selected={crateView === id}
+                  className={crateView === id ? "seg-item active" : "seg-item"}
+                  title={hint}
+                  onClick={() => setCrateView(id)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <SetTakeaway
+              canMatch={draft.tracks.length > 0}
+              canExport={draft.tracks.length > 0}
+              matchingLinks={matchingLinks}
+              onMatchLinks={() => void matchStreamingLinks()}
+              onExportPdf={exportPdf}
+              onExportM3u={exportM3u}
+              onExportRekordbox={exportRekordbox}
+              onCopyText={() => void copyExport()}
+              extra={
+                <>
+                  <span className="tip">
+                    <button
+                      type="button"
+                      className="btn ghost"
+                      onClick={harmonizeSet}
+                      disabled={mainTracks.length < 2}
+                    >
+                      Harmonisch sortieren
+                    </button>
+                    <span className="tip-bubble" role="tooltip">
+                      Ordnet jede Phase nach Camelot-Key und BPM neu. Die Rollen bleiben.
+                    </span>
+                  </span>
                   <span className="tip">
                     <button type="button" className="btn ghost" onClick={resetSet}>
                       Zurücksetzen
@@ -1924,19 +1951,56 @@ export function SetBuilder() {
                       Set leeren und zum leeren Brief zurück. Gespeicherte Setups bleiben.
                     </span>
                   </span>
-                }
-              />
-            </div>
+                </>
+              }
+            />
           </div>
+          <FieldNoticeView notice={localNotice("library")} />
+          <FieldNoticeView notice={localNotice("export")} />
 
-          {visibleTimeline.length === 0 ? (
-            <div className="empty">
-              <p>Noch kein Set.</p>
-              <p>
-                Zuerst eine Playlist vom Stick laden, dann Keys prüfen und die Timeline feinschleifen.
-              </p>
-            </div>
-          ) : (
+          {crateView === "list" ? (
+            <div className="crate-view crate-list">
+              <div className="crate-list-head">
+                <p className="head-meta">
+                  {roleFilter === "all"
+                    ? "Performance-Set"
+                    : TRACK_ROLES.find((role) => role.id === roleFilter)?.label}
+                  {" · "}
+                  {trackCount(visibleTimeline.length)} ·{" "}
+                  {formatDuration(
+                    visibleTimeline.reduce((sum, track) => sum + track.durationMs, 0),
+                  )}
+                </p>
+                <div className="seg" role="group" aria-label="Setliste filtern">
+                  <button
+                    type="button"
+                    className={roleFilter === "all" ? "seg-item active" : "seg-item"}
+                    title="Performance-Reihenfolge, ohne die Alternativen."
+                    onClick={() => setRoleFilter("all")}
+                  >
+                    Set
+                  </button>
+                  {TRACK_ROLES.map((role) => (
+                    <button
+                      key={role.id}
+                      type="button"
+                      className={roleFilter === role.id ? "seg-item active" : "seg-item"}
+                      title={role.hint}
+                      onClick={() => setRoleFilter(role.id)}
+                    >
+                      {role.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {visibleTimeline.length === 0 ? (
+                <div className="empty">
+                  <p>Noch kein Set.</p>
+                  <p>
+                    Oben Musik hinzufügen oder im Rekordbox-Bereich eine Playlist vom Stick laden.
+                  </p>
+                </div>
+              ) : (
             <ol className="manual-list">
               {visibleTimeline.map((track) => (
                 <li
@@ -2026,6 +2090,11 @@ export function SetBuilder() {
                         </span>
                       </button>
                       <div className="manual-meta">
+                        <em
+                          className={`source-pill source-${track.source || "manual"}`}
+                        >
+                          {sourceLabel(track.source)}
+                        </em>
                         <select
                           value={track.phase}
                           onChange={(e) =>
@@ -2174,176 +2243,61 @@ export function SetBuilder() {
                 </li>
               ))}
             </ol>
-          )}
+              )}
+            </div>
+          ) : null}
+
+          {crateView === "roles" ? (
+            <div className="crate-view">
+          <RoleCrates
+            embedded
+            tracks={draft.tracks}
+            positions={positions}
+            activeRole={activeRole}
+            focusedTrackId={focusTrackId}
+            onSelectRole={(role) => {
+              setActiveRole(role);
+              setRoleFilter(role);
+            }}
+            onReplace={replaceTrack}
+            onRemove={removeTrack}
+            onMoveRole={(id, role) => {
+              patchTrack(id, { role, why: "Manuell gesetzt" });
+              setActiveRole(role);
+              setRoleFilter(role);
+            }}
+            onFocusTrack={(id) => {
+              setFocusTrackId(id);
+              const track = draft.tracks.find((item) => item.id === id);
+              if (track) {
+                setActivePhase(track.phase);
+                setActiveRole(track.role);
+                setRoleFilter(track.role);
+                requestAnimationFrame(() => {
+                  document
+                    .getElementById(`track-${id}`)
+                    ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                });
+              }
+            }}
+          />
+            </div>
+          ) : null}
+
+          {crateView === "keys" ? (
+            <div className="crate-view">
+              <HarmonicPath tracks={draft.tracks} onHarmonize={harmonizeSet} embedded />
+            </div>
+          ) : null}
         </section>
-        </details>
-      </div>
-      )}
-
-      <details className="explain-fold optional-source">
-        <summary>
-          <span>Spotify, Tidal, Beatport</span>
-          <em>Optional</em>
-        </summary>
-      <section className="import-panel" aria-label="Playlist import">
-        <p className="section-note">
-          Nur wenn der Track noch nicht auf dem Stick liegt. Key und BPM kommen
-          aus diesen Playlists meist nicht mit.
-        </p>
-        <div className="panel-head">
-          <h2>Playlist laden</h2>
-          <p>
-            {spotifyConnected === null
-              ? "Auth prüfen…"
-              : spotifyConnected
-                ? "Spotify verbunden"
-                : "Spotify-Login nötig"}
-          </p>
-        </div>
-
-        <div className="import-actions">
-          {spotifyConnected ? (
-            <button
-              type="button"
-              className="btn ghost"
-              onClick={async () => {
-                await fetch("/api/auth/logout", { method: "POST" });
-                setSpotifyConnected(false);
-                setMyPlaylists([]);
-                setStatus("Spotify getrennt.");
-              }}
-            >
-              Spotify trennen
-            </button>
-          ) : (
-            <a className="button-link" href="/api/auth/login">
-              Mit Spotify verbinden
-            </a>
-          )}
-          {tidalConnected ? (
-            <button
-              type="button"
-              className="btn ghost"
-              onClick={async () => {
-                await fetch("/api/auth/tidal/logout", { method: "POST" });
-                setTidalConnected(false);
-                setStatus("Tidal getrennt.");
-              }}
-            >
-              Tidal trennen
-            </button>
-          ) : (
-            <a className="button-link tidal-login" href="/api/auth/tidal/login">
-              Mit Tidal verbinden
-            </a>
-          )}
-        </div>
-        <FieldNoticeView notice={localNotice("connect")} />
-        <form
-          className="search-row import-row"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void loadBeatportIntoSet();
-          }}
-        >
-          <input
-            value={beatportUrl}
-            onChange={(event) => setBeatportUrl(event.target.value)}
-            placeholder="beatport.com/track/… oder /release/…"
-            aria-label="Beatport Link"
-          />
-          <button type="submit" disabled={isPending || !beatportUrl.trim()}>
-            {isPending ? "Lade…" : "Beatport laden"}
-          </button>
-        </form>
-        <FieldNoticeView notice={localNotice("beatport")} />
-        <p className="import-hint">
-          Beatport hat keinen Konto-Login. Der Link legt den Titel in die aktive
-          Phase. Key und BPM stehen in der Adresse nicht.
-        </p>
-        {tidalConnected ? null : (
-          <p className="import-hint">
-            Tidal einrichten: In der Entwickler-App die Scopes{" "}
-            <code>user.read</code> und <code>playlists.read</code> einschalten
-            und die Redirect URI exakt eintragen:{" "}
-            <code>{redirectUri.replace("/callback", "/tidal/callback")}</code>.
-            Fehler 1002 beim Login heißt: ein Scope fehlt.
-          </p>
-        )}
-
-        {spotifyConnected && myPlaylists.length > 0 ? (
-          <div className="playlist-picker">
-            <label>
-              <span>Eigene Playlists</span>
-              <select
-                value=""
-                onChange={(e) => {
-                  const id = e.target.value;
-                  if (!id) return;
-                  setPlaylistUrl(`https://open.spotify.com/playlist/${id}`);
-                  clearNotice();
-                }}
-                aria-label="Eigene Playlist wählen"
-              >
-                <option value="">Playlist wählen…</option>
-                {myPlaylists.map((playlist) => (
-                  <option key={playlist.id} value={playlist.id}>
-                    {playlist.name} ({playlist.trackCount})
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-        ) : null}
-
-        <form
-          className="search-row import-row"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void extractFromPlaylist();
-          }}
-        >
-          <input
-            value={playlistUrl}
-            onChange={(e) => setPlaylistUrl(e.target.value)}
-            placeholder="Spotify- oder Tidal-Playlist-Link"
-            aria-label="Playlist URL"
-          />
-          <button type="submit" disabled={isExtracting || !playlistUrl.trim()}>
-            {isExtracting ? "Extrahiere…" : "Set extrahieren"}
-          </button>
-        </form>
-        <FieldNoticeView notice={localNotice("playlist")} />
-
-        <details className="explain-fold">
-          <summary>
-            <span>So funktioniert die Extraktion</span>
-            <em className="fold-toggle" />
-          </summary>
-          <div className="explain-body">
-            <p>
-              SETFORM nimmt eine Playlist und legt daraus ein Set mit Dauer,
-              Phasen und Übergängen. Die Playlist ist das Material, die
-              Performance-Reihenfolge ist die Geschichte des Abends.
-            </p>
-            <ol className="explain-steps">
-              {EXTRACT_STEPS.map((step) => (
-                <li key={step.title}>
-                  <strong>{step.title}</strong>
-                  <span>{step.body}</span>
-                </li>
-              ))}
-            </ol>
-            <p className="explain-note">
-              Spotify Dev Mode: nur <strong>eigene</strong> oder kollaborative
-              Playlists, keine fremden oder Editorial-Charts. Die Redirect URI
-              steht unter Einstellungen.
-            </p>
-          </div>
-        </details>
-      </section>
       </details>
 
+      <PreviewPlayer
+        tracks={draft.tracks}
+        currentId={focusTrackId}
+        onChange={(id) => setFocusTrackId(id)}
+        onClose={() => setFocusTrackId(null)}
+      />
     </div>
   );
 }
