@@ -18,6 +18,8 @@ export type PdbTrack = {
   comment: string;
   filePath: string;
   filename: string;
+  /** Cover path on the stick, e.g. /PIONEER/Artwork/00001/a1.jpg */
+  artworkPath: string;
 };
 
 export type PdbPlaylist = {
@@ -38,6 +40,7 @@ const TABLE = {
   artists: 2,
   albums: 3,
   keys: 5,
+  artwork: 13,
   playlistTree: 7,
   playlistEntries: 8,
   historyPlaylists: 11,
@@ -79,7 +82,16 @@ export function parseRekordboxPdb(buffer: ArrayBuffer): PdbLibrary {
   const artists = readNamedRows(view, pageLen, tables.get(TABLE.artists), readArtist);
   const albums = readNamedRows(view, pageLen, tables.get(TABLE.albums), readAlbum);
   const keys = readNamedRows(view, pageLen, tables.get(TABLE.keys), readKey);
-  const tracks = readTracks(view, pageLen, tables.get(TABLE.tracks), artists, albums, keys);
+  const artwork = readNamedRows(view, pageLen, tables.get(TABLE.artwork), readArtwork);
+  const tracks = readTracks(
+    view,
+    pageLen,
+    tables.get(TABLE.tracks),
+    artists,
+    albums,
+    keys,
+    artwork,
+  );
   const tree = readPlaylistTree(view, pageLen, tables.get(TABLE.playlistTree));
   const entries = readPlaylistEntries(view, pageLen, tables.get(TABLE.playlistEntries));
   const history = readHistoryPlaylists(view, pageLen, tables.get(TABLE.historyPlaylists));
@@ -128,6 +140,12 @@ function readAlbum(view: DataView, row: number, pageEnd: number) {
   return { id, name };
 }
 
+function readArtwork(view: DataView, row: number, pageEnd: number) {
+  if (row + 6 > pageEnd) return null;
+  const id = view.getUint32(row, true);
+  return { id, name: readDeviceString(view, row + 4, pageEnd) };
+}
+
 function readKey(view: DataView, row: number, pageEnd: number) {
   if (row + 8 > pageEnd) return null;
   const id = view.getUint32(row, true);
@@ -141,6 +159,7 @@ function readTracks(
   artists: Map<number, string>,
   albums: Map<number, string>,
   keys: Map<number, string>,
+  artwork: Map<number, string>,
 ): PdbTrack[] {
   const tracks: PdbTrack[] = [];
   if (!table) return tracks;
@@ -163,6 +182,7 @@ function readTracks(
       comment: trackString(view, row, pageEnd, 16),
       filePath: trackString(view, row, pageEnd, 20),
       filename,
+      artworkPath: artwork.get(view.getUint32(row + 28, true)) || "",
     });
   });
   return tracks;

@@ -1,4 +1,5 @@
 import { distributeRoles } from "@/lib/extract-set";
+import { stickAudioUrl } from "@/lib/stick-audio";
 import { parseKeyValue } from "@/lib/key-import";
 import { parseRekordboxPdb, type PdbLibrary, type PdbTrack } from "@/lib/rekordbox-pdb";
 import { PHASES, type SetDraft, type SetPhaseId, type SetTrack } from "@/lib/set";
@@ -14,6 +15,8 @@ export type StickTrack = {
   durationMs: number;
   comment: string;
   filePath: string;
+  /** Cover path from the stick's Artwork folder (export.pdb only) */
+  artworkPath?: string;
 };
 
 export type RekordboxStickSet = {
@@ -116,7 +119,16 @@ function toStickTrack(track: PdbTrack): StickTrack {
     durationMs: track.durationMs,
     comment: track.comment,
     filePath: track.filePath,
+    artworkPath: track.artworkPath,
   };
+}
+
+/** Blob URL for the cover file the browser still holds from the stick folder. */
+function coverUrl(artworkPath: string | undefined): string | null {
+  if (!artworkPath) return null;
+  // Prefer the larger _m variant (a1_m.jpg), fall back to the 80px original.
+  const large = artworkPath.replace(/(\.[a-z]+)$/i, "_m$1");
+  return stickAudioUrl(large) || stickAudioUrl(artworkPath);
 }
 
 function toSetTrack(
@@ -133,7 +145,7 @@ function toSetTrack(
     durationMs: track.durationMs,
     uri: track.filePath || `rekordbox:${track.id}`,
     externalUrl: "",
-    imageUrl: null,
+    imageUrl: coverUrl(track.artworkPath),
     phase: phaseForTrack(index, set.tracks, totalMs),
     role: "groove",
     transition: "unset",

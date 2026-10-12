@@ -462,7 +462,12 @@ export function distributeRoles(draft: SetDraft): SetDraft {
         why: next.why,
         harmonicFromPrev: next.harmonicFromPrev,
         transition: track.transition === "unset" ? next.transition : track.transition,
-        note: track.note || next.note,
+        // Stick imports keep the rekordbox comment only; drop generated notes
+        // from earlier versions (e.g. "open/groove · Übergang: long-blend").
+        note:
+          track.source === "rekordbox" && /^\w+\/\w+ · Übergang:/.test(track.note)
+            ? ""
+            : track.note,
       };
     }),
   };

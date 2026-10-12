@@ -4445,7 +4445,7 @@ button.drag-handle:active i {
 }
 .source-soundcloud { background: #ff5500; color: #fff; }
 .source-beatport { background: #94d500; color: #121212; }
-.source-rekordbox { background: #ff2d55; color: #fff; }
+.source-rekordbox { background: #c8143c; color: #fff; }
 .source-manual { background: #444; color: #fff; }
 
 .manual-comment {
@@ -5914,6 +5914,30 @@ details[open] > summary > .fold-toggle::after {
 .crate-add .result-list::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.24);
   border-radius: 999px;
+}
+
+
+
+/* Contrast: legacy dark-ink text on the dark UI. */
+.why-inline strong {
+  color: #e6e6e6 !important;
+}
+.why-inline {
+  color: #c4c4c4 !important;
+}
+.manual-index em {
+  font-variant-numeric: normal;
+}
+
+/* Cover placeholder: visible tile with a note glyph instead of an empty box. */
+.art-fallback,
+.art-fallback.sm {
+  background-color: #2e2e2e !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239a9a9a' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 18V6l10-2v12'/%3E%3Ccircle cx='6.5' cy='18' r='2.5'/%3E%3Ccircle cx='16.5' cy='16' r='2.5'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: 46% !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 
