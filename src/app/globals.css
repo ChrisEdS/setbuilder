@@ -31,8 +31,6 @@
   --radius-pill: 999px;
   --control-h: 44px;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --font-display: var(--font-display);
-  --font-body: var(--font-body);
 }
 
 @theme inline {

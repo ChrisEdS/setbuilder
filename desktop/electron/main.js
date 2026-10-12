@@ -54,17 +54,61 @@ function parseEnvFile(file) {
   }
 }
 
-function loadEnv() {
-  const target = userEnvFile();
-  if (!fs.existsSync(target)) {
-    const example = app.isPackaged
-      ? path.join(process.resourcesPath, "env.example")
-      : path.join(__dirname, "..", "env.example");
-    if (fs.existsSync(example)) fs.copyFileSync(example, target);
+function readEnvMap(file) {
+  const map = new Map();
+  if (!fs.existsSync(file)) return map;
+  for (const line of fs.readFileSync(file, "utf8").split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#") || !trimmed.includes("=")) continue;
+    const eq = trimmed.indexOf("=");
+    map.set(trimmed.slice(0, eq).trim(), trimmed.slice(eq + 1).trim());
   }
-  for (const file of [...repoEnvFiles(), target]) parseEnvFile(file);
-  process.env.SPOTIFY_REDIRECT_URI ||= `http://${APP_HOST}:${PORT}/api/auth/callback`;
-  process.env.TIDAL_REDIRECT_URI ||= `http://${APP_HOST}:${PORT}/api/auth/tidal/callback`;
+  return map;
+}
+
+function ensureConfigFile() {
+  const target = userEnvFile();
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  const spotifyRedirect = `http://${APP_HOST}:${PORT}/api/auth/callback`;
+  const tidalRedirect = `http://${APP_HOST}:${PORT}/api/auth/tidal/callback`;
+  const current = readEnvMap(target);
+  for (const file of repoEnvFiles()) {
+    const repo = readEnvMap(file);
+    for (const key of [
+      "SPOTIFY_CLIENT_ID",
+      "SPOTIFY_CLIENT_SECRET",
+      "TIDAL_CLIENT_ID",
+      "TIDAL_CLIENT_SECRET",
+    ]) {
+      if (!current.get(key) && repo.get(key)) current.set(key, repo.get(key));
+    }
+  }
+  const body = `# SETFORM, nur auf diesem Mac. Nicht ins Repo legen.
+# Spotify: https://developer.spotify.com/dashboard
+# Redirect URI dort exakt so eintragen wie hier:
+#   ${spotifyRedirect}
+# Tidal: https://developer.tidal.com
+# Redirect URI exakt:
+#   ${tidalRedirect}
+# Tidal-Scopes: user.read und playlists.read
+
+SPOTIFY_CLIENT_ID=${current.get("SPOTIFY_CLIENT_ID") || ""}
+SPOTIFY_CLIENT_SECRET=${current.get("SPOTIFY_CLIENT_SECRET") || ""}
+SPOTIFY_REDIRECT_URI=${spotifyRedirect}
+
+TIDAL_CLIENT_ID=${current.get("TIDAL_CLIENT_ID") || ""}
+TIDAL_CLIENT_SECRET=${current.get("TIDAL_CLIENT_SECRET") || ""}
+TIDAL_REDIRECT_URI=${tidalRedirect}
+`;
+  const previous = fs.existsSync(target) ? fs.readFileSync(target, "utf8") : "";
+  if (previous !== body) fs.writeFileSync(target, body, { mode: 0o600 });
+}
+
+function loadEnv() {
+  ensureConfigFile();
+  for (const file of [...repoEnvFiles(), userEnvFile()]) parseEnvFile(file);
+  process.env.SPOTIFY_REDIRECT_URI = `http://${APP_HOST}:${PORT}/api/auth/callback`;
+  process.env.TIDAL_REDIRECT_URI = `http://${APP_HOST}:${PORT}/api/auth/tidal/callback`;
 }
 
 function remember(chunk) {
