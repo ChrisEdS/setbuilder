@@ -5884,3 +5884,36 @@ details[open] > summary > .fold-toggle::after {
   margin: 0 !important;
 }
 
+
+/* Long lists scroll inside their panel instead of stretching the page. */
+.stick-list,
+.library-list,
+.crate-add .result-list {
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
+}
+.stick-list {
+  max-height: 24rem !important;
+}
+.library-list {
+  max-height: 20rem !important;
+}
+.crate-add .result-list {
+  max-height: 22rem;
+}
+.stick-list::-webkit-scrollbar,
+.library-list::-webkit-scrollbar,
+.crate-add .result-list::-webkit-scrollbar {
+  width: 8px;
+}
+.stick-list::-webkit-scrollbar-thumb,
+.library-list::-webkit-scrollbar-thumb,
+.crate-add .result-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
+}
+
+
