@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import type { LibraryRow } from "@/components/LibraryPanel";
+import { useI18n } from "@/lib/i18n/react";
 import { parseKeyValue } from "@/lib/key-import";
 import { rankLibraryReplacements, rankReplacements } from "@/lib/replace-track";
 import type { SetTrack } from "@/lib/set";
@@ -26,7 +27,8 @@ export function ReplaceMenu({
   onReplaceFromLibrary,
   onPlayRow,
 }: Props) {
-  const options = rankReplacements(tracks, targetId);
+  const { t } = useI18n();
+  const options = rankReplacements(tracks, targetId, t);
   const libraryEnabled = Boolean(onReplaceFromLibrary);
   const fromLibrary = useMemo(
     () =>
@@ -37,23 +39,24 @@ export function ReplaceMenu({
             library,
             (raw) => parseKeyValue(raw) || raw,
             8,
+            t,
           )
         : [],
-    [tracks, targetId, library, libraryEnabled],
+    [tracks, targetId, library, libraryEnabled, t],
   );
   return (
-    <div className="replace-menu" role="listbox" aria-label="Alternative einsetzen">
+    <div className="replace-menu" role="listbox" aria-label={t("crates.replace.ariaLabel")}>
       <div className="replace-menu-head">
-        <strong>Ersatz einsetzen</strong>
+        <strong>{t("crates.replace.title")}</strong>
         <button type="button" className="btn ghost" onClick={onClose}>
-          Schließen
+          {t("common.close")}
         </button>
       </div>
       {options.length === 0 && fromLibrary.length === 0 ? (
-        <p>Keine Alternativen. Einen Track auf die Rolle Alternativen setzen oder die Stick-Bibliothek laden.</p>
+        <p>{t("crates.replace.empty")}</p>
       ) : null}
       {options.length > 0 ? (
-        <p className="replace-group">Aus deinen Alternativen</p>
+        <p className="replace-group">{t("crates.replace.groupMine")}</p>
       ) : null}
       {options.length > 0 ? (
         <ul>
@@ -72,7 +75,7 @@ export function ReplaceMenu({
                   onClose();
                 }}
               >
-                Einsetzen
+                {t("crates.replace.insert")}
               </button>
             </li>
           ))}
@@ -80,13 +83,13 @@ export function ReplaceMenu({
       ) : null}
       {fromLibrary.length > 0 ? (
         <>
-          <p className="replace-group">Aus der Bibliothek, passend zu Vorgänger und Nachfolger</p>
+          <p className="replace-group">{t("crates.replace.groupLibrary")}</p>
           <ul>
             {fromLibrary.map(({ row, detail }, index) => (
               <li key={`${row.artist}-${row.title}-${index}`}>
                 <div>
                   <strong>{row.title}</strong>
-                  <span>{row.artist || "Unknown"}</span>
+                  <span>{row.artist || t("crates.replace.unknownArtist")}</span>
                   <em>{detail}</em>
                 </div>
                 <span className="replace-actions">
@@ -95,8 +98,12 @@ export function ReplaceMenu({
                       type="button"
                       className="lib-play"
                       disabled={!row.stick?.filePath}
-                      aria-label={`${row.title} abspielen`}
-                      title={row.stick?.filePath ? "Abspielen" : "Nur mit gewähltem Stick-Ordner abspielbar"}
+                      aria-label={t("crates.replace.playAria", { title: row.title })}
+                      title={
+                        row.stick?.filePath
+                          ? t("crates.replace.play")
+                          : t("crates.replace.playNeedsStick")
+                      }
                       onClick={() => onPlayRow(row)}
                     >
                       ▶
@@ -110,7 +117,7 @@ export function ReplaceMenu({
                       onClose();
                     }}
                   >
-                    Einsetzen
+                    {t("crates.replace.insert")}
                   </button>
                 </span>
               </li>

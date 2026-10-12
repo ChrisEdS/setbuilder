@@ -2,6 +2,22 @@
 
 import { LanguageSwitch } from "@/components/LanguageSwitch";
 import {
+  createTranslate,
+  errorText,
+  localizeNote,
+  localizeWhy,
+  phaseHint,
+  phaseLabel,
+  roleHint,
+  roleLabel,
+  slotHint,
+  slotLabel,
+  transitionLabel,
+  type Lang,
+  type Translate,
+} from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/react";
+import {
   useEffect,
   useMemo,
   useRef,
@@ -34,14 +50,14 @@ import { CAMELOT_CODES, mixJoin } from "@/lib/harmonic";
 import { distributeRoles, fitToSlot, reharmonizeDraft } from "@/lib/extract-set";
 import { looksLikeMusicLink, sourceLabel } from "@/lib/music-link";
 import {
-  ARC_GUIDE,
   DEFAULT_SET,
   PHASES,
-  EXTRACT_STEPS,
-  PREP_PRINCIPLES,
   SLOT_KINDS,
   TRACK_ROLES,
   TRANSITIONS,
+  arcGuideFor,
+  extractStepsFor,
+  prepPrinciplesFor,
   type SetDraft,
   type SetPhaseId,
   type SetSlotKind,
@@ -59,8 +75,9 @@ import {
 } from "@/lib/set";
 
 function MixJoinLine({ tracks, track }: { tracks: SetTrack[]; track: SetTrack }) {
+  const { t } = useI18n();
   const index = tracks.findIndex((item) => item.id === track.id);
-  const join = index > 0 ? mixJoin(tracks[index - 1], track) : null;
+  const join = index > 0 ? mixJoin(tracks[index - 1], track, t) : null;
   if (!join) return null;
   return <p className={`mix-join harm-${join.relation}`}>{join.label}</p>;
 }
@@ -99,6 +116,45 @@ function normalizeTrack(track: SetTrack): SetTrack {
     note: track.note ?? "",
     safetyAlt: track.safetyAlt ?? "",
   };
+}
+
+const BRIEF_FIELDS = ["title", "vibe", "venue", "slot", "audience", "gear"] as const;
+
+const BRIEF_DEFAULTS: Record<Lang, Record<(typeof BRIEF_FIELDS)[number], string>> = {
+  de: briefDefaultsFor("de"),
+  en: briefDefaultsFor("en"),
+};
+
+function briefDefaultsFor(lang: Lang) {
+  const t = createTranslate(lang);
+  return {
+    title: t("builder.defaults.title"),
+    vibe: t("builder.defaults.vibe"),
+    venue: t("builder.defaults.venue"),
+    slot: t("builder.defaults.slot"),
+    audience: t("builder.defaults.audience"),
+    gear: t("builder.defaults.gear"),
+  };
+}
+
+/**
+ * Display step for the sample brief: a field that still holds the sample text of the other
+ * language is shown in the current one. Edited fields never change; the same object comes
+ * back when nothing needs swapping.
+ */
+function localizeBrief(draft: SetDraft, lang: Lang): SetDraft {
+  const other: Lang = lang === "de" ? "en" : "de";
+  let next = draft;
+  for (const field of BRIEF_FIELDS) {
+    if (
+      draft[field] === BRIEF_DEFAULTS[other][field] &&
+      draft[field] !== BRIEF_DEFAULTS[lang][field]
+    ) {
+      if (next === draft) next = { ...draft };
+      next[field] = BRIEF_DEFAULTS[lang][field];
+    }
+  }
+  return next;
 }
 
 function readStoredDraft(): SetDraft {
@@ -140,25 +196,37 @@ function subscribeDraft(onStoreChange: () => void) {
   };
 }
 
-let authNoteCache: string | null | undefined;
+type AuthNote = { status: "ok" | "error"; code: string };
 
-function readAuthNote(): string | null {
+// Only the raw result of the OAuth return is cached; the text is made at render time in the current language.
+let authNoteCache: AuthNote | null | undefined;
+
+function readAuthNote(): AuthNote | null {
   if (authNoteCache !== undefined) return authNoteCache;
   const params = new URLSearchParams(window.location.search);
   const auth = params.get("auth");
   if (auth === "ok") {
-    authNoteCache =
-      "Spotify ist neu verbunden. Track nochmal starten — dann läuft Premium in voller Länge.";
+    authNoteCache = { status: "ok", code: "" };
   } else if (auth === "error") {
-    const message = params.get("message") || "unbekannt";
-    authNoteCache =
-      message === "invalid_state"
-        ? "Der Spotify-Login ist nicht zurückgekommen. Einmal neu verbinden und warten, bis die Seite wieder da ist."
-        : `Spotify-Login fehlgeschlagen: ${message}`;
+    authNoteCache = { status: "error", code: params.get("message") || "" };
   } else {
     authNoteCache = null;
   }
   return authNoteCache;
+}
+
+function authFailureText(code: string, t: Translate): string {
+  if (!code) return t("builder.auth.spotifyFailed", { message: t("common.unknown") });
+  if (code === "invalid_state") return t("builder.auth.invalidState");
+  if (code === "tidal_state") return t("builder.auth.tidalState");
+  if (code.startsWith("tidal_")) {
+    return t("builder.auth.tidalFailed", { error: code.slice("tidal_".length) });
+  }
+  return t("builder.auth.spotifyFailed", { message: code });
+}
+
+function authNoteText(note: AuthNote, t: Translate): string {
+  return note.status === "ok" ? t("builder.auth.ok") : authFailureText(note.code, t);
 }
 
 const EMPTY_SETUPS: SavedSetup[] = [];
@@ -207,11 +275,13 @@ type NoticeScope =
   | "export";
 
 export function SetBuilder() {
-  const draft = useSyncExternalStore(
+  const { t, lang } = useI18n();
+  const storedDraft = useSyncExternalStore(
     subscribeDraft,
     readStoredDraft,
     () => DEFAULT_SET,
   );
+  const draft = localizeBrief(storedDraft, lang);
   const [activePhase, setActivePhase] = useState<SetPhaseId>("open");
   const [activeRole, setActiveRole] = useState<TrackRole>("anchor");
   const [query, setQuery] = useState("tech house");
@@ -256,7 +326,10 @@ export function SetBuilder() {
   const [overId, setOverId] = useState<string | null>(null);
   const dragIdRef = useRef<string | null>(null);
   const [roleFilter, setRoleFilter] = useState<TrackRole | "all">("all");
-  const [settingsNote, setSettingsNote] = useState("Sichern · Verbinden");
+  // Notes from ConnectionSetup: the two known ones are kept as a kind and shown in the current language.
+  const [settingsNote, setSettingsNote] = useState<
+    "ready" | "missing" | { raw: string } | null
+  >(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Feedback like "+ Titel → Peak / Anchor" is a toast: it follows the scroll and fades after a while.
@@ -267,9 +340,23 @@ export function SetBuilder() {
   }, [status]);
 
   function noteSettings(note: string) {
-    setSettingsNote(note);
-    if (note === "Spotify fehlt") setSettingsOpen(true);
+    const known = (["ready", "missing"] as const).find((kind) => {
+      const key =
+        kind === "ready" ? "builder.settings.spotifyReady" : "builder.settings.spotifyMissing";
+      return note === createTranslate("de")(key) || note === createTranslate("en")(key);
+    });
+    setSettingsNote(known ?? { raw: note });
+    if (known === "missing") setSettingsOpen(true);
   }
+
+  const settingsNoteText =
+    settingsNote === null
+      ? t("builder.settings.default")
+      : settingsNote === "ready"
+        ? t("builder.settings.spotifyReady")
+        : settingsNote === "missing"
+          ? t("builder.settings.spotifyMissing")
+          : settingsNote.raw;
 
   function fail(scope: NoticeScope, text: string, hint: string) {
     setNotice({ scope, text, hint });
@@ -285,11 +372,17 @@ export function SetBuilder() {
     if (!notice || notice.scope !== scope) return null;
     return notice;
   }
-  const authNote = useSyncExternalStore(
+  const authNoteRaw = useSyncExternalStore(
     () => () => {},
     readAuthNote,
     () => null,
   );
+  const authNote = authNoteRaw ? authNoteText(authNoteRaw, t) : null;
+  // The OAuth-return effect below runs once but may finish after a language change: it reads the latest t.
+  const tRef = useRef(t);
+  useEffect(() => {
+    tRef.current = t;
+  }, [t]);
   const [myPlaylists, setMyPlaylists] = useState<
     Array<{
       id: string;
@@ -367,7 +460,7 @@ export function SetBuilder() {
     let cancelled = false;
     const params = new URLSearchParams(window.location.search);
     const auth = params.get("auth");
-    const message = params.get("message") || "unknown";
+    const message = params.get("message") || "";
     if (auth) window.history.replaceState({}, "", "/");
 
     (async () => {
@@ -405,14 +498,12 @@ export function SetBuilder() {
           if (!cancelled && listRes.ok) setMyPlaylists(listData.owned ?? []);
         }
         if (auth === "ok") {
-          setStatus(
-            "Spotify verbunden — wähle eine eigene Playlist und extrahiere das Set.",
-          );
+          setStatus(tRef.current("builder.auth.connectedStatus"));
         } else if (auth === "error") {
           fail(
             "connect",
-            `Spotify-Login fehlgeschlagen: ${message}`,
-            "Redirect URI in der Developer-App prüfen, Zugangsdaten unter „Verbindungen & Setups“ speichern, dann erneut verbinden.",
+            authFailureText(message, tRef.current),
+            tRef.current("builder.auth.failedHint"),
           );
         }
       } catch {
@@ -430,8 +521,8 @@ export function SetBuilder() {
     if (!url) {
       fail(
         "playlist",
-        "Playlist-Link fehlt.",
-        "Einen Spotify- oder Tidal-Playlist-Link ins Feld einfügen.",
+        t("builder.fail.playlistMissing"),
+        t("builder.fail.playlistMissingHint"),
       );
       return;
     }
@@ -474,13 +565,13 @@ export function SetBuilder() {
         setSpotifyConnected(false);
         fail(
           "playlist",
-          "Spotify-Login nötig, um Playlist-Tracks zu lesen.",
-          "Unter „Verbindungen & Setups“ mit Spotify verbinden, dann hier noch einmal extrahieren.",
+          t("builder.fail.spotifyAuth"),
+          t("builder.fail.spotifyAuthHint"),
         );
         return;
       }
       if (!response.ok || !data.draft) {
-        throw new Error(data.error || "Extraktion fehlgeschlagen.");
+        throw new Error(data.error || t("builder.fail.extract"));
       }
 
       setDraft(data.draft);
@@ -493,21 +584,29 @@ export function SetBuilder() {
       ).length;
       const tidalMatched = data.playlist?.tidalMatched ?? 0;
       const tidalKeyed = data.playlist?.tidalKeyed ?? 0;
-      const tidalNote =
-        tidalMatched === 0
-          ? " Tidal ohne Treffer."
-          : tidalKeyed > 0
-            ? ` Tidal: ${tidalKeyed} mit Key/BPM, ${tidalMatched} gematcht.`
-            : ` Tidal: ${tidalMatched} Tracks über Popularität sortiert. Key/BPM gibt diese App nicht zurück.`;
       setStatus(
-        `Set aus „${data.playlist?.name ?? "Playlist"}“: ${performanceCount} Performance-Tracks + ${safetyCount} Alternativen (Pool: ${data.playlist?.imported ?? "?"}).${tidalNote}`,
+        t(
+          tidalMatched === 0
+            ? "builder.status.extractedTidalNone"
+            : tidalKeyed > 0
+              ? "builder.status.extractedTidalKeyed"
+              : "builder.status.extractedTidalPopular",
+          {
+            name: data.playlist?.name ?? t("builder.crate.playlistFallback"),
+            performance: performanceCount,
+            safety: safetyCount,
+            pool: data.playlist?.imported ?? "?",
+            keyed: tidalKeyed,
+            matched: tidalMatched,
+          },
+        ),
       );
       await refreshAuthStatus();
     } catch (err) {
       fail(
         "playlist",
-        err instanceof Error ? err.message : "Extraktion fehlgeschlagen.",
-        "Den Link prüfen. Im Spotify Dev Mode gehen nur eigene oder kollaborative Playlists.",
+        errorText(err, t, "builder.fail.extract"),
+        t("builder.fail.extractHint"),
       );
     } finally {
       setIsExtracting(false);
@@ -520,7 +619,7 @@ export function SetBuilder() {
   );
   const filledMs = totalDurationMs(draft.tracks);
   const targetMs = draft.durationMinutes * 60_000;
-  const activeGuide = ARC_GUIDE.find((item) => item.phase === activePhase);
+  const activeGuide = arcGuideFor(t).find((item) => item.phase === activePhase);
 
   const visibleTimeline = useMemo(() => {
     if (!draft.tracks.length) return [];
@@ -538,8 +637,8 @@ export function SetBuilder() {
     if (trimmed.length < 2) {
       fail(
         "crate",
-        "Mindestens 2 Zeichen für die Suche.",
-        "Artist oder Titel mit mindestens zwei Zeichen eintippen.",
+        t("builder.fail.queryShort"),
+        t("builder.fail.queryShortHint"),
       );
       return;
     }
@@ -564,17 +663,17 @@ export function SetBuilder() {
           tracks?: SearchTrack[];
           error?: string;
         };
-        if (!response.ok) throw new Error(data.error || "Suche fehlgeschlagen.");
+        if (!response.ok) throw new Error(data.error || t("builder.fail.search"));
         setResults(data.tracks ?? []);
         if ((data.tracks ?? []).length === 0) {
-          setStatus("Keine Treffer — anderen Artist oder Track versuchen.");
+          setStatus(t("builder.status.noHits"));
         }
       } catch (err) {
         setResults([]);
         fail(
           "crate",
-          err instanceof Error ? err.message : "Suche fehlgeschlagen.",
-          "Verbindung unter „Verbindungen & Setups“ prüfen und die Suche wiederholen.",
+          errorText(err, t, "builder.fail.search"),
+          t("builder.fail.searchHint"),
         );
       }
     });
@@ -598,17 +697,24 @@ export function SetBuilder() {
           tracks?: SearchTrack[];
           error?: string;
         };
-        if (!response.ok) throw new Error(data.error || "Tidal-Playlist fehlgeschlagen.");
+        if (!response.ok) throw new Error(data.error || t("builder.fail.tidalPlaylist"));
         const tracks = data.tracks ?? [];
         setResults(tracks);
-        setCrateSource(`Tidal: ${data.label || label || "Playlist"}`);
-        setStatus(`${trackCount(tracks.length)} aus Tidal — einzeln oder alle ins Set.`);
+        setCrateSource(
+          t("builder.crate.source", {
+            kind: "Tidal",
+            label: data.label || label || t("builder.crate.playlistFallback"),
+          }),
+        );
+        setStatus(
+          t("builder.status.tidalPlaylistLoaded", { tracks: trackCount(tracks.length, t) }),
+        );
       } catch (err) {
         setResults([]);
         fail(
           "crate",
-          err instanceof Error ? err.message : "Tidal-Playlist fehlgeschlagen.",
-          "Mit Tidal verbinden. In der Entwickler-App user.read und playlists.read einschalten.",
+          errorText(err, t, "builder.fail.tidalPlaylist"),
+          t("builder.fail.tidalPlaylistHint"),
         );
       }
     });
@@ -619,8 +725,8 @@ export function SetBuilder() {
     if (!trimmed) {
       fail(
         "crate",
-        "Playlist- oder Track-Link fehlt.",
-        "Einen Link von Spotify, Tidal, Beatport oder SoundCloud ins Feld einfügen.",
+        t("builder.fail.linkMissing"),
+        t("builder.fail.linkMissingHint"),
       );
       return;
     }
@@ -644,7 +750,7 @@ export function SetBuilder() {
             error?: string;
           };
           if (!response.ok) {
-            throw new Error(data.error || `${store}-Link fehlgeschlagen.`);
+            throw new Error(data.error || t("builder.fail.storeLink", { store }));
           }
           const tracks = data.tracks ?? [];
           setResults(tracks);
@@ -652,16 +758,16 @@ export function SetBuilder() {
           setStatus(
             data.message ||
               (tracks.length
-                ? `${store} geladen — mit + dazu ins Set.`
-                : "Keine Tracks im Link."),
+                ? t("builder.status.storeLoaded", { store })
+                : t("builder.status.noTracksInLink")),
           );
         } catch (err) {
           setResults([]);
           setCrateSource(null);
           fail(
             "crate",
-            err instanceof Error ? err.message : `${store}-Link fehlgeschlagen.`,
-            "Den Link im Browser öffnen. Steht der Titel in der Adresse, hier noch einmal einfügen.",
+            errorText(err, t) || t("builder.fail.storeLink", { store }),
+            t("builder.fail.storeLinkHint"),
           );
         }
       });
@@ -682,16 +788,25 @@ export function SetBuilder() {
             tracks?: SearchTrack[];
             error?: string;
           };
-          if (!response.ok) throw new Error(data.error || "Tidal-Link fehlgeschlagen.");
+          if (!response.ok) throw new Error(data.error || t("builder.fail.tidalLink"));
           setResults(data.tracks ?? []);
-          setCrateSource(`Tidal: ${data.label || "Playlist"}`);
-          setStatus(`${trackCount((data.tracks ?? []).length)} aus Tidal geladen.`);
+          setCrateSource(
+            t("builder.crate.source", {
+              kind: "Tidal",
+              label: data.label || t("builder.crate.playlistFallback"),
+            }),
+          );
+          setStatus(
+            t("builder.status.tidalLinkLoaded", {
+              tracks: trackCount((data.tracks ?? []).length, t),
+            }),
+          );
         } catch (err) {
           setResults([]);
           fail(
             "crate",
-            err instanceof Error ? err.message : "Tidal-Link fehlgeschlagen.",
-            "Mit Tidal verbinden. Die Redirect URI muss exakt die aus „Verbindungen & Setups“ sein.",
+            errorText(err, t, "builder.fail.tidalLink"),
+            t("builder.fail.tidalLinkHint"),
           );
         }
       });
@@ -719,27 +834,36 @@ export function SetBuilder() {
           if (data.code === "AUTH_REQUIRED") {
             setSpotifyConnected(false);
           }
-          throw new Error(data.error || "Link konnte nicht geladen werden.");
+          throw new Error(data.error || t("builder.fail.crateLink"));
         }
         const tracks = data.tracks ?? [];
         setResults(tracks);
         setCrateSource(
           data.kind && data.label
-            ? `${data.kind === "track" ? "Track" : data.kind === "album" ? "Album" : "Playlist"}: ${data.label}`
+            ? t("builder.crate.source", {
+                kind: t(
+                  data.kind === "track"
+                    ? "builder.crate.kind.track"
+                    : data.kind === "album"
+                      ? "builder.crate.kind.album"
+                      : "builder.crate.kind.playlist",
+                ),
+                label: data.label,
+              })
             : null,
         );
         setStatus(
           tracks.length === 1
-            ? "Track geladen — mit + zum Set hinzufügen."
-            : `${trackCount(tracks.length)} geladen — einzeln oder alle hinzufügen.`,
+            ? t("builder.status.trackLoaded")
+            : t("builder.status.tracksLoaded", { tracks: trackCount(tracks.length, t) }),
         );
       } catch (err) {
         setResults([]);
         setCrateSource(null);
         fail(
           "crate",
-          err instanceof Error ? err.message : "Link konnte nicht geladen werden.",
-          "Unter „Verbindungen & Setups“ verbinden und den Link erneut laden. Im Dev Mode nur eigene Playlists.",
+          errorText(err, t, "builder.fail.crateLink"),
+          t("builder.fail.crateLinkHint"),
         );
       }
     });
@@ -747,7 +871,7 @@ export function SetBuilder() {
 
   function addTrack(track: SearchTrack) {
     if (draft.tracks.some((item) => item.id === track.id)) {
-      setStatus("Track ist schon im Set.");
+      setStatus(t("builder.status.alreadyIn"));
       return;
     }
 
@@ -776,7 +900,11 @@ export function SetBuilder() {
       tracks: [...current.tracks, next],
     }));
     setStatus(
-      `+ ${track.name} → ${PHASES.find((p) => p.id === activePhase)?.label} / ${activeRole}`,
+      t("builder.status.added", {
+        name: track.name,
+        phase: phaseLabel(t, activePhase),
+        role: roleLabel(t, activeRole),
+      }),
     );
   }
 
@@ -796,7 +924,7 @@ export function SetBuilder() {
       (track) => !draft.tracks.some((item) => item.id === track.id),
     );
     if (!fresh.length) {
-      setStatus("Alle Treffer sind schon im Set.");
+      setStatus(t("builder.status.allAlreadyIn"));
       return;
     }
     const mapped: SetTrack[] = fresh.map((track) => ({
@@ -823,7 +951,11 @@ export function SetBuilder() {
       tracks: [...current.tracks, ...mapped],
     }));
     setStatus(
-      `+ ${trackCount(mapped.length)} → ${PHASES.find((p) => p.id === activePhase)?.label} / ${activeRole}`,
+      t("builder.status.addedMany", {
+        tracks: trackCount(mapped.length, t),
+        phase: phaseLabel(t, activePhase),
+        role: roleLabel(t, activeRole),
+      }),
     );
   }
 
@@ -832,8 +964,8 @@ export function SetBuilder() {
     if (!name) {
       fail(
         "crate",
-        "Titel fehlt.",
-        "Einen Titel eintragen. Artist und Link dürfen leer bleiben.",
+        t("builder.fail.titleMissing"),
+        t("builder.fail.titleMissingHint"),
       );
       return;
     }
@@ -865,7 +997,11 @@ export function SetBuilder() {
     setManualLink("");
     clearNotice();
     setStatus(
-      `+ ${name} → ${PHASES.find((p) => p.id === activePhase)?.label} / ${TRACK_ROLES.find((r) => r.id === activeRole)?.label}`,
+      t("builder.status.added", {
+        name,
+        phase: phaseLabel(t, activePhase),
+        role: roleLabel(t, activeRole),
+      }),
     );
   }
 
@@ -882,24 +1018,31 @@ export function SetBuilder() {
           item.artists.join(",").toLowerCase() === track.artists.join(",").toLowerCase()),
     );
     if (same) {
-      setStatus(`${track.name} ist schon im Set.`);
+      setStatus(t("builder.status.alreadyInNamed", { name: track.name }));
       return;
     }
     addTracksBulk([track]);
     setStatus(
-      `+ ${track.name} → ${PHASES.find((p) => p.id === track.phase)?.label} / ${TRACK_ROLES.find((r) => r.id === track.role)?.label}`,
+      t("builder.status.added", {
+        name: track.name,
+        phase: phaseLabel(t, track.phase),
+        role: roleLabel(t, track.role),
+      }),
     );
   }
 
   function fillPlanB(picks: { row: LibraryRow; phase: SetPhaseId }[]) {
     if (!picks.length) return;
-    addTracksBulk(picks.map(({ row, phase }) => libraryTrackToSetTrack(row, phase, "safety")));
+    addTracksBulk(picks.map(({ row, phase }) => libraryTrackToSetTrack(row, phase, "safety", t)));
     const counts = PHASES.map((phase) => ({
-      label: phase.label,
+      label: phaseLabel(t, phase.id),
       n: picks.filter((pick) => pick.phase === phase.id).length,
     })).filter((item) => item.n > 0);
     setStatus(
-      `Plan B gefüllt: +${picks.length} Alternativen (${counts.map((item) => `${item.label} ${item.n}`).join(", ")}).`,
+      t("builder.status.planBFilled", {
+        count: picks.length,
+        parts: counts.map((item) => `${item.label} ${item.n}`).join(", "),
+      }),
     );
   }
 
@@ -959,21 +1102,19 @@ export function SetBuilder() {
   }
 
   async function copyExport() {
-    await navigator.clipboard.writeText(exportSetText(draft));
-    setStatus("Set als Text kopiert, mit Cue-Notizen und Alternativen.");
+    await navigator.clipboard.writeText(exportSetText(draft, t));
+    setStatus(t("builder.status.copied"));
   }
 
   function exportPdf() {
     try {
-      openSetPdfExport(draft);
-      setStatus(
-        "Druckansicht geöffnet. Dort drucken oder „Als PDF speichern“ wählen.",
-      );
+      openSetPdfExport(draft, t);
+      setStatus(t("builder.status.pdf"));
     } catch (err) {
       fail(
         "export",
-        err instanceof Error ? err.message : "PDF-Export fehlgeschlagen.",
-        "Pop-ups für diese Seite erlauben und PDF noch einmal öffnen.",
+        errorText(err, t, "builder.fail.pdf"),
+        t("builder.fail.pdfHint"),
       );
     }
   }
@@ -984,43 +1125,43 @@ export function SetBuilder() {
       buildM3u(draft),
       "audio/x-mpegurl",
     );
-    setStatus("M3U der Performance-Reihenfolge gespeichert.");
+    setStatus(t("builder.status.m3u"));
   }
 
   function exportRekordbox() {
     downloadText(
       boothFileName(draft.title, "xml"),
-      buildRekordboxXml(draft),
+      buildRekordboxXml(draft, t),
       "application/xml",
     );
-    setStatus(
-      "rekordbox-XML gespeichert. In rekordbox: File → Import Playlist. Alternativen liegen in der zweiten Playlist.",
-    );
+    setStatus(t("builder.status.rekordbox"));
   }
 
   function replaceTrack(targetId: string, replacementId: string) {
     setDraft((current) => ({
       ...current,
-      tracks: swapIntoSlot(current.tracks, targetId, replacementId),
+      tracks: swapIntoSlot(current.tracks, targetId, replacementId, t),
     }));
     setReplaceFor(null);
-    setStatus("Alternative eingesetzt. Der ersetzte Track liegt bei den Alternativen.");
+    setStatus(t("builder.status.replaced"));
   }
 
   function replaceFromLibrary(targetId: string, row: LibraryRow) {
     const target = draft.tracks.find((track) => track.id === targetId);
     if (!target) return;
-    const incoming = libraryTrackToSetTrack(row, target.phase, target.role);
+    const incoming = libraryTrackToSetTrack(row, target.phase, target.role, t);
     setDraft((current) => ({
       ...current,
-      tracks: swapIntoSlot([...current.tracks, incoming], targetId, incoming.id),
+      tracks: swapIntoSlot([...current.tracks, incoming], targetId, incoming.id, t),
     }));
     setReplaceFor(null);
-    setStatus(`${incoming.name} ersetzt ${target.name}. ${target.name} liegt bei den Alternativen.`);
+    setStatus(
+      t("builder.status.replacedFromLibrary", { name: incoming.name, target: target.name }),
+    );
   }
 
   function playLibraryRow(row: LibraryRow) {
-    playLibraryTrack(libraryTrackToSetTrack(row, "open", "groove"));
+    playLibraryTrack(libraryTrackToSetTrack(row, "open", "groove", t));
   }
 
   async function matchStreamingLinks() {
@@ -1028,11 +1169,11 @@ export function SetBuilder() {
       (track) => !track.externalUrl && track.name.trim(),
     );
     if (!pending.length) {
-      setStatus("Alle Tracks haben schon einen Link.");
+      setStatus(t("builder.status.allHaveLinks"));
       return;
     }
     setMatchingLinks(true);
-    setStatus(`Suche Spotify-Links… 0/${pending.length}`);
+    setStatus(t("builder.status.searchingLinks", { done: 0, total: pending.length }));
     const patches = new Map<
       string,
       { externalUrl: string; imageUrl: string | null }
@@ -1071,7 +1212,12 @@ export function SetBuilder() {
             });
           }),
         );
-        setStatus(`Suche Spotify-Links… ${Math.min(i + 4, pending.length)}/${pending.length}`);
+        setStatus(
+          t("builder.status.searchingLinks", {
+            done: Math.min(i + 4, pending.length),
+            total: pending.length,
+          }),
+        );
       }
       setDraft((current) => ({
         ...current,
@@ -1088,14 +1234,14 @@ export function SetBuilder() {
       }));
       setStatus(
         found
-          ? `${found} Spotify-Links gesetzt, ${pending.length - found} ohne sicheren Treffer.`
-          : "Kein sicherer Spotify-Treffer.",
+          ? t("builder.status.linksSet", { found, missing: pending.length - found })
+          : t("builder.status.noLink"),
       );
     } catch (err) {
       fail(
         "library",
-        err instanceof Error ? err.message : "Spotify-Suche fehlgeschlagen.",
-        "Unter „Verbindungen & Setups“ mit Spotify verbinden und Links suchen erneut starten.",
+        errorText(err, t, "builder.fail.spotifySearch"),
+        t("builder.fail.spotifySearchHint"),
       );
     } finally {
       setMatchingLinks(false);
@@ -1103,7 +1249,7 @@ export function SetBuilder() {
   }
 
   function saveSetup() {
-    const name = setupName.trim() || draft.title || "Setup";
+    const name = setupName.trim() || draft.title || t("builder.setups.fallbackName");
     const nextSetup: SavedSetup = {
       id:
         setups.find((item) => item.name === name)?.id ||
@@ -1119,7 +1265,7 @@ export function SetBuilder() {
     writeSetups(next);
     setSelectedSetup(nextSetup.id);
     setSetupName(name);
-    setStatus(`„${name}“ gespeichert.`);
+    setStatus(t("builder.status.setupSaved", { name }));
   }
 
   function loadSetup(id = selectedSetup) {
@@ -1133,7 +1279,7 @@ export function SetBuilder() {
     setDraft(next);
     setSetupName(setup.name);
     setFocusTrackId(null);
-    setStatus(`„${setup.name}“ geladen.`);
+    setStatus(t("builder.status.setupLoaded", { name: setup.name }));
   }
 
   function deleteSetup() {
@@ -1142,7 +1288,7 @@ export function SetBuilder() {
     const next = setups.filter((item) => item.id !== setup.id);
     writeSetups(next);
     setSelectedSetup("");
-    setStatus(`„${setup.name}“ gelöscht.`);
+    setStatus(t("builder.status.setupDeleted", { name: setup.name }));
   }
 
   function downloadSetup() {
@@ -1159,7 +1305,7 @@ export function SetBuilder() {
     link.download = `${name}.setform.json`;
     link.click();
     URL.revokeObjectURL(url);
-    setStatus("Einstellungsdatei heruntergeladen.");
+    setStatus(t("builder.status.fileDownloaded"));
   }
 
   function uploadSetup(file: File | null) {
@@ -1175,7 +1321,7 @@ export function SetBuilder() {
         };
         const incoming = parsed.draft ?? (parsed.tracks ? (parsed as SetDraft) : null);
         if (!incoming?.tracks || !incoming.title) {
-          throw new Error("Datei enthält kein SETFORM-Setup.");
+          throw new Error(t("builder.fail.notSetup"));
         }
         const name = parsed.name || incoming.title;
         setSetupName(name);
@@ -1184,12 +1330,12 @@ export function SetBuilder() {
           ...incoming,
           tracks: incoming.tracks.map(normalizeTrack),
         });
-        setStatus(`„${name}“ aus Datei geladen.`);
+        setStatus(t("builder.status.setupFromFile", { name }));
       } catch (err) {
         fail(
           "settings",
-          err instanceof Error ? err.message : "Datei ungültig.",
-          "Eine Datei verwenden, die hier über Herunterladen gespeichert wurde.",
+          errorText(err, t, "builder.fail.file"),
+          t("builder.fail.fileHint"),
         );
       }
     };
@@ -1199,66 +1345,69 @@ export function SetBuilder() {
   function resetSet() {
     setDraft(DEFAULT_SET);
     setFocusTrackId(null);
-    setStatus("Brief zurückgesetzt — das Set ist leer.");
+    setStatus(t("builder.status.reset"));
   }
 
   function harmonizeSet() {
-    const next = reharmonizeDraft(draft);
+    const next = reharmonizeDraft(draft, t);
     setDraft(next);
-    setStatus("Set innerhalb der Phasen nach Camelot/BPM neu sortiert.");
+    setStatus(t("builder.status.harmonized"));
   }
 
   function fitSlot() {
-    const result = fitToSlot(draft);
+    const result = fitToSlot(draft, t);
     if (!result.moved) {
-      setStatus("Das Set passt schon in den Slot.");
+      setStatus(t("builder.status.fits"));
       return;
     }
     setDraft(result.draft);
     setStatus(
-      `Auf Slot gekürzt: ${formatDuration(result.beforeMs)} → ${formatDuration(result.afterMs)} · ${trackCount(result.kept)} bleiben, ${trackCount(result.moved)} liegen unter Alternativen.`,
+      t("builder.status.trimmed", {
+        before: formatDuration(result.beforeMs),
+        after: formatDuration(result.afterMs),
+        kept: trackCount(result.kept, t),
+        moved: trackCount(result.moved, t),
+      }),
     );
   }
 
   function assignRoles() {
-    setDraft(distributeRoles(draft));
-    setStatus(
-      "Rollen verteilt: Anchor auf Peak und Schluss, Bridge bei Phasenwechsel, Key-Clash, BPM- oder Energie-Sprung, sonst Groove.",
-    );
+    setDraft(distributeRoles(draft, t));
+    setStatus(t("builder.status.roles"));
   }
 
   function renderSetups() {
     return (
-      <section className="setups-bar" aria-label="Verbindungen und Setups">
+      <section className="setups-bar" aria-label={t("builder.setups.aria")}>
         <div className="panel-head">
-          <h2>Verbindungen &amp; Setups</h2>
-          <p>Brief sichern. Spotify und Tidal hier verbinden.</p>
+          <h2>{t("builder.settings.title")}</h2>
+          <p>{t("builder.setups.intro")}</p>
         </div>
         <div className="setups-grid">
           <div className="setup-card">
-            <h3>Speichern</h3>
+            <h3>{t("common.save")}</h3>
             <label className="setup-field">
-              <span>Name</span>
+              <span>{t("builder.setups.name")}</span>
               <input
                 value={setupName}
                 onChange={(event) => setSetupName(event.target.value)}
-                aria-label="Setup-Name"
+                aria-label={t("builder.setups.nameAria")}
               />
             </label>
             <button type="button" className="btn" onClick={saveSetup}>
-              Speichern
+              {t("common.save")}
             </button>
           </div>
           <div className="setup-card">
-            <h3>Laden</h3>
+            <h3>{t("common.load")}</h3>
             <label className="setup-field">
-              <span>Gespeicherter Stand</span>
+              <span>{t("builder.setups.stored")}</span>
               <select
                 value={selectedSetup}
                 onChange={(event) => setSelectedSetup(event.target.value)}
-                aria-label="Gespeichertes Setup"
+                aria-label={t("builder.setups.selectAria")}
               >
-                <option value="">Wählen…</option>
+                <option value="">{t("builder.setups.choose")}</option>
                 {setups.map((setup) => (
                   <option key={setup.id} value={setup.id}>
                     {setup.name}
@@ -1273,7 +1422,7 @@ export function SetBuilder() {
                 disabled={!selectedSetup}
                 onClick={() => loadSetup()}
               >
-                Laden
+                {t("common.load")}
               </button>
               <button
                 type="button"
@@ -1281,19 +1430,19 @@ export function SetBuilder() {
                 disabled={!selectedSetup}
                 onClick={deleteSetup}
               >
-                Löschen
+                {t("common.delete")}
               </button>
             </div>
           </div>
           <div className="setup-card">
-            <h3>Datei</h3>
-            <p>JSON sichern oder auf einem anderen Rechner öffnen.</p>
+            <h3>{t("builder.setups.fileTitle")}</h3>
+            <p>{t("builder.setups.fileHint")}</p>
             <div className="setup-actions">
               <button type="button" className="btn ghost" onClick={downloadSetup}>
-                Herunterladen
+                {t("builder.setups.download")}
               </button>
               <label className="btn ghost file-btn">
-                Öffnen
+                {t("common.open")}
                 <input
                   type="file"
                   accept="application/json,.json"
@@ -1317,16 +1466,16 @@ export function SetBuilder() {
   function renderConnection() {
     const spotifyState =
       spotifyConnected === null
-        ? "wird geprüft"
+        ? t("builder.conn.checking")
         : spotifyConnected
-          ? "verbunden"
-          : "nicht verbunden";
+          ? t("builder.conn.connected")
+          : t("builder.conn.notConnected");
     const tidalState =
       tidalConnected === null
-        ? "wird geprüft"
+        ? t("builder.conn.checking")
         : tidalConnected
-          ? "verbunden"
-          : "nicht verbunden";
+          ? t("builder.conn.connected")
+          : t("builder.conn.notConnected");
     return (
       <div className="crate-connect">
         <div className="import-actions">
@@ -1338,14 +1487,14 @@ export function SetBuilder() {
                 await fetch("/api/auth/logout", { method: "POST" });
                 setSpotifyConnected(false);
                 setMyPlaylists([]);
-                setStatus("Spotify getrennt.");
+                setStatus(t("builder.conn.spotifyDisconnected"));
               }}
             >
-              Spotify trennen
+              {t("builder.conn.disconnectSpotify")}
             </button>
           ) : (
             <a className="button-link" href="/api/auth/login">
-              Mit Spotify verbinden
+              {t("builder.conn.connectSpotify")}
             </a>
           )}
           {tidalConnected ? (
@@ -1355,24 +1504,22 @@ export function SetBuilder() {
               onClick={async () => {
                 await fetch("/api/auth/tidal/logout", { method: "POST" });
                 setTidalConnected(false);
-                setStatus("Tidal getrennt.");
+                setStatus(t("builder.conn.tidalDisconnected"));
               }}
             >
-              Tidal trennen
+              {t("builder.conn.disconnectTidal")}
             </button>
           ) : (
             <a className="button-link tidal-login" href="/api/auth/tidal/login">
-              Mit Tidal verbinden
+              {t("builder.conn.connectTidal")}
             </a>
           )}
         </div>
         <p className="head-meta">
-          Spotify {spotifyState} · Tidal {tidalState}
+          {t("builder.conn.state", { spotify: spotifyState, tidal: tidalState })}
         </p>
         {spotifyConnected && tidalConnected ? null : (
-          <p className="import-hint">
-            Die Zugangsdaten für Spotify und Tidal stehen unter „Verbindungen & Setups“.
-          </p>
+          <p className="import-hint">{t("builder.conn.hint")}</p>
         )}
       </div>
     );
@@ -1387,18 +1534,12 @@ export function SetBuilder() {
             <p className="brand">SETFORM</p>
             <LanguageSwitch />
           </div>
-          <h1>Dramaturgie statt Playlist.</h1>
-          <p className="lede">
-            SETFORM formt aus dem Rekordbox-Stick ein Set. Playlist oder
-            History laden, den Bogen nach Slot und Dauer legen, und an Key und
-            BPM sehen, ob der Übergang zum nächsten Track trägt. Spotify, Tidal
-            und Beatport sind die Ergänzung, wenn ein Track noch nicht auf dem
-            Stick liegt.
-          </p>
+          <h1>{t("builder.hero.title")}</h1>
+          <p className="lede">{t("builder.hero.lede")}</p>
         </div>
-        <div className="hero-meta" aria-label="Set brief">
+        <div className="hero-meta" aria-label={t("builder.brief.aria")}>
           <label>
-            <span>Titel</span>
+            <span>{t("builder.brief.title")}</span>
             <input
               value={draft.title}
               onChange={(e) =>
@@ -1407,7 +1548,7 @@ export function SetBuilder() {
             />
           </label>
           <label>
-            <span>Vibe / Genre-Arc</span>
+            <span>{t("builder.brief.vibe")}</span>
             <input
               value={draft.vibe}
               onChange={(e) =>
@@ -1416,7 +1557,7 @@ export function SetBuilder() {
             />
           </label>
           <label>
-            <span>Venue / Soundsystem</span>
+            <span>{t("builder.brief.venue")}</span>
             <input
               value={draft.venue}
               onChange={(e) =>
@@ -1425,7 +1566,7 @@ export function SetBuilder() {
             />
           </label>
           <label>
-            <span>Slot-Art</span>
+            <span>{t("builder.brief.slotKind")}</span>
             <select
               value={draft.slotKind ?? "peaktime"}
               onChange={(e) => {
@@ -1435,20 +1576,23 @@ export function SetBuilder() {
                   ...c,
                   slotKind,
                   slot: kind
-                    ? `${kind.label} · ${c.durationMinutes} Min`
+                    ? t("builder.brief.slotText", {
+                        kind: slotLabel(t, kind.id),
+                        minutes: c.durationMinutes,
+                      })
                     : c.slot,
                 }));
               }}
             >
               {SLOT_KINDS.map((kind) => (
-                <option key={kind.id} value={kind.id} title={kind.hint}>
-                  {kind.label}
+                <option key={kind.id} value={kind.id} title={slotHint(t, kind.id)}>
+                  {slotLabel(t, kind.id)}
                 </option>
               ))}
             </select>
           </label>
           <label>
-            <span>Slot-Notiz</span>
+            <span>{t("builder.brief.slotNote")}</span>
             <input
               value={draft.slot}
               onChange={(e) =>
@@ -1457,7 +1601,7 @@ export function SetBuilder() {
             />
           </label>
           <label>
-            <span>Audience</span>
+            <span>{t("builder.brief.audience")}</span>
             <input
               value={draft.audience}
               onChange={(e) =>
@@ -1466,7 +1610,7 @@ export function SetBuilder() {
             />
           </label>
           <label>
-            <span>Gear</span>
+            <span>{t("builder.brief.gear")}</span>
             <input
               value={draft.gear}
               onChange={(e) =>
@@ -1475,7 +1619,7 @@ export function SetBuilder() {
             />
           </label>
           <label>
-            <span>Dauer (Min)</span>
+            <span>{t("builder.brief.duration")}</span>
             <input
               type="number"
               min={30}
@@ -1496,11 +1640,14 @@ export function SetBuilder() {
 
       <details id="library-section" className="explain-fold section-fold" open>
         <summary>
-          <span>Set laden &amp; Keys</span>
+          <span>{t("builder.library.title")}</span>
           <em>
             {mainTracks.length
-              ? `${mainTracks.filter((track) => track.keyCamelot).length}/${mainTracks.length} Keys`
-              : "Erster Schritt"}
+              ? t("builder.library.keys", {
+                  done: mainTracks.filter((track) => track.keyCamelot).length,
+                  total: mainTracks.length,
+                })
+              : t("builder.library.firstStep")}
           </em>
         </summary>
         <LibraryPanel
@@ -1519,43 +1666,41 @@ export function SetBuilder() {
 
       <details className="explain-fold section-fold" open>
         <summary>
-          <span>Set bauen</span>
+          <span>{t("builder.build.title")}</span>
           <em>
-            {mainTracks.length} Performance ·{" "}
-            {draft.tracks.length - mainTracks.length} Alternativen
+            {t("builder.build.summary", {
+              performance: mainTracks.length,
+              safety: draft.tracks.length - mainTracks.length,
+            })}
           </em>
         </summary>
-        <section className="crate-workspace" aria-label="Set bauen">
+        <section className="crate-workspace" aria-label={t("builder.build.title")}>
           <div className="panel-head">
             <div>
-              <h2>Set bauen</h2>
-              <p className="section-note">
-                Hier kommt Musik rein und bekommt eine Phase und eine Rolle.
-                Danach ordnest du das Set von Hand oder lässt es nach Key
-                sortieren.
-              </p>
+              <h2>{t("builder.build.title")}</h2>
+              <p className="section-note">{t("builder.build.note")}</p>
             </div>
           </div>
 
           <details className="explain-fold nested crate-add" open>
             <summary>
-              <span>Musik hinzufügen</span>
+              <span>{t("builder.add.title")}</span>
               <em className="fold-toggle" />
             </summary>
             <div className="explain-body crate-add-body">
               {addTab === "auto" ? null : (
                 <div className="add-target">
-                  <span className="add-target-label">Neue Tracks landen in</span>
+                  <span className="add-target-label">{t("builder.add.target")}</span>
                   <select
                     value={activePhase}
                     onChange={(event) =>
                       setActivePhase(event.target.value as SetPhaseId)
                     }
-                    aria-label="Phase für neue Tracks"
+                    aria-label={t("builder.add.phaseAria")}
                   >
                     {PHASES.map((phase) => (
                       <option key={phase.id} value={phase.id}>
-                        {phase.label}
+                        {phaseLabel(t, phase.id)}
                       </option>
                     ))}
                   </select>
@@ -1564,39 +1709,32 @@ export function SetBuilder() {
                     onChange={(event) =>
                       setActiveRole(event.target.value as TrackRole)
                     }
-                    aria-label="Rolle für neue Tracks"
+                    aria-label={t("builder.add.roleAria")}
                   >
                     {TRACK_ROLES.map((role) => (
                       <option key={role.id} value={role.id}>
-                        {role.label}
+                        {roleLabel(t, role.id)}
                       </option>
                     ))}
                   </select>
                 </div>
               )}
 
-              <div className="seg crate-add-tabs" role="tablist" aria-label="Wie Musik hinzufügen">
-                {(
-                  [
-                    ["link", "Link", "Track, Playlist oder Album von Spotify, Tidal, Beatport oder SoundCloud."],
-                    ["search", "Suche", "Den Spotify-Katalog nach Artist, Titel oder Genre durchsuchen."],
-                    ["manual", "Von Hand", "Titel und Artist selbst eintragen."],
-                    ["auto", "Automatisch", "Eine ganze Playlist als fertiges Set verteilen lassen."],
-                  ] as const
-                ).map(([id, label, hint]) => (
+              <div className="seg crate-add-tabs" role="tablist" aria-label={t("builder.add.tabsAria")}>
+                {(["link", "search", "manual", "auto"] as const).map((id) => (
                   <button
                     key={id}
                     type="button"
                     role="tab"
                     aria-selected={addTab === id}
                     className={addTab === id ? "seg-item active" : "seg-item"}
-                    title={hint}
+                    title={t(`builder.add.tab.${id}.hint`)}
                     onClick={() => {
                       setAddTab(id);
                       clearNotice();
                     }}
                   >
-                    {label}
+                    {t(`builder.add.tab.${id}.label`)}
                   </button>
                 ))}
               </div>
@@ -1613,16 +1751,14 @@ export function SetBuilder() {
                     <input
                       value={query}
                       onChange={(event) => setQuery(event.target.value)}
-                      placeholder="Artist, Titel oder Genre"
-                      aria-label="Spotify-Suche"
+                      placeholder={t("builder.search.placeholder")}
+                      aria-label={t("builder.search.aria")}
                     />
                     <button type="submit" disabled={isPending}>
-                      {isPending ? "Suche…" : "Suchen"}
+                      {isPending ? t("builder.search.busy") : t("builder.search.submit")}
                     </button>
                   </form>
-                  <p className="import-hint">
-                    Durchsucht den Spotify-Katalog. Ein Link im Feld wird direkt geladen.
-                  </p>
+                  <p className="import-hint">{t("builder.search.hint")}</p>
                 </>
               ) : null}
 
@@ -1638,20 +1774,20 @@ export function SetBuilder() {
                     <input
                       value={linkUrl}
                       onChange={(event) => setLinkUrl(event.target.value)}
-                      placeholder="Link von Spotify, Tidal, Beatport oder SoundCloud"
-                      aria-label="Link"
+                      placeholder={t("builder.link.placeholder")}
+                      aria-label={t("builder.link.aria")}
                     />
                     <button type="submit" disabled={isPending}>
-                      {isPending ? "Lade…" : "Laden"}
+                      {isPending ? t("builder.link.busy") : t("common.load")}
                     </button>
                   </form>
                   {tidalConnected && tidalPlaylists.length > 0 ? (
                     <div className="playlist-picker">
                       <label>
-                        <span>Eigene Tidal-Playlists</span>
+                        <span>{t("builder.link.tidalPlaylists")}</span>
                         <select
                           value=""
-                          aria-label="Tidal-Playlist wählen"
+                          aria-label={t("builder.link.tidalPickAria")}
                           onChange={(event) => {
                             const id = event.target.value;
                             if (!id) return;
@@ -1659,7 +1795,7 @@ export function SetBuilder() {
                             void loadTidalCrate(id, picked?.name);
                           }}
                         >
-                          <option value="">Playlist laden…</option>
+                          <option value="">{t("builder.link.pickOption")}</option>
                           {tidalPlaylists.map((playlist) => (
                             <option key={playlist.id} value={playlist.id}>
                               {playlist.name}
@@ -1673,10 +1809,10 @@ export function SetBuilder() {
                   {spotifyConnected && myPlaylists.length > 0 ? (
                     <div className="playlist-picker">
                       <label>
-                        <span>Eigene Spotify-Playlists</span>
+                        <span>{t("builder.link.spotifyPlaylists")}</span>
                         <select
                           value=""
-                          aria-label="Spotify-Playlist wählen"
+                          aria-label={t("builder.link.spotifyPickAria")}
                           onChange={(event) => {
                             const id = event.target.value;
                             if (!id) return;
@@ -1685,7 +1821,7 @@ export function SetBuilder() {
                             void importCrateLink(url);
                           }}
                         >
-                          <option value="">Playlist laden…</option>
+                          <option value="">{t("builder.link.pickOption")}</option>
                           {myPlaylists.map((playlist) => (
                             <option key={playlist.id} value={playlist.id}>
                               {playlist.name} ({playlist.trackCount})
@@ -1696,11 +1832,7 @@ export function SetBuilder() {
                     </div>
                   ) : null}
                   {renderConnection()}
-                  <p className="import-hint">
-                    Beatport und SoundCloud brauchen keinen Login, der Titel kommt aus der
-                    Adresse. Key und BPM stehen dort nicht. Spotify liefert im Dev Mode nur
-                    eigene oder kollaborative Playlists.
-                  </p>
+                  <p className="import-hint">{t("builder.link.hint")}</p>
                 </>
               ) : null}
 
@@ -1716,7 +1848,7 @@ export function SetBuilder() {
                           className="btn ghost"
                           onClick={addAllResults}
                         >
-                          Alle + ({results.length})
+                          {t("builder.crate.addAll", { count: results.length })}
                         </button>
                       ) : null}
                     </div>
@@ -1725,13 +1857,13 @@ export function SetBuilder() {
                     <div className="empty">
                       <p>
                         {addTab === "search"
-                          ? "Suche starten. Treffer lassen sich einzeln oder alle auf einmal hinzufügen."
-                          : "Link einfügen und laden. Danach einzeln oder alle ins Set legen."}
+                          ? t("builder.crate.emptySearch")
+                          : t("builder.crate.emptyLink")}
                       </p>
                     </div>
                   ) : results.length === 0 ? (
                     <div className="empty">
-                      <p>Keine Tracks geladen.</p>
+                      <p>{t("builder.crate.none")}</p>
                     </div>
                   ) : (
                     <ul className="result-list">
@@ -1760,7 +1892,7 @@ export function SetBuilder() {
                             </div>
                           </div>
                           <button type="button" onClick={() => addTrack(track)}>
-                            + dazu
+                            {t("builder.crate.add")}
                           </button>
                         </li>
                       ))}
@@ -1779,34 +1911,34 @@ export function SetBuilder() {
                     }}
                   >
                     <label className="manual-field">
-                      <span>Titel</span>
+                      <span>{t("builder.manual.title")}</span>
                       <input
                         value={manualTitle}
                         onChange={(event) => setManualTitle(event.target.value)}
-                        placeholder="Titel"
-                        aria-label="Titel"
+                        placeholder={t("builder.manual.title")}
+                        aria-label={t("builder.manual.title")}
                       />
                     </label>
                     <label className="manual-field">
-                      <span>Artist</span>
+                      <span>{t("builder.manual.artist")}</span>
                       <input
                         value={manualArtist}
                         onChange={(event) => setManualArtist(event.target.value)}
-                        placeholder="Artist"
-                        aria-label="Artist"
+                        placeholder={t("builder.manual.artist")}
+                        aria-label={t("builder.manual.artist")}
                       />
                     </label>
                     <label className="manual-field is-wide">
-                      <span>Link (optional)</span>
+                      <span>{t("builder.manual.link")}</span>
                       <input
                         value={manualLink}
                         onChange={(event) => setManualLink(event.target.value)}
-                        placeholder="Adresse zum Track, zum Beispiel für den Player"
-                        aria-label="Link"
+                        placeholder={t("builder.manual.linkPlaceholder")}
+                        aria-label={t("builder.link.aria")}
                       />
                     </label>
                     <button type="submit" className="btn manual-form-btn">
-                      Hinzufügen
+                      {t("builder.manual.add")}
                     </button>
                   </form>
                   <FieldNoticeView notice={localNotice("crate")} />
@@ -1815,20 +1947,18 @@ export function SetBuilder() {
 
               {addTab === "auto" ? (
                 <>
-                  <p className="section-note">
-                    SETFORM nimmt eine Playlist und verteilt die Tracks nach Dauer,
-                    Phasen und Rollen auf das Set.
-                  </p>
+                  <p className="section-note">{t("builder.auto.note")}</p>
                   {draft.tracks.length > 0 ? (
                     <p className="import-hint">
-                      Das aktuelle Set mit {trackCount(draft.tracks.length)} wird dabei
-                      ersetzt.
+                      {t("builder.auto.replaces", {
+                        tracks: trackCount(draft.tracks.length, t),
+                      })}
                     </p>
                   ) : null}
                   {spotifyConnected && myPlaylists.length > 0 ? (
                     <div className="playlist-picker">
                       <label>
-                        <span>Eigene Playlists</span>
+                        <span>{t("builder.auto.ownPlaylists")}</span>
                         <select
                           value=""
                           onChange={(event) => {
@@ -1837,9 +1967,9 @@ export function SetBuilder() {
                             setPlaylistUrl(`https://open.spotify.com/playlist/${id}`);
                             clearNotice();
                           }}
-                          aria-label="Eigene Playlist wählen"
+                          aria-label={t("builder.auto.pickAria")}
                         >
-                          <option value="">Playlist wählen…</option>
+                          <option value="">{t("builder.auto.pickOption")}</option>
                           {myPlaylists.map((playlist) => (
                             <option key={playlist.id} value={playlist.id}>
                               {playlist.name} ({playlist.trackCount})
@@ -1859,23 +1989,23 @@ export function SetBuilder() {
                     <input
                       value={playlistUrl}
                       onChange={(event) => setPlaylistUrl(event.target.value)}
-                      placeholder="Spotify- oder Tidal-Playlist-Link"
-                      aria-label="Playlist-Link"
+                      placeholder={t("builder.auto.placeholder")}
+                      aria-label={t("builder.auto.linkAria")}
                     />
                     <button type="submit" disabled={isExtracting || !playlistUrl.trim()}>
-                      {isExtracting ? "Extrahiere…" : "Set extrahieren"}
+                      {isExtracting ? t("builder.auto.busy") : t("builder.auto.submit")}
                     </button>
                   </form>
                   <FieldNoticeView notice={localNotice("playlist")} />
                   {renderConnection()}
                   <details className="explain-fold nested">
                     <summary>
-                      <span>So funktioniert die Extraktion</span>
+                      <span>{t("builder.auto.how")}</span>
                       <em className="fold-toggle" />
                     </summary>
                     <div className="explain-body">
                       <ol className="explain-steps">
-                        {EXTRACT_STEPS.map((step) => (
+                        {extractStepsFor(t).map((step) => (
                           <li key={step.title}>
                             <strong>{step.title}</strong>
                             <span>{step.body}</span>
@@ -1890,24 +2020,18 @@ export function SetBuilder() {
           </details>
 
           <div className="set-bar">
-            <div className="seg" role="tablist" aria-label="Ansicht">
-              {(
-                [
-                  ["list", "Setliste", "Die Reihenfolge des Abends. Hier sortierst du von Hand und schreibst Kommentare."],
-                  ["roles", "Rollen", "Anchor, Bridge, Groove und Alternativen als Spalten. Titel zwischen Rollen ziehen."],
-                  ["keys", "Bogen", "Phasen im Slot, Energie pro Track und Camelot-Keys entlang der Reihenfolge, mit Mix-Score und Clashes."],
-                ] as const
-              ).map(([id, label, hint]) => (
+            <div className="seg" role="tablist" aria-label={t("builder.view.aria")}>
+              {(["list", "roles", "keys"] as const).map((id) => (
                 <button
                   key={id}
                   type="button"
                   role="tab"
                   aria-selected={crateView === id}
                   className={crateView === id ? "seg-item active" : "seg-item"}
-                  title={hint}
+                  title={t(`builder.view.${id}.hint`)}
                   onClick={() => setCrateView(id)}
                 >
-                  {label}
+                  {t(`builder.view.${id}.label`)}
                 </button>
               ))}
             </div>
@@ -1932,10 +2056,10 @@ export function SetBuilder() {
                 onClick={harmonizeSet}
                 disabled={mainTracks.length < 2}
               >
-                Harmonisch sortieren
+                {t("builder.tool.harmonize")}
               </button>
               <span className="tip-bubble" role="tooltip">
-                Ordnet jede Phase nach Camelot-Key und BPM neu. Die Rollen bleiben.
+                {t("builder.tool.harmonizeTip")}
               </span>
             </span>
             <span className="tip">
@@ -1945,10 +2069,10 @@ export function SetBuilder() {
                 onClick={fitSlot}
                 disabled={filledMs <= targetMs * 1.05}
               >
-                Auf Slot kürzen
+                {t("builder.tool.fit")}
               </button>
               <span className="tip-bubble" role="tooltip">
-                Kürzt das Set auf die Dauer im Brief. Pro Phase bleiben gleichmäßig verteilte Tracks, der Rest wandert unter Alternativen. Nichts geht verloren.
+                {t("builder.tool.fitTip")}
               </span>
             </span>
             <span className="tip">
@@ -1958,10 +2082,10 @@ export function SetBuilder() {
                 onClick={assignRoles}
                 disabled={mainTracks.length < 2}
               >
-                Rollen verteilen
+                {t("builder.tool.assign")}
               </button>
               <span className="tip-bubble" role="tooltip">
-                Setzt Anchor, Bridge und Groove neu nach Phase, Key und BPM. Die Reihenfolge bleibt.
+                {t("builder.tool.assignTip")}
               </span>
             </span>
           </SetTools>
@@ -1973,16 +2097,25 @@ export function SetBuilder() {
               <div className="crate-list-head">
                 <p className="head-meta">
                   {roleFilter === "all"
-                    ? "Performance-Set"
-                    : TRACK_ROLES.find((role) => role.id === roleFilter)?.label}
-                  {" · "}
-                  {trackCount(visibleTimeline.length)} ·{" "}
-                  {formatDuration(
-                    visibleTimeline.reduce((sum, track) => sum + track.durationMs, 0),
-                  )}
-                  {roleFilter === "all"
-                    ? ` / ${draft.durationMinutes}:00 Slot${filledMs > targetMs * 1.05 ? " · zu lang" : ""}`
-                    : ""}
+                    ? t(
+                        filledMs > targetMs * 1.05
+                          ? "builder.list.headAllLong"
+                          : "builder.list.headAll",
+                        {
+                          tracks: trackCount(visibleTimeline.length, t),
+                          duration: formatDuration(
+                            visibleTimeline.reduce((sum, track) => sum + track.durationMs, 0),
+                          ),
+                          minutes: draft.durationMinutes,
+                        },
+                      )
+                    : t("builder.list.headRole", {
+                        role: roleLabel(t, roleFilter),
+                        tracks: trackCount(visibleTimeline.length, t),
+                        duration: formatDuration(
+                          visibleTimeline.reduce((sum, track) => sum + track.durationMs, 0),
+                        ),
+                      })}
                 </p>
                 <button
                   type="button"
@@ -1998,37 +2131,35 @@ export function SetBuilder() {
                 >
                   {visibleTimeline.length > 0 &&
                   visibleTimeline.every((track) => openDetails.has(track.id))
-                    ? "Details zu"
-                    : "Details auf"}
+                    ? t("builder.list.detailsClose")
+                    : t("builder.list.detailsOpen")}
                 </button>
-                <div className="seg" role="group" aria-label="Setliste filtern">
+                <div className="seg" role="group" aria-label={t("builder.list.filterAria")}>
                   <button
                     type="button"
                     className={roleFilter === "all" ? "seg-item active" : "seg-item"}
-                    title="Performance-Reihenfolge, ohne die Alternativen."
+                    title={t("builder.list.filterSetTitle")}
                     onClick={() => setRoleFilter("all")}
                   >
-                    Set
+                    {t("builder.list.filterSet")}
                   </button>
                   {TRACK_ROLES.map((role) => (
                     <button
                       key={role.id}
                       type="button"
                       className={roleFilter === role.id ? "seg-item active" : "seg-item"}
-                      title={role.hint}
+                      title={roleHint(t, role.id)}
                       onClick={() => setRoleFilter(role.id)}
                     >
-                      {role.label}
+                      {roleLabel(t, role.id)}
                     </button>
                   ))}
                 </div>
               </div>
               {visibleTimeline.length === 0 ? (
                 <div className="empty">
-                  <p>Noch kein Set.</p>
-                  <p>
-                    Oben Musik hinzufügen oder unter „Set laden & Keys“ eine Playlist vom Stick laden.
-                  </p>
+                  <p>{t("builder.list.empty")}</p>
+                  <p>{t("builder.list.emptyHint")}</p>
                 </div>
               ) : (
             <ol className="manual-list">
@@ -2066,8 +2197,8 @@ export function SetBuilder() {
                       type="button"
                       className="drag-handle"
                       draggable
-                      aria-label={`${track.name} verschieben`}
-                      title="Hier ziehen"
+                      aria-label={t("builder.row.dragAria", { name: track.name })}
+                      title={t("builder.row.dragTitle")}
                       onDragStart={(event) => {
                         event.dataTransfer.setData("text/plain", track.id);
                         event.dataTransfer.effectAllowed = "move";
@@ -2132,11 +2263,11 @@ export function SetBuilder() {
                               phase: e.target.value as SetPhaseId,
                             })
                           }
-                          aria-label={`Phase für ${track.name}`}
+                          aria-label={t("builder.row.phaseAria", { name: track.name })}
                         >
                           {PHASES.map((phase) => (
                             <option key={phase.id} value={phase.id}>
-                              {phase.label}
+                              {phaseLabel(t, phase.id)}
                             </option>
                           ))}
                         </select>
@@ -2145,14 +2276,14 @@ export function SetBuilder() {
                           onChange={(e) =>
                             patchTrack(track.id, {
                               role: e.target.value as TrackRole,
-                              why: "Manuell gesetzt",
+                              why: t("analysis.why.manual"),
                             })
                           }
-                          aria-label={`Rolle für ${track.name}`}
+                          aria-label={t("builder.row.roleAria", { name: track.name })}
                         >
                           {TRACK_ROLES.map((role) => (
                             <option key={role.id} value={role.id}>
-                              {role.label}
+                              {roleLabel(t, role.id)}
                             </option>
                           ))}
                         </select>
@@ -2164,7 +2295,7 @@ export function SetBuilder() {
                             focusTrackId === track.id ? "is-playing" : undefined
                           }
                           onClick={() => setFocusTrackId(track.id)}
-                          aria-label={`${track.name} abspielen`}
+                          aria-label={t("builder.row.playAria", { name: track.name })}
                         >
                           ▶
                         </button>
@@ -2183,14 +2314,14 @@ export function SetBuilder() {
                         {track.role !== "safety" ? (
                           <button
                             type="button"
-                            title="Ersatz aus deinen Alternativen oder aus der Bibliothek, passend zu Vorgänger und Nachfolger"
+                            title={t("builder.row.replaceTitle")}
                             onClick={() =>
                               setReplaceFor((current) =>
                                 current === track.id ? null : track.id,
                               )
                             }
                           >
-                            Ersatz
+                            {t("builder.row.replace")}
                           </button>
                         ) : null}
                         <button
@@ -2218,7 +2349,8 @@ export function SetBuilder() {
                     ) : null}
                     {track.why ? (
                       <p className="why-inline">
-                        <strong>Warum hier:</strong> {track.why}
+                        <strong>{t("builder.row.why")}</strong>{" "}
+                        {localizeWhy(track.why, t)}
                       </p>
                     ) : null}
                     <details
@@ -2236,27 +2368,29 @@ export function SetBuilder() {
                       }}
                     >
                       <summary>
-                        <span className="td-label">Details</span>
+                        <span className="td-label">{t("builder.row.details")}</span>
                         <span className="td-values">
                           {[
-                            track.keyCamelot || "Key offen",
-                            track.bpm ? `${track.bpm} BPM` : "BPM offen",
-                            track.energyLevel != null ? `Energie ${track.energyLevel}` : null,
-                            track.transition !== "unset"
-                              ? TRANSITIONS.find((item) => item.id === track.transition)?.label
+                            track.keyCamelot || t("builder.row.keyOpen"),
+                            track.bpm ? `${track.bpm} BPM` : t("builder.row.bpmOpen"),
+                            track.energyLevel != null
+                              ? t("builder.row.energy", { level: track.energyLevel })
                               : null,
-                            (track.comment || "").trim() ? "Kommentar" : null,
+                            track.transition !== "unset"
+                              ? transitionLabel(t, track.transition)
+                              : null,
+                            (track.comment || "").trim() ? t("builder.row.commentTag") : null,
                           ]
                             .filter(Boolean)
                             .join(" · ")}
                         </span>
                       </summary>
                     <label className="manual-comment">
-                      <span>Kommentar</span>
+                      <span>{t("builder.row.comment")}</span>
                       <textarea
-                        value={track.comment || track.note || ""}
+                        value={track.comment || localizeNote(track.note, t)}
                         rows={2}
-                        placeholder="Cue, Energy, Vocal rein, Floor-Notiz…"
+                        placeholder={t("builder.row.commentPlaceholder")}
                         onChange={(e) =>
                           patchTrack(track.id, {
                             comment: e.target.value,
@@ -2270,17 +2404,17 @@ export function SetBuilder() {
                         onChange={(e) =>
                           patchTrack(track.id, { bpm: e.target.value })
                         }
-                        placeholder="BPM"
-                        aria-label={`BPM für ${track.name}`}
+                        placeholder={t("builder.row.bpmPlaceholder")}
+                        aria-label={t("builder.row.bpmAria", { name: track.name })}
                       />
                       <select
                         value={track.keyCamelot}
                         onChange={(e) =>
                           patchTrack(track.id, { keyCamelot: e.target.value })
                         }
-                        aria-label={`Key für ${track.name}`}
+                        aria-label={t("builder.row.keyAria", { name: track.name })}
                       >
-                        <option value="">Key</option>
+                        <option value="">{t("builder.row.keyOption")}</option>
                         {CAMELOT_CODES.map((code) => (
                           <option key={code} value={code}>
                             {code}
@@ -2294,12 +2428,12 @@ export function SetBuilder() {
                             energyLevel: e.target.value ? Number(e.target.value) : undefined,
                           })
                         }
-                        aria-label={`Energy Level für ${track.name}`}
+                        aria-label={t("builder.row.energyAria", { name: track.name })}
                       >
-                        <option value="">Energie</option>
+                        <option value="">{t("builder.row.energyOption")}</option>
                         {Array.from({ length: 10 }, (_, i) => i + 1).map((level) => (
                           <option key={level} value={level}>
-                            Energie {level}
+                            {t("builder.row.energy", { level })}
                           </option>
                         ))}
                       </select>
@@ -2310,11 +2444,11 @@ export function SetBuilder() {
                             transition: e.target.value as TransitionVerb,
                           })
                         }
-                        aria-label={`Übergang für ${track.name}`}
+                        aria-label={t("builder.row.transitionAria", { name: track.name })}
                       >
                         {TRANSITIONS.map((item) => (
                           <option key={item.id} value={item.id}>
-                            {item.label}
+                            {transitionLabel(t, item.id)}
                           </option>
                         ))}
                       </select>
@@ -2343,17 +2477,19 @@ export function SetBuilder() {
             onReplace={replaceTrack}
             onRemove={removeTrack}
             library={libraryRows}
-            onSetPhase={(id, phase) => patchTrack(id, { phase, why: "Manuell gesetzt" })}
+            onSetPhase={(id, phase) =>
+              patchTrack(id, { phase, why: t("analysis.why.manual") })
+            }
             onFillPlanB={fillPlanB}
             onOpenLibrary={openLibrary}
             onAddAlternative={(row, phase) =>
-              addLibraryTrack(libraryTrackToSetTrack(row, phase, "safety"))
+              addLibraryTrack(libraryTrackToSetTrack(row, phase, "safety", t))
             }
             onMoveRole={(id, role) => {
               const moving = draft.tracks.find((item) => item.id === id);
               patchTrack(id, {
                 role,
-                why: "Manuell gesetzt",
+                why: t("analysis.why.manual"),
                 // Landing in Alternativen: keep the phase if the energy fits, else take the best one.
                 ...(role === "safety" && moving
                   ? { phase: bestPhaseFor(moving, draft.tracks.filter((item) => item.id !== id)) }
@@ -2382,29 +2518,30 @@ export function SetBuilder() {
 
           {crateView === "keys" ? (
             <div className="crate-view">
-      <section className="curve" aria-label="Energy curve">
+      <section className="curve" aria-label={t("builder.curve.aria")}>
         <div className="curve-head">
-          <h2>Phasen im Slot</h2>
+          <h2>{t("builder.curve.title")}</h2>
           <p>
-            {formatDuration(filledMs)} / {draft.durationMinutes}:00
-            {filledMs > targetMs ? " · über dem Brief" : ""} ·{" "}
-            {mainTracks.length} Performance ·{" "}
-            {draft.tracks.filter((track) => track.role === "safety").length}{" "}
-            Alternativen
+            {t(
+              filledMs > targetMs ? "builder.curve.summaryOver" : "builder.curve.summary",
+              {
+                duration: formatDuration(filledMs),
+                minutes: draft.durationMinutes,
+                performance: mainTracks.length,
+                safety: draft.tracks.filter((track) => track.role === "safety").length,
+              },
+            )}
           </p>
         </div>
         <details className="explain-fold nested principles">
           <summary>
-            <span>Dramaturgie-Prinzipien</span>
+            <span>{t("builder.curve.principles")}</span>
             <em className="fold-toggle" />
           </summary>
           <div className="explain-body">
-            <p>
-              Diese Prinzipien bestimmen, wie SETFORM den Bogen legt und worauf
-              du in der Setliste achten solltest.
-            </p>
+            <p>{t("builder.curve.principlesIntro")}</p>
             <ul className="explain-steps">
-              {PREP_PRINCIPLES.map((item) => (
+              {prepPrinciplesFor(t).map((item) => (
                 <li key={item.title}>
                   <strong>{item.title}</strong>
                   <span>{item.body}</span>
@@ -2420,7 +2557,12 @@ export function SetBuilder() {
             const ratio = target > 0 ? actual / target : 0;
             const minutes = Math.round(target / 60000);
             const active = activePhase === phase.id;
-            const label = `${phase.label}: ${formatDuration(actual)} von etwa ${minutes} min`;
+            const label = t("builder.curve.phaseLabel", {
+              phase: phaseLabel(t, phase.id),
+              actual: formatDuration(actual),
+              minutes,
+            });
+            const clickHint = t("builder.curve.phaseClick", { label });
             return (
               <div key={phase.id} className="phase-slot">
                 <button
@@ -2429,7 +2571,7 @@ export function SetBuilder() {
                     .filter(Boolean)
                     .join(" ")}
                   title={label}
-                  aria-label={`${label}. Klick legt neue Tracks in diese Phase.`}
+                  aria-label={clickHint}
                   aria-pressed={active}
                   onClick={() => setActivePhase(phase.id)}
                 >
@@ -2441,27 +2583,27 @@ export function SetBuilder() {
                     .filter(Boolean)
                     .join(" ")}
                   aria-pressed={active}
-                  title={`${label}. Klick legt neue Tracks in diese Phase.`}
+                  title={clickHint}
                   onClick={() => setActivePhase(phase.id)}
                 >
-                  <strong>{phase.label}</strong>
-                  <span className="phase-hint">{phase.hint}</span>
+                  <strong>{phaseLabel(t, phase.id)}</strong>
+                  <span className="phase-hint">{phaseHint(t, phase.id)}</span>
                   <em>
-                    {formatDuration(actual)} / ~{minutes} min
+                    {t("builder.curve.phaseTime", {
+                      actual: formatDuration(actual),
+                      minutes,
+                    })}
                   </em>
                 </button>
               </div>
             );
           })}
         </div>
-        <p className="curve-note">
-          Die Breite ist der Anteil am Brief, die Füllung die schon gelegte
-          Spielzeit. Gelb heißt, die Phase liegt über ihrem Fenster.
-        </p>
+        <p className="curve-note">{t("builder.curve.note")}</p>
         {activeGuide ? (
           <p className="guide-line">
             <strong>
-              {phaseWindowLabel(draft.durationMinutes, activePhase)}
+              {phaseWindowLabel(draft.durationMinutes, activePhase, t)}
             </strong>{" "}
             — {activeGuide.focus}
           </p>
@@ -2480,8 +2622,8 @@ export function SetBuilder() {
         onToggle={(event) => setSettingsOpen(event.currentTarget.open)}
       >
         <summary>
-          <span>Verbindungen &amp; Setups</span>
-          <em>{settingsNote}</em>
+          <span>{t("builder.settings.title")}</span>
+          <em>{settingsNoteText}</em>
         </summary>
         {renderSetups()}
       </details>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
+import { useI18n } from "@/lib/i18n/react";
 
 function Tip({
   text,
@@ -145,21 +146,19 @@ type ToolsProps = {
 
 /** "Set bearbeiten": the actions that change the whole set, in the order you use them. */
 export function SetTools({ canMatch, matchingLinks, onMatchLinks, children }: ToolsProps) {
+  const { t } = useI18n();
   return (
-    <div className="set-tools" role="group" aria-label="Set bearbeiten">
-      <span className="set-tools-label">Set bearbeiten</span>
+    <div className="set-tools" role="group" aria-label={t("library.tools.label")}>
+      <span className="set-tools-label">{t("library.tools.label")}</span>
       {children}
-      <Tip
-        disabled={!canMatch}
-        text="Sucht für Tracks ohne Adresse einen Spotify-Treffer und hängt den Link an. Titel und Artist müssen passen."
-      >
+      <Tip disabled={!canMatch} text={t("library.tools.matchTip")}>
         <button
           type="button"
           className="btn ghost"
           onClick={onMatchLinks}
           disabled={!canMatch || matchingLinks}
         >
-          {matchingLinks ? "Suche…" : "Links suchen"}
+          {matchingLinks ? t("library.tools.searching") : t("library.tools.matchLinks")}
         </button>
       </Tip>
     </div>
@@ -184,39 +183,40 @@ export function SetMenus({
   onCopyText,
   onReset,
 }: MenusProps) {
+  const { t } = useI18n();
   return (
     <div className="set-menus">
-      <Menu label={<>Mitnehmen <span aria-hidden="true">▾</span></>} primary disabled={!canExport}>
+      <Menu label={<>{t("library.menu.take")} <span aria-hidden="true">▾</span></>} primary disabled={!canExport}>
         <MenuItem
           title="PDF"
-          hint="Druckansicht mit Brief, Reihenfolge, Key, BPM, Übergang und Alternativen. Im Dialog „Als PDF speichern“ wählen."
+          hint={t("library.menu.pdfHint")}
           disabled={!canExport}
           onClick={onExportPdf}
         />
         <MenuItem
           title="rekordbox"
-          hint="XML zum Import: Performance und Alternativen als zwei Playlists."
+          hint={t("library.menu.rekordboxHint")}
           disabled={!canExport}
           onClick={onExportRekordbox}
         />
         <MenuItem
           title="M3U"
-          hint="Playlist der Performance-Reihenfolge für Player, die M3U lesen."
+          hint={t("library.menu.m3uHint")}
           disabled={!canExport}
           onClick={onExportM3u}
         />
         <MenuItem
-          title="Text kopieren"
-          hint="Set mit Brief, Kommentaren und Prinzipien in die Zwischenablage."
+          title={t("library.menu.copyText")}
+          hint={t("library.menu.copyTextHint")}
           disabled={!canExport}
           onClick={onCopyText}
         />
       </Menu>
       {onReset ? (
-        <Menu label={<span aria-hidden="true">…</span>} ariaLabel="Weitere Aktionen">
+        <Menu label={<span aria-hidden="true">…</span>} ariaLabel={t("library.menu.more")}>
           <MenuItem
-            title="Zurücksetzen"
-            hint="Set leeren und zum leeren Brief zurück. Gespeicherte Setups bleiben."
+            title={t("library.menu.reset")}
+            hint={t("library.menu.resetHint")}
             danger
             onClick={onReset}
           />

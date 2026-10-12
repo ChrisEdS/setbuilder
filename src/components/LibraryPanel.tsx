@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   applyKeyImport,
   applyKeyImportRows,
@@ -14,6 +14,8 @@ import { sidePhrase } from "@/lib/replace-track";
 import { RekordboxStick } from "@/components/RekordboxStick";
 import { libraryTrackToSetTrack, type StickTrack } from "@/lib/rekordbox-stick";
 import { stickFileCount } from "@/lib/stick-audio";
+import { errorText, phaseLabel, roleLabel } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/react";
 import {
   PHASES,
   TRACK_ROLES,
@@ -54,6 +56,14 @@ Floating Points,Ratio - Edit,8A,122
 Kleintierschaukel,Motomia,9A,118
 Crussen,Breakfast in the Hut,Am,120`;
 
+/** Fills `{name}` placeholders of a translated text with elements (code, strong …). */
+function rich(text: string, parts: Record<string, ReactNode>): ReactNode[] {
+  return text.split(/(\{\w+\})/).map((chunk, index) => {
+    const name = /^\{(\w+)\}$/.exec(chunk)?.[1];
+    return name && name in parts ? <Fragment key={index}>{parts[name]}</Fragment> : chunk;
+  });
+}
+
 function toImportRows(rows: LibraryRow[]): KeyImportRow[] {
   return rows.map((row) => ({
     artist: row.artist,
@@ -73,6 +83,7 @@ export function LibraryPanel({
   rows: libraryRows,
   onRows: setLibraryRows,
 }: Props) {
+  const { t } = useI18n();
   const [fitTo, setFitTo] = useState("");
   const [addPhase, setAddPhase] = useState<SetPhaseId>("open");
   const [addRole, setAddRole] = useState<TrackRole>("groove");
@@ -131,7 +142,8 @@ export function LibraryPanel({
               bpm: row.bpm,
               energyLevel: row.energy,
             },
-            "danach",
+            t("analysis.side.after"),
+            t,
           );
           const delta = bpmDelta(ref.bpm, row.bpm);
           const energyJump = energyStep(ref.energyLevel, row.energy) === "jump";
@@ -148,7 +160,7 @@ export function LibraryPanel({
         .map(({ row }) => row);
     }
     return rows.slice(0, 48);
-  }, [libraryRows, query, fitReference]);
+  }, [libraryRows, query, fitReference, t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -168,19 +180,23 @@ export function LibraryPanel({
   function applyText(sourceText: string) {
     const result = applyKeyImport(draft, sourceText);
     if (!result.rows) {
-      onApply(
-        draft,
-        "Kein Key-Import erkannt — rekordbox XML/DB, CSV oder eingefügte Tabelle nutzen.",
-      );
+      onApply(draft, t("library.import.noKeys"));
       return;
     }
     onApply(
       result.draft,
-      `${result.matched}/${result.rows} Keys gematcht` +
-        (result.unmatched ? ` · ${result.unmatched} ohne Treffer` : "") +
-        (result.samples[0]
-          ? ` · z. B. ${result.samples[0].track} → ${result.samples[0].key}`
-          : ""),
+      [
+        t("library.import.matched", { matched: result.matched, rows: result.rows }),
+        result.unmatched ? t("library.import.unmatched", { count: result.unmatched }) : "",
+        result.samples[0]
+          ? t("library.import.sample", {
+              track: result.samples[0].track,
+              key: result.samples[0].key,
+            })
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" · "),
     );
   }
 
@@ -188,7 +204,7 @@ export function LibraryPanel({
     if (!file) return;
     setBusy(true);
     try {
-      const parsed = await parseRekordboxFile(file);
+      const parsed = await parseRekordboxFile(file, t);
       const rows: LibraryRow[] = parsed.rows.map((row) => ({
         artist: row.artist,
         title: row.title,
@@ -201,16 +217,14 @@ export function LibraryPanel({
       const result = applyKeyImportRows(draft, parsed.rows);
       onApply(
         result.draft,
-        `rekordbox ${parsed.source.toUpperCase()}: ${trackCount(parsed.trackCount)} · ${result.matched} aufs Set gematcht` +
-          (parsed.warning ? ` · ${parsed.warning}` : ""),
+        t("library.import.rekordbox", {
+          source: parsed.source.toUpperCase(),
+          tracks: trackCount(parsed.trackCount, t),
+          matched: result.matched,
+        }) + (parsed.warning ? ` · ${parsed.warning}` : ""),
       );
     } catch (error) {
-      onApply(
-        draft,
-        error instanceof Error
-          ? error.message
-          : "rekordbox Import fehlgeschlagen.",
-      );
+      onApply(draft, errorText(error, t, "library.import.rekordboxFailed"));
     } finally {
       setBusy(false);
     }
@@ -219,7 +233,7 @@ export function LibraryPanel({
   async function tryTidalEnrich() {
     const tracks = performanceTracks(draft.tracks).slice(0, 40);
     if (!tracks.length) {
-      setTidalNote("Zuerst ein Set extrahieren.");
+      setTidalNote(t("library.tidal.needSet"));
       return;
     }
     setBusy(true);
@@ -247,9 +261,7 @@ export function LibraryPanel({
 
       const enrichments = data.enrichments ?? [];
       if (!data.available || enrichments.length === 0) {
-        const message =
-          data.message ||
-          "Tidal-Keys nicht verfügbar — Zugangsdaten unter „Verbindungen & Setups“ eintragen oder rekordbox nutzen.";
+        const message = data.message || t("library.tidal.unavailable");
         setTidalNote(message);
         onApply(draft, message);
         return;
@@ -268,11 +280,11 @@ export function LibraryPanel({
         };
       });
       const message =
-        data.message || `Tidal: ${enrichments.length} Keys übernommen`;
+        data.message || t("library.tidal.applied", { count: enrichments.length });
       setTidalNote(message);
       onApply({ ...draft, tracks: nextTracks }, message);
     } catch {
-      const message = "Tidal Enrichment fehlgeschlagen.";
+      const message = t("library.tidal.failed");
       setTidalNote(message);
       onApply(draft, message);
     } finally {
@@ -284,57 +296,58 @@ export function LibraryPanel({
     const result = applyKeyImportRows(draft, toImportRows(libraryRows));
     onApply(
       result.draft,
-      `Key und BPM neu geschrieben: ${result.matched} von ${trackCount(draft.tracks.length)} gefunden.`,
+      t("library.rewrite.done", {
+        matched: result.matched,
+        total: trackCount(draft.tracks.length, t),
+      }),
     );
   }
 
   const statusLabel =
     keyStats.total === 0
-      ? "Noch kein Set — zuerst eine Playlist vom Stick laden"
+      ? t("library.status.noSet")
       : keyStats.share === 0
-        ? "Keys fehlen noch"
+        ? t("library.status.noKeys")
         : keyStats.share < 100
-          ? `${keyStats.keyed} von ${keyStats.total} Tracks mit Key`
-          : "Alle Performance-Tracks haben Keys";
+          ? t("library.status.partial", { keyed: keyStats.keyed, total: keyStats.total })
+          : t("library.status.complete");
 
   const sources: { id: SourceTab; label: string; note: string }[] = [
     {
       id: "rekordbox",
       label: "rekordbox",
-      note: "Der Stick lädt ein fertiges Set. Die Collection legt nur Key und BPM auf die Tracks, die schon da sind.",
+      note: t("library.sources.rekordboxNote"),
     },
     {
       id: "tidal",
       label: "Tidal",
       note: tidalConfigured
-        ? "Tidal schreibt Key und BPM an die Tracks, zuerst über die ISRC."
-        : "Tidal-Zugangsdaten fehlen. Unter „Verbindungen & Setups“ eintragen.",
+        ? t("library.sources.tidalNote")
+        : t("library.sources.tidalMissingNote"),
     },
     {
       id: "csv",
       label: "CSV",
-      note: "Tabelle einfügen, zum Beispiel aus Mixed In Key oder Serato. Camelot, Open Key oder Am/C.",
+      note: t("library.sources.csvNote"),
     },
   ];
   const sourceNote = sources.find((item) => item.id === source)?.note ?? "";
 
   return (
-    <section className="library-panel" aria-label="Set laden und Keys">
+    <section className="library-panel" aria-label={t("library.panel.aria")}>
       <div className="panel-head library-head">
         <div>
-          <h2>Set laden &amp; Keys</h2>
+          <h2>{t("library.panel.title")}</h2>
           <p className="section-note">
-            Erster Schritt: ein fertiges Set vom Rekordbox-Stick laden, mit Key,
-            BPM und Dateipfad. Danach Keys und BPM aus Rekordbox, Tidal oder CSV
-            an die Tracks legen.
+            {t("library.panel.intro")}
           </p>
-          <p className="head-meta" aria-label="Key-Abdeckung">
+          <p className="head-meta" aria-label={t("library.coverage.aria")}>
             {statusLabel}
           </p>
         </div>
       </div>
 
-      <div className="seg crate-service-seg" role="tablist" aria-label="Key-Quelle">
+      <div className="seg crate-service-seg" role="tablist" aria-label={t("library.sources.aria")}>
         {sources.map((item) => (
           <button
             key={item.id}
@@ -365,18 +378,20 @@ export function LibraryPanel({
           />
           <div className="library-pane-grid stick-collection">
             <div>
-              <h3>rekordbox Collection</h3>
+              <h3>{t("library.collection.title")}</h3>
               <p>
-                Ohne Stick: Collection als XML exportieren. Keys und BPM werden
-                per Artist/Title aufs bestehende Set gematcht. Unverschlüsselte{" "}
-                <code>master.db</code> und CSV gehen auch.
+                {rich(t("library.collection.body"), { db: <code>master.db</code> })}
               </p>
               <p className="library-path">
-                rekordbox → File → <strong>Export Collection in XML…</strong>
+                {rich(t("library.collection.path"), {
+                  item: <strong>Export Collection in XML…</strong>,
+                })}
                 {libraryCount != null ? (
                   <>
                     {" "}
-                    · Index <strong>{libraryCount}</strong>
+                    {rich(t("library.collection.index"), {
+                      count: <strong>{libraryCount}</strong>,
+                    })}
                   </>
                 ) : null}
               </p>
@@ -386,7 +401,7 @@ export function LibraryPanel({
                 "btn file-btn library-file" + (busy ? " is-busy" : "")
               }
             >
-              {busy ? "Lade…" : "Collection laden"}
+              {busy ? t("library.loading") : t("library.collection.load")}
               <input
                 type="file"
                 accept=".xml,.db,.sqlite,.csv,.txt,.tsv"
@@ -405,16 +420,14 @@ export function LibraryPanel({
         {source === "tidal" ? (
           <div className="library-pane-grid">
             <div>
-              <h3>Tidal Catalog</h3>
+              <h3>{t("library.tidal.title")}</h3>
               <p>
-                Tidal liefert Key, Scale und BPM. Matching zuerst per{" "}
-                <strong>ISRC</strong> (über Spotify-Track-Metadaten), sonst
-                Artist/Title — Ergebnis als Camelot + BPM im Set.
+                {rich(t("library.tidal.body"), { isrc: <strong>ISRC</strong> })}
               </p>
               <p className="library-path">
                 {tidalConfigured
-                  ? "Zugangsdaten vorhanden."
-                  : "Zugangsdaten fehlen. Unter „Verbindungen & Setups“ eintragen."}
+                  ? t("library.tidal.configured")
+                  : t("library.tidal.missing")}
               </p>
               {tidalNote ? (
                 <p className="library-inline-status">{tidalNote}</p>
@@ -428,7 +441,7 @@ export function LibraryPanel({
               }
               onClick={() => void tryTidalEnrich()}
             >
-              {busy ? "Lade…" : "Keys von Tidal holen"}
+              {busy ? t("library.loading") : t("library.tidal.fetch")}
             </button>
           </div>
         ) : null}
@@ -437,10 +450,13 @@ export function LibraryPanel({
           <div className="library-csv-pane">
             <div className="library-pane-grid">
               <div>
-                <h3>CSV / Paste</h3>
+                <h3>{t("library.csv.title")}</h3>
                 <p>
-                  Mixed In Key, Serato oder manuell — Camelot (<code>8A</code>),
-                  Open Key oder <code>Am</code>/<code>C</code>.
+                  {rich(t("library.csv.body"), {
+                    camelot: <code>8A</code>,
+                    minor: <code>Am</code>,
+                    major: <code>C</code>,
+                  })}
                 </p>
               </div>
               <div className="library-inline-actions">
@@ -449,7 +465,7 @@ export function LibraryPanel({
                   className="btn ghost"
                   onClick={() => setText(EXAMPLE)}
                 >
-                  Beispiel
+                  {t("library.csv.example")}
                 </button>
                 <button
                   type="button"
@@ -457,7 +473,7 @@ export function LibraryPanel({
                   disabled={!text.trim() || draft.tracks.length === 0}
                   onClick={() => applyText(text)}
                 >
-                  Keys matchen
+                  {t("library.csv.match")}
                 </button>
               </div>
             </div>
@@ -466,7 +482,7 @@ export function LibraryPanel({
               onChange={(event) => setText(event.target.value)}
               rows={5}
               placeholder={"Artist,Title,Key,BPM\n…"}
-              aria-label="Key CSV Paste"
+              aria-label={t("library.csv.aria")}
             />
           </div>
         ) : null}
@@ -476,14 +492,14 @@ export function LibraryPanel({
         <div className="library-browser">
           <div className="library-browser-head">
             <h3>
-              Bibliothek
-              <span>{trackCount(libraryRows.length)}</span>
+              {t("library.browser.title")}
+              <span>{trackCount(libraryRows.length, t)}</span>
             </h3>
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Artist, Titel oder Key…"
-              aria-label="rekordbox suchen"
+              placeholder={t("library.browser.searchPlaceholder")}
+              aria-label={t("library.browser.searchAria")}
             />
             <span className="tip tip-end">
               <button
@@ -492,55 +508,52 @@ export function LibraryPanel({
                 onClick={rematchFromLibrary}
                 disabled={draft.tracks.length === 0}
               >
-                Keys &amp; BPM neu schreiben
+                {t("library.browser.rewrite")}
               </button>
               <span className="tip-bubble" role="tooltip">
-                Schreibt Key und BPM aus dieser Liste in die Tracks deiner Setliste.
-                Gefunden wird über Artist und Titel. Vorhandene Werte werden
-                überschrieben. Tracks ohne Treffer und leere Felder in der Liste
-                lassen den alten Wert stehen.
+                {t("library.browser.rewriteTip")}
               </span>
             </span>
           </div>
           <p className="section-note">
-            Alle Tracks aus der geladenen Rekordbox-Datenbank. Mit ▶ hörst du
-            rein, mit „+ Ins Set“ legst du einen Track in Phase und Rolle
-            deiner Wahl. „Keys &amp; BPM neu schreiben“ gleicht die Setliste mit
-            dieser Liste ab.
+            {t("library.browser.note", {
+              add: t("library.row.add"),
+              rewrite: t("library.browser.rewrite"),
+            })}
           </p>
           {onAddTrack ? (
             <div className="library-add-bar">
-              <span>Beim Hinzufügen</span>
+              <span>{t("library.add.title")}</span>
               <label>
-                Phase
+                {t("library.add.phase")}
                 <select
                   value={addPhase}
                   onChange={(event) => setAddPhase(event.target.value as SetPhaseId)}
                 >
                   {PHASES.map((phase) => (
                     <option key={phase.id} value={phase.id}>
-                      {phase.label}
+                      {phaseLabel(t, phase.id)}
                     </option>
                   ))}
                 </select>
               </label>
               <label>
-                Rolle
+                {t("library.add.role")}
                 <select
                   value={addRole}
                   onChange={(event) => setAddRole(event.target.value as TrackRole)}
                 >
                   {TRACK_ROLES.map((role) => (
                     <option key={role.id} value={role.id}>
-                      {role.label}
+                      {roleLabel(t, role.id)}
                     </option>
                   ))}
                 </select>
               </label>
               <label>
-                Passt zu
+                {t("library.add.fits")}
                 <select value={fitTo} onChange={(event) => setFitTo(event.target.value)}>
-                  <option value="">Alle Tracks</option>
+                  <option value="">{t("library.add.allTracks")}</option>
                   {performanceTracks(draft.tracks).map((track, index) => (
                     <option key={track.id} value={track.id}>
                       {index + 1}. {track.name} ({track.keyCamelot || "—"} · {track.bpm || "—"}
@@ -563,14 +576,14 @@ export function LibraryPanel({
                       type="button"
                       className="lib-play"
                       disabled={!canPlay}
-                      aria-label={`${row.title} abspielen`}
+                      aria-label={t("library.row.playAria", { title: row.title })}
                       title={
                         canPlay
-                          ? "Abspielen"
-                          : "Nur mit gewähltem Stick-Ordner abspielbar"
+                          ? t("library.row.play")
+                          : t("library.row.playDisabled")
                       }
                       onClick={() =>
-                        onPlayTrack?.(libraryTrackToSetTrack(row, addPhase, addRole))
+                        onPlayTrack?.(libraryTrackToSetTrack(row, addPhase, addRole, t))
                       }
                     >
                       ▶
@@ -591,10 +604,10 @@ export function LibraryPanel({
                       className="btn ghost lib-add"
                       disabled={already}
                       onClick={() =>
-                        onAddTrack(libraryTrackToSetTrack(row, addPhase, addRole))
+                        onAddTrack(libraryTrackToSetTrack(row, addPhase, addRole, t))
                       }
                     >
-                      {already ? "Im Set" : "+ Ins Set"}
+                      {already ? t("library.row.inSet") : t("library.row.add")}
                     </button>
                   ) : null}
                 </li>
@@ -604,8 +617,7 @@ export function LibraryPanel({
         </div>
       ) : source === "rekordbox" ? (
         <p className="section-note library-source-note">
-          Noch kein Index. Nach dem Collection-Import kannst du hier suchen und
-          erneut matchen.
+          {t("library.browser.empty")}
         </p>
       ) : null}
     </section>

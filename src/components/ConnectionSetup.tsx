@@ -1,13 +1,31 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { FieldNoticeView, type FieldNotice } from "@/components/FieldNotice";
+import { type MessageKey } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/react";
 
 type Status = {
   spotifyConfigured: boolean;
   tidalConfigured: boolean;
   spotifyRedirectUri: string;
   tidalRedirectUri: string;
+};
+
+/** Fills `{name}` placeholders of a translated text with elements (code, strong …). */
+function rich(text: string, parts: Record<string, ReactNode>): ReactNode[] {
+  return text.split(/(\{\w+\})/).map((chunk, index) => {
+    const name = /^\{(\w+)\}$/.exec(chunk)?.[1];
+    return name && name in parts ? <Fragment key={index}>{parts[name]}</Fragment> : chunk;
+  });
+}
+
+/** A notice kept as message keys (or a server text), so it follows the language switcher. */
+type NoticeState = {
+  textKey?: MessageKey;
+  /** Text that came from the server or the browser; shown as received. */
+  raw?: string;
+  hintKey: MessageKey;
 };
 
 const EMPTY = {
@@ -22,14 +40,15 @@ export function ConnectionSetup({
 }: {
   onStatus?: (note: string) => void;
 }) {
+  const { t } = useI18n();
   const [status, setStatus] = useState<Status | null>(null);
   const [fields, setFields] = useState(EMPTY);
   const onStatusRef = useRef(onStatus);
   useEffect(() => {
     onStatusRef.current = onStatus;
   }, [onStatus]);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<FieldNotice | null>(null);
+  const [message, setMessage] = useState<MessageKey | null>(null);
+  const [error, setError] = useState<NoticeState | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -39,15 +58,12 @@ export function ConnectionSetup({
       .then((data: Status) => {
         if (cancelled) return;
         setStatus(data);
-        onStatusRef.current?.(
-          data.spotifyConfigured ? "Spotify bereit" : "Spotify fehlt",
-        );
       })
       .catch(() => {
         if (!cancelled) {
           setError({
-            text: "Verbindungen konnten nicht gelesen werden.",
-            hint: "Seite neu laden. SETFORM muss auf diesem Rechner laufen, nicht auf einem fremden Server.",
+            textKey: "library.connection.readFailed.text",
+            hintKey: "library.connection.readFailed.hint",
           });
         }
       });
@@ -55,6 +71,15 @@ export function ConnectionSetup({
       cancelled = true;
     };
   }, []);
+
+  // Tell the parent the state in the current language: on load, after saving and after a language switch.
+  const spotifyConfigured = status?.spotifyConfigured;
+  useEffect(() => {
+    if (spotifyConfigured === undefined) return;
+    onStatusRef.current?.(
+      t(spotifyConfigured ? "library.connection.spotifyReady" : "library.connection.spotifyMissing"),
+    );
+  }, [status, spotifyConfigured, t]);
 
   function setField(key: keyof typeof EMPTY, value: string) {
     setFields((current) => ({ ...current, [key]: value }));
@@ -76,13 +101,13 @@ export function ConnectionSetup({
       if (!ok) {
         setMessage(null);
         setError({
-          text: "Kopieren hat nicht geklappt.",
-          hint: "Die Adresse im Feld markieren und selbst kopieren.",
+          textKey: "library.connection.copyFailed.text",
+          hintKey: "library.connection.copyFailed.hint",
         });
         return;
       }
     }
-    setMessage("Adresse kopiert. Die gehört genau so in die Developer-App.");
+    setMessage("library.connection.copied");
     setError(null);
   }
 
@@ -97,42 +122,46 @@ export function ConnectionSetup({
         body: JSON.stringify(fields),
       });
       const data = (await response.json()) as Status & { error?: string };
-      if (!response.ok) throw new Error(data.error || "Speichern fehlgeschlagen.");
+      if (!response.ok) throw new Error(data.error ?? "");
       setStatus(data);
       setFields(EMPTY);
-      onStatusRef.current?.(
-        data.spotifyConfigured ? "Spotify bereit" : "Spotify fehlt",
-      );
-      setMessage(
-        "Gespeichert. „Mit Spotify verbinden“ und „Mit Tidal verbinden“ nutzen jetzt diese Zugangsdaten.",
-      );
+      setMessage("library.connection.saved");
     } catch (err) {
       setError({
-        text: err instanceof Error ? err.message : "Speichern fehlgeschlagen.",
-        hint: "Client ID und Secret ohne Leerzeile einfügen und erneut speichern.",
+        raw: err instanceof Error && err.message ? err.message : undefined,
+        textKey: "library.connection.saveFailed.text",
+        hintKey: "library.connection.saveFailed.hint",
       });
     } finally {
       setSaving(false);
     }
   }
 
+  const notice: FieldNotice | null = error
+    ? {
+        text: error.raw ?? (error.textKey ? t(error.textKey) : ""),
+        hint: t(error.hintKey),
+      }
+    : null;
+
   return (
     <div className="setups-connect">
-      <p className="setups-connect-note">
-        Zugangsdaten werden nur auf diesem Rechner gespeichert. Beatport
-        braucht keinen Login, Track-Links lassen sich direkt einfügen.
-      </p>
+      <p className="setups-connect-note">{t("library.connection.note")}</p>
 
       <section className="setup-card">
-        <h3>Spotify {status?.spotifyConfigured ? "· bereit" : "· fehlt"}</h3>
+        <h3>
+          {status?.spotifyConfigured
+            ? t("library.connection.spotifyTitleReady")
+            : t("library.connection.spotifyTitleMissing")}
+        </h3>
         <ol className="setup-steps">
           <li>
             <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noreferrer">
-              Developer Dashboard öffnen
+              {t("library.connection.spotifyOpen")}
             </a>
           </li>
-          <li>App anlegen und die Redirect URI exakt eintragen.</li>
-          <li>Client ID und Secret hier einfügen.</li>
+          <li>{t("library.connection.spotifyStep2")}</li>
+          <li>{t("library.connection.spotifyStep3")}</li>
         </ol>
         <div className="setup-field">
           <span>Redirect URI</span>
@@ -143,7 +172,7 @@ export function ConnectionSetup({
               className="btn ghost"
               onClick={() => void copy(status?.spotifyRedirectUri ?? "")}
             >
-              Kopieren
+              {t("common.copy")}
             </button>
           </div>
         </div>
@@ -153,7 +182,7 @@ export function ConnectionSetup({
             <input
               value={fields.SPOTIFY_CLIENT_ID}
               autoComplete="off"
-              placeholder={status?.spotifyConfigured ? "Gespeichert" : "Client ID"}
+              placeholder={status?.spotifyConfigured ? t("library.connection.stored") : "Client ID"}
               onChange={(event) => setField("SPOTIFY_CLIENT_ID", event.target.value)}
             />
           </label>
@@ -163,7 +192,7 @@ export function ConnectionSetup({
               type="password"
               value={fields.SPOTIFY_CLIENT_SECRET}
               autoComplete="off"
-              placeholder={status?.spotifyConfigured ? "Gespeichert" : "Client Secret"}
+              placeholder={status?.spotifyConfigured ? t("library.connection.stored") : "Client Secret"}
               onChange={(event) => setField("SPOTIFY_CLIENT_SECRET", event.target.value)}
             />
           </label>
@@ -171,17 +200,24 @@ export function ConnectionSetup({
       </section>
 
       <section className="setup-card">
-        <h3>Tidal {status?.tidalConfigured ? "· bereit" : "· optional"}</h3>
+        <h3>
+          {status?.tidalConfigured
+            ? t("library.connection.tidalTitleReady")
+            : t("library.connection.tidalTitleOptional")}
+        </h3>
         <ol className="setup-steps">
           <li>
             <a href="https://developer.tidal.com" target="_blank" rel="noreferrer">
-              Tidal Developer öffnen
+              {t("library.connection.tidalOpen")}
             </a>
           </li>
           <li>
-            Scopes <code>user.read</code> und <code>playlists.read</code> einschalten.
+            {rich(t("library.connection.tidalScopes"), {
+              read: <code>user.read</code>,
+              playlists: <code>playlists.read</code>,
+            })}
           </li>
-          <li>Dieselbe Redirect URI eintragen, dann ID und Secret hier einfügen.</li>
+          <li>{t("library.connection.tidalStep3")}</li>
         </ol>
         <div className="setup-field">
           <span>Redirect URI</span>
@@ -192,7 +228,7 @@ export function ConnectionSetup({
               className="btn ghost"
               onClick={() => void copy(status?.tidalRedirectUri ?? "")}
             >
-              Kopieren
+              {t("common.copy")}
             </button>
           </div>
         </div>
@@ -202,7 +238,7 @@ export function ConnectionSetup({
             <input
               value={fields.TIDAL_CLIENT_ID}
               autoComplete="off"
-              placeholder={status?.tidalConfigured ? "Gespeichert" : "Client ID"}
+              placeholder={status?.tidalConfigured ? t("library.connection.stored") : "Client ID"}
               onChange={(event) => setField("TIDAL_CLIENT_ID", event.target.value)}
             />
           </label>
@@ -212,7 +248,7 @@ export function ConnectionSetup({
               type="password"
               value={fields.TIDAL_CLIENT_SECRET}
               autoComplete="off"
-              placeholder={status?.tidalConfigured ? "Gespeichert" : "Client Secret"}
+              placeholder={status?.tidalConfigured ? t("library.connection.stored") : "Client Secret"}
               onChange={(event) => setField("TIDAL_CLIENT_SECRET", event.target.value)}
             />
           </label>
@@ -221,21 +257,28 @@ export function ConnectionSetup({
 
       <div className="setup-connect-save">
         <button type="button" className="btn" disabled={saving} onClick={() => void save()}>
-          {saving ? "Speichere…" : "Zugangsdaten speichern"}
+          {saving ? t("library.connection.saving") : t("library.connection.save")}
         </button>
         {status?.spotifyConfigured ? (
           <a className="button-link" href="/api/auth/login">
-            Mit Spotify verbinden
+            {t("library.connection.connectSpotify")}
           </a>
         ) : null}
         {status?.tidalConfigured ? (
           <a className="button-link tidal-login" href="/api/auth/tidal/login">
-            Mit Tidal verbinden
+            {t("library.connection.connectTidal")}
           </a>
         ) : null}
       </div>
-      {message ? <p className="banner status">{message}</p> : null}
-      <FieldNoticeView notice={error} />
+      {message ? (
+        <p className="banner status">
+          {t(message, {
+            spotify: t("library.connection.connectSpotify"),
+            tidal: t("library.connection.connectTidal"),
+          })}
+        </p>
+      ) : null}
+      <FieldNoticeView notice={notice} />
     </div>
   );
 }

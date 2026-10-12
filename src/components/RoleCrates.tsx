@@ -15,6 +15,14 @@ import {
   phaseAccent,
   roleAccent,
 } from "@/lib/harmonic";
+import {
+  localizeNote,
+  localizeWhy,
+  phaseLabel,
+  roleHint,
+  roleLabel,
+} from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/react";
 import type { LibraryRow } from "@/components/LibraryPanel";
 import { PHASE_ENERGY, PLAN_B_MIN, planBCount, planBState } from "@/lib/energy";
 import {
@@ -172,6 +180,7 @@ export function RoleCrates({
   onFillPlanB,
   onOpenLibrary,
 }: Props) {
+  const { t } = useI18n();
   const prefs = useSyncExternalStore(subscribePrefs, readPrefs, () => DEFAULT_PREFS);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dropRole, setDropRole] = useState<TrackRole | null>(null);
@@ -287,8 +296,8 @@ export function RoleCrates({
   const swapRank = useMemo(() => {
     const target = tracks.find((track) => track.id === focusedTrackId);
     if (!target || target.role === "safety") return null;
-    return new Map(rankReplacements(tracks, target.id).map((option) => [option.id, option.score]));
-  }, [tracks, focusedTrackId]);
+    return new Map(rankReplacements(tracks, target.id, t).map((option) => [option.id, option.score]));
+  }, [tracks, focusedTrackId, t]);
 
   const openCount = TRACK_ROLES.filter((role) => prefs.open[role.id]).length;
   // All columns share one row height so their bottoms always line up.
@@ -300,22 +309,18 @@ export function RoleCrates({
   );
 
   return (
-    <section className="role-crates" aria-label="Crate-Rollen Übersicht">
+    <section className="role-crates" aria-label={t("crates.ariaLabel")}>
       <div className="panel-head crate-toolbar-head">
         <div>
-          {embedded ? null : <h2>Crate-Rollen</h2>}
-          <p className="section-note">
-            Titel in eine andere Rolle ziehen. Die Höhe aller Spalten lässt
-            sich am unteren Rand ändern, „Alternativen groß“ verbreitert die
-            Alternativen.
-          </p>
+          {embedded ? null : <h2>{t("crates.title")}</h2>}
+          <p className="section-note">{t("crates.intro")}</p>
         </div>
         <div className="crate-toolbar">
           <button type="button" className="btn ghost" onClick={expandAll}>
-            Alle auf
+            {t("crates.expandAll")}
           </button>
           <button type="button" className="btn ghost" onClick={collapseAll}>
-            Alle zu
+            {t("crates.collapseAll")}
           </button>
           <button
             type="button"
@@ -325,22 +330,22 @@ export function RoleCrates({
               setOpen("safety", true);
             }}
           >
-            Alternativen groß
+            {t("crates.wideAlternatives")}
           </button>
         </div>
       </div>
 
       <details className="explain-fold nested">
         <summary>
-          <span>Rollen kurz erklärt</span>
+          <span>{t("crates.explain")}</span>
           <em className="fold-toggle" />
         </summary>
         <div className="explain-body">
           <ul className="role-explain">
             {TRACK_ROLES.map((role) => (
               <li key={role.id}>
-                <strong>{role.label}</strong>
-                <span>{role.hint}</span>
+                <strong>{roleLabel(t, role.id)}</strong>
+                <span>{roleHint(t, role.id)}</span>
               </li>
             ))}
           </ul>
@@ -376,6 +381,7 @@ export function RoleCrates({
           const isOpen = prefs.open[role.id];
           const isWide = prefs.wide === role.id;
           const isSafety = role.id === "safety";
+          const roleName = roleLabel(t, role.id);
 
           return (
             <div
@@ -432,8 +438,8 @@ export function RoleCrates({
                   }}
                 >
                   <span className="crate-bar" aria-hidden />
-                  <strong>{role.label}</strong>
-                  <span>{role.hint}</span>
+                  <strong>{roleName}</strong>
+                  <span>{roleHint(t, role.id)}</span>
                   <em>{roleTracks.length}</em>
                 </button>
                 <div className="crate-col-tools">
@@ -443,8 +449,8 @@ export function RoleCrates({
                     aria-expanded={isOpen}
                     aria-label={
                       isOpen
-                        ? `${role.label} zuklappen`
-                        : `${role.label} aufklappen`
+                        ? t("crates.col.collapse", { role: roleName })
+                        : t("crates.col.expand", { role: roleName })
                     }
                     onClick={() => toggleOpen(role.id)}
                   >
@@ -458,10 +464,10 @@ export function RoleCrates({
                     aria-pressed={isWide}
                     aria-label={
                       isWide
-                        ? `${role.label} Breite zurücksetzen`
-                        : `${role.label} verbreitern`
+                        ? t("crates.col.widthReset", { role: roleName })
+                        : t("crates.col.widen", { role: roleName })
                     }
-                    title="Breiter anzeigen"
+                    title={t("crates.col.widenTitle")}
                     onClick={() => setWide(role.id)}
                   >
                     ⤢
@@ -475,10 +481,10 @@ export function RoleCrates({
                   {roleTracks.length === 0 ? (
                     <p className="crate-empty">
                       {dropRole === role.id
-                        ? "Hier ablegen"
+                        ? t("crates.empty.drop")
                         : isSafety
-                          ? "Noch keine Alternativen. Beim Extrahieren landen übrige Tracks hier, oder du setzt Tracks selbst auf die Rolle Alternativen."
-                          : "Noch keine Tracks"}
+                          ? t("crates.empty.safety")
+                          : t("crates.empty.default")}
                     </p>
                   ) : (
                     <ul className="crate-track-list">
@@ -498,7 +504,7 @@ export function RoleCrates({
                             <button
                               type="button"
                               draggable={Boolean(onMoveRole)}
-                              title="In eine andere Rolle ziehen"
+                              title={t("crates.card.dragTitle")}
                               className={[
                                 "crate-card",
                                 focused ? "is-focused" : "",
@@ -559,10 +565,7 @@ export function RoleCrates({
                                       borderColor: "transparent",
                                     }}
                                   >
-                                    {
-                                      PHASES.find((p) => p.id === track.phase)
-                                        ?.label
-                                    }
+                                    {phaseLabel(t, track.phase)}
                                   </span>
                                   {track.durationMs > 0 ? (
                                     <span className="pill">
@@ -590,9 +593,9 @@ export function RoleCrates({
                                   ) : (
                                     <span
                                       className="pill muted"
-                                      title="Key noch setzen"
+                                      title={t("crates.card.keyUnsetTitle")}
                                     >
-                                      Key offen
+                                      {t("crates.card.keyUnset")}
                                     </span>
                                   )}
                                   {track.bpm ? (
@@ -601,15 +604,17 @@ export function RoleCrates({
                                   {track.energyLevel != null ? (
                                     <span
                                       className="pill"
-                                      title={`Energy Level ${track.energyLevel} von 10`}
+                                      title={t("crates.card.energyTitle", {
+                                        level: track.energyLevel,
+                                      })}
                                     >
                                       E{track.energyLevel}
                                     </span>
                                   ) : null}
                                 </div>
                                 {track.why ? (
-                                  <p className="why" title={track.why}>
-                                    {track.why}
+                                  <p className="why" title={localizeWhy(track.why, t)}>
+                                    {localizeWhy(track.why, t)}
                                   </p>
                                 ) : null}
                                 {track.role !== "safety" ? (
@@ -620,12 +625,17 @@ export function RoleCrates({
                                     className="safety-line"
                                     title={track.safetyAlt}
                                   >
-                                    Alt für: {track.safetyAlt}
+                                    {t("crates.card.altFor", {
+                                      name: track.safetyAlt,
+                                    })}
                                   </p>
                                 ) : null}
                                 {isSafety && track.note ? (
-                                  <p className="safety-line" title={track.note}>
-                                    Cue: {track.note}
+                                  <p
+                                    className="safety-line"
+                                    title={localizeNote(track.note, t)}
+                                  >
+                                    Cue: {localizeNote(track.note, t)}
                                   </p>
                                 ) : null}
                                 {track.transition !== "unset" ? (
@@ -655,17 +665,19 @@ export function RoleCrates({
                                 <div className="crate-item-tools">
                                   {onSetPhase ? (
                                     <label>
-                                      <span>Phase</span>
+                                      <span>{t("crates.card.phase")}</span>
                                       <select
                                         value={track.phase}
-                                        aria-label={`Phase für ${track.name}`}
+                                        aria-label={t("crates.card.phaseAria", {
+                                          name: track.name,
+                                        })}
                                         onChange={(event) =>
                                           onSetPhase(track.id, event.target.value as SetPhaseId)
                                         }
                                       >
                                         {PHASES.map((phase) => (
                                           <option key={phase.id} value={phase.id}>
-                                            {phase.label}
+                                            {phaseLabel(t, phase.id)}
                                           </option>
                                         ))}
                                       </select>
@@ -673,17 +685,19 @@ export function RoleCrates({
                                   ) : null}
                                   {onMoveRole ? (
                                     <label>
-                                      <span>Rolle</span>
+                                      <span>{t("crates.card.role")}</span>
                                       <select
                                         value={track.role}
-                                        aria-label={`Rolle für ${track.name}`}
+                                        aria-label={t("crates.card.roleAria", {
+                                          name: track.name,
+                                        })}
                                         onChange={(event) =>
                                           onMoveRole(track.id, event.target.value as TrackRole)
                                         }
                                       >
                                         {TRACK_ROLES.map((item) => (
                                           <option key={item.id} value={item.id}>
-                                            {item.label}
+                                            {roleLabel(t, item.id)}
                                           </option>
                                         ))}
                                       </select>
@@ -696,8 +710,10 @@ export function RoleCrates({
                               <button
                                 type="button"
                                 className="crate-remove"
-                                aria-label={`${track.name} aus dem Set entfernen`}
-                                title="Aus dem Set entfernen"
+                                aria-label={t("crates.card.removeAria", {
+                                  name: track.name,
+                                })}
+                                title={t("crates.card.removeTitle")}
                                 onClick={() => onRemove(track.id)}
                               >
                                 ✕
@@ -713,8 +729,8 @@ export function RoleCrates({
                   <button
                     type="button"
                     className="crate-resize"
-                    aria-label={`${role.label}-Höhe ziehen`}
-                    title="Höhe ziehen"
+                    aria-label={t("crates.col.resizeAria", { role: roleName })}
+                    title={t("crates.col.resizeTitle")}
                     onPointerDown={(event) =>
                       onResizePointerDown(role.id, event)
                     }
@@ -735,9 +751,10 @@ export function RoleCrates({
 }
 
 function SetJoin({ tracks, track }: { tracks: SetTrack[]; track: SetTrack }) {
+  const { t } = useI18n();
   const performance = performanceTracks(tracks);
   const index = performance.findIndex((item) => item.id === track.id);
-  const join = index > 0 ? mixJoin(performance[index - 1], track) : null;
+  const join = index > 0 ? mixJoin(performance[index - 1], track, t) : null;
   if (!join || join.relation === "unknown") return null;
   return <p className={`harm harm-${join.relation}`}>{join.label}</p>;
 }
@@ -755,9 +772,10 @@ function SafetySwap({
   weak?: boolean;
   onReplace: (targetId: string, replacementId: string) => void;
 }) {
+  const { t } = useI18n();
   const target = tracks.find((track) => track.id === targetId);
   if (!target || target.role === "safety") return null;
-  const option = rankReplacements(tracks, targetId).find((item) => item.id === replacementId);
+  const option = rankReplacements(tracks, targetId, t).find((item) => item.id === replacementId);
   if (!option) return null;
   return (
     <div className="safety-swap">
@@ -767,13 +785,11 @@ function SafetySwap({
         className={weak ? "btn ghost" : "btn"}
         onClick={() => onReplace(targetId, replacementId)}
       >
-        {weak ? "Trotzdem einsetzen" : "Statt Fokus einsetzen"}
+        {weak ? t("crates.swap.anyway") : t("crates.swap.instead")}
       </button>
     </div>
   );
 }
-
-const phaseLabel = (id: SetPhaseId) => PHASES.find((phase) => phase.id === id)?.label ?? id;
 
 /** One line under the picker of an Alternative: does it count as Plan B, and if not, why. */
 function SafetyTools({
@@ -785,23 +801,24 @@ function SafetyTools({
   tracks: SetTrack[];
   onSetPhase?: (trackId: string, phase: SetPhaseId) => void;
 }) {
+  const { t } = useI18n();
   const state = planBState(track);
   const band = PHASE_ENERGY[track.phase];
   const better = state === "below" || state === "above" ? bestPhaseFor(track, tracks) : null;
-  const label = phaseLabel(track.phase);
+  const label = phaseLabel(t, track.phase);
   return (
     <div className="crate-item-tools is-safety">
       {onSetPhase ? (
         <label>
-          <span>Ersatz für</span>
+          <span>{t("crates.safety.replacesFor")}</span>
           <select
             value={track.phase}
-            aria-label={`Ersatz für Phase, ${track.name}`}
+            aria-label={t("crates.safety.replacesAria", { name: track.name })}
             onChange={(event) => onSetPhase(track.id, event.target.value as SetPhaseId)}
           >
             {PHASES.map((phase) => (
               <option key={phase.id} value={phase.id}>
-                {phase.label}
+                {phaseLabel(t, phase.id)}
               </option>
             ))}
           </select>
@@ -809,14 +826,19 @@ function SafetyTools({
       ) : null}
       <p className={`crate-planb-note ${state === "fit" ? "ok" : state === "unknown" ? "" : "thin"}`}>
         {state === "fit"
-          ? `✓ Passt zu ${label} (E${track.energyLevel}), zählt als Plan B.`
+          ? t("crates.safety.fit", { phase: label, level: track.energyLevel ?? "" })
           : state === "unknown"
-            ? `Ohne Energie zählt die gewählte Phase: ${label}.`
-            : `⚠ E${track.energyLevel} liegt ${state === "below" ? "unter" : "über"} dem ${label}-Band ${band.min}–${band.max} und zählt nicht.`}
+            ? t("crates.safety.unknown", { phase: label })
+            : t(state === "below" ? "crates.safety.below" : "crates.safety.above", {
+                level: track.energyLevel ?? "",
+                phase: label,
+                min: band.min,
+                max: band.max,
+              })}
       </p>
       {better && better !== track.phase && onSetPhase ? (
         <button type="button" className="btn ghost" onClick={() => onSetPhase(track.id, better)}>
-          Auf {phaseLabel(better)} setzen
+          {t("crates.safety.setPhase", { phase: phaseLabel(t, better) })}
         </button>
       ) : null}
     </div>
@@ -839,6 +861,7 @@ function PlanBStrip({
   onOpenLibrary?: () => void;
   onShow: () => void;
 }) {
+  const { t } = useI18n();
   // null: follow the first thin phase; "closed": the user collapsed the suggestions.
   const [chosen, setChosen] = useState<SetPhaseId | "closed" | null>(null);
   const performance = performanceTracks(tracks);
@@ -853,7 +876,7 @@ function PlanBStrip({
     activeId && hasLibrary && library ? suggestPlanB(library, tracks, activeId, 3) : [];
   if (!phases.length) return null;
   return (
-    <div className="planb-strip" role="group" aria-label="Plan B pro Phase">
+    <div className="planb-strip" role="group" aria-label={t("crates.planB.ariaLabel")}>
       <span className="planb-label">Plan B</span>
       <ul>
         {phases.map((phase) => {
@@ -866,10 +889,10 @@ function PlanBStrip({
                 type="button"
                 className={`planb-chip ${ok ? "ok" : "thin"}${selected ? " selected" : ""}`}
                 aria-pressed={selected}
-                title={ok ? "Gedeckt. Antippen für weitere Vorschläge." : "Lücke. Antippen für Vorschläge."}
+                title={ok ? t("crates.planB.chipCovered") : t("crates.planB.chipGap")}
                 onClick={() => setChosen(selected ? "closed" : phase.id)}
               >
-                <span>{phase.label}</span>
+                <span>{phaseLabel(t, phase.id)}</span>
                 <strong>
                   {Math.min(count, 9)}/{PLAN_B_MIN}
                 </strong>
@@ -884,46 +907,52 @@ function PlanBStrip({
             type="button"
             className="btn"
             disabled={!fill.length}
-            title={fill.length ? "Setzt die besten Vorschläge in alle Lücken." : "Keine passenden Titel gefunden."}
+            title={fill.length ? t("crates.planB.fillTitle") : t("crates.planB.fillNone")}
             onClick={() => onFill(fill)}
           >
-            Lücken füllen{fill.length ? ` (${fill.length})` : ""}
+            {fill.length ? t("crates.planB.fillCount", { count: fill.length }) : t("crates.planB.fill")}
           </button>
         ) : null}
         {thin.length && !hasLibrary && onOpenLibrary ? (
           <button type="button" className="btn" onClick={onOpenLibrary}>
-            Bibliothek laden
+            {t("crates.planB.loadLibrary")}
           </button>
         ) : null}
         <button type="button" className="btn ghost" onClick={onShow}>
-          Zu den Alternativen
+          {t("crates.planB.show")}
         </button>
       </div>
 
       {!thin.length ? (
-        <p className="planb-hint">Jede Phase hat mindestens {PLAN_B_MIN} passende Alternativen.</p>
+        <p className="planb-hint">{t("crates.planB.allCovered", { min: PLAN_B_MIN })}</p>
       ) : null}
 
       {thin.length && !hasLibrary ? (
         <p className="planb-hint">
-          Ohne Bibliothek gibt es keine Vorschläge. Du kannst Titel auch selbst als Alternativen
-          setzen oder in der Bibliothek die Rolle „Alternativen“ wählen.
+          {t("crates.planB.noLibrary")}
         </p>
       ) : null}
 
       {activePhase && hasLibrary ? (
         <div className="planb-suggest">
           <h4>
-            {activePhase.label}
+            {phaseLabel(t, activePhase.id)}
             <span>
               {" "}
-              · {missing > 0 ? `${missing} fehlen` : "gedeckt"}, Energie{" "}
-              {PHASE_ENERGY[activePhase.id].min}–{PHASE_ENERGY[activePhase.id].max}, Key und BPM
-              passend
+              {missing > 0
+                ? t("crates.planB.suggestMissing", {
+                    missing,
+                    min: PHASE_ENERGY[activePhase.id].min,
+                    max: PHASE_ENERGY[activePhase.id].max,
+                  })
+                : t("crates.planB.suggestCovered", {
+                    min: PHASE_ENERGY[activePhase.id].min,
+                    max: PHASE_ENERGY[activePhase.id].max,
+                  })}
             </span>
           </h4>
           {items.length === 0 ? (
-            <p className="planb-hint">Keine passenden Titel in der Bibliothek.</p>
+            <p className="planb-hint">{t("crates.planB.noMatches")}</p>
           ) : (
             <ul>
               {items.map(({ row, keyCamelot, energy }) => (
@@ -933,7 +962,7 @@ function PlanBStrip({
                     <span title={row.artist}>{row.artist}</span>
                   </div>
                   <em>
-                    {keyCamelot} · {row.bpm || "BPM offen"}
+                    {keyCamelot} · {row.bpm || t("analysis.bpm.open")}
                     {energy != null ? ` · E${energy}` : ""}
                   </em>
                   {onAdd ? (
@@ -941,9 +970,12 @@ function PlanBStrip({
                       type="button"
                       className="btn ghost"
                       onClick={() => onAdd(row, activePhase.id)}
-                      aria-label={`${row.title} als Alternative für ${activePhase.label} einsetzen`}
+                      aria-label={t("crates.planB.addAria", {
+                        title: row.title,
+                        phase: phaseLabel(t, activePhase.id),
+                      })}
                     >
-                      + Alternative
+                      {t("crates.planB.add")}
                     </button>
                   ) : null}
                 </li>

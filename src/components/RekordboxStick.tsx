@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState, type ReactNode } from "react";
 import { FieldNoticeView, type FieldNotice } from "@/components/FieldNotice";
 import {
   applyStickSet,
@@ -8,6 +8,8 @@ import {
   type RekordboxStickSet,
   type StickTrack,
 } from "@/lib/rekordbox-stick";
+import { errorText } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n/react";
 import { rememberStickFiles } from "@/lib/stick-audio";
 import { formatDuration, trackCount, type SetDraft } from "@/lib/set";
 
@@ -27,16 +29,28 @@ type Props = {
   ) => void;
 };
 
+/** Fills `{name}` placeholders of a translated text with elements (code, strong …). */
+function rich(text: string, parts: Record<string, ReactNode>): ReactNode[] {
+  return text.split(/(\{\w+\})/).map((chunk, index) => {
+    const name = /^\{(\w+)\}$/.exec(chunk)?.[1];
+    return name && name in parts ? <Fragment key={index}>{parts[name]}</Fragment> : chunk;
+  });
+}
+
+/** What went wrong, kept as data so the notice follows the language switcher. */
+type StickError = { kind: "noSets" } | { kind: "read"; error: unknown };
+
 export function RekordboxStick({
   draft,
   busy,
   onApply,
   onIndexed,
 }: Props) {
+  const { t } = useI18n();
   const [localBusy, setLocalBusy] = useState(false);
   const [label, setLabel] = useState<string | null>(null);
   const [sets, setSets] = useState<RekordboxStickSet[]>([]);
-  const [error, setError] = useState<FieldNotice | null>(null);
+  const [error, setError] = useState<StickError | null>(null);
 
   async function load(list: FileList | null) {
     const files = list ? Array.from(list) : [];
@@ -59,21 +73,12 @@ export function RekordboxStick({
         })),
       );
       if (!stick.sets.length) {
-        setError({
-          text: "Die Datenbank hat Tracks, aber keine Playlist und keine History.",
-          hint: "In rekordbox eine Playlist auf den Stick exportieren oder die History behalten, dann den Ordner erneut wählen.",
-        });
+        setError({ kind: "noSets" });
       }
     } catch (caught) {
       setSets([]);
       setLabel(null);
-      setError({
-        text:
-          caught instanceof Error
-            ? caught.message
-            : "Rekordbox-Stick konnte nicht gelesen werden.",
-        hint: "Den Ordner PIONEER/rekordbox wählen, oder nur die Datei export.pdb.",
-      });
+      setError({ kind: "read", error: caught });
     } finally {
       setLocalBusy(false);
     }
@@ -81,45 +86,59 @@ export function RekordboxStick({
 
   function take(set: RekordboxStickSet) {
     if (!set.tracks.length) return;
-    const next = applyStickSet(draft, set);
+    const next = applyStickSet(draft, set, t);
     const keyed = set.tracks.filter((track) => track.keyCamelot).length;
     const minutes = set.tracks.reduce((sum, track) => sum + track.durationMs, 0);
     onApply(
       next,
-      `${set.kind === "history" ? "History" : "Playlist"} „${set.name}“ · ${trackCount(set.tracks.length)}` +
-        (keyed ? ` · ${keyed} mit Key` : "") +
+      t("library.stick.applied", {
+        kind: kindLabel(set),
+        name: set.name,
+        tracks: trackCount(set.tracks.length, t),
+      }) +
+        (keyed ? ` · ${t("library.stick.withKey", { count: keyed })}` : "") +
         (minutes ? ` · ${formatDuration(minutes)}` : "") +
-        (set.missing ? ` · ${set.missing} ohne Treffer` : ""),
+        (set.missing ? ` · ${t("library.stick.unmatched", { count: set.missing })}` : ""),
     );
   }
 
   const pending = busy || localBusy;
 
+  function kindLabel(set: RekordboxStickSet) {
+    return t(set.kind === "history" ? "library.stick.history" : "library.stick.playlist");
+  }
+
+  const notice: FieldNotice | null = !error
+    ? null
+    : error.kind === "noSets"
+      ? { text: t("library.stick.noSets.text"), hint: t("library.stick.noSets.hint") }
+      : {
+          text: errorText(error.error, t, "library.stick.readFailed.text"),
+          hint: t("library.stick.readFailed.hint"),
+        };
+
   return (
     <div className="stick-import">
       <div className="library-pane-grid">
         <div>
-          <h3>Rekordbox-Stick</h3>
-          <p>
-            Playlists und gespielte History direkt vom Export-Stick. Reihenfolge,
-            Key, BPM und Kommentar bleiben erhalten.
-          </p>
+          <h3>{t("library.stick.title")}</h3>
+          <p>{t("library.stick.intro")}</p>
           <p className="library-path">
-            Im Dialog den ganzen Stick wählen, nicht einen Unterordner. Die
-            Datenbank liegt im Ordner <code>PIONEER</code> oder{" "}
-            <code>.PIONEER</code> (mit Punkt, je nach rekordbox-Version). Der
-            Ordner ist versteckt und wird von selbst gefunden.
+            {rich(t("library.stick.path"), {
+              pioneer: <code>PIONEER</code>,
+              dotPioneer: <code>.PIONEER</code>,
+            })}
             {label ? (
               <>
                 {" "}
-                Gefunden: <strong>{label}</strong>
+                {rich(t("library.stick.found"), { label: <strong>{label}</strong> })}
               </>
             ) : null}
           </p>
         </div>
         <div className="stick-actions">
           <label className={"btn library-file" + (pending ? " is-busy" : "")}>
-            {pending ? "Lade…" : "Stick wählen"}
+            {pending ? t("library.loading") : t("library.stick.choose")}
             <input
               type="file"
               hidden
@@ -149,7 +168,7 @@ export function RekordboxStick({
           </label>
         </div>
       </div>
-      <FieldNoticeView notice={error} />
+      <FieldNoticeView notice={notice} />
       {sets.length ? (
         <ul className="stick-list">
           {sets.map((set) => {
@@ -159,9 +178,9 @@ export function RekordboxStick({
                 <div>
                   <strong>{set.name}</strong>
                   <span>
-                    {set.kind === "history" ? "History" : "Playlist"}
+                    {kindLabel(set)}
                     {set.path !== set.name ? ` · ${set.path}` : ""}
-                    {` · ${trackCount(set.tracks.length)}`}
+                    {` · ${trackCount(set.tracks.length, t)}`}
                     {ms ? ` · ${formatDuration(ms)}` : ""}
                   </span>
                 </div>
@@ -171,7 +190,7 @@ export function RekordboxStick({
                   disabled={pending || set.tracks.length === 0}
                   onClick={() => take(set)}
                 >
-                  Als Set laden
+                  {t("library.stick.loadSet")}
                 </button>
               </li>
             );

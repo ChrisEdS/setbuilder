@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { trackFilePath } from "@/lib/export-booth";
 import { mixJoin } from "@/lib/harmonic";
 import { playerEmbed, type PlayableTrack } from "@/lib/player";
+import { useI18n } from "@/lib/i18n/react";
 import { stickAudioUrl } from "@/lib/stick-audio";
 import { performanceTracks, type SetTrack } from "@/lib/set";
 
@@ -29,6 +30,7 @@ type Props = {
 };
 
 export function PreviewPlayer({ tracks, currentId, onChange, onClose }: Props) {
+  const { t } = useI18n();
   const isClient = useIsClient();
   const track = tracks.find((item) => item.id === currentId) ?? null;
   if (!isClient || !track) return null;
@@ -50,11 +52,12 @@ export function PreviewPlayer({ tracks, currentId, onChange, onClose }: Props) {
     ? mixJoin(
         { keyCamelot: track.keyCamelot || "", bpm: track.bpm || "" },
         { keyCamelot: next.keyCamelot || "", bpm: next.bpm || "" },
+        t,
       )
     : null;
 
   return createPortal(
-    <aside className="preview-player" aria-label="Player">
+    <aside className="preview-player" aria-label={t("crates.player.ariaLabel")}>
       <div className="preview-dock">
         <div className="preview-now">
           <button
@@ -62,7 +65,7 @@ export function PreviewPlayer({ tracks, currentId, onChange, onClose }: Props) {
             className="player-skip"
             disabled={!prev}
             onClick={() => prev && onChange(prev.id)}
-            aria-label="Vorheriger Track"
+            aria-label={t("crates.player.prev")}
           >
             ‹
           </button>
@@ -82,7 +85,7 @@ export function PreviewPlayer({ tracks, currentId, onChange, onClose }: Props) {
             </span>
             {nextJoin ? (
               <em className={`mix-join harm-${nextJoin.relation}`}>
-                danach {nextJoin.label}
+                {t("crates.player.then", { join: nextJoin.label })}
               </em>
             ) : null}
           </div>
@@ -91,7 +94,7 @@ export function PreviewPlayer({ tracks, currentId, onChange, onClose }: Props) {
             className="player-skip"
             disabled={!next}
             onClick={() => next && onChange(next.id)}
-            aria-label="Nächster Track"
+            aria-label={t("crates.player.next")}
           >
             ›
           </button>
@@ -99,7 +102,7 @@ export function PreviewPlayer({ tracks, currentId, onChange, onClose }: Props) {
             type="button"
             className="preview-close"
             onClick={onClose}
-            aria-label="Player schließen"
+            aria-label={t("crates.player.close")}
           >
             ✕
           </button>
@@ -109,7 +112,7 @@ export function PreviewPlayer({ tracks, currentId, onChange, onClose }: Props) {
         ) : embed ? (
           <iframe
             key={embed.src}
-            title={`${embed.label} Player`}
+            title={t("crates.player.iframeTitle", { label: embed.label })}
             src={embed.src}
             width="100%"
             height={embed.height}
@@ -118,13 +121,13 @@ export function PreviewPlayer({ tracks, currentId, onChange, onClose }: Props) {
           />
         ) : (
           <p className="player-fallback">
-            Kein Embed für diesen Eintrag.
-            {track.source === "rekordbox" ? " Stick-Ordner wählen, dann spielt die Datei hier." : ""}
+            {t("crates.player.noEmbed")}
+            {track.source === "rekordbox" ? ` ${t("crates.player.pickStick")}` : ""}
             {track.externalUrl ? (
               <>
                 {" "}
                 <a href={track.externalUrl} target="_blank" rel="noreferrer">
-                  In der Quelle öffnen
+                  {t("crates.player.openSource")}
                 </a>
               </>
             ) : null}
