@@ -1419,9 +1419,6 @@ export function SetBuilder() {
         </summary>
         <LibraryPanel
           draft={draft}
-          onMatchLinks={() => void matchStreamingLinks()}
-          matchingLinks={matchingLinks}
-          linkAlert={localNotice("library")}
           onApply={(next, message) => {
             setDraft(next);
             clearNotice();

@@ -8,7 +8,6 @@ import {
   type KeyImportRow,
 } from "@/lib/key-import";
 import { parseRekordboxFile } from "@/lib/rekordbox";
-import { FieldNoticeView, type FieldNotice } from "@/components/FieldNotice";
 import { RekordboxStick } from "@/components/RekordboxStick";
 import type { SetDraft } from "@/lib/set";
 import { performanceTracks, trackCount } from "@/lib/set";
@@ -16,9 +15,6 @@ import { performanceTracks, trackCount } from "@/lib/set";
 type Props = {
   draft: SetDraft;
   onApply: (draft: SetDraft, message: string) => void;
-  onMatchLinks?: () => void;
-  matchingLinks?: boolean;
-  linkAlert?: FieldNotice | null;
 };
 
 type LibraryRow = {
@@ -48,9 +44,6 @@ function toImportRows(rows: LibraryRow[]): KeyImportRow[] {
 export function LibraryPanel({
   draft,
   onApply,
-  onMatchLinks,
-  matchingLinks,
-  linkAlert,
 }: Props) {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -247,7 +240,7 @@ export function LibraryPanel({
     const result = applyKeyImportRows(draft, toImportRows(libraryRows));
     onApply(
       result.draft,
-      `${result.matched}/${result.rows} aus rekordbox Index gematcht`,
+      `${result.matched}/${result.rows} aus der Stick-Bibliothek zugeordnet`,
     );
   }
 
@@ -326,14 +319,11 @@ export function LibraryPanel({
             draft={draft}
             busy={busy}
             onApply={onApply}
-            onMatchLinks={onMatchLinks}
-            matchingLinks={matchingLinks}
             onIndexed={(rows) => {
               setLibraryRows(rows);
               setLibraryCount(rows.length);
             }}
           />
-          <FieldNoticeView notice={linkAlert ?? null} />
           <div className="library-pane-grid stick-collection">
             <div>
               <h3>rekordbox Collection</h3>
@@ -470,7 +460,7 @@ export function LibraryPanel({
         <div className="library-browser">
           <div className="library-browser-head">
             <h3>
-              Library Index
+              Bibliothek vom Stick
               <span>{trackCount(libraryRows.length)}</span>
             </h3>
             <input
@@ -485,9 +475,16 @@ export function LibraryPanel({
               onClick={rematchFromLibrary}
               disabled={draft.tracks.length === 0}
             >
-              Erneut matchen
+              Keys neu zuordnen
             </button>
           </div>
+          <p className="section-note">
+            Alle Tracks aus der geladenen Rekordbox-Datenbank mit Key und BPM.
+            Nur zum Nachschauen: Das Set ändert sich erst, wenn du „Keys neu
+            zuordnen“ drückst. Das gleicht Artist und Titel der Setliste mit
+            dieser Liste ab und trägt fehlende Keys und BPM ein. Nützlich, wenn
+            du nach dem Laden Tracks ergänzt hast.
+          </p>
           <ul className="library-list">
             {filteredLibrary.map((row, index) => (
               <li key={`${row.artist}-${row.title}-${index}`}>

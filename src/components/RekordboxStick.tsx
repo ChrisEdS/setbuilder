@@ -14,8 +14,6 @@ type Props = {
   draft: SetDraft;
   busy: boolean;
   onApply: (draft: SetDraft, message: string) => void;
-  onMatchLinks?: () => void;
-  matchingLinks?: boolean;
   onIndexed: (
     rows: Array<{ artist: string; title: string; key: string; bpm: string }>,
   ) => void;
@@ -25,8 +23,6 @@ export function RekordboxStick({
   draft,
   busy,
   onApply,
-  onMatchLinks,
-  matchingLinks,
   onIndexed,
 }: Props) {
   const [localBusy, setLocalBusy] = useState(false);
@@ -99,11 +95,14 @@ export function RekordboxStick({
             Key, BPM und Kommentar bleiben erhalten.
           </p>
           <p className="library-path">
-            Stick-Ordner oder <code>PIONEER/rekordbox/export.pdb</code>
+            Im Dialog den ganzen Stick wählen, nicht einen Unterordner. Die
+            Datenbank liegt im Ordner <code>PIONEER</code> oder{" "}
+            <code>.PIONEER</code> (mit Punkt, je nach rekordbox-Version). Der
+            Ordner ist versteckt und wird von selbst gefunden.
             {label ? (
               <>
                 {" "}
-                · <strong>{label}</strong>
+                Gefunden: <strong>{label}</strong>
               </>
             ) : null}
           </p>
@@ -125,16 +124,6 @@ export function RekordboxStick({
               }}
             />
           </label>
-          {onMatchLinks ? (
-            <button
-              type="button"
-              className="btn ghost library-file"
-              disabled={pending || matchingLinks || draft.tracks.length === 0}
-              onClick={onMatchLinks}
-            >
-              {matchingLinks ? "Suche…" : "Links suchen"}
-            </button>
-          ) : null}
           <label className={"btn ghost library-file" + (pending ? " is-busy" : "")}>
             export.pdb
             <input
