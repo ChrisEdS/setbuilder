@@ -26,7 +26,7 @@ import { openSetPdfExport } from "@/lib/export-pdf";
 import { pickStreamingMatch } from "@/lib/match-link";
 import { swapIntoSlot } from "@/lib/replace-track";
 import { CAMELOT_CODES, mixJoin } from "@/lib/harmonic";
-import { distributeRoles, reharmonizeDraft } from "@/lib/extract-set";
+import { distributeRoles, fitToSlot, reharmonizeDraft } from "@/lib/extract-set";
 import { looksLikeMusicLink, sourceLabel } from "@/lib/music-link";
 import {
   ARC_GUIDE,
@@ -1155,6 +1155,18 @@ export function SetBuilder() {
     setStatus("Set innerhalb der Phasen nach Camelot/BPM neu sortiert.");
   }
 
+  function fitSlot() {
+    const result = fitToSlot(draft);
+    if (!result.moved) {
+      setStatus("Das Set passt schon in den Slot.");
+      return;
+    }
+    setDraft(result.draft);
+    setStatus(
+      `Auf Slot gekürzt: ${formatDuration(result.beforeMs)} → ${formatDuration(result.afterMs)} · ${trackCount(result.kept)} bleiben, ${trackCount(result.moved)} liegen unter Alternativen.`,
+    );
+  }
+
   function assignRoles() {
     setDraft(distributeRoles(draft));
     setStatus(
@@ -1970,6 +1982,19 @@ export function SetBuilder() {
                     </button>
                     <span className="tip-bubble" role="tooltip">
                       Ordnet jede Phase nach Camelot-Key und BPM neu. Die Rollen bleiben.
+                    </span>
+                  </span>
+                  <span className="tip">
+                    <button
+                      type="button"
+                      className="btn ghost"
+                      onClick={fitSlot}
+                      disabled={filledMs <= targetMs * 1.05}
+                    >
+                      Auf Slot kürzen
+                    </button>
+                    <span className="tip-bubble" role="tooltip">
+                      Kürzt das Set auf die Dauer im Brief. Pro Phase bleiben gleichmäßig verteilte Tracks, der Rest wandert unter Alternativen. Nichts geht verloren.
                     </span>
                   </span>
                   <span className="tip">

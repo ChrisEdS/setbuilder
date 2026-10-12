@@ -77,13 +77,10 @@ export async function readRekordboxStick(files: File[]): Promise<RekordboxStickR
 
 export function applyStickSet(draft: SetDraft, set: RekordboxStickSet): SetDraft {
   const totalMs = set.tracks.reduce((sum, track) => sum + track.durationMs, 0);
-  const minutes = totalMs
-    ? Math.max(15, Math.round(totalMs / 60000))
-    : draft.durationMinutes;
+  // The slot stays what the brief says; a longer set is trimmed with "Auf Slot kürzen".
   return distributeRoles({
     ...draft,
     title: set.name,
-    durationMinutes: minutes,
     tracks: set.tracks.map((track, index) => toSetTrack(track, set, index, totalMs)),
   });
 }

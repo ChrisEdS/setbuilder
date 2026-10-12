@@ -472,3 +472,69 @@ export function distributeRoles(draft: SetDraft): SetDraft {
     }),
   };
 }
+
+export type SlotFitResult = {
+  draft: SetDraft;
+  kept: number;
+  moved: number;
+  beforeMs: number;
+  afterMs: number;
+};
+
+/**
+ * Trims a set that is longer than the slot. Per phase the tracks are spread
+ * evenly (first track of the opener and last of the closer always stay) until
+ * the phase budget of the brief is filled. Everything else moves to
+ * Alternativen, so nothing is lost and Plan B comes for free.
+ */
+export function fitToSlot(draft: SetDraft): SlotFitResult {
+  const targetMs = draft.durationMinutes * 60_000;
+  const performance = draft.tracks.filter((track) => track.role !== "safety");
+  const beforeMs = performance.reduce((sum, track) => sum + track.durationMs, 0);
+  if (!performance.length || beforeMs <= targetMs * 1.05) {
+    return { draft, kept: performance.length, moved: 0, beforeMs, afterMs: beforeMs };
+  }
+
+  const fallbackMs = 5 * 60_000;
+  const moveIds = new Set<string>();
+  PHASES.forEach((phase, phaseIndex) => {
+    const group = performance.filter((track) => track.phase === phase.id);
+    if (!group.length) return;
+    const groupMs = group.reduce((sum, t) => sum + (t.durationMs || fallbackMs), 0);
+    const budget = targetMs * phase.share;
+    if (groupMs <= budget * 1.15) return;
+    const avg = groupMs / group.length;
+    const count = Math.min(group.length, Math.max(1, Math.round(budget / avg)));
+    const keep = new Set<number>();
+    for (let i = 0; i < count; i++) {
+      keep.add(Math.min(group.length - 1, Math.floor(((i + 0.5) * group.length) / count)));
+    }
+    if (phaseIndex === 0) keep.add(0);
+    if (phaseIndex === PHASES.length - 1) keep.add(group.length - 1);
+    group.forEach((track, index) => {
+      if (!keep.has(index)) moveIds.add(track.id);
+    });
+  });
+
+  const trimmed: SetDraft = {
+    ...draft,
+    tracks: draft.tracks.map((track) =>
+      moveIds.has(track.id)
+        ? {
+            ...track,
+            role: "safety" as TrackRole,
+            why: "Beim Kürzen auf den Slot unter Alternativen gelegt",
+          }
+        : track,
+    ),
+  };
+  const next = distributeRoles(trimmed);
+  const keptTracks = next.tracks.filter((track) => track.role !== "safety");
+  return {
+    draft: next,
+    kept: keptTracks.length,
+    moved: moveIds.size,
+    beforeMs,
+    afterMs: keptTracks.reduce((sum, track) => sum + track.durationMs, 0),
+  };
+}
