@@ -14,6 +14,8 @@ import { HarmonicPath } from "@/components/HarmonicPath";
 import { LibraryPanel } from "@/components/LibraryPanel";
 import { PreviewPlayer } from "@/components/PreviewPlayer";
 import { ReplaceMenu } from "@/components/ReplaceMenu";
+import type { LibraryRow } from "@/components/LibraryPanel";
+import { libraryTrackToSetTrack } from "@/lib/rekordbox-stick";
 import { SetTakeaway } from "@/components/SetTakeaway";
 import { RoleCrates } from "@/components/RoleCrates";
 import {
@@ -242,6 +244,7 @@ export function SetBuilder() {
   const [isExtracting, setIsExtracting] = useState(false);
   const [focusTrackId, setFocusTrackId] = useState<string | null>(null);
   const [libraryPreview, setLibraryPreview] = useState<SetTrack | null>(null);
+  const [libraryRows, setLibraryRows] = useState<LibraryRow[]>([]);
   const [matchingLinks, setMatchingLinks] = useState(false);
   const [replaceFor, setReplaceFor] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
@@ -404,7 +407,7 @@ export function SetBuilder() {
           fail(
             "connect",
             `Spotify-Login fehlgeschlagen: ${message}`,
-            "Redirect URI in der Developer-App prüfen, Zugangsdaten unter Einstellungen speichern, dann erneut verbinden.",
+            "Redirect URI in der Developer-App prüfen, Zugangsdaten unter „Verbindungen & Setups“ speichern, dann erneut verbinden.",
           );
         }
       } catch {
@@ -467,7 +470,7 @@ export function SetBuilder() {
         fail(
           "playlist",
           "Spotify-Login nötig, um Playlist-Tracks zu lesen.",
-          "Unter Einstellungen mit Spotify verbinden, dann hier noch einmal extrahieren.",
+          "Unter „Verbindungen & Setups“ mit Spotify verbinden, dann hier noch einmal extrahieren.",
         );
         return;
       }
@@ -566,7 +569,7 @@ export function SetBuilder() {
         fail(
           "crate",
           err instanceof Error ? err.message : "Suche fehlgeschlagen.",
-          "Verbindung unter Einstellungen prüfen und die Suche wiederholen.",
+          "Verbindung unter „Verbindungen & Setups“ prüfen und die Suche wiederholen.",
         );
       }
     });
@@ -683,7 +686,7 @@ export function SetBuilder() {
           fail(
             "crate",
             err instanceof Error ? err.message : "Tidal-Link fehlgeschlagen.",
-            "Mit Tidal verbinden. Die Redirect URI muss exakt die aus den Einstellungen sein.",
+            "Mit Tidal verbinden. Die Redirect URI muss exakt die aus „Verbindungen & Setups“ sein.",
           );
         }
       });
@@ -731,7 +734,7 @@ export function SetBuilder() {
         fail(
           "crate",
           err instanceof Error ? err.message : "Link konnte nicht geladen werden.",
-          "Unter Einstellungen verbinden und den Link erneut laden. Im Dev Mode nur eigene Playlists.",
+          "Unter „Verbindungen & Setups“ verbinden und den Link erneut laden. Im Dev Mode nur eigene Playlists.",
         );
       }
     });
@@ -976,6 +979,22 @@ export function SetBuilder() {
     setStatus("Alternative eingesetzt. Der ersetzte Track liegt bei den Alternativen.");
   }
 
+  function replaceFromLibrary(targetId: string, row: LibraryRow) {
+    const target = draft.tracks.find((track) => track.id === targetId);
+    if (!target) return;
+    const incoming = libraryTrackToSetTrack(row, target.phase, target.role);
+    setDraft((current) => ({
+      ...current,
+      tracks: swapIntoSlot([...current.tracks, incoming], targetId, incoming.id),
+    }));
+    setReplaceFor(null);
+    setStatus(`${incoming.name} ersetzt ${target.name}. ${target.name} liegt bei den Alternativen.`);
+  }
+
+  function playLibraryRow(row: LibraryRow) {
+    playLibraryTrack(libraryTrackToSetTrack(row, "open", "groove"));
+  }
+
   async function matchStreamingLinks() {
     const pending = draft.tracks.filter(
       (track) => !track.externalUrl && track.name.trim(),
@@ -1042,7 +1061,7 @@ export function SetBuilder() {
       fail(
         "library",
         err instanceof Error ? err.message : "Spotify-Suche fehlgeschlagen.",
-        "Unter Einstellungen mit Spotify verbinden und Links suchen erneut starten.",
+        "Unter „Verbindungen & Setups“ mit Spotify verbinden und Links suchen erneut starten.",
       );
     } finally {
       setMatchingLinks(false);
@@ -1176,9 +1195,9 @@ export function SetBuilder() {
 
   function renderSetups() {
     return (
-      <section className="setups-bar" aria-label="Gespeicherte Einstellungen">
+      <section className="setups-bar" aria-label="Verbindungen und Setups">
         <div className="panel-head">
-          <h2>Einstellungen</h2>
+          <h2>Verbindungen &amp; Setups</h2>
           <p>Brief sichern. Spotify und Tidal hier verbinden.</p>
         </div>
         <div className="setups-grid">
@@ -1318,7 +1337,7 @@ export function SetBuilder() {
         </p>
         {spotifyConnected && tidalConnected ? null : (
           <p className="import-hint">
-            Die Zugangsdaten für Spotify und Tidal stehen unter Einstellungen.
+            Die Zugangsdaten für Spotify und Tidal stehen unter „Verbindungen & Setups“.
           </p>
         )}
       </div>
@@ -1438,18 +1457,6 @@ export function SetBuilder() {
 
       {status ? <p className="banner status">{status}</p> : null}
 
-      <details
-        className="explain-fold section-fold"
-        open={settingsOpen}
-        onToggle={(event) => setSettingsOpen(event.currentTarget.open)}
-      >
-        <summary>
-          <span>Einstellungen</span>
-          <em>{settingsNote}</em>
-        </summary>
-        {renderSetups()}
-      </details>
-
       <details className="explain-fold section-fold" open>
         <summary>
           <span>Set laden &amp; Keys</span>
@@ -1463,107 +1470,14 @@ export function SetBuilder() {
           draft={draft}
           onAddTrack={addLibraryTrack}
           onPlayTrack={playLibraryTrack}
+          rows={libraryRows}
+          onRows={setLibraryRows}
           onApply={(next, message) => {
             setDraft(next);
             clearNotice();
             setStatus(message);
           }}
         />
-      </details>
-
-      <details className="explain-fold section-fold" open>
-        <summary>
-          <span>Energiekurve</span>
-          <em>
-            {formatDuration(filledMs)} / {draft.durationMinutes}:00
-            {filledMs > targetMs ? " · über dem Brief" : ""}
-          </em>
-        </summary>
-      <section className="curve" aria-label="Energy curve">
-        <div className="curve-head">
-          <h2>Energiekurve</h2>
-          <p>
-            {formatDuration(filledMs)} / {draft.durationMinutes}:00
-            {filledMs > targetMs ? " · über dem Brief" : ""} ·{" "}
-            {mainTracks.length} Performance ·{" "}
-            {draft.tracks.filter((track) => track.role === "safety").length}{" "}
-            Alternativen
-          </p>
-        </div>
-        <details className="explain-fold nested principles">
-          <summary>
-            <span>Dramaturgie-Prinzipien</span>
-            <em className="fold-toggle" />
-          </summary>
-          <div className="explain-body">
-            <p>
-              Diese Prinzipien bestimmen, wie SETFORM den Bogen legt und worauf
-              du in der Setliste achten solltest.
-            </p>
-            <ul className="explain-steps">
-              {PREP_PRINCIPLES.map((item) => (
-                <li key={item.title}>
-                  <strong>{item.title}</strong>
-                  <span>{item.body}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </details>
-        <div className="phase-grid">
-          {PHASES.map((phase) => {
-            const actual = phaseDurationMs(draft.tracks, phase.id);
-            const target = targetMs * phase.share;
-            const ratio = target > 0 ? actual / target : 0;
-            const minutes = Math.round(target / 60000);
-            const active = activePhase === phase.id;
-            const label = `${phase.label}: ${formatDuration(actual)} von etwa ${minutes} min`;
-            return (
-              <div key={phase.id} className="phase-slot">
-                <button
-                  type="button"
-                  className={["curve-seg", active ? "active" : "", ratio > 1 ? "over" : ""]
-                    .filter(Boolean)
-                    .join(" ")}
-                  title={label}
-                  aria-label={`${label}. Klick legt neue Tracks in diese Phase.`}
-                  aria-pressed={active}
-                  onClick={() => setActivePhase(phase.id)}
-                >
-                  <i style={{ width: `${Math.min(ratio, 1) * 100}%` }} />
-                </button>
-                <button
-                  type="button"
-                  className={["phase", active ? "active" : "", ratio > 1 ? "over" : ""]
-                    .filter(Boolean)
-                    .join(" ")}
-                  aria-pressed={active}
-                  title={`${label}. Klick legt neue Tracks in diese Phase.`}
-                  onClick={() => setActivePhase(phase.id)}
-                >
-                  <strong>{phase.label}</strong>
-                  <span className="phase-hint">{phase.hint}</span>
-                  <em>
-                    {formatDuration(actual)} / ~{minutes} min
-                  </em>
-                </button>
-              </div>
-            );
-          })}
-        </div>
-        <p className="curve-note">
-          Die Breite ist der Anteil am Brief, die Füllung die schon gelegte
-          Spielzeit. Gelb heißt, die Phase liegt über ihrem Fenster.
-        </p>
-        {activeGuide ? (
-          <p className="guide-line">
-            <strong>
-              {phaseWindowLabel(draft.durationMinutes, activePhase)}
-            </strong>{" "}
-            — {activeGuide.focus}
-          </p>
-        ) : null}
-      </section>
       </details>
 
       <details className="explain-fold section-fold" open>
@@ -1944,7 +1858,7 @@ export function SetBuilder() {
                 [
                   ["list", "Setliste", "Die Reihenfolge des Abends. Hier sortierst du von Hand und schreibst Kommentare."],
                   ["roles", "Rollen", "Anchor, Bridge, Groove und Alternativen als Spalten. Titel zwischen Rollen ziehen."],
-                  ["keys", "Key-Pfad", "Camelot-Keys entlang der Reihenfolge, mit Mix-Score und Clashes."],
+                  ["keys", "Bogen", "Energiekurve nach Phasen und Camelot-Keys entlang der Reihenfolge, mit Mix-Score und Clashes."],
                 ] as const
               ).map(([id, label, hint]) => (
                 <button
@@ -2039,6 +1953,9 @@ export function SetBuilder() {
                   {formatDuration(
                     visibleTimeline.reduce((sum, track) => sum + track.durationMs, 0),
                   )}
+                  {roleFilter === "all"
+                    ? ` / ${draft.durationMinutes}:00 Slot${filledMs > targetMs * 1.05 ? " · zu lang" : ""}`
+                    : ""}
                 </p>
                 <div className="seg" role="group" aria-label="Setliste filtern">
                   <button
@@ -2222,6 +2139,7 @@ export function SetBuilder() {
                         {track.role !== "safety" ? (
                           <button
                             type="button"
+                            title="Ersatz aus deinen Alternativen oder aus der Bibliothek, passend zu Vorgänger und Nachfolger"
                             onClick={() =>
                               setReplaceFor((current) =>
                                 current === track.id ? null : track.id,
@@ -2249,6 +2167,9 @@ export function SetBuilder() {
                         targetId={track.id}
                         onReplace={replaceTrack}
                         onClose={() => setReplaceFor(null)}
+                        library={libraryRows}
+                        onReplaceFromLibrary={replaceFromLibrary}
+                        onPlayRow={playLibraryRow}
                       />
                     ) : null}
                     {track.why ? (
@@ -2355,10 +2276,107 @@ export function SetBuilder() {
 
           {crateView === "keys" ? (
             <div className="crate-view">
+      <section className="curve" aria-label="Energy curve">
+        <div className="curve-head">
+          <h2>Energiekurve</h2>
+          <p>
+            {formatDuration(filledMs)} / {draft.durationMinutes}:00
+            {filledMs > targetMs ? " · über dem Brief" : ""} ·{" "}
+            {mainTracks.length} Performance ·{" "}
+            {draft.tracks.filter((track) => track.role === "safety").length}{" "}
+            Alternativen
+          </p>
+        </div>
+        <details className="explain-fold nested principles">
+          <summary>
+            <span>Dramaturgie-Prinzipien</span>
+            <em className="fold-toggle" />
+          </summary>
+          <div className="explain-body">
+            <p>
+              Diese Prinzipien bestimmen, wie SETFORM den Bogen legt und worauf
+              du in der Setliste achten solltest.
+            </p>
+            <ul className="explain-steps">
+              {PREP_PRINCIPLES.map((item) => (
+                <li key={item.title}>
+                  <strong>{item.title}</strong>
+                  <span>{item.body}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </details>
+        <div className="phase-grid">
+          {PHASES.map((phase) => {
+            const actual = phaseDurationMs(draft.tracks, phase.id);
+            const target = targetMs * phase.share;
+            const ratio = target > 0 ? actual / target : 0;
+            const minutes = Math.round(target / 60000);
+            const active = activePhase === phase.id;
+            const label = `${phase.label}: ${formatDuration(actual)} von etwa ${minutes} min`;
+            return (
+              <div key={phase.id} className="phase-slot">
+                <button
+                  type="button"
+                  className={["curve-seg", active ? "active" : "", ratio > 1 ? "over" : ""]
+                    .filter(Boolean)
+                    .join(" ")}
+                  title={label}
+                  aria-label={`${label}. Klick legt neue Tracks in diese Phase.`}
+                  aria-pressed={active}
+                  onClick={() => setActivePhase(phase.id)}
+                >
+                  <i style={{ width: `${Math.min(ratio, 1) * 100}%` }} />
+                </button>
+                <button
+                  type="button"
+                  className={["phase", active ? "active" : "", ratio > 1 ? "over" : ""]
+                    .filter(Boolean)
+                    .join(" ")}
+                  aria-pressed={active}
+                  title={`${label}. Klick legt neue Tracks in diese Phase.`}
+                  onClick={() => setActivePhase(phase.id)}
+                >
+                  <strong>{phase.label}</strong>
+                  <span className="phase-hint">{phase.hint}</span>
+                  <em>
+                    {formatDuration(actual)} / ~{minutes} min
+                  </em>
+                </button>
+              </div>
+            );
+          })}
+        </div>
+        <p className="curve-note">
+          Die Breite ist der Anteil am Brief, die Füllung die schon gelegte
+          Spielzeit. Gelb heißt, die Phase liegt über ihrem Fenster.
+        </p>
+        {activeGuide ? (
+          <p className="guide-line">
+            <strong>
+              {phaseWindowLabel(draft.durationMinutes, activePhase)}
+            </strong>{" "}
+            — {activeGuide.focus}
+          </p>
+        ) : null}
+      </section>
               <HarmonicPath tracks={draft.tracks} onHarmonize={harmonizeSet} embedded />
             </div>
           ) : null}
         </section>
+      </details>
+
+      <details
+        className="explain-fold section-fold"
+        open={settingsOpen}
+        onToggle={(event) => setSettingsOpen(event.currentTarget.open)}
+      >
+        <summary>
+          <span>Verbindungen &amp; Setups</span>
+          <em>{settingsNote}</em>
+        </summary>
+        {renderSetups()}
       </details>
 
       <PreviewPlayer

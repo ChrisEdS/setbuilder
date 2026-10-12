@@ -8,6 +8,8 @@ import {
   type KeyImportRow,
 } from "@/lib/key-import";
 import { parseRekordboxFile } from "@/lib/rekordbox";
+import { bpmDelta } from "@/lib/harmonic";
+import { sidePhrase } from "@/lib/replace-track";
 import { RekordboxStick } from "@/components/RekordboxStick";
 import { libraryTrackToSetTrack, type StickTrack } from "@/lib/rekordbox-stick";
 import { stickFileCount } from "@/lib/stick-audio";
@@ -29,9 +31,12 @@ type Props = {
   onAddTrack?: (track: SetTrack) => void;
   /** Play a library track in the player dock. */
   onPlayTrack?: (track: SetTrack) => void;
+  /** Library lives in the parent so other views (Ersatz) can use it. */
+  rows: LibraryRow[];
+  onRows: (rows: LibraryRow[]) => void;
 };
 
-type LibraryRow = {
+export type LibraryRow = {
   artist: string;
   title: string;
   key: string;
@@ -61,14 +66,16 @@ export function LibraryPanel({
   onApply,
   onAddTrack,
   onPlayTrack,
+  rows: libraryRows,
+  onRows: setLibraryRows,
 }: Props) {
+  const [fitTo, setFitTo] = useState("");
   const [addPhase, setAddPhase] = useState<SetPhaseId>("open");
   const [addRole, setAddRole] = useState<TrackRole>("groove");
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [libraryCount, setLibraryCount] = useState<number | null>(null);
   const [query, setQuery] = useState("");
-  const [libraryRows, setLibraryRows] = useState<LibraryRow[]>([]);
   const [spotifyNote, setSpotifyNote] = useState<string | null>(null);
   const [tidalNote, setTidalNote] = useState<string | null>(null);
   const [tidalConfigured, setTidalConfigured] = useState<boolean | null>(null);
@@ -82,18 +89,53 @@ export function LibraryPanel({
     return { keyed, total, share };
   }, [draft.tracks]);
 
+  const inSet = useMemo(
+    () =>
+      new Set(
+        draft.tracks.map((track) => `${track.artists.join(",")}|${track.name}`.toLowerCase()),
+      ),
+    [draft.tracks],
+  );
+
+  const fitReference = useMemo(
+    () => draft.tracks.find((track) => track.id === fitTo) ?? null,
+    [draft.tracks, fitTo],
+  );
+
   const filteredLibrary = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return libraryRows.slice(0, 48);
-    return libraryRows
-      .filter(
-        (row) =>
-          row.title.toLowerCase().includes(q) ||
-          row.artist.toLowerCase().includes(q) ||
-          row.key.toLowerCase().includes(q),
-      )
-      .slice(0, 48);
-  }, [libraryRows, query]);
+    let rows = q
+      ? libraryRows.filter(
+          (row) =>
+            row.title.toLowerCase().includes(q) ||
+            row.artist.toLowerCase().includes(q) ||
+            row.key.toLowerCase().includes(q),
+        )
+      : libraryRows;
+    if (fitReference) {
+      // Only tracks that can follow the chosen one: no clash, BPM within 6.
+      const ref = { keyCamelot: fitReference.keyCamelot, bpm: fitReference.bpm };
+      rows = rows
+        .map((row) => {
+          const side = sidePhrase(
+            ref,
+            { keyCamelot: parseKeyValue(row.key) || row.key, bpm: row.bpm },
+            "danach",
+          );
+          const delta = bpmDelta(ref.bpm, row.bpm);
+          return { row, score: side?.score ?? 0, delta };
+        })
+        .filter(({ row, score, delta }) => {
+          if (row.title === fitReference.name && row.artist === fitReference.artists[0]) {
+            return false;
+          }
+          return score >= 0.55 && (delta == null || Math.abs(delta) <= 6);
+        })
+        .sort((a, b) => b.score - a.score)
+        .map(({ row }) => row);
+    }
+    return rows.slice(0, 48);
+  }, [libraryRows, query, fitReference]);
 
   useEffect(() => {
     let cancelled = false;
@@ -193,7 +235,7 @@ export function LibraryPanel({
       if (!data.available || enrichments.length === 0) {
         const message =
           data.message ||
-          "Tidal-Keys nicht verfügbar — Zugangsdaten unter Einstellungen eintragen oder rekordbox nutzen.";
+          "Tidal-Keys nicht verfügbar — Zugangsdaten unter „Verbindungen & Setups“ eintragen oder rekordbox nutzen.";
         setTidalNote(message);
         onApply(draft, message);
         return;
@@ -283,7 +325,7 @@ export function LibraryPanel({
       label: "Tidal",
       note: tidalConfigured
         ? "Tidal schreibt Key und BPM an die Tracks, zuerst über die ISRC."
-        : "Tidal-Zugangsdaten fehlen. Unter Einstellungen eintragen.",
+        : "Tidal-Zugangsdaten fehlen. Unter „Verbindungen & Setups“ eintragen.",
     },
     {
       id: "csv",
@@ -394,7 +436,7 @@ export function LibraryPanel({
               <p className="library-path">
                 {tidalConfigured
                   ? "Zugangsdaten vorhanden."
-                  : "Zugangsdaten fehlen. Unter Einstellungen eintragen."}
+                  : "Zugangsdaten fehlen. Unter „Verbindungen & Setups“ eintragen."}
               </p>
               {tidalNote ? (
                 <p className="library-inline-status">{tidalNote}</p>
@@ -540,10 +582,22 @@ export function LibraryPanel({
                   ))}
                 </select>
               </label>
+              <label>
+                Passt zu
+                <select value={fitTo} onChange={(event) => setFitTo(event.target.value)}>
+                  <option value="">Alle Tracks</option>
+                  {performanceTracks(draft.tracks).map((track, index) => (
+                    <option key={track.id} value={track.id}>
+                      {index + 1}. {track.name} ({track.keyCamelot || "—"} · {track.bpm || "—"})
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
           ) : null}
           <ul className="library-list">
             {filteredLibrary.map((row, index) => {
+              const already = inSet.has(`${row.artist || "Unknown"}|${row.title}`.toLowerCase());
               const canPlay =
                 Boolean(onPlayTrack) && Boolean(row.stick?.filePath) && stickFileCount() > 0;
               return (
@@ -578,11 +632,12 @@ export function LibraryPanel({
                     <button
                       type="button"
                       className="btn ghost lib-add"
+                      disabled={already}
                       onClick={() =>
                         onAddTrack(libraryTrackToSetTrack(row, addPhase, addRole))
                       }
                     >
-                      + Ins Set
+                      {already ? "Im Set" : "+ Ins Set"}
                     </button>
                   ) : null}
                 </li>

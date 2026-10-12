@@ -6021,3 +6021,33 @@ details[open] > summary > .fold-toggle::after {
 }
 
 
+
+
+/* Bogen view: energy curve and key path stacked with the shared 14px rhythm. */
+.crate-view .curve {
+  display: grid !important;
+  gap: 0.875rem;
+  margin: 0 0 0.875rem !important;
+}
+.crate-view .curve > * {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+
+/* Ersatz menu: groups and play/replace actions. */
+.replace-group {
+  margin: 0.6rem 0 0.25rem;
+  color: #c4c4c4;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.replace-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+
