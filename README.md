@@ -1,22 +1,49 @@
 # SETFORM
 
-SETFORM bereitet DJ-Sets vor: Rekordbox-Stick oder Playlist laden, den Bogen nach Slot und Dauer legen, Key und BPM prüfen und das Set als PDF, M3U oder rekordbox-XML mitnehmen. Der Ablauf folgt dem [DJ.Studio Prep-Workflow](https://dj.studio/blog/dj-set-preparation#crafting-a-dj-set-that-feels-right-advanced-tips): Brief → Set bauen (mit Bogen) → Transitions → Export.
+**Version 2.0** · Dramaturgie statt Playlist.
+
+SETFORM bereitet DJ-Sets vor. Du lädst einen Rekordbox-Stick, eine Collection-XML oder eine Playlist, legst den Bogen nach Slot und Dauer, prüfst Energie, Key und BPM und nimmst das Set als PDF, rekordbox-XML, M3U oder Text mit. Der Ablauf folgt dem [DJ.Studio Prep-Workflow](https://dj.studio/blog/dj-set-preparation#crafting-a-dj-set-that-feels-right-advanced-tips): Brief → Set bauen (mit Bogen) → Transitions → Export. Die Logik dahinter folgt den Regeln von Mixed In Key: erst Energie, dann Key, dann BPM.
+
+## So läuft ein Set
+
+1. **Brief:** Titel, Vibe, Venue, Slot-Art und Dauer.
+2. **Set laden & Keys:** Stick (`export.pdb`), Collection-XML, Tidal-Keys oder CSV öffnen. Die Bibliothek bleibt für Ersatz und Plan B griffbereit.
+3. **Set bauen:** Musik per Link, Suche, von Hand oder automatisch aus einer Playlist hinzufügen. Drei Ansichten: **Setliste**, **Rollen**, **Bogen**.
+4. **Set bearbeiten:** „Harmonisch sortieren“, „Auf Slot kürzen“, „Rollen verteilen“, „Links suchen“.
+5. **Mitnehmen:** PDF, rekordbox-XML, M3U oder Text, jeweils mit Alternativen.
 
 ## Features
 
-- **Playlist → Set**: eigene Spotify-Playlist laden und entlang Open → Lift → Rise → Peak → Release extrahieren
-- **Set bauen**: Musik per Link, Suche, von Hand oder automatisch aus einer Playlist hinzufügen; Ansichten Setliste, Rollen und Bogen (Phasen im Slot, Energie-Verlauf, Key-Verlauf); „Auf Slot kürzen“ legt überzählige Tracks unter Alternativen
-- **Rollen**: Anchor / Bridge / Groove / Alternativen mit Begründung, Phase, Key, Transition
-- **Dramaturgie**: Slot-Arten (Warm-up / Support / Peak / Closing), Wellen statt Rampe
-- **Key-Quellen**: rekordbox XML/DB, **Rekordbox-Stick** (`export.pdb`: Playlists und History als Set, Dateien vom Stick abspielbar, Spotify-Links dazu), **Tidal Keys** (Catalog Key/BPM per ISRC), CSV/Paste, Spotify-Features-Status
-- **Export zurück**: M3U und rekordbox-XML der Performance-Reihenfolge, Alternativen als zweite Playlist
-- **Ersatz**: aus den Alternativen oder der ganzen Stick-Bibliothek einsetzen, sortiert nach Key- und BPM-Abstand zu Vorgänger und Nachfolger, mit Vorhören
-- **Bibliothek**: alle Tracks vom Stick durchsuchen, abspielen, nach „Passt zu“ filtern und mit Phase und Rolle ins Set legen
-- **Energie**: Energy Level 1–10 aus Mixed In Key (Kommentar „7A - Energy 6“, Collection-XML, CSV-Spalte `Energy` oder von Hand), Energie-Verlauf gegen das Zielband jeder Phase, Sprünge ab 3 Stufen, Plan-B-Abdeckung (mind. 2 passende Alternativen pro Phase, auch in der Rollen-Ansicht); Energie fließt in Sortierung, Rollen und Ersatz ein
-- **Harmonic Path**: Camelot-Kompatibilität nach Mixed-In-Key-Regeln (gleich, ±1, A↔B sicher; +2 als Energy Boost), Mix-Score aus Key und Energie, „Harmonisch sortieren“
-- **Preview**: Spotify-Embed-Player pro Track
-- **Export**: Menü „Mitnehmen“ mit PDF, rekordbox-XML, M3U und Text, jeweils mit Alternativen; „Zurücksetzen“ liegt im „…“-Menü
-- **Set bearbeiten**: „Harmonisch sortieren“, „Auf Slot kürzen“, „Rollen verteilen“ und „Links suchen“ als eigene Gruppe über der Liste
+**Laden und Quellen**
+- **Rekordbox-Stick:** `export.pdb` lesen, Playlists und History als Set übernehmen, Dateien vom Stick abspielen, Spotify-Links dazu suchen
+- **Weitere Quellen:** rekordbox XML/DB, Tidal Keys (Catalog Key/BPM per ISRC), CSV/Paste, eigene Spotify-Playlist
+- **Bibliothek:** alle Tracks durchsuchen, abspielen, nach „Passt zu“ filtern und mit Phase und Rolle ins Set legen
+
+**Set bauen**
+- **Bogen:** Open → Lift → Rise → Peak → Release, Slot-Arten (Warm-up / Support / Peak / Closing), Wellen statt Rampe
+- **Rollen:** Anchor / Bridge / Groove / Alternativen mit Begründung, Phase, Key und Übergang; per Ziehen oder Auswahl umsortieren
+- **Setliste:** Reihenfolge von Hand ändern, Kommentar, BPM, Key, Energie und Übergang pro Track, Details einklappbar
+- **Ersatz:** aus den Alternativen oder der ganzen Bibliothek einsetzen, sortiert nach Energie, Key und BPM zu Vorgänger und Nachfolger, mit Vorhören
+- **Preview:** Spotify-Embed-Player pro Track, Stick-Dateien direkt
+
+**Logik**
+- **Energie:** Energy Level 1–10 aus Mixed In Key (Kommentar „7A - Energy 6“, Collection-XML, CSV-Spalte `Energy` oder von Hand). Zielband pro Phase, Sprünge ab 3 Stufen werden markiert
+- **Harmonic Path:** Camelot-Regeln (gleich, ±1, A↔B sicher; +2 als Energy Boost), Mix-Score aus Key und Energie, Clashes sichtbar
+- **Auf Slot kürzen:** behält pro Phase die Tracks, deren Energie ins Band passt; der Rest wandert unter Alternativen
+- **Plan B:** mindestens zwei passende Alternativen pro Phase, mit Vorschlägen aus der Bibliothek
+
+**Mitnehmen und Sichern**
+- **Export:** Menü „Mitnehmen“ mit PDF, rekordbox-XML, M3U und Text; Alternativen sind eine zweite Playlist
+- **Verbindungen & Setups:** Spotify und Tidal verbinden, Brief und Set als Setup speichern und wieder laden
+
+## Neu in Version 2
+
+- **Energie statt nur Key und BPM:** Energy Level 1–10 und die Camelot-Regeln nach Mixed In Key bestimmen Sortierung, Rollen, „Passt zu“ und Ersatz. Ein Key-Clash lässt sich nicht durch gleiche Energie und BPM ausgleichen.
+- **Bogen-Ansicht:** Phasen im Slot, Energie-Verlauf gegen das Zielband und Key-Verlauf.
+- **Plan B:** Die Phase, die du bei einer Alternative setzt („Ersatz für“), zählt. Liegt die Energie außerhalb des Phasenbands, steht der Grund auf der Karte und der Titel zählt nicht. Vorschläge kommen pro Phase aus der Bibliothek, „Lücken füllen“ setzt alle auf einmal. Bei einem fokussierten Track stehen die passenden Alternativen oben.
+- **Neue Leiste:** Tabs, „Set bearbeiten“ als Gruppe, Menüs „Mitnehmen“ und „…“ (mit Pfeiltasten und Esc bedienbar).
+- **Setliste:** Details pro Track einklappbar.
+- **Tests:** `npm test` läuft im Repo.
 
 ## Setup
 
@@ -52,17 +79,7 @@ Entwicklung: [http://127.0.0.1:4327](http://127.0.0.1:4327). Die Desktop-App ble
 npm test
 ```
 
-Läuft mit dem eingebauten Node-Testrunner. Die Hooks in [`scripts/test-hooks.mjs`](scripts/test-hooks.mjs) lösen den `@/`-Alias und Imports ohne Endung auf. Getestet sind Energie, Camelot-Regeln, Slot-Kürzen, Ersatz-Ranking, Export und der Stick-Import.
-
-## Version 2
-
-- Energy Level 1–10 und die Camelot-Regeln nach Mixed In Key bestimmen Sortierung, Rollen, „Passt zu“ und Ersatz. Ein Key-Clash lässt sich nicht durch gleiche Energie und BPM ausgleichen.
-- „Auf Slot kürzen“ behält pro Phase die Tracks, deren Energie ins Phasenband passt.
-- Ansicht Bogen mit Phasen im Slot, Energie-Verlauf und Key-Verlauf.
-- Plan B in der Rollen-Ansicht: pro Phase mindestens zwei Alternativen. Die Phase, die du bei einer Alternative setzt („Ersatz für“), zählt. Liegt die Energie außerhalb des Phasenbands, steht der Grund auf der Karte und der Titel zählt nicht. Vorschläge aus der Bibliothek kommen pro Phase, „Lücken füllen“ setzt alle auf einmal. Bei einem fokussierten Track stehen die passenden Alternativen oben.
-- Setliste mit einklappbaren Details pro Track.
-- Neue Leiste: Tabs, „Set bearbeiten“, Menüs „Mitnehmen“ und „…“ (mit Pfeiltasten und Esc bedienbar).
-- Tests laufen mit `npm test`.
+Läuft mit dem eingebauten Node-Testrunner. Die Hooks in [`scripts/test-hooks.mjs`](scripts/test-hooks.mjs) lösen den `@/`-Alias und Imports ohne Endung auf. Getestet sind Energie, Camelot-Regeln, Slot-Kürzen, Ersatz-Ranking, Plan B, Export und der Stick-Import.
 
 ## Desktop (Mac, Windows, Linux)
 
