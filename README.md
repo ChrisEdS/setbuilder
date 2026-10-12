@@ -2,7 +2,7 @@
 
 [Deutsch](README.de.md) · **English**
 
-**Version 2.1.0** · Dramaturgy, not a playlist.
+**Version 2.2.0** · Dramaturgy, not a playlist.
 
 SETFORM prepares DJ sets for rekordbox. You load a playlist or history from the export stick (or a collection XML), lay out the arc by slot and duration, check energy, key and BPM, and take the set with you as rekordbox XML, PDF, M3U or text. The logic follows Mixed In Key: energy first, then key, then BPM. The workflow follows the [DJ.Studio prep workflow](https://dj.studio/blog/dj-set-preparation#crafting-a-dj-set-that-feels-right-advanced-tips): brief → build the set → transitions → export.
 
@@ -85,7 +85,7 @@ rekordbox is the main route. If keys are missing, Tidal (key and BPM from the ca
 
 ## Setup
 
-1. For Spotify and Tidal features: create a Spotify Developer app and enable **Web API**. rekordbox on its own doesn't need this.
+1. Optional, only for Spotify and Tidal features: create a Spotify Developer app and enable **Web API**. rekordbox on its own doesn't need this.
 2. Enter the redirect URI **exactly**:
    `http://127.0.0.1:4317/api/auth/callback`
    For Tidal login, additionally: `http://127.0.0.1:4317/api/auth/tidal/callback`

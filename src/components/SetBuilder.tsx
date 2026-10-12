@@ -347,8 +347,9 @@ export function SetBuilder() {
         kind === "ready" ? "builder.settings.spotifyReady" : "builder.settings.spotifyMissing";
       return note === createTranslate("de")(key) || note === createTranslate("en")(key);
     });
-    setSettingsNote(known ?? { raw: note });
-    if (known === "missing") setSettingsOpen(true);
+    // Missing Spotify credentials are optional (rekordbox works without), so they neither
+    // open the section nor show up as a warning in its header.
+    setSettingsNote(known === "missing" ? null : (known ?? { raw: note }));
   }
 
   const settingsNoteText =
@@ -1478,7 +1479,7 @@ export function SetBuilder() {
         : tidalConnected
           ? t("builder.conn.connected")
           : t("builder.conn.notConnected");
-    return (
+    const body = (
       <div className="crate-connect">
         <div className="import-actions">
           {spotifyConnected ? (
@@ -1525,6 +1526,19 @@ export function SetBuilder() {
         )}
       </div>
     );
+    // Nothing connected: keep the buttons out of the way until someone wants them.
+    if (spotifyConnected === false && tidalConnected === false) {
+      return (
+        <details className="explain-fold nested optional-connect">
+          <summary>
+            <span>{t("builder.conn.optional")}</span>
+            <em className="fold-toggle" />
+          </summary>
+          <div className="explain-body">{body}</div>
+        </details>
+      );
+    }
+    return body;
   }
 
   return (
