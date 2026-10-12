@@ -51,7 +51,7 @@ body {
 body {
   margin: 0;
   color: var(--ink);
-  font-family: var(--font-body), system-ui, sans-serif;
+  font-family: var(--font-body), Manrope, system-ui, sans-serif;
   background:
     radial-gradient(900px 520px at 10% -20%, rgba(30, 215, 96, 0.08), transparent 55%),
     radial-gradient(700px 420px at 100% 0%, rgba(128, 74, 83, 0.18), transparent 50%),
@@ -102,7 +102,7 @@ textarea {
 
 .brand {
   margin: 0 0 0.75rem;
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display), "Space Grotesk", sans-serif;
   font-size: clamp(2.8rem, 7vw, 5.2rem);
   line-height: 0.9;
   letter-spacing: -0.06em;
@@ -112,7 +112,7 @@ textarea {
 .hero h1 {
   margin: 0;
   max-width: 14ch;
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display), "Space Grotesk", sans-serif;
   font-size: clamp(1.6rem, 3vw, 2.4rem);
   line-height: 1.05;
   letter-spacing: -0.03em;
@@ -172,7 +172,7 @@ textarea {
   cursor: pointer;
   list-style: none;
   padding: 0.95rem 1.15rem;
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display), "Space Grotesk", sans-serif;
   font-size: 1.05rem;
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -260,7 +260,7 @@ textarea {
 }
 
 .explain-steps strong {
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display), "Space Grotesk", sans-serif;
   font-size: 0.98rem;
   letter-spacing: -0.02em;
 }
@@ -305,7 +305,7 @@ textarea {
 }
 
 .role-explain strong {
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display), "Space Grotesk", sans-serif;
   font-size: 0.95rem;
 }
 
@@ -326,7 +326,7 @@ textarea {
 
 .import-panel .panel-head h2 {
   margin: 0;
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display), "Space Grotesk", sans-serif;
   font-size: 1.35rem;
   letter-spacing: -0.03em;
 }
@@ -511,7 +511,7 @@ a.button-link.tidal-login {
 .principles h2,
 .roles .panel-head h2 {
   margin: 0 0 0.65rem;
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display), "Space Grotesk", sans-serif;
   font-size: 1.25rem;
   letter-spacing: -0.03em;
 }
@@ -539,7 +539,7 @@ a.button-link.tidal-login {
 .harmonic-path .panel-head h2,
 .key-import .panel-head h2 {
   margin: 0;
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display), "Space Grotesk", sans-serif;
   font-size: 1.35rem;
   letter-spacing: -0.03em;
 }
@@ -722,7 +722,7 @@ a.button-link.tidal-login {
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0.4rem;
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display), "Space Grotesk", sans-serif;
   font-size: 1.05rem;
   letter-spacing: -0.02em;
   font-weight: 600;
@@ -738,7 +738,7 @@ a.button-link.tidal-login {
 }
 
 .crate-col-head em {
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display), "Space Grotesk", sans-serif;
   font-size: 0.95rem;
   color: var(--ink);
   margin-top: 0.3rem;
@@ -847,7 +847,7 @@ a.button-link.tidal-login {
 
 .crate-set-num {
   font-style: normal;
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display), "Space Grotesk", sans-serif;
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -862,7 +862,7 @@ a.button-link.tidal-login {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display), "Space Grotesk", sans-serif;
   font-size: 0.95rem;
   letter-spacing: -0.02em;
   line-height: 1.2;
@@ -960,7 +960,7 @@ a.button-link.tidal-login {
 
 .harm-stats strong {
   display: block;
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display), "Space Grotesk", sans-serif;
   font-size: 1.35rem;
   letter-spacing: -0.03em;
 }
@@ -1036,7 +1036,7 @@ a.button-link.tidal-login {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display), "Space Grotesk", sans-serif;
   font-size: 1.15rem;
 }
 
@@ -1162,7 +1162,7 @@ a.button-link.tidal-login {
 .curve-head h2,
 .panel-head h2 {
   margin: 0;
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display), "Space Grotesk", sans-serif;
   font-size: 1.35rem;
   letter-spacing: -0.03em;
 }
@@ -1198,7 +1198,7 @@ a.button-link.tidal-login {
 
 .phase strong {
   display: block;
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display), "Space Grotesk", sans-serif;
   font-size: 1.05rem;
   letter-spacing: -0.02em;
 }
@@ -1385,7 +1385,7 @@ button {
 .track-main strong,
 .set-title-row strong {
   display: block;
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display), "Space Grotesk", sans-serif;
   letter-spacing: -0.02em;
   line-height: 1.15;
 }
@@ -1402,7 +1402,7 @@ button {
 }
 
 .set-index {
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display), "Space Grotesk", sans-serif;
   font-weight: 700;
   padding-top: 0.15rem;
 }
@@ -1537,7 +1537,7 @@ button {
 .library-panel .panel-head h2,
 .preview-player .preview-kicker {
   margin: 0;
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display), "Space Grotesk", sans-serif;
   letter-spacing: -0.03em;
 }
 
@@ -1558,7 +1558,7 @@ button {
 
 .library-meter strong {
   display: block;
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display), "Space Grotesk", sans-serif;
   font-size: 1.75rem;
   font-weight: 600;
   letter-spacing: -0.05em;
@@ -1634,7 +1634,7 @@ button {
 
 .library-source-pane h3 {
   margin: 0 0 0.4rem;
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display), "Space Grotesk", sans-serif;
   font-size: 1.15rem;
   font-weight: 600;
   letter-spacing: -0.03em;
@@ -1721,7 +1721,7 @@ button {
 }
 
 .library-empty strong {
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display), "Space Grotesk", sans-serif;
   font-size: 0.95rem;
   letter-spacing: -0.02em;
   color: var(--espresso);
@@ -1753,7 +1753,7 @@ button {
 .library-browser-head h3 {
   margin: 0;
   margin-right: auto;
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display), "Space Grotesk", sans-serif;
   font-size: 1rem;
   font-weight: 600;
   display: inline-flex;
@@ -1849,7 +1849,7 @@ button {
 
 .preview-head strong {
   display: block;
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display), "Space Grotesk", sans-serif;
 }
 
 .preview-head span {
@@ -2180,7 +2180,7 @@ button {
 
 .timeline-copy strong {
   display: block;
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display), "Space Grotesk", sans-serif;
   font-size: 1.28rem;
   font-weight: 600;
   letter-spacing: -0.04em;
@@ -4140,7 +4140,7 @@ label.btn {
 
 .manual-index em {
   font-style: normal;
-  font-family: var(--font-display), sans-serif;
+  font-family: var(--font-display), "Space Grotesk", sans-serif;
   font-size: 1.35rem;
   font-weight: 650;
   letter-spacing: -0.04em;
