@@ -287,13 +287,14 @@ export function LibraryPanel({
   const sourceNote = sources.find((item) => item.id === source)?.note ?? "";
 
   return (
-    <section className="library-panel" aria-label="Rekordbox">
+    <section className="library-panel" aria-label="Set laden und Keys">
       <div className="panel-head library-head">
         <div>
-          <h2>Rekordbox</h2>
+          <h2>Set laden &amp; Keys</h2>
           <p className="section-note">
-            Erster Schritt. Stick-Ordner wählen und eine Playlist oder History
-            als Set laden. Key, BPM und Dateipfad kommen mit.
+            Erster Schritt: ein fertiges Set vom Rekordbox-Stick laden, mit Key,
+            BPM und Dateipfad. Danach Keys und BPM aus Rekordbox, Tidal, CSV
+            oder Spotify an die Tracks legen.
           </p>
           <p className="head-meta" aria-label="Key-Abdeckung">
             {statusLabel}

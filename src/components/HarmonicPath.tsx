@@ -11,7 +11,7 @@ import { performanceTracks, type SetTrack } from "@/lib/set";
 type Props = {
   tracks: SetTrack[];
   onHarmonize: () => void;
-  /** Rendered inside the Crate workspace: no own heading. */
+  /** Rendered inside the set workspace: no own heading. */
   embedded?: boolean;
 };
 
@@ -149,7 +149,7 @@ export function HarmonicPath({ tracks, onHarmonize, embedded }: Props) {
           <p>
             Farben folgen dem Camelot Wheel (1–12). <strong>A</strong> = Moll
             (kräftiger), <strong>B</strong> = Dur (heller). Keys im
-            Rekordbox-Bereich importieren oder in der Setliste setzen, dann
+            Bereich „Set laden & Keys“ importieren oder in der Setliste setzen, dann
             „Harmonisch sortieren“.
           </p>
           <div className="camelot-legend" aria-label="Camelot Farben">

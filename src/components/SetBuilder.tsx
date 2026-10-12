@@ -593,7 +593,7 @@ export function SetBuilder() {
         const tracks = data.tracks ?? [];
         setResults(tracks);
         setCrateSource(`Tidal: ${data.label || label || "Playlist"}`);
-        setStatus(`${trackCount(tracks.length)} aus Tidal — einzeln oder alle in die Crate.`);
+        setStatus(`${trackCount(tracks.length)} aus Tidal — einzeln oder alle ins Set.`);
       } catch (err) {
         setResults([]);
         fail(
@@ -1123,7 +1123,7 @@ export function SetBuilder() {
   function resetSet() {
     setDraft(DEFAULT_SET);
     setFocusTrackId(null);
-    setStatus("Brief zurückgesetzt — Crate ist leer.");
+    setStatus("Brief zurückgesetzt — das Set ist leer.");
   }
 
   function harmonizeSet() {
@@ -1410,7 +1410,7 @@ export function SetBuilder() {
 
       <details className="explain-fold section-fold" open>
         <summary>
-          <span>Rekordbox</span>
+          <span>Set laden &amp; Keys</span>
           <em>
             {mainTracks.length
               ? `${mainTracks.filter((track) => track.keyCamelot).length}/${mainTracks.length} Keys`
@@ -1527,16 +1527,16 @@ export function SetBuilder() {
 
       <details className="explain-fold section-fold" open>
         <summary>
-          <span>Crate</span>
+          <span>Set bauen</span>
           <em>
             {mainTracks.length} Performance ·{" "}
             {draft.tracks.length - mainTracks.length} Alternativen
           </em>
         </summary>
-        <section className="crate-workspace" aria-label="Crate">
+        <section className="crate-workspace" aria-label="Set bauen">
           <div className="panel-head">
             <div>
-              <h2>Crate</h2>
+              <h2>Set bauen</h2>
               <p className="section-note">
                 Hier kommt Musik rein und bekommt eine Phase und eine Rolle.
                 Danach ordnest du das Set von Hand oder lässt es nach Key
@@ -1928,30 +1928,30 @@ export function SetBuilder() {
               onExportM3u={exportM3u}
               onExportRekordbox={exportRekordbox}
               onCopyText={() => void copyExport()}
+              leading={
+                <span className="tip">
+                  <button
+                    type="button"
+                    className="btn ghost"
+                    onClick={harmonizeSet}
+                    disabled={mainTracks.length < 2}
+                  >
+                    Harmonisch sortieren
+                  </button>
+                  <span className="tip-bubble" role="tooltip">
+                    Ordnet jede Phase nach Camelot-Key und BPM neu. Die Rollen bleiben.
+                  </span>
+                </span>
+              }
               extra={
-                <>
-                  <span className="tip">
-                    <button
-                      type="button"
-                      className="btn ghost"
-                      onClick={harmonizeSet}
-                      disabled={mainTracks.length < 2}
-                    >
-                      Harmonisch sortieren
-                    </button>
-                    <span className="tip-bubble" role="tooltip">
-                      Ordnet jede Phase nach Camelot-Key und BPM neu. Die Rollen bleiben.
-                    </span>
+                <span className="tip tip-end">
+                  <button type="button" className="btn ghost" onClick={resetSet}>
+                    Zurücksetzen
+                  </button>
+                  <span className="tip-bubble" role="tooltip">
+                    Set leeren und zum leeren Brief zurück. Gespeicherte Setups bleiben.
                   </span>
-                  <span className="tip">
-                    <button type="button" className="btn ghost" onClick={resetSet}>
-                      Zurücksetzen
-                    </button>
-                    <span className="tip-bubble" role="tooltip">
-                      Set leeren und zum leeren Brief zurück. Gespeicherte Setups bleiben.
-                    </span>
-                  </span>
-                </>
+                </span>
               }
             />
           </div>
@@ -1997,7 +1997,7 @@ export function SetBuilder() {
                 <div className="empty">
                   <p>Noch kein Set.</p>
                   <p>
-                    Oben Musik hinzufügen oder im Rekordbox-Bereich eine Playlist vom Stick laden.
+                    Oben Musik hinzufügen oder unter „Set laden & Keys“ eine Playlist vom Stick laden.
                   </p>
                 </div>
               ) : (

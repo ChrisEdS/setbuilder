@@ -11,6 +11,9 @@ type Props = {
   onExportM3u?: () => void;
   onExportRekordbox?: () => void;
   onCopyText?: () => void;
+  /** Shown first, before the link search (e.g. automatic sorting). */
+  leading?: ReactNode;
+  /** Pushed to the far right (e.g. reset). */
   extra?: ReactNode;
 };
 
@@ -42,11 +45,13 @@ export function SetTakeaway({
   onExportM3u,
   onExportRekordbox,
   onCopyText,
+  leading,
   extra,
 }: Props) {
   return (
     <div className="takeaway">
       <div className="takeaway-row">
+        {leading}
         <Tip
           disabled={!canMatch}
           text="Sucht für Tracks ohne Adresse einen Spotify-Treffer und hängt den Link an. Titel und Artist müssen passen."
@@ -117,7 +122,7 @@ export function SetTakeaway({
             </Tip>
           ) : null}
         </div>
-        {extra}
+        {extra ? <div className="takeaway-end">{extra}</div> : null}
       </div>
     </div>
   );

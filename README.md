@@ -1,16 +1,16 @@
 # SETFORM
 
-SETFORM bereitet DJ-Sets vor: Rekordbox-Stick oder Playlist laden, den Bogen nach Slot und Dauer legen, Key und BPM prüfen und das Set als PDF, M3U oder rekordbox-XML mitnehmen. Der Ablauf folgt dem [DJ.Studio Prep-Workflow](https://dj.studio/blog/dj-set-preparation#crafting-a-dj-set-that-feels-right-advanced-tips): Brief → Crate → Energiekurve → Transitions → Export.
+SETFORM bereitet DJ-Sets vor: Rekordbox-Stick oder Playlist laden, den Bogen nach Slot und Dauer legen, Key und BPM prüfen und das Set als PDF, M3U oder rekordbox-XML mitnehmen. Der Ablauf folgt dem [DJ.Studio Prep-Workflow](https://dj.studio/blog/dj-set-preparation#crafting-a-dj-set-that-feels-right-advanced-tips): Brief → Set bauen → Energiekurve → Transitions → Export.
 
 ## Features
 
 - **Playlist → Set**: eigene Spotify-Playlist laden und entlang Open → Lift → Rise → Peak → Release extrahieren
-- **Crate**: Musik per Link, Suche, von Hand oder automatisch aus einer Playlist hinzufügen; Ansichten Setliste, Rollen und Key-Pfad
+- **Set bauen**: Musik per Link, Suche, von Hand oder automatisch aus einer Playlist hinzufügen; Ansichten Setliste, Rollen und Key-Pfad
 - **Rollen**: Anchor / Bridge / Groove / Alternativen mit Begründung, Phase, Key, Transition
 - **Dramaturgie**: Slot-Arten (Warm-up / Support / Peak / Closing), Wellen statt Rampe
 - **Key-Quellen**: rekordbox XML/DB, **Rekordbox-Stick** (`export.pdb`: Playlists und History als Set, Dateien vom Stick abspielbar, Spotify-Links dazu), **Tidal Keys** (Catalog Key/BPM per ISRC), CSV/Paste, Spotify-Features-Status
 - **Export zurück**: M3U und rekordbox-XML der Performance-Reihenfolge, Alternativen als zweite Playlist
-- **Ersatz**: Alternative aus der Crate einsetzen, mit Key- und BPM-Abstand zu Vorgänger und Nachfolger
+- **Ersatz**: Alternative aus dem Set einsetzen, mit Key- und BPM-Abstand zu Vorgänger und Nachfolger
 - **Harmonic Path**: Camelot-Kompatibilität, Mix-Score, „Harmonisch sortieren“
 - **Preview**: Spotify-Embed-Player pro Track
 - **Export**: PDF und Text, inklusive Alternativen

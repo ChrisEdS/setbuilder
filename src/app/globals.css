@@ -5839,3 +5839,48 @@ details[open] > summary > .fold-toggle::after {
   font-size: 0.88rem;
   font-weight: 600;
 }
+
+/* Tooltips open towards the right of their button, the last one towards the left. */
+.tip-bubble {
+  left: 0;
+  right: auto;
+}
+
+.tip.tip-end .tip-bubble {
+  left: auto;
+  right: 0;
+}
+
+.takeaway-end {
+  margin-left: auto;
+  display: inline-flex;
+}
+
+.crate-view-bar .takeaway-row {
+  width: 100%;
+}
+
+/* Crate toolbar: take the full row so "Zurücksetzen" sits at the far right. */
+.crate-view-bar .takeaway {
+  width: 100%;
+  justify-self: stretch;
+}
+.crate-view-bar .takeaway-row {
+  width: 100%;
+}
+.crate-view-bar {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+/* Role crates: consistent 14px rhythm between note, explain fold and columns. */
+.role-crates {
+  display: flex !important;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+.role-crates > .panel-head,
+.role-crates > .explain-fold,
+.role-crates > .crate-columns {
+  margin: 0 !important;
+}
+
