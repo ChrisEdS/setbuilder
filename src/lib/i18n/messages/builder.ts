@@ -331,7 +331,7 @@ const en: Record<keyof typeof de, string> = {
   "builder.defaults.vibe": "Tech house → melodic peak",
   "builder.defaults.venue": "Club, mid-size, good PA",
   "builder.defaults.slot": "Peak time · 60 min",
-  "builder.defaults.audience": "Locals, dancefloor already warm",
+  "builder.defaults.audience": "Locals, floor already warm",
   "builder.defaults.gear": "CDJs / USB",
 
   "builder.hero.title": "Dramaturgy, not a playlist.",

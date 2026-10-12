@@ -310,7 +310,9 @@ export function SetBuilder() {
     readSetupsSnapshot,
     () => EMPTY_SETUPS,
   );
-  const [setupName, setSetupName] = useState(draft.title);
+  // null = follow the brief title (so the default follows the interface language)
+  const [setupNameInput, setSetupName] = useState<string | null>(null);
+  const setupName = setupNameInput ?? draft.title;
   const [selectedSetup, setSelectedSetup] = useState("");
   const [spotifyConnected, setSpotifyConnected] = useState<boolean | null>(null);
   const [tidalConnected, setTidalConnected] = useState<boolean | null>(null);

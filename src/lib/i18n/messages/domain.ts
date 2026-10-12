@@ -59,7 +59,7 @@ const en: Record<keyof typeof de, string> = {
   "domain.phase.peak.label": "Peak",
   "domain.phase.peak.hint": "Alternate impact and groove",
   "domain.phase.release.label": "Release",
-  "domain.phase.release.hint": "Land under control, don't max out",
+  "domain.phase.release.hint": "Land softly, don't max out",
 
   "domain.role.anchor.label": "Anchor",
   "domain.role.anchor.hint": "Crowd connector / signature",
