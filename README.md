@@ -55,7 +55,7 @@ Die aktuellen Pakete sind noch nicht signiert. macOS markiert einen Browser-Down
 Nach dem Entpacken im Terminal:
 
 ```bash
-xattr -dr com.apple.quarantine ~/Downloads/SETFORM.app
+xattr -dr com.apple.quarantine /Applications/SETFORM.app
 ```
 
 Den Pfad an den Ort anpassen, an dem die App liegt. Danach öffnet ein Doppelklick die App. Alternativ: Rechtsklick auf SETFORM → Öffnen, und im Dialog noch einmal Öffnen.

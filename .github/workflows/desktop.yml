@@ -71,7 +71,11 @@ jobs:
           if [ -z "${WIN_CSC_LINK}" ] || [ -z "${WIN_CSC_KEY_PASSWORD}" ]; then
             unset WIN_CSC_LINK WIN_CSC_KEY_PASSWORD
           fi
-          npm run build && npx electron-builder --publish never ${{ matrix.builder-args }}
+          args="${{ matrix.builder-args }}"
+          if [ -z "${CSC_LINK:-}" ] && [[ "$args" == *"--mac"* ]]; then
+            args="$args -c.mac.identity=-"
+          fi
+          npm run build && npx electron-builder --publish never $args
 
       - name: Server modules shipped
         shell: bash
