@@ -2,52 +2,88 @@
 
 **Version 2.0.1** · Dramaturgie statt Playlist.
 
-SETFORM bereitet DJ-Sets vor. Du lädst einen Rekordbox-Stick, eine Collection-XML oder eine Playlist, legst den Bogen nach Slot und Dauer, prüfst Energie, Key und BPM und nimmst das Set als PDF, rekordbox-XML, M3U oder Text mit. Der Ablauf folgt dem [DJ.Studio Prep-Workflow](https://dj.studio/blog/dj-set-preparation#crafting-a-dj-set-that-feels-right-advanced-tips): Brief → Set bauen (mit Bogen) → Transitions → Export. Die Logik dahinter folgt den Regeln von Mixed In Key: erst Energie, dann Key, dann BPM.
+SETFORM bereitet DJ-Sets für rekordbox vor. Du lädst Playlist oder History vom Export-Stick (oder eine Collection-XML), legst den Bogen nach Slot und Dauer, prüfst Energie, Key und BPM und nimmst das Set als rekordbox-XML, PDF, M3U oder Text mit. Die Logik folgt Mixed In Key: erst Energie, dann Key, dann BPM. Der Ablauf folgt dem [DJ.Studio Prep-Workflow](https://dj.studio/blog/dj-set-preparation#crafting-a-dj-set-that-feels-right-advanced-tips): Brief → Set bauen → Transitions → Export.
 
-## So läuft ein Set
+> Die Screenshots zeigen ein Beispielset mit erfundenen Titeln.
+
+## So läuft ein Set mit rekordbox
 
 1. **Brief:** Titel, Vibe, Venue, Slot-Art und Dauer.
-2. **Set laden & Keys:** Stick (`export.pdb`), Collection-XML, Tidal-Keys oder CSV öffnen. Die Bibliothek bleibt für Ersatz und Plan B griffbereit.
-3. **Set bauen:** Musik per Link, Suche, von Hand oder automatisch aus einer Playlist hinzufügen. Drei Ansichten: **Setliste**, **Rollen**, **Bogen**.
-4. **Set bearbeiten:** „Harmonisch sortieren“, „Auf Slot kürzen“, „Rollen verteilen“, „Links suchen“.
-5. **Mitnehmen:** PDF, rekordbox-XML, M3U oder Text, jeweils mit Alternativen.
+2. **Aus rekordbox laden:** Stick (`export.pdb`) oder Collection-XML.
+3. **Set bauen:** Phasen und Rollen prüfen, von Hand ändern oder automatisch verteilen.
+4. **Zurück nach rekordbox:** Export als XML, Performance und Alternativen als zwei Playlists.
 
-## Features
+## 1. Aus rekordbox laden
 
-**Laden und Quellen**
-- **Rekordbox-Stick:** `export.pdb` lesen, Playlists und History als Set übernehmen, Dateien vom Stick abspielen, Spotify-Links dazu suchen
-- **Weitere Quellen:** rekordbox XML/DB, Tidal Keys (Catalog Key/BPM per ISRC), CSV/Paste, eigene Spotify-Playlist
-- **Bibliothek:** alle Tracks durchsuchen, abspielen, nach „Passt zu“ filtern und mit Phase und Rolle ins Set legen
+![Set laden: Rekordbox-Stick und Collection](docs/screenshots/01-rekordbox-laden.png)
 
-**Set bauen**
-- **Bogen:** Open → Lift → Rise → Peak → Release, Slot-Arten (Warm-up / Support / Peak / Closing), Wellen statt Rampe
-- **Rollen:** Anchor / Bridge / Groove / Alternativen mit Begründung, Phase, Key und Übergang; per Ziehen oder Auswahl umsortieren
-- **Setliste:** Reihenfolge von Hand ändern, Kommentar, BPM, Key, Energie und Übergang pro Track, Details einklappbar
-- **Ersatz:** aus den Alternativen oder der ganzen Bibliothek einsetzen, sortiert nach Energie, Key und BPM zu Vorgänger und Nachfolger, mit Vorhören
-- **Preview:** Spotify-Embed-Player pro Track, Stick-Dateien direkt
+**Rekordbox-Stick.** Im Dialog den ganzen Stick wählen, nicht einen Unterordner. SETFORM findet die Datenbank selbst, auch im versteckten Ordner `PIONEER` oder `.PIONEER` (je nach rekordbox-Version). Gelesen werden Playlists und die gespielte History. Reihenfolge, Key, BPM und Kommentar bleiben erhalten, Dateien vom Stick lassen sich direkt vorhören. Wer nur die Datenbank hat, wählt `export.pdb`.
 
-**Logik**
-- **Energie:** Energy Level 1–10 aus Mixed In Key (Kommentar „7A - Energy 6“, Collection-XML, CSV-Spalte `Energy` oder von Hand). Zielband pro Phase, Sprünge ab 3 Stufen werden markiert
-- **Harmonic Path:** Camelot-Regeln (gleich, ±1, A↔B sicher; +2 als Energy Boost), Mix-Score aus Key und Energie, Clashes sichtbar
+**Collection ohne Stick.** In rekordbox unter *File → Export Collection in XML…* exportieren und laden. Key und BPM werden per Artist und Titel auf die Tracks im Set gelegt. Unverschlüsselte `master.db` und CSV gehen ebenfalls. Nach dem Import sucht die **Bibliothek** durch alle Tracks, und „Erneut matchen“ füllt fehlende Keys nach.
+
+**Energie.** Der Energy Level (1–10) kommt aus Mixed In Key. SETFORM liest ihn aus dem rekordbox-Kommentar (zum Beispiel `7A - Energy 6`), aus der Collection-XML, aus einer CSV-Spalte `Energy` oder von Hand.
+
+## 2. Setliste
+
+![Setliste mit Key, BPM, Energie und Übergang](docs/screenshots/02-setliste.png)
+
+Jeder Track zeigt die Quelle (rekordbox), Phase und Rolle. Darunter stehen Key, BPM und Energie, der Übergang zum Vorgänger („Nachbar-Key (±1) · +1 BPM · Energie +1“) und die Begründung („Warum hier“). Die Reihenfolge änderst du per Ziehen oder mit den Pfeilen, „Ersatz“ tauscht einen Titel aus.
+
+**Set bearbeiten**
+- **Harmonisch sortieren:** ordnet innerhalb der Phasen nach Camelot-Key und BPM
 - **Auf Slot kürzen:** behält pro Phase die Tracks, deren Energie ins Band passt; der Rest wandert unter Alternativen
-- **Plan B:** mindestens zwei passende Alternativen pro Phase, mit Vorschlägen aus der Bibliothek
+- **Rollen verteilen:** Anchor auf den stärksten Peak-Tracks und den Schluss, Bridge bei Phasenwechsel, Key-Clash, BPM- oder Energie-Sprung, sonst Groove
+- **Links suchen:** sucht zu den Tracks Spotify-Links zum Vorhören
 
-**Mitnehmen und Sichern**
-- **Export:** Menü „Mitnehmen“ mit PDF, rekordbox-XML, M3U und Text; Alternativen sind eine zweite Playlist
-- **Verbindungen & Setups:** Spotify und Tidal verbinden, Brief und Set als Setup speichern und wieder laden
+## 3. Rollen und Plan B
 
-## Neu in Version 2
+![Rollen: Anchor, Bridge, Groove und Alternativen](docs/screenshots/03-rollen.png)
 
-- **Energie statt nur Key und BPM:** Energy Level 1–10 und die Camelot-Regeln nach Mixed In Key bestimmen Sortierung, Rollen, „Passt zu“ und Ersatz. Ein Key-Clash lässt sich nicht durch gleiche Energie und BPM ausgleichen.
-- **Bogen-Ansicht:** Phasen im Slot, Energie-Verlauf gegen das Zielband und Key-Verlauf.
-- **Plan B:** Die Phase, die du bei einer Alternative setzt („Ersatz für“), zählt. Liegt die Energie außerhalb des Phasenbands, steht der Grund auf der Karte und der Titel zählt nicht. Vorschläge kommen pro Phase aus der Bibliothek, „Lücken füllen“ setzt alle auf einmal. Bei einem fokussierten Track stehen die passenden Alternativen oben.
-- **Neue Leiste:** Tabs, „Set bearbeiten“ als Gruppe, Menüs „Mitnehmen“ und „…“ (mit Pfeiltasten und Esc bedienbar).
-- **Setliste:** Details pro Track einklappbar.
-- **Tests:** `npm test` läuft im Repo.
+Jeder Track hat eine Phase (Open → Lift → Rise → Peak → Release) und eine Rolle:
+
+| Rolle | Aufgabe |
+|---|---|
+| **Anchor** | Crowd-Connector, Signature-Track |
+| **Bridge** | Pivot zwischen Phasen: Key, BPM, Energie |
+| **Groove** | Atem zwischen den Peaks |
+| **Alternativen** | Plan B, wenn der Floor dreht |
+
+Titel lassen sich zwischen den Spalten ziehen. **Plan B** verlangt pro Phase mindestens zwei passende Alternativen. Eine Alternative zählt für die Phase, die du bei „Ersatz für“ wählst, solange ihre Energie ins Band der Phase passt. Sonst steht der Grund auf der Karte. „Lücken füllen“ nimmt Vorschläge aus deiner rekordbox-Bibliothek, die nach Energie, Key und BPM zu den Tracks der Phase passen.
+
+## 4. Bogen
+
+![Bogen: Phasen im Slot und Energie-Verlauf](docs/screenshots/04-bogen.png)
+
+Der Bogen zeigt, wie die Phasen den Slot füllen (grün passt, gelb liegt über dem Fenster) und wie die Energie jedes Tracks zum Zielband der Phase steht. Sprünge ab drei Stufen werden markiert. Ein Key-Clash lässt sich nicht durch gleiche Energie und BPM ausgleichen.
+
+| Phase | Energie-Ziel |
+|---|---|
+| Open | 3–5 |
+| Lift | 5–6 |
+| Rise | 6–8 |
+| Peak | 8–10 |
+| Release | 4–6 |
+
+## 5. Zurück nach rekordbox
+
+![Mitnehmen: rekordbox-XML, PDF, M3U, Text](docs/screenshots/05-export-rekordbox.png)
+
+Das Menü **Mitnehmen** exportiert:
+
+- **rekordbox:** XML zum Import. Performance und Alternativen kommen als zwei Playlists, die Alternativen liegen also auf dem Stick bereit.
+- **PDF:** Druckansicht mit Brief, Reihenfolge, Key, BPM, Übergang und Alternativen
+- **M3U:** Playlist der Performance-Reihenfolge
+- **Text kopieren:** Set mit Brief und Kommentaren
+
+Der Brief und das Set lassen sich unter **Verbindungen & Setups** als Setup speichern, wieder laden oder als JSON sichern.
+
+## Weitere Quellen
+
+rekordbox ist der Hauptweg. Fehlen Keys, ergänzen Tidal (Key und BPM aus dem Catalog per ISRC), CSV oder Paste sie. Titel, die noch nicht in rekordbox liegen, kommen per Spotify- oder Tidal-Link ins Set.
 
 ## Setup
 
-1. Spotify Developer App anlegen und **Web API** aktivieren
+1. Für Spotify- und Tidal-Funktionen: Spotify Developer App anlegen und **Web API** aktivieren. Für rekordbox allein ist das nicht nötig.
 2. Redirect URI **exakt** eintragen:
    `http://127.0.0.1:4317/api/auth/callback`
    Tidal-Login zusätzlich: `http://127.0.0.1:4317/api/auth/tidal/callback`
@@ -85,7 +121,7 @@ Läuft mit dem eingebauten Node-Testrunner. Die Hooks in [`scripts/test-hooks.mj
 
 Die App liegt in [`desktop`](desktop/README.md). `npm start` öffnet das Fenster. `npm run dist` packt sie für das aktuelle System. Ein Git-Tag `v*` baut auf GitHub Mac (Apple Silicon und Intel), Windows und Linux und legt die Dateien ins [Release](https://github.com/ChrisEdS/setform/releases).
 
-Jede Installation braucht eine eigene Spotify- und optional Tidal-Developer-App. Die Keys stehen in `.env.local` oder, in der gepackten App, in den Anwendungsdaten unter `.env`. Vorlage: [`.env.example`](.env.example).
+Jede Installation braucht für Spotify und Tidal eine eigene Developer-App, rekordbox geht ohne. Die Keys stehen in `.env.local` oder, in der gepackten App, in den Anwendungsdaten unter `.env`. Vorlage: [`.env.example`](.env.example).
 
 ### Installer öffnen
 
@@ -106,27 +142,3 @@ Sobald die Apple- und Windows-Zertifikate als GitHub-Secrets liegen, signiert de
 ## Lizenz
 
 MIT, siehe [LICENSE](LICENSE).
-
-## Hosting bei UD Media
-
-Normale Webhosting-Tarife können SETFORM nicht ausliefern. UD Media erlaubt dort kein Node.js, und die App braucht einen dauerhaften Node-Prozess für Login, Playlist-Import und den Player.
-
-Auf einem **Managed-Server** geht es. UD Media richtet Node.js oder rootless Docker (Podman) einmalig ein: [Node.js](https://hilfe.udmedia.de/server/managed-server/kann-ich-nodejs-auf-meinen-managed-server-benutzen/), [Docker](https://hilfe.udmedia.de/server/managed-server/unterstuetzt-der-managed-server-docker/). Anfrage an info@udmedia.de.
-
-Danach:
-
-1. In der Spotify-App die Redirect-URI auf die echte Adresse setzen, zum Beispiel `https://sets.example.de/api/auth/callback`. Dieselbe URI kommt in `.env` als `SPOTIFY_REDIRECT_URI`.
-2. `.env` auf dem Server anlegen (nicht ins Repo): `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_REDIRECT_URI`, optional `TIDAL_CLIENT_ID` und `TIDAL_CLIENT_SECRET`.
-3. Mit Docker: `docker compose up -d --build`. Ohne Docker: Node 22, `npm ci`, `npm run build`, `npm start`. Next hört auf `PORT` (Standard 3000) und auf allen Interfaces.
-4. Den Webserver der Domain auf diesen Port weiterleiten und HTTPS einschalten. Das Verzeichnis `.data` muss erhalten bleiben, dort liegt die Spotify-Sitzung.
-
-### Playlist-Flow
-
-1. In SETFORM auf **Mit Spotify verbinden**
-2. Playlist-URL einfügen (`open.spotify.com/playlist/…`)
-3. **Set extrahieren** — Tracks werden nach Dauer gepackt und auf die Phasen des Bogens gelegt
-
-
-## Optional: Spotify MCP in Cursor
-
-Siehe `.cursor/mcp.json.example`. Lokale Secrets gehören in `.cursor/mcp.json` (gitignored).
