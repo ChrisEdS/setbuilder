@@ -10,6 +10,7 @@ import {
 } from "react";
 import { ConnectionSetup } from "@/components/ConnectionSetup";
 import { FieldNoticeView, type FieldNotice } from "@/components/FieldNotice";
+import { EnergyPath } from "@/components/EnergyPath";
 import { HarmonicPath } from "@/components/HarmonicPath";
 import { LibraryPanel } from "@/components/LibraryPanel";
 import { PreviewPlayer } from "@/components/PreviewPlayer";
@@ -1049,7 +1050,13 @@ export function SetBuilder() {
         ...current,
         tracks: current.tracks.map((track) => {
           const patch = patches.get(track.id);
-          return patch ? { ...track, ...patch } : track;
+          if (!patch) return track;
+          // Keep an existing cover (e.g. from the stick) unless Spotify has one.
+          return {
+            ...track,
+            externalUrl: patch.externalUrl,
+            imageUrl: patch.imageUrl ?? track.imageUrl,
+          };
         }),
       }));
       setStatus(
@@ -1189,7 +1196,7 @@ export function SetBuilder() {
   function assignRoles() {
     setDraft(distributeRoles(draft));
     setStatus(
-      "Rollen verteilt: Anchor auf Peak und Schluss, Bridge bei Phasen-, Key- oder BPM-Wechsel, sonst Groove.",
+      "Rollen verteilt: Anchor auf Peak und Schluss, Bridge bei Phasenwechsel, Key-Clash, BPM- oder Energie-Sprung, sonst Groove.",
     );
   }
 
@@ -2214,6 +2221,22 @@ export function SetBuilder() {
                         ))}
                       </select>
                       <select
+                        value={track.energyLevel ?? ""}
+                        onChange={(e) =>
+                          patchTrack(track.id, {
+                            energyLevel: e.target.value ? Number(e.target.value) : undefined,
+                          })
+                        }
+                        aria-label={`Energy Level für ${track.name}`}
+                      >
+                        <option value="">Energie</option>
+                        {Array.from({ length: 10 }, (_, i) => i + 1).map((level) => (
+                          <option key={level} value={level}>
+                            Energie {level}
+                          </option>
+                        ))}
+                      </select>
+                      <select
                         value={track.transition}
                         onChange={(e) =>
                           patchTrack(track.id, {
@@ -2361,6 +2384,7 @@ export function SetBuilder() {
           </p>
         ) : null}
       </section>
+              <EnergyPath tracks={draft.tracks} />
               <HarmonicPath tracks={draft.tracks} onHarmonize={harmonizeSet} embedded />
             </div>
           ) : null}

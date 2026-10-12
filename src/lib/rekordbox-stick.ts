@@ -1,5 +1,6 @@
 import { distributeRoles } from "@/lib/extract-set";
 import { stickAudioUrl } from "@/lib/stick-audio";
+import { parseEnergyLevel } from "@/lib/energy";
 import { parseKeyValue } from "@/lib/key-import";
 import { parseRekordboxPdb, type PdbLibrary, type PdbTrack } from "@/lib/rekordbox-pdb";
 import {
@@ -20,6 +21,8 @@ export type StickTrack = {
   keyCamelot: string;
   durationMs: number;
   comment: string;
+  /** Energy Level 1–10, read from a Mixed In Key comment such as "7A - Energy 6" */
+  energyLevel?: number;
   filePath: string;
   /** Cover path from the stick's Artwork folder (export.pdb only) */
   artworkPath?: string;
@@ -121,6 +124,7 @@ function toStickTrack(track: PdbTrack): StickTrack {
     keyCamelot: keyCamelot || "",
     durationMs: track.durationMs,
     comment: track.comment,
+    energyLevel: parseEnergyLevel(track.comment),
     filePath: track.filePath,
     artworkPath: track.artworkPath,
   };
@@ -136,7 +140,14 @@ function coverUrl(artworkPath: string | undefined): string | null {
 
 /** A track picked from the stick library, placed into a chosen phase and role. */
 export function libraryTrackToSetTrack(
-  row: { artist: string; title: string; key: string; bpm: string; stick?: StickTrack },
+  row: {
+    artist: string;
+    title: string;
+    key: string;
+    bpm: string;
+    energy?: number;
+    stick?: StickTrack;
+  },
   phase: SetPhaseId,
   role: TrackRole,
 ): SetTrack {
@@ -158,6 +169,7 @@ export function libraryTrackToSetTrack(
     keyCamelot: stick?.keyCamelot || parseKeyValue(row.key) || "",
     note: "",
     comment: stick?.comment || "",
+    energyLevel: stick?.energyLevel ?? row.energy,
     filePath: stick?.filePath || "",
     source: "rekordbox",
     why: "Aus der Stick-Bibliothek ins Set gelegt",
@@ -187,6 +199,7 @@ function toSetTrack(
     keyCamelot: track.keyCamelot,
     note: "",
     comment: track.comment,
+    energyLevel: track.energyLevel,
     filePath: track.filePath,
     source: "rekordbox",
     why:
@@ -241,6 +254,7 @@ function setsFromXml(xml: string): RekordboxStickSet[] {
       keyCamelot: parseKeyValue(keyRaw) || "",
       durationMs: Number.isFinite(seconds) ? seconds * 1000 : 0,
       comment: node.getAttribute("Comments") || "",
+      energyLevel: parseEnergyLevel(node.getAttribute("Comments")),
       filePath: decodeXmlLocation(node.getAttribute("Location") || ""),
     });
   }

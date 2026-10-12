@@ -8,6 +8,7 @@ import {
   type KeyImportRow,
 } from "@/lib/key-import";
 import { parseRekordboxFile } from "@/lib/rekordbox";
+import { energyStep } from "@/lib/energy";
 import { bpmDelta } from "@/lib/harmonic";
 import { sidePhrase } from "@/lib/replace-track";
 import { RekordboxStick } from "@/components/RekordboxStick";
@@ -41,6 +42,8 @@ export type LibraryRow = {
   title: string;
   key: string;
   bpm: string;
+  /** Energy Level 1–10 when the source has it */
+  energy?: number;
   stick?: StickTrack;
 };
 
@@ -58,6 +61,7 @@ function toImportRows(rows: LibraryRow[]): KeyImportRow[] {
     keyRaw: row.key,
     keyCamelot: parseKeyValue(row.key),
     bpm: row.bpm,
+    energyLevel: row.energy ?? row.stick?.energyLevel,
   }));
 }
 
@@ -113,18 +117,28 @@ export function LibraryPanel({
       : libraryRows;
     if (fitReference) {
       // Only tracks that can follow the chosen one: no clash, BPM within 6.
-      const ref = { keyCamelot: fitReference.keyCamelot, bpm: fitReference.bpm };
+      const ref = {
+        keyCamelot: fitReference.keyCamelot,
+        bpm: fitReference.bpm,
+        energyLevel: fitReference.energyLevel,
+      };
       rows = rows
         .map((row) => {
           const side = sidePhrase(
             ref,
-            { keyCamelot: parseKeyValue(row.key) || row.key, bpm: row.bpm },
+            {
+              keyCamelot: parseKeyValue(row.key) || row.key,
+              bpm: row.bpm,
+              energyLevel: row.energy,
+            },
             "danach",
           );
           const delta = bpmDelta(ref.bpm, row.bpm);
-          return { row, score: side?.score ?? 0, delta };
+          const energyJump = energyStep(ref.energyLevel, row.energy) === "jump";
+          return { row, score: side?.score ?? 0, delta, energyJump };
         })
-        .filter(({ row, score, delta }) => {
+        .filter(({ row, score, delta, energyJump }) => {
+          if (energyJump) return false;
           if (row.title === fitReference.name && row.artist === fitReference.artists[0]) {
             return false;
           }
@@ -180,6 +194,7 @@ export function LibraryPanel({
         title: row.title,
         key: row.keyCamelot || row.keyRaw,
         bpm: row.bpm,
+        energy: row.energyLevel,
       }));
       setLibraryCount(parsed.trackCount);
       setLibraryRows(rows);
@@ -528,7 +543,8 @@ export function LibraryPanel({
                   <option value="">Alle Tracks</option>
                   {performanceTracks(draft.tracks).map((track, index) => (
                     <option key={track.id} value={track.id}>
-                      {index + 1}. {track.name} ({track.keyCamelot || "—"} · {track.bpm || "—"})
+                      {index + 1}. {track.name} ({track.keyCamelot || "—"} · {track.bpm || "—"}
+                      {track.energyLevel != null ? ` · E${track.energyLevel}` : ""})
                     </option>
                   ))}
                 </select>
@@ -567,6 +583,7 @@ export function LibraryPanel({
                   <em>
                     {row.key || "—"}
                     {row.bpm ? ` · ${row.bpm}` : ""}
+                    {row.energy != null ? ` · E${row.energy}` : ""}
                   </em>
                   {onAddTrack ? (
                     <button

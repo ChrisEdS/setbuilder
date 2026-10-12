@@ -50,6 +50,8 @@ export type SetTrack = {
   keyCamelot: string;
   /** Soft energy prior 0–1 (crate position / analysis) */
   energy?: number;
+  /** Energy Level 1–10 as Mixed In Key rates it (from the comment tag or set by hand) */
+  energyLevel?: number;
   note: string;
   /** Free-form DJ comment for manual arrange */
   comment?: string;
@@ -153,7 +155,7 @@ export const PHASES: SetPhase[] = [
 
 export const TRACK_ROLES: { id: TrackRole; label: string; hint: string }[] = [
   { id: "anchor", label: "Anchor", hint: "Crowd-Connector / Signature" },
-  { id: "bridge", label: "Bridge", hint: "Key/BPM/Mood-Pivot" },
+  { id: "bridge", label: "Bridge", hint: "Wechsel von Phase, Key, BPM oder Energie" },
   { id: "groove", label: "Groove", hint: "Atem zwischen Peaks" },
   {
     id: "safety",
@@ -206,7 +208,7 @@ export const ARC_GUIDE: {
   {
     phase: "rise",
     focus:
-      "Hier entsteht Erwartung. Kleine BPM-Schritte und verwandte Keys tragen. Die Überraschung sitzt im Detail, nicht im Bruch.",
+      "Hier entsteht Erwartung. Die Energie steigt Stufe für Stufe auf 7 bis 8, kleine BPM-Schritte und verwandte Keys tragen. Die Überraschung sitzt im Detail, nicht im Bruch.",
   },
   {
     phase: "peak",
@@ -250,11 +252,11 @@ export const PREP_PRINCIPLES: { title: string; body: string }[] = [
   },
   {
     title: "Plan, kein Skript",
-    body: "Der Floor kann drehen. Alternativen liegen bereit, damit du einen Track tauschen kannst, ohne den Bogen neu zu erfinden. Die gespielte Reihenfolge bleibt die Performance, die Alternativen sind Plan B.",
+    body: "Der Floor kann drehen. Pro Phase sollten mindestens zwei Alternativen bereitliegen, damit du einen Track tauschen kannst, ohne den Bogen neu zu erfinden. Die gespielte Reihenfolge bleibt die Performance, die Alternativen sind Plan B.",
   },
   {
-    title: "Harmonik stützt den Flow",
-    body: "Gleicher Key, Relative und Nachbar-Keys tragen einen Übergang. Ein Clash kann Absicht sein, besonders vor einem Peak. Der Key entscheidet nicht allein, ob der Moment stimmt. Slot und Energie kommen zuerst.",
+    title: "Energie vor Key vor BPM",
+    body: "Erst die Energie: gleiche Stufe oder ±1 ist weich, ein Sprung von drei Stufen braucht einen Break. Dann der Key: gleich, ±1 und A↔B auf derselben Zahl sind sicher, +2 ist ein Energy Boost für selten. Dann die BPM. Der Key zählt vor allem, wo Melodien überlappen, und die Analyse liegt bei etwa 89 %.",
   },
   {
     title: "In Phrasen mischen",
@@ -274,11 +276,11 @@ export const EXTRACT_STEPS: { title: string; body: string }[] = [
   },
   {
     title: "3. Rollen vergeben",
-    body: "Anchor sind die Signature-Momente, im Peak mit Abstand gesetzt. Bridge markiert einen Wechsel von Phase, Key oder BPM. Groove ist der Atem dazwischen. Alternativen sind Plan B aus dem Rest der Playlist.",
+    body: "Anchor sind die Signature-Momente, im Peak mit Abstand gesetzt. Bridge markiert, was Sorgfalt braucht: Phasenwechsel, Key-Clash, Energy Boost, BPM-Sprung oder zwei Energiestufen und mehr. Gleicher Key, ±1 und A↔B bleiben Groove, das ist der Atem dazwischen. Alternativen sind Plan B aus dem Rest der Playlist.",
   },
   {
     title: "4. Harmonik nachziehen",
-    body: "„Harmonisch sortieren“ ordnet innerhalb einer Phase nach Camelot und kleinen BPM-Schritten. Ein bewusster Kontrast vor dem Peak-Anchor bleibt erlaubt. Die Live-Zeile unter jedem Track zeigt den tatsächlichen Übergang, auch nachdem du selbst gezogen oder einen Key geändert hast.",
+    body: "„Harmonisch sortieren“ ordnet innerhalb einer Phase nach Camelot, Energie und kleinen BPM-Schritten. Ein bewusster Kontrast vor dem Peak-Anchor bleibt erlaubt. Die Live-Zeile unter jedem Track zeigt den tatsächlichen Übergang, auch nachdem du selbst gezogen oder einen Key geändert hast.",
   },
 ];
 

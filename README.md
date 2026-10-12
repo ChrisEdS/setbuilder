@@ -12,7 +12,8 @@ SETFORM bereitet DJ-Sets vor: Rekordbox-Stick oder Playlist laden, den Bogen nac
 - **Export zurück**: M3U und rekordbox-XML der Performance-Reihenfolge, Alternativen als zweite Playlist
 - **Ersatz**: aus den Alternativen oder der ganzen Stick-Bibliothek einsetzen, sortiert nach Key- und BPM-Abstand zu Vorgänger und Nachfolger, mit Vorhören
 - **Bibliothek**: alle Tracks vom Stick durchsuchen, abspielen, nach „Passt zu“ filtern und mit Phase und Rolle ins Set legen
-- **Harmonic Path**: Camelot-Kompatibilität, Mix-Score, „Harmonisch sortieren“
+- **Energie**: Energy Level 1–10 aus Mixed In Key (Kommentar „7A - Energy 6“, Collection-XML, CSV-Spalte `Energy` oder von Hand), Energie-Verlauf gegen das Zielband jeder Phase, Sprünge ab 3 Stufen, Plan-B-Abdeckung; Energie fließt in Sortierung, Rollen und Ersatz ein
+- **Harmonic Path**: Camelot-Kompatibilität nach Mixed-In-Key-Regeln (gleich, ±1, A↔B sicher; +2 als Energy Boost), Mix-Score aus Key und Energie, „Harmonisch sortieren“
 - **Preview**: Spotify-Embed-Player pro Track
 - **Export**: PDF und Text, inklusive Alternativen
 

@@ -6,6 +6,7 @@ import {
   relationLabel,
   type HarmonicRelation,
 } from "@/lib/harmonic";
+import { energyStep } from "@/lib/energy";
 import type { SpotifyTrack } from "@/lib/spotify";
 import {
   DEFAULT_SET,
@@ -242,19 +243,31 @@ type RoleInput = Pick<
   | "bpm"
   | "keyCamelot"
   | "phase"
-> & { energy?: number };
+> & { energy?: number; energyLevel?: number };
 
 function assignRolesAndTransitions(tracks: RoleInput[]): SetTrack[] {
   const peakIndexes = tracks
     .map((track, index) => (track.phase === "peak" ? index : -1))
     .filter((index) => index >= 0);
 
+  // Peak anchors: with Energy Levels the strongest peak tracks (8+) carry the
+  // impact, at most half of the peak. Without them every second slot does.
   const anchorSlots = new Set<number>();
-  for (let i = 0; i < peakIndexes.length; i += 2) {
-    anchorSlots.add(peakIndexes[i]);
+  const strongPeak = peakIndexes
+    .filter((index) => (tracks[index].energyLevel ?? 0) >= 8)
+    .sort((a, b) => (tracks[b].energyLevel ?? 0) - (tracks[a].energyLevel ?? 0));
+  if (strongPeak.length > 0) {
+    const limit = Math.max(1, Math.ceil(peakIndexes.length / 2));
+    for (const index of strongPeak.slice(0, limit)) anchorSlots.add(index);
+  } else {
+    for (let i = 0; i < peakIndexes.length; i += 2) {
+      anchorSlots.add(peakIndexes[i]);
+    }
   }
   if (peakIndexes.length > 0) {
-    anchorSlots.add(peakIndexes[peakIndexes.length - 1]);
+    // The closing peak moment only anchors when it is not a known low-energy track.
+    const last = peakIndexes[peakIndexes.length - 1];
+    if ((tracks[last].energyLevel ?? 8) >= 8) anchorSlots.add(last);
   }
 
   // One deliberate contrast slot: last peak anchor
@@ -267,12 +280,16 @@ function assignRolesAndTransitions(tracks: RoleInput[]): SetTrack[] {
     const relation: HarmonicRelation = prev
       ? harmonicRelation(prev.keyCamelot, track.keyCamelot)
       : "unknown";
+    // Same, ±1 and A/B on one number mix cleanly and stay Groove. A Bridge is
+    // for what needs care: key clash, +2 boost, off-wheel contrast, a BPM jump
+    // or a step of two or more Energy Levels.
     const keyPivot =
-      relation === "relative" ||
-      relation === "energyBoost" ||
-      relation === "adjacent" ||
-      relation === "contrast";
+      relation === "energyBoost" || relation === "contrast" || relation === "clash";
     const bpmPivot = prev ? !bpmOk(prev.bpm, track.bpm, 3) : false;
+    const energyStepKind = prev
+      ? energyStep(prev.energyLevel, track.energyLevel)
+      : "unknown";
+    const energyPivot = energyStepKind === "lift" || energyStepKind === "jump";
 
     let role: TrackRole = "groove";
     let why = "Groove-Atem im Arc";
@@ -283,13 +300,17 @@ function assignRolesAndTransitions(tracks: RoleInput[]): SetTrack[] {
         index === contrastIdx
           ? "Peak-Signature / Key-Contrast Moment"
           : "Peak-Anchor (Impact, danach Groove)";
-    } else if (isBoundary || keyPivot || bpmPivot) {
+    } else if (isBoundary || keyPivot || bpmPivot || energyPivot) {
       role = "bridge";
       why = isBoundary
         ? `Phasen-Pivot ${prev?.phase} → ${track.phase}`
         : keyPivot
-          ? `Harmonic Pivot (${relationLabel(relation)})`
-          : "BPM-Pivot (>3)";
+          ? relation === "clash"
+            ? "Brücke: Key-Clash, kurz überlappen oder per Break wechseln"
+            : `Brücke: ${relationLabel(relation)}`
+          : energyPivot
+            ? `Brücke: Energie ${(prev?.energyLevel ?? 0)} → ${track.energyLevel ?? 0}${energyStepKind === "jump" ? " (Sprung, Break oder Reset nötig)" : ""}`
+            : "Brücke: BPM-Sprung (>3)";
     } else if (track.phase === "release" && index === arr.length - 1) {
       role = "anchor";
       why = "Closing-Anchor — kontrolliert landen";
@@ -320,6 +341,7 @@ function assignRolesAndTransitions(tracks: RoleInput[]): SetTrack[] {
       bpm: track.bpm,
       keyCamelot: track.keyCamelot,
       energy: track.energy ?? 0.5,
+      energyLevel: track.energyLevel,
       note: noteFor(track.phase, role, transition, relation),
       why,
       safetyAlt: "",

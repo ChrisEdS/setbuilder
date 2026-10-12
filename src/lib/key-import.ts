@@ -1,4 +1,5 @@
 import { normalizeCamelot, parseBpm, type CamelotCode } from "@/lib/harmonic";
+import { parseEnergyLevel } from "@/lib/energy";
 import type { SetDraft, SetTrack } from "@/lib/set";
 
 export type KeyImportRow = {
@@ -7,6 +8,8 @@ export type KeyImportRow = {
   keyRaw: string;
   keyCamelot: CamelotCode | null;
   bpm: string;
+  /** Energy Level 1–10 (Mixed In Key), when the source has it */
+  energyLevel?: number;
 };
 
 export type KeyImportResult = {
@@ -157,6 +160,7 @@ export function parseKeyImportText(text: string): KeyImportRow[] {
   let titleIdx = 1;
   let keyIdx = 2;
   let bpmIdx = 3;
+  let energyIdx = -1;
   let start = 0;
 
   if (hasHeader) {
@@ -164,6 +168,7 @@ export function parseKeyImportText(text: string): KeyImportRow[] {
     titleIdx = headerIndex(firstCells, ["title", "track", "song", "name"]);
     keyIdx = headerIndex(firstCells, ["camelot", "key", "tonart"]);
     bpmIdx = headerIndex(firstCells, ["bpm", "tempo"]);
+    energyIdx = headerIndex(firstCells, ["energy"]);
     if (artistIdx < 0) artistIdx = 0;
     if (titleIdx < 0) titleIdx = 1;
     if (keyIdx < 0) keyIdx = 2;
@@ -206,12 +211,16 @@ export function parseKeyImportText(text: string): KeyImportRow[] {
     if (!artist && !title) continue;
     if (!keyCamelot && bpmNum == null) continue;
 
+    const energyCell = energyIdx >= 0 ? cells[energyIdx] || "" : "";
+    const energyLevel =
+      parseEnergyLevel(`energy ${energyCell}`) ?? undefined;
     rows.push({
       artist: artist.trim(),
       title: title.trim(),
       keyRaw: keyRaw.trim(),
       keyCamelot,
       bpm: bpmNum != null ? String(Math.round(bpmNum)) : "",
+      ...(energyLevel != null ? { energyLevel } : {}),
     });
   }
 
@@ -312,6 +321,7 @@ export function applyKeyImportRows(
       ...track,
       keyCamelot: row.keyCamelot || track.keyCamelot,
       bpm: row.bpm || track.bpm,
+      energyLevel: row.energyLevel ?? track.energyLevel,
     };
   });
 

@@ -6072,3 +6072,113 @@ details[open] > summary > .fold-toggle::after {
   row-gap: 0.5rem;
 }
 
+
+/* Energy path (Bogen view) */
+.energy-path {
+  display: grid;
+  gap: 14px;
+  margin: 14px 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.energy-path .panel-head h3 {
+  margin: 0 0 4px;
+}
+.energy-hint {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+.energy-phases {
+  display: grid;
+  gap: 14px;
+}
+.energy-phase-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  margin-bottom: 8px;
+  font-size: 0.875rem;
+}
+.energy-phase-head span,
+.energy-phase-head em {
+  color: var(--muted);
+  font-style: normal;
+}
+.energy-phase-head em.thin {
+  color: #fbbf24;
+}
+.energy-bars {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+}
+.energy-bars li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 4px;
+  flex: 0 0 64px;
+  min-width: 64px;
+  height: 128px;
+  text-align: center;
+}
+.energy-bars li i {
+  display: block;
+  flex: none;
+  width: 100%;
+  border-radius: 6px 6px 2px 2px;
+  background: var(--accent);
+}
+.energy-bars li.off i {
+  background: #fbbf24;
+}
+.energy-bars li.unknown i {
+  background: transparent;
+  border: 1px dashed var(--line-strong);
+}
+.energy-bars li.jump::before {
+  content: "Sprung";
+  position: absolute;
+  top: -2px;
+  left: -8px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #121212;
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+.energy-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.energy-name {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Setliste: BPM, Key, Energie, Übergang in einer Reihe */
+.manual-extra {
+  grid-template-columns: 6.5rem 7.5rem 8rem minmax(9rem, 1fr) !important;
+}
+@media (max-width: 720px) {
+  .manual-extra {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}

@@ -1,8 +1,13 @@
 /**
- * Camelot Wheel helpers for harmonic mixing.
- * Compatible moves: same key, ±1 number, relative major/minor (e.g. 8A ↔ 8B).
- * Energy boost: +1 number into dominant (e.g. 8A → 9A) feels like lift.
+ * Camelot Wheel helpers for harmonic mixing, following Mixed In Key's rules.
+ * Smooth moves: same key, ±1 number, A/B switch on the same number (8A ↔ 8B).
+ * Energy Boost: +2 numbers, same letter (8A → 10A). Use sparingly.
+ * Everything else only works with a short overlap, a break or EQ. Key is a
+ * starting point for the melodic overlap, not a guarantee, and it matters less
+ * than energy.
  */
+
+import { energyScore, energyStep, energyText } from "./energy";
 
 export type CamelotCode = `${number}A` | `${number}B`;
 
@@ -147,22 +152,19 @@ export function harmonicRelation(from: string, to: string): HarmonicRelation {
       Math.abs(aNum - bNum),
       12 - Math.abs(aNum - bNum),
     );
-    if (diff === 1) {
-      // Clockwise +1 often felt as energy boost
-      const clockwise = wrap12(aNum + 1) === bNum;
-      return clockwise ? "energyBoost" : "adjacent";
-    }
-    // Deliberate contrast: ±2 or opposite mode jump across wheel
+    if (diff === 1) return "adjacent";
+    // Energy Boost: exactly +2 (8A -> 10A). -2 is a plain contrast.
+    if (wrap12(aNum + 2) === bNum) return "energyBoost";
     if (diff === 2) return "contrast";
   }
 
-  // Relative then step (still usable)
+  // Diagonal (A/B and ±1) is not one of the four safe moves: contrast.
   if (aMode !== bMode) {
     const diff = Math.min(
       Math.abs(aNum - bNum),
       12 - Math.abs(aNum - bNum),
     );
-    if (diff === 1) return "adjacent";
+    if (diff === 1) return "contrast";
   }
 
   return "clash";
@@ -174,12 +176,12 @@ export function relationScore(relation: HarmonicRelation): number {
       return 1;
     case "relative":
       return 0.95;
-    case "energyBoost":
-      return 0.9;
     case "adjacent":
       return 0.85;
+    case "energyBoost":
+      return 0.7;
     case "contrast":
-      return 0.45;
+      return 0.4;
     case "unknown":
       return 0.5;
     case "clash":
@@ -194,9 +196,9 @@ export function relationLabel(relation: HarmonicRelation): string {
     case "relative":
       return "Relative Dur/Moll";
     case "energyBoost":
-      return "Energy boost (+1)";
+      return "Energy Boost (+2)";
     case "adjacent":
-      return "Nachbar-Key";
+      return "Nachbar-Key (±1)";
     case "contrast":
       return "Key-Contrast";
     case "clash":
@@ -206,19 +208,51 @@ export function relationLabel(relation: HarmonicRelation): string {
   }
 }
 
+type MixSide = { keyCamelot: string; bpm: string; energyLevel?: number };
+
 export function mixJoin(
-  from: { keyCamelot: string; bpm: string } | null | undefined,
-  to: { keyCamelot: string; bpm: string },
+  from: MixSide | null | undefined,
+  to: MixSide,
 ): { relation: HarmonicRelation; label: string } | null {
   if (!from) return null;
   const relation = harmonicRelation(from.keyCamelot, to.keyCamelot);
   const delta = bpmDelta(from.bpm, to.bpm);
   const bpmText =
     delta == null ? "" : `${delta > 0 ? "+" : ""}${delta} BPM`;
+  const jump = energyStep(from.energyLevel, to.energyLevel) === "jump";
+  const energy = energyText(from.energyLevel, to.energyLevel);
   return {
     relation,
-    label: [relationLabel(relation), bpmText].filter(Boolean).join(" · "),
+    label: [
+      relationLabel(relation),
+      bpmText,
+      energy ? (jump ? `${energy} (Sprung)` : energy) : "",
+    ]
+      .filter(Boolean)
+      .join(" · "),
   };
+}
+
+/**
+ * One transition, 0–1. Energy counts as much as key (energy matters more than
+ * key for how a room feels); BPM adds a small correction. Missing parts are
+ * left out instead of guessed.
+ */
+export function transitionScore(from: MixSide, to: MixSide): number | null {
+  const relation = harmonicRelation(from.keyCamelot, to.keyCamelot);
+  const parts: number[] = [];
+  if (relation !== "unknown") parts.push(relationScore(relation));
+  if (from.energyLevel != null && to.energyLevel != null) {
+    parts.push(energyScore(from.energyLevel, to.energyLevel));
+  }
+  if (!parts.length) return null;
+  let score = parts.reduce((sum, value) => sum + value, 0) / parts.length;
+  const delta = bpmDelta(from.bpm, to.bpm);
+  if (delta != null) {
+    if (Math.abs(delta) > 4) score -= 0.12;
+    else if (Math.abs(delta) <= 2) score += 0.03;
+  }
+  return Math.max(0, Math.min(1, score));
 }
 
 export function bpmDelta(from: string, to: string): number | null {
@@ -235,7 +269,9 @@ export function bpmOk(from: string, to: string, maxJump = 4): boolean {
 }
 
 /** Greedy path: from seed, always pick highest harmonic score among remaining. */
-export function orderByHarmonicPath<T extends { keyCamelot: string; bpm: string }>(
+export function orderByHarmonicPath<
+  T extends { keyCamelot: string; bpm: string; energyLevel?: number },
+>(
   tracks: T[],
   preferEnergyRise = true,
 ): T[] {
@@ -253,8 +289,17 @@ export function orderByHarmonicPath<T extends { keyCamelot: string; bpm: string 
     remaining.forEach((candidate, index) => {
       const relation = harmonicRelation(prev.keyCamelot, candidate.keyCamelot);
       let score = relationScore(relation);
-      if (preferEnergyRise && relation === "energyBoost") score += 0.05;
+      if (preferEnergyRise && relation === "energyBoost") score += 0.02;
       if (preferEnergyRise && relation === "contrast") score -= 0.1;
+      // Energy: stay within one level, step in the phase direction.
+      if (prev.energyLevel != null && candidate.energyLevel != null) {
+        const step = candidate.energyLevel - prev.energyLevel;
+        if (step === 0) score += 0.06;
+        else if (Math.abs(step) === 1) {
+          score += (step > 0) === preferEnergyRise ? 0.1 : 0.04;
+        } else if (Math.abs(step) === 2) score -= 0.02;
+        else score -= 0.25;
+      }
       const delta = bpmDelta(prev.bpm, candidate.bpm);
       if (delta != null) {
         if (Math.abs(delta) <= 2) score += 0.08;
@@ -272,19 +317,34 @@ export function orderByHarmonicPath<T extends { keyCamelot: string; bpm: string 
   return ordered;
 }
 
-export function pathStats(tracks: { keyCamelot: string; bpm: string }[]) {
+export function pathStats(tracks: MixSide[]) {
   const relations: HarmonicRelation[] = [];
+  const scores: number[] = [];
+  let energyJumps = 0;
   for (let i = 1; i < tracks.length; i++) {
     relations.push(
       harmonicRelation(tracks[i - 1].keyCamelot, tracks[i].keyCamelot),
     );
+    const score = transitionScore(tracks[i - 1], tracks[i]);
+    if (score != null) scores.push(score);
+    if (energyStep(tracks[i - 1].energyLevel, tracks[i].energyLevel) === "jump") {
+      energyJumps += 1;
+    }
   }
-  const known = relations.filter((r) => r !== "unknown");
   const avg =
-    known.length === 0
+    scores.length === 0
       ? null
-      : known.reduce((sum, r) => sum + relationScore(r), 0) / known.length;
+      : scores.reduce((sum, value) => sum + value, 0) / scores.length;
   const clashes = relations.filter((r) => r === "clash").length;
   const keyed = tracks.filter((t) => normalizeCamelot(t.keyCamelot)).length;
-  return { relations, avg, clashes, keyed, total: tracks.length };
+  const energized = tracks.filter((t) => t.energyLevel != null).length;
+  return {
+    relations,
+    avg,
+    clashes,
+    keyed,
+    energized,
+    energyJumps,
+    total: tracks.length,
+  };
 }

@@ -4,6 +4,7 @@ import {
   relationLabel,
   relationScore,
 } from "./harmonic";
+import { energyScore, energyStep, energyText } from "./energy";
 import type { SetTrack } from "./set";
 
 export type ReplacementOption = {
@@ -14,7 +15,7 @@ export type ReplacementOption = {
   score: number;
 };
 
-type KeyBpm = { keyCamelot: string; bpm: string };
+type KeyBpm = { keyCamelot: string; bpm: string; energyLevel?: number };
 
 export function sidePhrase(from: KeyBpm | null, to: KeyBpm, who: string): { text: string; score: number } | null {
   if (!from) return null;
@@ -24,9 +25,18 @@ export function sidePhrase(from: KeyBpm | null, to: KeyBpm, who: string): { text
     delta == null ? "" : `, ${delta > 0 ? "+" : ""}${delta} BPM`;
   const relScore = relationScore(relation);
   const bpmScore = delta == null ? 0.55 : Math.max(0, 1 - Math.abs(delta) / 12);
+  const hasEnergy = from.energyLevel != null && to.energyLevel != null;
+  const step = energyStep(from.energyLevel, to.energyLevel);
+  const energyPart = hasEnergy
+    ? `, ${energyText(from.energyLevel, to.energyLevel)}${step === "jump" ? " (Sprung)" : ""}`
+    : "";
+  // Energy first, then key, then BPM. Without energy data: key and BPM only.
+  const score = hasEnergy
+    ? energyScore(from.energyLevel, to.energyLevel) * 0.4 + relScore * 0.35 + bpmScore * 0.25
+    : relScore * 0.7 + bpmScore * 0.3;
   return {
-    text: `${who}: ${relationLabel(relation)}${bpmText}`,
-    score: relScore * 0.7 + bpmScore * 0.3,
+    text: `${who}: ${relationLabel(relation)}${bpmText}${energyPart}`,
+    score,
   };
 }
 
@@ -69,7 +79,7 @@ export function rankReplacements(tracks: SetTrack[], targetId: string): Replacem
         id: track.id,
         title: track.name,
         artist: track.artists.join(", "),
-        detail: [`${key} · ${bpm}`, ...sides.map((side) => side.text)].join(" · "),
+        detail: [`${key} · ${bpm}${track.energyLevel != null ? ` · E${track.energyLevel}` : ""}`, ...sides.map((side) => side.text)].join(" · "),
         score,
       };
     })
@@ -88,7 +98,7 @@ export type LibraryReplacement<T> = {
  * Tracks that are already in the set are skipped.
  */
 export function rankLibraryReplacements<
-  T extends { artist: string; title: string; key: string; bpm: string },
+  T extends { artist: string; title: string; key: string; bpm: string; energy?: number },
 >(
   tracks: SetTrack[],
   targetId: string,
@@ -105,7 +115,7 @@ export function rankLibraryReplacements<
   const scored: LibraryReplacement<T>[] = [];
   for (const row of rows) {
     if (inSet.has(`${row.artist || "Unknown"}|${row.title}`.toLowerCase())) continue;
-    const candidate = { keyCamelot: toKey(row.key), bpm: row.bpm };
+    const candidate = { keyCamelot: toKey(row.key), bpm: row.bpm, energyLevel: row.energy };
     const sides = [sidePhrase(prev, candidate, "davor"), sidePhrase(next, candidate, "danach")].filter(
       (side): side is { text: string; score: number } => Boolean(side),
     );
@@ -116,7 +126,7 @@ export function rankLibraryReplacements<
       row,
       score,
       detail: [
-        `${candidate.keyCamelot || "Key offen"} · ${row.bpm ? `${row.bpm} BPM` : "BPM offen"}`,
+        `${candidate.keyCamelot || "Key offen"} · ${row.bpm ? `${row.bpm} BPM` : "BPM offen"}${row.energy != null ? ` · E${row.energy}` : ""}`,
         ...sides.map((side) => side.text),
       ].join(" · "),
     });

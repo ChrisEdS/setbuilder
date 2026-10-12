@@ -1,4 +1,5 @@
 import { parseBpm } from "@/lib/harmonic";
+import { parseEnergyLevel } from "@/lib/energy";
 import { parseKeyValue, type KeyImportRow } from "@/lib/key-import";
 
 export type RekordboxParseResult = {
@@ -13,10 +14,12 @@ function rowFromFields(
   title: string,
   keyRaw: string,
   bpmRaw: string,
+  comment = "",
 ): KeyImportRow | null {
   const keyCamelot = parseKeyValue(keyRaw);
   const bpmNum = parseBpm(bpmRaw);
   if (!title && !artist) return null;
+  const energyLevel = parseEnergyLevel(comment);
   if (!keyCamelot && bpmNum == null) return null;
   return {
     artist: artist.trim(),
@@ -24,6 +27,7 @@ function rowFromFields(
     keyRaw: keyRaw.trim(),
     keyCamelot,
     bpm: bpmNum != null ? String(Math.round(bpmNum)) : "",
+    ...(energyLevel != null ? { energyLevel } : {}),
   };
 }
 
@@ -63,7 +67,13 @@ export function parseRekordboxXml(xmlText: string): RekordboxParseResult {
       track.getAttribute("Tempo") ||
       "";
 
-    const row = rowFromFields(artist, title, keyRaw, bpmRaw);
+    const row = rowFromFields(
+      artist,
+      title,
+      keyRaw,
+      bpmRaw,
+      track.getAttribute("Comments") || track.getAttribute("Comment") || "",
+    );
     if (row) rows.push(row);
   }
 

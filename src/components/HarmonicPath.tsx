@@ -29,7 +29,8 @@ export function HarmonicPath({ tracks, onHarmonize, embedded }: Props) {
           {embedded ? null : <h2>Harmonic Path</h2>}
           <p className="section-note">
             Camelot entlang der gespielten Reihenfolge. „Harmonisch sortieren“
-            rückt verwandte Keys zusammen, ein Clash vor dem Peak bleibt erlaubt.
+            rückt verwandte Keys zusammen und folgt dabei der Energie, soweit
+            Energy Levels da sind. Ein Clash vor dem Peak bleibt erlaubt.
           </p>
         </div>
         {embedded ? null : (
@@ -142,9 +143,16 @@ export function HarmonicPath({ tracks, onHarmonize, embedded }: Props) {
         </summary>
         <div className="explain-body">
           <p>
-            <strong>Mix-Score</strong> misst, wie gut aufeinanderfolgende Keys
-            zusammenpassen (gleicher Key, Relative, ±1 Camelot = gut). Clashes
-            sind große Sprünge — oft Absicht vor einem Peak, sonst Feinschliff.
+            <strong>Mix-Score</strong> bewertet jeden Übergang aus Key und, wenn
+            vorhanden, Energie zu gleichen Teilen, dazu eine kleine BPM-Korrektur.
+            Sicher sind gleicher Key, ±1 Zahl und A↔B auf derselben Zahl.{" "}
+            <strong>Energy Boost</strong> ist +2 mit gleichem Buchstaben, sparsam
+            einsetzen. Clashes brauchen einen Break oder kurzen Übergang.
+          </p>
+          <p>
+            Der Key ist ein Startpunkt, kein Freifahrtschein. Er zählt vor allem,
+            wenn Melodien überlappen, und die Analyse liegt bei etwa 89 %. Bei
+            einem Clash lohnt der Blick auf den relativen Dur- oder Moll-Key.
           </p>
           <p>
             Farben folgen dem Camelot Wheel (1–12). <strong>A</strong> = Moll

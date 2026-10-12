@@ -21,6 +21,7 @@ type Props = {
       title: string;
       key: string;
       bpm: string;
+      energy?: number;
       stick?: StickTrack;
     }>,
   ) => void;
@@ -53,6 +54,7 @@ export function RekordboxStick({
           title: track.title,
           key: track.keyCamelot || track.keyRaw,
           bpm: track.bpm,
+          energy: track.energyLevel,
           stick: track,
         })),
       );
