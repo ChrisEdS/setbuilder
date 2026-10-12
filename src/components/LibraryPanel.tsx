@@ -44,7 +44,7 @@ export type LibraryRow = {
   stick?: StickTrack;
 };
 
-type SourceTab = "rekordbox" | "tidal" | "csv" | "spotify";
+type SourceTab = "rekordbox" | "tidal" | "csv";
 
 const EXAMPLE = `Artist,Title,Key,BPM
 Floating Points,Ratio - Edit,8A,122
@@ -76,7 +76,6 @@ export function LibraryPanel({
   const [busy, setBusy] = useState(false);
   const [libraryCount, setLibraryCount] = useState<number | null>(null);
   const [query, setQuery] = useState("");
-  const [spotifyNote, setSpotifyNote] = useState<string | null>(null);
   const [tidalNote, setTidalNote] = useState<string | null>(null);
   const [tidalConfigured, setTidalConfigured] = useState<boolean | null>(null);
   const [source, setSource] = useState<SourceTab>("rekordbox");
@@ -266,37 +265,6 @@ export function LibraryPanel({
     }
   }
 
-  async function trySpotifyEnrich() {
-    setBusy(true);
-    try {
-      const ids = performanceTracks(draft.tracks)
-        .slice(0, 5)
-        .map((track) => track.id);
-      const response = await fetch("/api/enrich/spotify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ trackIds: ids }),
-      });
-      const data = (await response.json()) as {
-        available?: boolean;
-        message?: string;
-      };
-      const message =
-        data.message ||
-        (data.available
-          ? "Spotify Features ok"
-          : "Spotify Key-Import nicht verfügbar");
-      setSpotifyNote(message);
-      onApply(draft, message);
-    } catch {
-      const message = "Spotify Enrichment fehlgeschlagen.";
-      setSpotifyNote(message);
-      onApply(draft, message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
   function rematchFromLibrary() {
     const result = applyKeyImportRows(draft, toImportRows(libraryRows));
     onApply(
@@ -332,11 +300,6 @@ export function LibraryPanel({
       label: "CSV",
       note: "Tabelle einfügen, zum Beispiel aus Mixed In Key oder Serato. Camelot, Open Key oder Am/C.",
     },
-    {
-      id: "spotify",
-      label: "Spotify",
-      note: "Audio-Features sind im Dev Mode meist gesperrt. rekordbox oder Tidal sind die verlässliche Quelle.",
-    },
   ];
   const sourceNote = sources.find((item) => item.id === source)?.note ?? "";
 
@@ -347,8 +310,8 @@ export function LibraryPanel({
           <h2>Set laden &amp; Keys</h2>
           <p className="section-note">
             Erster Schritt: ein fertiges Set vom Rekordbox-Stick laden, mit Key,
-            BPM und Dateipfad. Danach Keys und BPM aus Rekordbox, Tidal, CSV
-            oder Spotify an die Tracks legen.
+            BPM und Dateipfad. Danach Keys und BPM aus Rekordbox, Tidal oder CSV
+            an die Tracks legen.
           </p>
           <p className="head-meta" aria-label="Key-Abdeckung">
             {statusLabel}
@@ -490,29 +453,6 @@ export function LibraryPanel({
               placeholder={"Artist,Title,Key,BPM\n…"}
               aria-label="Key CSV Paste"
             />
-          </div>
-        ) : null}
-
-        {source === "spotify" ? (
-          <div className="library-pane-grid">
-            <div>
-              <h3>Spotify Audio Features</h3>
-              <p>
-                Key/BPM über Audio Features sind für Dev-Mode-Apps meist
-                gesperrt. Tidal oder rekordbox sind die praktikablen Quellen.
-              </p>
-              {spotifyNote ? (
-                <p className="library-inline-status">{spotifyNote}</p>
-              ) : null}
-            </div>
-            <button
-              type="button"
-              className="btn ghost library-file"
-              disabled={busy || draft.tracks.length === 0}
-              onClick={() => void trySpotifyEnrich()}
-            >
-              Status prüfen
-            </button>
           </div>
         ) : null}
       </div>
