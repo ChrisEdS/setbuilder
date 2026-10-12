@@ -1,3 +1,4 @@
+import { distributeRoles } from "@/lib/extract-set";
 import { parseKeyValue } from "@/lib/key-import";
 import { parseRekordboxPdb, type PdbLibrary, type PdbTrack } from "@/lib/rekordbox-pdb";
 import { PHASES, type SetDraft, type SetPhaseId, type SetTrack } from "@/lib/set";
@@ -70,12 +71,12 @@ export function applyStickSet(draft: SetDraft, set: RekordboxStickSet): SetDraft
   const minutes = totalMs
     ? Math.max(15, Math.round(totalMs / 60000))
     : draft.durationMinutes;
-  return {
+  return distributeRoles({
     ...draft,
     title: set.name,
     durationMinutes: minutes,
     tracks: set.tracks.map((track, index) => toSetTrack(track, set, index, totalMs)),
-  };
+  });
 }
 
 function setsFromPdb(library: PdbLibrary): RekordboxStickSet[] {

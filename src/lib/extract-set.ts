@@ -229,9 +229,22 @@ function assignPhasesByDuration(
   });
 }
 
-function assignRolesAndTransitions(
-  tracks: Array<Enriched & { phase: SetPhaseId }>,
-): SetTrack[] {
+type RoleInput = Pick<
+  SetTrack,
+  | "id"
+  | "name"
+  | "artists"
+  | "album"
+  | "durationMs"
+  | "uri"
+  | "externalUrl"
+  | "imageUrl"
+  | "bpm"
+  | "keyCamelot"
+  | "phase"
+> & { energy?: number };
+
+function assignRolesAndTransitions(tracks: RoleInput[]): SetTrack[] {
   const peakIndexes = tracks
     .map((track, index) => (track.phase === "peak" ? index : -1))
     .filter((index) => index >= 0);
@@ -306,7 +319,7 @@ function assignRolesAndTransitions(
       transition,
       bpm: track.bpm,
       keyCamelot: track.keyCamelot,
-      energy: track.energy,
+      energy: track.energy ?? 0.5,
       note: noteFor(track.phase, role, transition, relation),
       why,
       safetyAlt: "",
@@ -425,4 +438,32 @@ export function reharmonizeDraft(draft: SetDraft): SetDraft {
   });
 
   return { ...draft, tracks: [...withRelations, ...safeties] };
+}
+
+/**
+ * Distributes Anchor / Bridge / Groove over an existing performance order
+ * (e.g. a set imported from a rekordbox stick). Order, phases, comments and
+ * links stay untouched; Alternativen are not changed. Existing notes and
+ * chosen transitions are kept.
+ */
+export function distributeRoles(draft: SetDraft): SetDraft {
+  const performance = draft.tracks.filter((track) => track.role !== "safety");
+  if (performance.length === 0) return draft;
+  const assigned = assignRolesAndTransitions(performance);
+  const byId = new Map(assigned.map((track) => [track.id, track]));
+  return {
+    ...draft,
+    tracks: draft.tracks.map((track) => {
+      const next = byId.get(track.id);
+      if (!next || track.role === "safety") return track;
+      return {
+        ...track,
+        role: next.role,
+        why: next.why,
+        harmonicFromPrev: next.harmonicFromPrev,
+        transition: track.transition === "unset" ? next.transition : track.transition,
+        note: track.note || next.note,
+      };
+    }),
+  };
 }

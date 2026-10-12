@@ -26,7 +26,7 @@ import { openSetPdfExport } from "@/lib/export-pdf";
 import { pickStreamingMatch } from "@/lib/match-link";
 import { swapIntoSlot } from "@/lib/replace-track";
 import { CAMELOT_CODES, mixJoin } from "@/lib/harmonic";
-import { reharmonizeDraft } from "@/lib/extract-set";
+import { distributeRoles, reharmonizeDraft } from "@/lib/extract-set";
 import { looksLikeMusicLink, sourceLabel } from "@/lib/music-link";
 import {
   ARC_GUIDE,
@@ -1132,6 +1132,13 @@ export function SetBuilder() {
     setStatus("Set innerhalb der Phasen nach Camelot/BPM neu sortiert.");
   }
 
+  function assignRoles() {
+    setDraft(distributeRoles(draft));
+    setStatus(
+      "Rollen verteilt: Anchor auf Peak und Schluss, Bridge bei Phasen-, Key- oder BPM-Wechsel, sonst Groove.",
+    );
+  }
+
   function renderSetups() {
     return (
       <section className="setups-bar" aria-label="Gespeicherte Einstellungen">
@@ -1926,19 +1933,34 @@ export function SetBuilder() {
               onExportRekordbox={exportRekordbox}
               onCopyText={() => void copyExport()}
               leading={
-                <span className="tip">
-                  <button
-                    type="button"
-                    className="btn ghost"
-                    onClick={harmonizeSet}
-                    disabled={mainTracks.length < 2}
-                  >
-                    Harmonisch sortieren
-                  </button>
-                  <span className="tip-bubble" role="tooltip">
-                    Ordnet jede Phase nach Camelot-Key und BPM neu. Die Rollen bleiben.
+                <>
+                  <span className="tip">
+                    <button
+                      type="button"
+                      className="btn ghost"
+                      onClick={harmonizeSet}
+                      disabled={mainTracks.length < 2}
+                    >
+                      Harmonisch sortieren
+                    </button>
+                    <span className="tip-bubble" role="tooltip">
+                      Ordnet jede Phase nach Camelot-Key und BPM neu. Die Rollen bleiben.
+                    </span>
                   </span>
-                </span>
+                  <span className="tip">
+                    <button
+                      type="button"
+                      className="btn ghost"
+                      onClick={assignRoles}
+                      disabled={mainTracks.length < 2}
+                    >
+                      Rollen verteilen
+                    </button>
+                    <span className="tip-bubble" role="tooltip">
+                      Setzt Anchor, Bridge und Groove neu nach Phase, Key und BPM. Die Reihenfolge bleibt.
+                    </span>
+                  </span>
+                </>
               }
               extra={
                 <span className="tip tip-end">
