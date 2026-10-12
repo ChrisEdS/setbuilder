@@ -525,6 +525,14 @@ export function RoleCrates({
                                   {track.bpm ? (
                                     <span className="pill">{track.bpm}</span>
                                   ) : null}
+                                  {track.energyLevel != null ? (
+                                    <span
+                                      className="pill"
+                                      title={`Energy Level ${track.energyLevel} von 10`}
+                                    >
+                                      E{track.energyLevel}
+                                    </span>
+                                  ) : null}
                                 </div>
                                 {track.why ? (
                                   <p className="why" title={track.why}>

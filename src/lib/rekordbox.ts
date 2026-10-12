@@ -137,13 +137,14 @@ export async function parseRekordboxDb(
       pick("ArtistName", "Artist", "artist", "ArtistCommnets") || null;
     const keyCol = pick("Key", "Tonality", "key", "tonality");
     const bpmCol = pick("BPM", "Bpm", "Tempo", "AverageBpm", "bpm");
+    const commentCol = pick("Commnt", "Comments", "Comment") || null;
 
     if (!titleCol) {
       throw new Error("Title-Spalte in der DB nicht gefunden — bitte XML exportieren.");
     }
 
     // Artist may live in related table; try stock columns first
-    const selectCols = [titleCol, keyCol, bpmCol, artistCol]
+    const selectCols = [titleCol, keyCol, bpmCol, artistCol, commentCol]
       .filter(Boolean)
       .map((name) => `"${String(name).replaceAll('"', '""')}"`)
       .join(", ");
@@ -171,8 +172,12 @@ export async function parseRekordboxDb(
       if (artistCol) {
         artist = String(value[idx++] ?? "");
       }
+      let comment = "";
+      if (commentCol) {
+        comment = String(value[idx++] ?? "");
+      }
 
-      const row = rowFromFields(artist, title, keyRaw, bpmRaw);
+      const row = rowFromFields(artist, title, keyRaw, bpmRaw, comment);
       if (row) rows.push(row);
     }
 

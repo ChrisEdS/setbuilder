@@ -6,7 +6,7 @@ import {
   relationLabel,
   type HarmonicRelation,
 } from "@/lib/harmonic";
-import { energyStep } from "@/lib/energy";
+import { PHASE_ENERGY, energyStep } from "@/lib/energy";
 import type { SpotifyTrack } from "@/lib/spotify";
 import {
   DEFAULT_SET,
@@ -528,8 +528,26 @@ export function fitToSlot(draft: SetDraft): SlotFitResult {
     const avg = groupMs / group.length;
     const count = Math.min(group.length, Math.max(1, Math.round(budget / avg)));
     const keep = new Set<number>();
+    const band = PHASE_ENERGY[phase.id];
     for (let i = 0; i < count; i++) {
-      keep.add(Math.min(group.length - 1, Math.floor(((i + 0.5) * group.length) / count)));
+      // One track per segment: the one whose Energy Level sits in the phase
+      // band, otherwise the one in the middle of the segment.
+      const start = Math.floor((i * group.length) / count);
+      const end = Math.max(start + 1, Math.floor(((i + 1) * group.length) / count));
+      const middle = Math.min(group.length - 1, Math.floor(((i + 0.5) * group.length) / count));
+      let best = middle;
+      let bestCost = Infinity;
+      for (let j = start; j < end && j < group.length; j++) {
+        const level = group[j].energyLevel;
+        const gap =
+          level == null ? 0 : Math.max(0, band.min - level, level - band.max);
+        const cost = gap * 10 + Math.abs(j - middle) * 0.1;
+        if (cost < bestCost) {
+          bestCost = cost;
+          best = j;
+        }
+      }
+      keep.add(best);
     }
     if (phaseIndex === 0) keep.add(0);
     if (phaseIndex === PHASES.length - 1) keep.add(group.length - 1);
@@ -537,6 +555,46 @@ export function fitToSlot(draft: SetDraft): SlotFitResult {
       if (!keep.has(index)) moveIds.add(track.id);
     });
   });
+
+  // Rounding per phase can leave the set well over the slot. Take out one more
+  // track at a time from the phase that overshoots its budget the most, never
+  // the first or last track and never the last one left in a phase.
+  const spanOf = (track: SetTrack) => track.durationMs || fallbackMs;
+  for (let guard = 0; guard < performance.length; guard++) {
+    const kept = performance.filter((track) => !moveIds.has(track.id));
+    const total = kept.reduce((sum, track) => sum + spanOf(track), 0);
+    if (total <= targetMs * 1.05) break;
+    let pick: SetTrack | null = null;
+    let worst = 0;
+    for (const phase of PHASES) {
+      const group = kept.filter((track) => track.phase === phase.id);
+      if (group.length < 2) continue;
+      const ratio =
+        group.reduce((sum, track) => sum + spanOf(track), 0) / (targetMs * phase.share);
+      if (ratio <= worst) continue;
+      const band = PHASE_ENERGY[phase.id];
+      const removable = group.filter(
+        (track) =>
+          track.id !== performance[0].id &&
+          track.id !== performance[performance.length - 1].id,
+      );
+      if (!removable.length) continue;
+      // Out-of-band energy goes first, otherwise the track nearest the middle.
+      const gapOf = (track: SetTrack) =>
+        track.energyLevel == null
+          ? 0
+          : Math.max(0, band.min - track.energyLevel, track.energyLevel - band.max);
+      pick = [...removable].sort(
+        (a, b) =>
+          gapOf(b) - gapOf(a) ||
+          Math.abs(group.indexOf(a) - (group.length - 1) / 2) -
+            Math.abs(group.indexOf(b) - (group.length - 1) / 2),
+      )[0];
+      worst = ratio;
+    }
+    if (!pick) break;
+    moveIds.add(pick.id);
+  }
 
   const trimmed: SetDraft = {
     ...draft,
