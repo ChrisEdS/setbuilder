@@ -5708,3 +5708,12 @@ body {
   }
 }
 
+
+/* Long single-word titles wrap instead of being clipped in narrow role columns. */
+.crate-item .crate-title-row strong {
+  overflow: visible;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
