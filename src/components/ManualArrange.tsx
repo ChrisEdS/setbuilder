@@ -482,7 +482,7 @@ export function ManualArrange({
                 ) : null}
 
                 <label className="manual-comment">
-                  <span>Comment</span>
+                  <span>Kommentar</span>
                   <textarea
                     value={track.comment || ""}
                     rows={2}
@@ -521,7 +521,7 @@ export function ManualArrange({
                         transition: e.target.value as TransitionVerb,
                       })
                     }
-                    aria-label={`Transition ${track.name}`}
+                    aria-label={`Übergang ${track.name}`}
                   >
                     {TRANSITIONS.map((item) => (
                       <option key={item.id} value={item.id}>

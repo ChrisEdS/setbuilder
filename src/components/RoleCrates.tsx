@@ -280,7 +280,7 @@ export function RoleCrates({
       <details className="explain-fold nested">
         <summary>
           <span>Rollen kurz erklärt</span>
-          <em>Aufklappen</em>
+          <em className="fold-toggle" />
         </summary>
         <div className="explain-body">
           <ul className="role-explain">

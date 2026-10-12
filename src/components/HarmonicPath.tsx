@@ -75,7 +75,10 @@ export function HarmonicPath({ tracks, onHarmonize }: Props) {
       </div>
 
       {performance.length === 0 ? (
-        <p className="guide-line">Noch kein Set — zuerst eine Playlist vom Stick laden.</p>
+        <div className="empty">
+          <p>Noch kein Set.</p>
+          <p>Zuerst eine Playlist vom Stick laden, dann erscheint hier der Key-Verlauf.</p>
+        </div>
       ) : (
         <ol className="harm-steps">
           {performance.map((track, index) => {
@@ -131,12 +134,12 @@ export function HarmonicPath({ tracks, onHarmonize }: Props) {
       <details className="explain-fold nested">
         <summary>
           <span>Camelot &amp; Mix-Score erklärt</span>
-          <em>Aufklappen</em>
+          <em className="fold-toggle" />
         </summary>
         <div className="explain-body">
           <p>
             <strong>Mix-Score</strong> misst, wie gut aufeinanderfolgende Keys
-            zusammenpassen (gleiche Key, Relative, ±1 Camelot = gut). Clashes
+            zusammenpassen (gleicher Key, Relative, ±1 Camelot = gut). Clashes
             sind große Sprünge — oft Absicht vor einem Peak, sonst Feinschliff.
           </p>
           <p>

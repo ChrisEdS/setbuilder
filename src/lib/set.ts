@@ -163,7 +163,7 @@ export const TRACK_ROLES: { id: TrackRole; label: string; hint: string }[] = [
 ];
 
 export const TRANSITIONS: { id: TransitionVerb; label: string }[] = [
-  { id: "unset", label: "Transition wählen…" },
+  { id: "unset", label: "Übergang wählen…" },
   { id: "long-blend", label: "Long blend" },
   { id: "eq-swap", label: "EQ swap" },
   { id: "echo-out", label: "Echo-out" },
@@ -388,4 +388,9 @@ export function exportSetText(draft: SetDraft): string {
   }
 
   return `${lines.join("\n").trim()}\n`;
+}
+
+/** "1 Track" / "3 Tracks" */
+export function trackCount(count: number): string {
+  return `${count} ${count === 1 ? "Track" : "Tracks"}`;
 }

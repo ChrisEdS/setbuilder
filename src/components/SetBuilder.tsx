@@ -51,6 +51,7 @@ import {
   phaseWindowLabel,
   setPositionById,
   totalDurationMs,
+  trackCount,
 } from "@/lib/set";
 
 function MixJoinLine({ tracks, track }: { tracks: SetTrack[]; track: SetTrack }) {
@@ -603,7 +604,7 @@ export function SetBuilder() {
         const tracks = data.tracks ?? [];
         setResults(tracks);
         setCrateSource(`Tidal: ${data.label || label || "Playlist"}`);
-        setStatus(`${tracks.length} Tracks aus Tidal — einzeln oder alle in die Crate.`);
+        setStatus(`${trackCount(tracks.length)} aus Tidal — einzeln oder alle in die Crate.`);
       } catch (err) {
         setResults([]);
         fail(
@@ -751,7 +752,7 @@ export function SetBuilder() {
           if (!response.ok) throw new Error(data.error || "Tidal-Link fehlgeschlagen.");
           setResults(data.tracks ?? []);
           setCrateSource(`Tidal: ${data.label || "Playlist"}`);
-          setStatus(`${(data.tracks ?? []).length} Tracks aus Tidal geladen.`);
+          setStatus(`${trackCount((data.tracks ?? []).length)} aus Tidal geladen.`);
         } catch (err) {
           setResults([]);
           fail(
@@ -797,7 +798,7 @@ export function SetBuilder() {
         setStatus(
           tracks.length === 1
             ? "Track geladen — mit + zum Set hinzufügen."
-            : `${tracks.length} Tracks geladen — einzeln oder alle hinzufügen.`,
+            : `${trackCount(tracks.length)} geladen — einzeln oder alle hinzufügen.`,
         );
       } catch (err) {
         setResults([]);
@@ -889,7 +890,7 @@ export function SetBuilder() {
       tracks: [...current.tracks, ...mapped],
     }));
     setStatus(
-      `+ ${mapped.length} Tracks → ${PHASES.find((p) => p.id === activePhase)?.label} / ${activeRole}`,
+      `+ ${trackCount(mapped.length)} → ${PHASES.find((p) => p.id === activePhase)?.label} / ${activeRole}`,
     );
   }
 
@@ -1311,8 +1312,8 @@ export function SetBuilder() {
               }}
             >
               {SLOT_KINDS.map((kind) => (
-                <option key={kind.id} value={kind.id}>
-                  {kind.label} — {kind.hint}
+                <option key={kind.id} value={kind.id} title={kind.hint}>
+                  {kind.label}
                 </option>
               ))}
             </select>
@@ -1420,7 +1421,7 @@ export function SetBuilder() {
         <details className="explain-fold nested principles">
           <summary>
             <span>Dramaturgie-Prinzipien</span>
-            <em>Aufklappen</em>
+            <em className="fold-toggle" />
           </summary>
           <div className="explain-body">
             <p>
@@ -1496,7 +1497,7 @@ export function SetBuilder() {
       <details className="explain-fold section-fold" open>
         <summary>
           <span>Crate-Rollen</span>
-          <em>{draft.tracks.length} Tracks</em>
+          <em>{trackCount(draft.tracks.length)}</em>
         </summary>
       <RoleCrates
         tracks={draft.tracks}
@@ -1859,7 +1860,7 @@ export function SetBuilder() {
         <details className="explain-fold section-fold" open>
           <summary>
             <span>Set-Timeline</span>
-            <em>{visibleTimeline.length} Tracks</em>
+            <em>{trackCount(visibleTimeline.length)}</em>
           </summary>
         <section className="panel set-panel timeline-panel">
           <div className="panel-head">
@@ -1870,7 +1871,7 @@ export function SetBuilder() {
                   ? "Performance-Set"
                   : TRACK_ROLES.find((role) => role.id === roleFilter)?.label}
                 {" · "}
-                {visibleTimeline.length} Tracks ·{" "}
+                {trackCount(visibleTimeline.length)} ·{" "}
                 {formatDuration(
                   visibleTimeline.reduce(
                     (sum, track) => sum + track.durationMs,
@@ -1915,7 +1916,7 @@ export function SetBuilder() {
                 extra={
                   <span className="tip">
                     <button type="button" className="btn ghost" onClick={resetSet}>
-                      Reset
+                      Zurücksetzen
                     </button>
                     <span className="tip-bubble" role="tooltip">
                       Set leeren und zum leeren Brief zurück. Gespeicherte Setups bleiben.
@@ -2116,7 +2117,7 @@ export function SetBuilder() {
                       </p>
                     ) : null}
                     <label className="manual-comment">
-                      <span>Comment</span>
+                      <span>Kommentar</span>
                       <textarea
                         value={track.comment || track.note || ""}
                         rows={2}
@@ -2158,7 +2159,7 @@ export function SetBuilder() {
                             transition: e.target.value as TransitionVerb,
                           })
                         }
-                        aria-label={`Transition für ${track.name}`}
+                        aria-label={`Übergang für ${track.name}`}
                       >
                         {TRANSITIONS.map((item) => (
                           <option key={item.id} value={item.id}>
@@ -2254,7 +2255,7 @@ export function SetBuilder() {
           </button>
         </form>
         <FieldNoticeView notice={localNotice("beatport")} />
-        <p className="section-note">
+        <p className="import-hint">
           Beatport hat keinen Konto-Login. Der Link legt den Titel in die aktive
           Phase. Key und BPM stehen in der Adresse nicht.
         </p>
@@ -2315,7 +2316,7 @@ export function SetBuilder() {
         <details className="explain-fold">
           <summary>
             <span>So funktioniert die Extraktion</span>
-            <em>Aufklappen</em>
+            <em className="fold-toggle" />
           </summary>
           <div className="explain-body">
             <p>

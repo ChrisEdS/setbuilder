@@ -11,7 +11,7 @@ import { parseRekordboxFile } from "@/lib/rekordbox";
 import { FieldNoticeView, type FieldNotice } from "@/components/FieldNotice";
 import { RekordboxStick } from "@/components/RekordboxStick";
 import type { SetDraft } from "@/lib/set";
-import { performanceTracks } from "@/lib/set";
+import { performanceTracks, trackCount } from "@/lib/set";
 
 type Props = {
   draft: SetDraft;
@@ -133,7 +133,7 @@ export function LibraryPanel({
       const result = applyKeyImportRows(draft, parsed.rows);
       onApply(
         result.draft,
-        `rekordbox ${parsed.source.toUpperCase()}: ${parsed.trackCount} Tracks · ${result.matched} aufs Set gematcht` +
+        `rekordbox ${parsed.source.toUpperCase()}: ${trackCount(parsed.trackCount)} · ${result.matched} aufs Set gematcht` +
           (parsed.warning ? ` · ${parsed.warning}` : ""),
       );
     } catch (error) {
@@ -470,7 +470,7 @@ export function LibraryPanel({
           <div className="library-browser-head">
             <h3>
               Library Index
-              <span>{libraryRows.length} Tracks</span>
+              <span>{trackCount(libraryRows.length)}</span>
             </h3>
             <input
               value={query}

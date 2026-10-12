@@ -8,7 +8,7 @@ import {
   type RekordboxStickSet,
 } from "@/lib/rekordbox-stick";
 import { rememberStickFiles } from "@/lib/stick-audio";
-import { formatDuration, type SetDraft } from "@/lib/set";
+import { formatDuration, trackCount, type SetDraft } from "@/lib/set";
 
 type Props = {
   draft: SetDraft;
@@ -80,7 +80,7 @@ export function RekordboxStick({
     const minutes = set.tracks.reduce((sum, track) => sum + track.durationMs, 0);
     onApply(
       next,
-      `${set.kind === "history" ? "History" : "Playlist"} „${set.name}“ · ${set.tracks.length} Tracks` +
+      `${set.kind === "history" ? "History" : "Playlist"} „${set.name}“ · ${trackCount(set.tracks.length)}` +
         (keyed ? ` · ${keyed} mit Key` : "") +
         (minutes ? ` · ${formatDuration(minutes)}` : "") +
         (set.missing ? ` · ${set.missing} ohne Treffer` : ""),
@@ -162,7 +162,7 @@ export function RekordboxStick({
                   <span>
                     {set.kind === "history" ? "History" : "Playlist"}
                     {set.path !== set.name ? ` · ${set.path}` : ""}
-                    {` · ${set.tracks.length} Tracks`}
+                    {` · ${trackCount(set.tracks.length)}`}
                     {ms ? ` · ${formatDuration(ms)}` : ""}
                   </span>
                 </div>

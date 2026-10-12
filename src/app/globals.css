@@ -560,8 +560,8 @@ textarea {
 }
 
 a.button-link.tidal-login {
-  background: #00ffff !important;
-  border-color: #00ffff !important;
+  background: #fff !important;
+  border-color: #fff !important;
   color: #121212 !important;
 }
 
@@ -5486,4 +5486,127 @@ button.drag-handle:active i {
 .crate-service-note,
 .explain-note {
   color: #9a9a9a !important;
+}
+
+/* Playlist import: same 14px rhythm as the other panels. */
+.import-panel > * {
+  margin: 0 !important;
+}
+
+.import-panel > * + * {
+  margin-top: 0.875rem !important;
+}
+
+.explain-body > .explain-note {
+  margin-top: 1rem !important;
+  padding: 0.9rem 0 0;
+  border-left: 0;
+  max-width: none;
+}
+
+.import-hint code,
+.explain-note code,
+.setups-connect-note code,
+.section-note code {
+  font-size: 0.95em;
+  padding: 0.05rem 0.35rem;
+}
+
+.import-panel > .panel-head > p {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.5rem;
+  width: fit-content;
+  margin: 0 !important;
+  padding: 0.22rem 0.7rem !important;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #d9d9d9 !important;
+  font-size: 0.72rem !important;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.import-panel > .panel-head > p::before {
+  /* status dot */
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #8a8a8a;
+}
+
+.import-hint,
+.explain-note,
+.setups-connect-note,
+.library-source-note,
+.crate-service-note,
+.curve-note {
+  max-width: 78ch !important;
+}
+
+/* Fold hint follows the real state instead of always saying "Aufklappen". */
+.fold-toggle::after {
+  content: "Aufklappen";
+}
+
+details[open] > summary > .fold-toggle::after {
+  /* open state */
+  content: "Zuklappen";
+}
+
+.explain-body > .explain-note {
+  max-width: none !important;
+}
+
+/* Brief card gets the wider column so its values are not cut off. */
+@media (min-width: 901px) {
+  .hero {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.25fr);
+  }
+}
+
+.setup-steps {
+  list-style: decimal;
+  padding-left: 1.4rem;
+}
+
+.setup-steps li::marker {
+  /* numbers */
+  color: #8a8a8a;
+  font-weight: 600;
+}
+
+/* Lists inside folds line up with the paragraph above them. */
+.explain-body ul,
+.explain-body ol {
+  padding-left: 0 !important;
+  list-style: none;
+}
+
+/* Phones: track rows have to fit the viewport. */
+@media (max-width: 720px) {
+  .manual-row {
+    grid-template-columns: 3.2rem minmax(0, 1fr) !important;
+    column-gap: 0.5rem !important;
+  }
+
+  .manual-extra {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  }
+
+  .manual-extra > :last-child {
+    grid-column: 1 / -1;
+  }
+
+  .manual-meta select {
+    min-width: 0 !important;
+    flex: 1 1 6rem;
+  }
+
+  .manual-meta {
+    min-width: 0;
+  }
 }
