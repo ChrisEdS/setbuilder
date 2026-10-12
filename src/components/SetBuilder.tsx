@@ -1608,7 +1608,7 @@ export function SetBuilder() {
         <section className="panel search-panel">
           <div className="panel-head">
             <h2>Crate ergänzen</h2>
-            <p>
+            <p className="head-meta">
               Neue Tracks: {PHASES.find((p) => p.id === activePhase)?.label} ·{" "}
               {TRACK_ROLES.find((role) => role.id === activeRole)?.label}
             </p>

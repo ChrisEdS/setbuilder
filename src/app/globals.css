@@ -5386,6 +5386,88 @@ button.drag-handle:active i {
   letter-spacing: 0.02em;
 }
 
+/* Spacing rhythm: 16px panel top, 14px between blocks and grid gaps, 19px panel bottom. */
+.curve-note {
+  margin: 0.875rem 0 0 !important;
+}
+
+.role-crates .explain-fold.nested,
+.curve .explain-fold.nested,
+.harmonic-path .explain-fold.nested {
+  margin: 0.875rem 0 0.875rem !important;
+}
+
+.phase-grid,
+.crate-columns {
+  gap: 0.875rem !important;
+}
+
+.library-panel > .library-source-note,
+.library-panel > .section-note.library-source-note {
+  margin: 0.875rem 0 0 !important;
+}
+
+.library-panel > .library-source-pane,
+.manual-panel > .manual-add,
+.manual-panel > .empty,
+.manual-panel > .manual-list,
+.timeline-panel > .empty,
+.timeline-panel > .manual-list {
+  margin: 0.875rem 0 0 !important;
+}
+
+.curve > .guide-line {
+  margin: 0.875rem 0 0 !important;
+} 
+
+
+.search-panel > .crate-service-note,
+.search-panel > .crate-mode-seg,
+.search-panel > .search-row,
+.search-panel > .empty,
+.search-panel > .manual-list,
+.search-panel > .search-results {
+  margin-top: 0.875rem !important;
+  margin-bottom: 0 !important;
+}
+
+.search-panel > .panel-head > .head-meta {
+  margin-top: 0 !important;
+}
+
+.curve > .curve-head,
+.role-crates > .panel-head,
+.search-panel > .panel-head,
+.manual-panel > .panel-head,
+.library-panel > .panel-head,
+.timeline-panel > .panel-head,
+.harmonic-path > .panel-head {
+  margin-bottom: 0 !important;
+}
+
+.role-crates > .panel-head + *,
+.library-panel > .panel-head + *,
+.search-panel > .panel-head + *,
+.manual-panel > .panel-head + *,
+.timeline-panel > .panel-head + *,
+.curve > .curve-head + *,
+.harmonic-path > .panel-head + * {
+  margin-top: 0.875rem !important;
+}
+
+.crate-columns {
+  align-items: stretch !important;
+  margin-bottom: 0;
+}
+
+/* Bodies fill their column, so the resize handles share one baseline. */
+.crate-col-body {
+  flex: 1 1 0 !important;
+  height: auto !important;
+  min-height: var(--crate-h, 260px) !important;
+}
+
+
 .curve-head > p::before {
   /* status dot */
   content: "";

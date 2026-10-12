@@ -200,7 +200,12 @@ export function RoleCrates({
     dragRef.current = {
       role,
       startY: event.clientY,
-      startH: prefs.heights[role],
+      startH: Math.max(
+        MIN_HEIGHT,
+        ...TRACK_ROLES.filter((item) => prefs.open[item.id]).map(
+          (item) => prefs.heights[item.id],
+        ),
+      ),
     };
     setOpen(role, true);
   }
@@ -215,7 +220,9 @@ export function RoleCrates({
     );
     updatePrefs((current) => ({
       ...current,
-      heights: { ...current.heights, [drag.role]: next },
+      heights: Object.fromEntries(
+        TRACK_ROLES.map((role) => [role.id, next]),
+      ) as Record<TrackRole, number>,
     }));
   }
 
@@ -231,6 +238,13 @@ export function RoleCrates({
   }
 
   const openCount = TRACK_ROLES.filter((role) => prefs.open[role.id]).length;
+  // All columns share one row height so their bottoms always line up.
+  const rowHeight = Math.max(
+    MIN_HEIGHT,
+    ...TRACK_ROLES.filter((role) => prefs.open[role.id]).map(
+      (role) => prefs.heights[role.id],
+    ),
+  );
 
   return (
     <section className="role-crates" aria-label="Crate-Rollen Übersicht">
@@ -334,7 +348,7 @@ export function RoleCrates({
                 {
                   ["--crate-tint" as string]: accent.tint,
                   ["--crate-bar" as string]: accent.bar,
-                  ["--crate-h" as string]: `${prefs.heights[role.id]}px`,
+                  ["--crate-h" as string]: `${rowHeight}px`,
                 } as CSSProperties
               }
             >
