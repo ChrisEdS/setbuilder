@@ -8,6 +8,7 @@ import {
   type KeyImportRow,
 } from "@/lib/key-import";
 import { parseRekordboxFile } from "@/lib/rekordbox";
+import { FieldNoticeView, type FieldNotice } from "@/components/FieldNotice";
 import { RekordboxStick } from "@/components/RekordboxStick";
 import type { SetDraft } from "@/lib/set";
 import { performanceTracks } from "@/lib/set";
@@ -17,6 +18,7 @@ type Props = {
   onApply: (draft: SetDraft, message: string) => void;
   onMatchLinks?: () => void;
   matchingLinks?: boolean;
+  linkAlert?: FieldNotice | null;
 };
 
 type LibraryRow = {
@@ -43,7 +45,13 @@ function toImportRows(rows: LibraryRow[]): KeyImportRow[] {
   }));
 }
 
-export function LibraryPanel({ draft, onApply, onMatchLinks, matchingLinks }: Props) {
+export function LibraryPanel({
+  draft,
+  onApply,
+  onMatchLinks,
+  matchingLinks,
+  linkAlert,
+}: Props) {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [libraryCount, setLibraryCount] = useState<number | null>(null);
@@ -287,10 +295,10 @@ export function LibraryPanel({ draft, onApply, onMatchLinks, matchingLinks }: Pr
             Erster Schritt. Stick-Ordner wählen und eine Playlist oder History
             als Set laden. Key, BPM und Dateipfad kommen mit.
           </p>
+          <p className="head-meta" aria-label="Key-Abdeckung">
+            {statusLabel}
+          </p>
         </div>
-        <p className="head-meta" aria-label="Key-Abdeckung">
-          {statusLabel}
-        </p>
       </div>
 
       <div className="seg crate-service-seg" role="tablist" aria-label="Key-Quelle">
@@ -324,6 +332,7 @@ export function LibraryPanel({ draft, onApply, onMatchLinks, matchingLinks }: Pr
               setLibraryCount(rows.length);
             }}
           />
+          <FieldNoticeView notice={linkAlert ?? null} />
           <div className="library-pane-grid stick-collection">
             <div>
               <h3>rekordbox Collection</h3>

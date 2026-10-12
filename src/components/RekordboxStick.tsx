@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { FieldNoticeView, type FieldNotice } from "@/components/FieldNotice";
 import {
   applyStickSet,
   readRekordboxStick,
@@ -31,7 +32,7 @@ export function RekordboxStick({
   const [localBusy, setLocalBusy] = useState(false);
   const [label, setLabel] = useState<string | null>(null);
   const [sets, setSets] = useState<RekordboxStickSet[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<FieldNotice | null>(null);
 
   async function load(list: FileList | null) {
     const files = list ? Array.from(list) : [];
@@ -52,15 +53,21 @@ export function RekordboxStick({
         })),
       );
       if (!stick.sets.length) {
-        setError("Die Datenbank hat Tracks, aber keine Playlist und keine History.");
+        setError({
+          text: "Die Datenbank hat Tracks, aber keine Playlist und keine History.",
+          hint: "In rekordbox eine Playlist auf den Stick exportieren oder die History behalten, dann den Ordner erneut wählen.",
+        });
       }
     } catch (caught) {
       setSets([]);
       setLabel(null);
-      const message =
-        caught instanceof Error ? caught.message : "Rekordbox-Stick konnte nicht gelesen werden.";
-      setError(message);
-      onApply(draft, message);
+      setError({
+        text:
+          caught instanceof Error
+            ? caught.message
+            : "Rekordbox-Stick konnte nicht gelesen werden.",
+        hint: "Den Ordner PIONEER/rekordbox wählen, oder nur die Datei export.pdb.",
+      });
     } finally {
       setLocalBusy(false);
     }
@@ -143,7 +150,7 @@ export function RekordboxStick({
           </label>
         </div>
       </div>
-      {error ? <p className="library-inline-status">{error}</p> : null}
+      <FieldNoticeView notice={error} />
       {sets.length ? (
         <ul className="stick-list">
           {sets.map((set) => {

@@ -40,7 +40,7 @@ npm install
 npm run dev
 ```
 
-App: [http://127.0.0.1:4317](http://127.0.0.1:4317)
+Entwicklung: [http://127.0.0.1:4327](http://127.0.0.1:4327). Die Desktop-App bleibt auf Port 4317.
 
 ## Desktop (Mac, Windows, Linux)
 

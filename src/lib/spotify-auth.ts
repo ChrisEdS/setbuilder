@@ -24,7 +24,7 @@ function requireEnv(name: string): string {
 export function getRedirectUri(): string {
   return (
     process.env.SPOTIFY_REDIRECT_URI ||
-    "http://127.0.0.1:4317/api/auth/callback"
+    `http://127.0.0.1:${process.env.PORT || "4317"}/api/auth/callback`
   );
 }
 

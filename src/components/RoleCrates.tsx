@@ -3,6 +3,7 @@
 import {
   useCallback,
   useRef,
+  useState,
   useSyncExternalStore,
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
@@ -31,6 +32,7 @@ type Props = {
   focusedTrackId?: string | null;
   onSelectRole: (role: TrackRole) => void;
   onFocusTrack?: (id: string) => void;
+  onMoveRole?: (trackId: string, role: TrackRole) => void;
   onReplace?: (targetId: string, replacementId: string) => void;
 };
 
@@ -138,9 +140,13 @@ export function RoleCrates({
   focusedTrackId,
   onSelectRole,
   onFocusTrack,
+  onMoveRole,
   onReplace,
 }: Props) {
   const prefs = useSyncExternalStore(subscribePrefs, readPrefs, () => DEFAULT_PREFS);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dropRole, setDropRole] = useState<TrackRole | null>(null);
+  const draggedRef = useRef(false);
   const dragRef = useRef<{
     role: TrackRole;
     startY: number;
@@ -232,7 +238,8 @@ export function RoleCrates({
         <div>
           <h2>Crate-Rollen</h2>
           <p className="timeline-filter">
-            Aufklappen, Höhe ziehen — Alternativen extra groß möglich
+            Titel in eine andere Rolle ziehen. Höhe am unteren Rand —
+            Alternativen extra groß möglich
           </p>
         </div>
         <div className="crate-toolbar">
@@ -297,9 +304,32 @@ export function RoleCrates({
                 isOpen ? "is-open" : "is-collapsed",
                 isWide ? "is-wide" : "",
                 isSafety ? "is-safety" : "",
+                dropRole === role.id ? "is-drop" : "",
               ]
                 .filter(Boolean)
                 .join(" ")}
+              onDragOver={(event) => {
+                if (!onMoveRole || !draggingId) return;
+                event.preventDefault();
+                event.dataTransfer.dropEffect = "move";
+                if (dropRole !== role.id) setDropRole(role.id);
+              }}
+              onDragLeave={(event) => {
+                const next = event.relatedTarget;
+                if (next instanceof Node && event.currentTarget.contains(next)) return;
+                setDropRole((current) => (current === role.id ? null : current));
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                const id = event.dataTransfer.getData("text/plain");
+                setDropRole(null);
+                setDraggingId(null);
+                if (!onMoveRole || !id) return;
+                const moving = tracks.find((item) => item.id === id);
+                if (!moving || moving.role === role.id) return;
+                if (!isOpen) setOpen(role.id, true);
+                onMoveRole(id, role.id);
+              }}
               style={
                 {
                   ["--crate-tint" as string]: accent.tint,
@@ -360,9 +390,11 @@ export function RoleCrates({
                   <div className="crate-col-body">
                   {roleTracks.length === 0 ? (
                     <p className="crate-empty">
-                      {isSafety
-                        ? "Noch keine Alternativen — bei Extraktion landen Reste hier, oder manuell als Alternativen setzen."
-                        : "Noch keine Tracks"}
+                      {dropRole === role.id
+                        ? "Hier ablegen"
+                        : isSafety
+                          ? "Noch keine Alternativen — bei Extraktion landen Reste hier, oder manuell als Alternativen setzen."
+                          : "Noch keine Tracks"}
                     </p>
                   ) : (
                     <ul className="crate-track-list">
@@ -374,12 +406,32 @@ export function RoleCrates({
                           <li key={`${role.id}-${track.id}`}>
                             <button
                               type="button"
-                              className={
-                                focused
-                                  ? "crate-card is-focused"
-                                  : "crate-card"
-                              }
-                              onClick={() => onFocusTrack?.(track.id)}
+                              draggable={Boolean(onMoveRole)}
+                              title="In eine andere Rolle ziehen"
+                              className={[
+                                "crate-card",
+                                focused ? "is-focused" : "",
+                                draggingId === track.id ? "is-dragging" : "",
+                              ]
+                                .filter(Boolean)
+                                .join(" ")}
+                              onDragStart={(event) => {
+                                draggedRef.current = true;
+                                event.dataTransfer.setData("text/plain", track.id);
+                                event.dataTransfer.effectAllowed = "move";
+                                setDraggingId(track.id);
+                              }}
+                              onDragEnd={() => {
+                                setDraggingId(null);
+                                setDropRole(null);
+                                window.setTimeout(() => {
+                                  draggedRef.current = false;
+                                }, 0);
+                              }}
+                              onClick={() => {
+                                if (draggedRef.current) return;
+                                onFocusTrack?.(track.id);
+                              }}
                             >
                               {track.imageUrl ? (
                                 // eslint-disable-next-line @next/next/no-img-element

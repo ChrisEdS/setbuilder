@@ -26,7 +26,7 @@ function requireEnv(name: string): string {
 export function getTidalRedirectUri(): string {
   return (
     process.env.TIDAL_REDIRECT_URI ||
-    "http://127.0.0.1:4317/api/auth/tidal/callback"
+    `http://127.0.0.1:${process.env.PORT || "4317"}/api/auth/tidal/callback`
   );
 }
 

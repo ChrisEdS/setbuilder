@@ -8,6 +8,8 @@ import {
   useSyncExternalStore,
   useTransition,
 } from "react";
+import { ConnectionSetup } from "@/components/ConnectionSetup";
+import { FieldNoticeView, type FieldNotice } from "@/components/FieldNotice";
 import { HarmonicPath } from "@/components/HarmonicPath";
 import { LibraryPanel } from "@/components/LibraryPanel";
 import { ManualArrange } from "@/components/ManualArrange";
@@ -190,6 +192,15 @@ function persistDraft(draft: SetDraft) {
   window.dispatchEvent(new Event(DRAFT_EVENT));
 }
 
+type NoticeScope =
+  | "connect"
+  | "settings"
+  | "library"
+  | "crate"
+  | "playlist"
+  | "beatport"
+  | "export";
+
 export function SetBuilder() {
   const draft = useSyncExternalStore(
     subscribeDraft,
@@ -209,11 +220,14 @@ export function SetBuilder() {
   >([]);
   const [crateSource, setCrateSource] = useState<string | null>(null);
   const [results, setResults] = useState<SearchTrack[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<(FieldNotice & { scope: NoticeScope }) | null>(
+    null,
+  );
   const [status, setStatus] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [hasSearched, setHasSearched] = useState(false);
   const [playlistUrl, setPlaylistUrl] = useState("");
+  const [beatportUrl, setBeatportUrl] = useState("");
   const setups = useSyncExternalStore(
     subscribeSetups,
     readSetupsSnapshot,
@@ -223,9 +237,7 @@ export function SetBuilder() {
   const [selectedSetup, setSelectedSetup] = useState("");
   const [spotifyConnected, setSpotifyConnected] = useState<boolean | null>(null);
   const [tidalConnected, setTidalConnected] = useState<boolean | null>(null);
-  const [redirectUri, setRedirectUri] = useState(
-    "http://127.0.0.1:4317/api/auth/callback",
-  );
+  const [redirectUri, setRedirectUri] = useState("/api/auth/callback");
   const [isExtracting, setIsExtracting] = useState(false);
   const [focusTrackId, setFocusTrackId] = useState<string | null>(null);
   const [matchingLinks, setMatchingLinks] = useState(false);
@@ -237,6 +249,28 @@ export function SetBuilder() {
   const [workspaceMode, setWorkspaceMode] = useState<"auto" | "manual">(
     "manual",
   );
+  const [settingsNote, setSettingsNote] = useState("Sichern · Verbinden");
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  function noteSettings(note: string) {
+    setSettingsNote(note);
+    if (note === "Spotify fehlt") setSettingsOpen(true);
+  }
+
+  function fail(scope: NoticeScope, text: string, hint: string) {
+    setNotice({ scope, text, hint });
+    setStatus(null);
+    if (scope === "connect" || scope === "settings") setSettingsOpen(true);
+  }
+
+  function clearNotice() {
+    setNotice(null);
+  }
+
+  function localNotice(scope: NoticeScope): FieldNotice | null {
+    if (!notice || notice.scope !== scope) return null;
+    return notice;
+  }
   const authNote = useSyncExternalStore(
     () => () => {},
     readAuthNote,
@@ -363,7 +397,11 @@ export function SetBuilder() {
             "Spotify verbunden — wähle eine eigene Playlist und extrahiere das Set.",
           );
         } else if (auth === "error") {
-          setError(`Spotify-Login fehlgeschlagen: ${message}`);
+          fail(
+            "connect",
+            `Spotify-Login fehlgeschlagen: ${message}`,
+            "Redirect URI in der Developer-App prüfen, Zugangsdaten unter Einstellungen speichern, dann erneut verbinden.",
+          );
         }
       } catch {
         if (!cancelled) setSpotifyConnected(false);
@@ -378,11 +416,15 @@ export function SetBuilder() {
   async function extractFromPlaylist() {
     const url = playlistUrl.trim();
     if (!url) {
-      setError("Bitte eine Spotify-Playlist-URL einfügen.");
+      fail(
+        "playlist",
+        "Playlist-Link fehlt.",
+        "Einen Spotify- oder Tidal-Playlist-Link ins Feld einfügen.",
+      );
       return;
     }
 
-    setError(null);
+    clearNotice();
     setStatus(null);
     setIsExtracting(true);
     try {
@@ -418,8 +460,10 @@ export function SetBuilder() {
 
       if (response.status === 401 || data.code === "AUTH_REQUIRED") {
         setSpotifyConnected(false);
-        setError(
-          "Spotify-Login nötig, um Playlist-Tracks zu lesen. Zuerst verbinden, dann erneut extrahieren.",
+        fail(
+          "playlist",
+          "Spotify-Login nötig, um Playlist-Tracks zu lesen.",
+          "Unter Einstellungen mit Spotify verbinden, dann hier noch einmal extrahieren.",
         );
         return;
       }
@@ -448,7 +492,11 @@ export function SetBuilder() {
       );
       await refreshAuthStatus();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Extraktion fehlgeschlagen.");
+      fail(
+        "playlist",
+        err instanceof Error ? err.message : "Extraktion fehlgeschlagen.",
+        "Den Link prüfen. Im Spotify Dev Mode gehen nur eigene oder collaborative Playlists.",
+      );
     } finally {
       setIsExtracting(false);
     }
@@ -476,7 +524,11 @@ export function SetBuilder() {
   function runSearch(nextQuery = query) {
     const trimmed = nextQuery.trim();
     if (trimmed.length < 2) {
-      setError("Mindestens 2 Zeichen für die Suche.");
+      fail(
+        "crate",
+        "Mindestens 2 Zeichen für die Suche.",
+        "Artist oder Titel mit mindestens zwei Zeichen eintippen.",
+      );
       return;
     }
 
@@ -492,13 +544,15 @@ export function SetBuilder() {
     }
 
     if (crateService === "beatport") {
-      setError(
-        "Beatport durchsucht SETFORM nicht. Einen Track- oder Release-Link einfügen.",
+      fail(
+        "crate",
+        "Beatport durchsucht SETFORM nicht.",
+        "Auf Link / Playlist wechseln und einen beatport.com/track/… Link einfügen.",
       );
       return;
     }
 
-    setError(null);
+    clearNotice();
     setStatus(null);
     setCrateSource(null);
     setHasSearched(true);
@@ -518,14 +572,18 @@ export function SetBuilder() {
         }
       } catch (err) {
         setResults([]);
-        setError(err instanceof Error ? err.message : "Suche fehlgeschlagen.");
+        fail(
+          "crate",
+          err instanceof Error ? err.message : "Suche fehlgeschlagen.",
+          "Verbindung unter Einstellungen prüfen und die Suche wiederholen.",
+        );
       }
     });
   }
 
   async function loadTidalCrate(playlistId: string, label?: string) {
     if (!playlistId) return;
-    setError(null);
+    clearNotice();
     setStatus(null);
     setHasSearched(true);
     setCrateService("tidal");
@@ -548,7 +606,74 @@ export function SetBuilder() {
         setStatus(`${tracks.length} Tracks aus Tidal — einzeln oder alle in die Crate.`);
       } catch (err) {
         setResults([]);
-        setError(err instanceof Error ? err.message : "Tidal-Playlist fehlgeschlagen.");
+        fail(
+          "crate",
+          err instanceof Error ? err.message : "Tidal-Playlist fehlgeschlagen.",
+          "Mit Tidal verbinden. In der Entwickler-App user.read und playlists.read einschalten.",
+        );
+      }
+    });
+  }
+
+  async function loadBeatportIntoSet() {
+    const trimmed = beatportUrl.trim();
+    if (!trimmed.toLowerCase().includes("beatport.com")) {
+      fail(
+        "beatport",
+        "Das ist kein Beatport-Track-Link.",
+        "Die Adresse aus dem Browser kopieren. Sie muss beatport.com/track/ oder /release/ enthalten.",
+      );
+      return;
+    }
+    clearNotice();
+    setStatus(null);
+    startTransition(async () => {
+      try {
+        const response = await fetch("/api/resolve-link", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: trimmed }),
+        });
+        const data = (await response.json()) as {
+          tracks?: SearchTrack[];
+          message?: string;
+          error?: string;
+        };
+        if (!response.ok) throw new Error(data.error || "Beatport-Link fehlgeschlagen.");
+        const incoming = data.tracks ?? [];
+        if (!incoming.length) throw new Error("Keine Tracks im Beatport-Link.");
+        addTracksBulk(
+          incoming.map((track) => ({
+            id: track.id,
+            name: track.name,
+            artists: track.artists,
+            album: track.album,
+            durationMs: track.durationMs,
+            uri: track.uri,
+            externalUrl: track.externalUrl,
+            imageUrl: track.imageUrl,
+            phase: activePhase,
+            role: activeRole,
+            transition: "unset" as const,
+            bpm: "",
+            keyCamelot: "",
+            note: "",
+            comment: "",
+            source: "beatport" as const,
+            safetyAlt: "",
+          })),
+        );
+        setBeatportUrl("");
+        setStatus(
+          data.message ||
+            `${incoming.length} von Beatport in ${PHASES.find((phase) => phase.id === activePhase)?.label} gelegt.`,
+        );
+      } catch (err) {
+        fail(
+          "beatport",
+          err instanceof Error ? err.message : "Beatport-Link fehlgeschlagen.",
+          "Den Link im Browser öffnen. Steht der Titel in der Adresse, hier noch einmal einfügen.",
+        );
       }
     });
   }
@@ -556,7 +681,11 @@ export function SetBuilder() {
   async function importCrateLink(rawUrl = linkUrl) {
     const trimmed = rawUrl.trim();
     if (!trimmed) {
-      setError("Playlist- oder Track-Link einfügen.");
+      fail(
+        "crate",
+        "Playlist- oder Track-Link fehlt.",
+        "Einen Spotify-, Tidal- oder Beatport-Link ins Feld einfügen.",
+      );
       return;
     }
     if (
@@ -565,7 +694,7 @@ export function SetBuilder() {
     ) {
       setCrateService("beatport");
       setHasSearched(true);
-      setError(null);
+      clearNotice();
       setStatus(null);
       startTransition(async () => {
         try {
@@ -595,8 +724,10 @@ export function SetBuilder() {
         } catch (err) {
           setResults([]);
           setCrateSource(null);
-          setError(
+          fail(
+            "crate",
             err instanceof Error ? err.message : "Beatport-Link fehlgeschlagen.",
+            "Den Link im Browser öffnen. Steht der Titel in der Adresse, hier noch einmal einfügen.",
           );
         }
       });
@@ -623,13 +754,17 @@ export function SetBuilder() {
           setStatus(`${(data.tracks ?? []).length} Tracks aus Tidal geladen.`);
         } catch (err) {
           setResults([]);
-          setError(err instanceof Error ? err.message : "Tidal-Link fehlgeschlagen.");
+          fail(
+            "crate",
+            err instanceof Error ? err.message : "Tidal-Link fehlgeschlagen.",
+            "Mit Tidal verbinden. Die Redirect URI muss exakt die aus den Einstellungen sein.",
+          );
         }
       });
       return;
     }
 
-    setError(null);
+    clearNotice();
     setStatus(null);
     setHasSearched(true);
     startTransition(async () => {
@@ -667,8 +802,10 @@ export function SetBuilder() {
       } catch (err) {
         setResults([]);
         setCrateSource(null);
-        setError(
+        fail(
+          "crate",
           err instanceof Error ? err.message : "Link konnte nicht geladen werden.",
+          "Unter Einstellungen verbinden und den Link erneut laden. Im Dev Mode nur eigene Playlists.",
         );
       }
     });
@@ -811,7 +948,11 @@ export function SetBuilder() {
         "Druckansicht geöffnet. Dort drucken oder „Als PDF speichern“ wählen.",
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "PDF-Export fehlgeschlagen.");
+      fail(
+        "export",
+        err instanceof Error ? err.message : "PDF-Export fehlgeschlagen.",
+        "Pop-ups für diese Seite erlauben und PDF noch einmal öffnen.",
+      );
     }
   }
 
@@ -907,7 +1048,11 @@ export function SetBuilder() {
           : "Kein sicherer Spotify-Treffer.",
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Spotify-Suche fehlgeschlagen.");
+      fail(
+        "library",
+        err instanceof Error ? err.message : "Spotify-Suche fehlgeschlagen.",
+        "Unter Einstellungen mit Spotify verbinden und Links suchen erneut starten.",
+      );
     } finally {
       setMatchingLinks(false);
     }
@@ -997,7 +1142,11 @@ export function SetBuilder() {
         });
         setStatus(`„${name}“ aus Datei geladen.`);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Datei ungültig.");
+        fail(
+          "settings",
+          err instanceof Error ? err.message : "Datei ungültig.",
+          "Eine Datei verwenden, die hier über Herunterladen gespeichert wurde.",
+        );
       }
     };
     reader.readAsText(file);
@@ -1020,7 +1169,7 @@ export function SetBuilder() {
       <section className="setups-bar" aria-label="Gespeicherte Einstellungen">
         <div className="panel-head">
           <h2>Einstellungen</h2>
-          <p>Brief, Tracks, Comments, Keys und BPM</p>
+          <p>Brief sichern. Spotify und Tidal hier verbinden.</p>
         </div>
         <div className="setups-grid">
           <div className="setup-card">
@@ -1093,8 +1242,11 @@ export function SetBuilder() {
                 />
               </label>
             </div>
+            <FieldNoticeView notice={localNotice("settings")} />
           </div>
         </div>
+        <ConnectionSetup onStatus={noteSettings} />
+        <FieldNoticeView notice={localNotice("connect")} />
       </section>
     );
   }
@@ -1211,19 +1363,49 @@ export function SetBuilder() {
       </header>
 
       {status ? <p className="banner status">{status}</p> : null}
-      {error ? <p className="banner error">{error}</p> : null}
 
-      <LibraryPanel
-        draft={draft}
-        onMatchLinks={() => void matchStreamingLinks()}
-        matchingLinks={matchingLinks}
-        onApply={(next, message) => {
-          setDraft(next);
-          setError(null);
-          setStatus(message);
-        }}
-      />
+      <details
+        className="explain-fold section-fold"
+        open={settingsOpen}
+        onToggle={(event) => setSettingsOpen(event.currentTarget.open)}
+      >
+        <summary>
+          <span>Einstellungen</span>
+          <em>{settingsNote}</em>
+        </summary>
+        {renderSetups()}
+      </details>
 
+      <details className="explain-fold section-fold" open>
+        <summary>
+          <span>Rekordbox</span>
+          <em>
+            {mainTracks.length
+              ? `${mainTracks.filter((track) => track.keyCamelot).length}/${mainTracks.length} Keys`
+              : "Erster Schritt"}
+          </em>
+        </summary>
+        <LibraryPanel
+          draft={draft}
+          onMatchLinks={() => void matchStreamingLinks()}
+          matchingLinks={matchingLinks}
+          linkAlert={localNotice("library")}
+          onApply={(next, message) => {
+            setDraft(next);
+            clearNotice();
+            setStatus(message);
+          }}
+        />
+      </details>
+
+      <details className="explain-fold section-fold" open>
+        <summary>
+          <span>Energiekurve</span>
+          <em>
+            {formatDuration(filledMs)} / {draft.durationMinutes}:00
+            {filledMs > targetMs ? " · über dem Brief" : ""}
+          </em>
+        </summary>
       <section className="curve" aria-label="Energy curve">
         <div className="curve-head">
           <h2>Energiekurve</h2>
@@ -1309,6 +1491,7 @@ export function SetBuilder() {
           </p>
         ) : null}
       </section>
+      </details>
 
       <details className="explain-fold section-fold" open>
         <summary>
@@ -1325,6 +1508,11 @@ export function SetBuilder() {
           setRoleFilter(role);
         }}
         onReplace={replaceTrack}
+        onMoveRole={(id, role) => {
+          patchTrack(id, { role, why: "Manuell gesetzt" });
+          setActiveRole(role);
+          setRoleFilter(role);
+        }}
         onFocusTrack={(id) => {
           setFocusTrackId(id);
           const track = draft.tracks.find((item) => item.id === id);
@@ -1383,6 +1571,11 @@ export function SetBuilder() {
       </div>
 
       {workspaceMode === "manual" ? (
+        <details className="explain-fold section-fold" open>
+          <summary>
+            <span>Manual Arrange</span>
+            <em>{mainTracks.length} in der Performance</em>
+          </summary>
         <ManualArrange
           tracks={draft.tracks}
           positions={positions}
@@ -1397,13 +1590,21 @@ export function SetBuilder() {
           onReplace={replaceTrack}
           onMatchLinks={() => void matchStreamingLinks()}
           matchingLinks={matchingLinks}
+          linkAlert={localNotice("library")}
+          exportAlert={localNotice("export")}
           onFocus={(id) => setFocusTrackId(id)}
           onExportPdf={exportPdf}
           onExportM3u={exportM3u}
           onExportRekordbox={exportRekordbox}
         />
+        </details>
       ) : (
       <div className="workspace crate-stack">
+        <details className="explain-fold section-fold" open>
+          <summary>
+            <span>Crate ergänzen</span>
+            <em>{PHASES.find((phase) => phase.id === activePhase)?.label}</em>
+          </summary>
         <section className="panel search-panel">
           <div className="panel-head">
             <h2>Crate ergänzen</h2>
@@ -1585,6 +1786,7 @@ export function SetBuilder() {
               </button>
             </form>
           )}
+          <FieldNoticeView notice={localNotice("crate")} />
 
           {crateSource ? (
             <div className="crate-source-bar">
@@ -1652,7 +1854,13 @@ export function SetBuilder() {
             </ul>
           )}
         </section>
+        </details>
 
+        <details className="explain-fold section-fold" open>
+          <summary>
+            <span>Set-Timeline</span>
+            <em>{visibleTimeline.length} Tracks</em>
+          </summary>
         <section className="panel set-panel timeline-panel">
           <div className="panel-head">
             <div>
@@ -1965,6 +2173,7 @@ export function SetBuilder() {
             </ol>
           )}
         </section>
+        </details>
       </div>
       )}
 
@@ -2026,12 +2235,35 @@ export function SetBuilder() {
             </a>
           )}
         </div>
+        <FieldNoticeView notice={localNotice("connect")} />
+        <form
+          className="search-row import-row"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void loadBeatportIntoSet();
+          }}
+        >
+          <input
+            value={beatportUrl}
+            onChange={(event) => setBeatportUrl(event.target.value)}
+            placeholder="beatport.com/track/… oder /release/…"
+            aria-label="Beatport Link"
+          />
+          <button type="submit" disabled={isPending || !beatportUrl.trim()}>
+            {isPending ? "Lade…" : "Beatport laden"}
+          </button>
+        </form>
+        <FieldNoticeView notice={localNotice("beatport")} />
+        <p className="section-note">
+          Beatport hat keinen Konto-Login. Der Link legt den Titel in die aktive
+          Phase. Key und BPM stehen in der Adresse nicht.
+        </p>
         {tidalConnected ? null : (
           <p className="import-hint">
             Tidal-Fehler 1002: In der Entwickler-App müssen genau diese Scopes
             an sein: <code>user.read</code> und <code>playlists.read</code>.
             Redirect-URI exakt{" "}
-            <code>http://127.0.0.1:4317/api/auth/tidal/callback</code>. Danach
+            <code>{redirectUri.replace("/callback", "/tidal/callback")}</code>. Danach
             speichern und den Login neu starten.
           </p>
         )}
@@ -2046,7 +2278,7 @@ export function SetBuilder() {
                   const id = e.target.value;
                   if (!id) return;
                   setPlaylistUrl(`https://open.spotify.com/playlist/${id}`);
-                  setError(null);
+                  clearNotice();
                 }}
                 aria-label="Eigene Playlist wählen"
               >
@@ -2078,6 +2310,7 @@ export function SetBuilder() {
             {isExtracting ? "Extrahiere…" : "Set extrahieren"}
           </button>
         </form>
+        <FieldNoticeView notice={localNotice("playlist")} />
 
         <details className="explain-fold">
           <summary>
@@ -2108,13 +2341,6 @@ export function SetBuilder() {
       </section>
       </details>
 
-      <details className="explain-fold section-fold">
-        <summary>
-          <span>Einstellungen</span>
-          <em>Sichern</em>
-        </summary>
-        {renderSetups()}
-      </details>
     </div>
   );
 }

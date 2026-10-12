@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition, type ReactNode } from "react";
+import { FieldNoticeView, type FieldNotice } from "@/components/FieldNotice";
 import { ReplaceMenu } from "@/components/ReplaceMenu";
 import { SetTakeaway } from "@/components/SetTakeaway";
 import { CAMELOT_CODES, mixJoin } from "@/lib/harmonic";
@@ -44,6 +45,8 @@ type Props = {
   onReplace?: (targetId: string, replacementId: string) => void;
   onMatchLinks?: () => void;
   matchingLinks?: boolean;
+  linkAlert?: FieldNotice | null;
+  exportAlert?: FieldNotice | null;
   onFocus?: (id: string) => void;
   focusedTrackId?: string | null;
   onExportPdf?: () => void;
@@ -65,6 +68,8 @@ export function ManualArrange({
   onReplace,
   onMatchLinks,
   matchingLinks,
+  linkAlert,
+  exportAlert,
   onFocus,
   focusedTrackId,
   onExportPdf,
@@ -75,7 +80,7 @@ export function ManualArrange({
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
   const [artist, setArtist] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<FieldNotice | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [dragId, setDragId] = useState<string | null>(null);
@@ -114,7 +119,10 @@ export function ManualArrange({
   function addManualEntry() {
     const name = title.trim();
     if (!name) {
-      setError("Titel fehlt.");
+      setError({
+        text: "Titel fehlt.",
+        hint: "Einen Titel eintragen. Der Artist kann leer bleiben.",
+      });
       return;
     }
     const link = url.trim();
@@ -149,7 +157,10 @@ export function ManualArrange({
   function importLink() {
     const trimmed = url.trim();
     if (!trimmed) {
-      setError("Link von Spotify, Tidal, SoundCloud oder Beatport einfügen.");
+      setError({
+        text: "Link fehlt.",
+        hint: "Eine Adresse von Spotify, Tidal, SoundCloud oder Beatport einfügen.",
+      });
       return;
     }
     setError(null);
@@ -181,9 +192,10 @@ export function ManualArrange({
             `+ ${incoming.length} von ${sourceLabel(incoming[0]?.source)} geladen`,
         );
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Link konnte nicht geladen werden.",
-        );
+        setError({
+          text: err instanceof Error ? err.message : "Link konnte nicht geladen werden.",
+          hint: "Die Adresse im Browser prüfen. Playlists und einzelne Tracks gehen, die Startseite nicht.",
+        });
       }
     });
   }
@@ -198,13 +210,13 @@ export function ManualArrange({
             hängt fehlende Spotify-Adressen an. PDF, M3U und rekordbox nehmen
             das Set mit.
           </p>
-        </div>
-        <div className="manual-head-actions">
           <p className="head-meta">
             {performance.length} in der Performance · neue Tracks:{" "}
             {PHASES.find((phase) => phase.id === activePhase)?.label} ·{" "}
             {TRACK_ROLES.find((role) => role.id === activeRole)?.label}
           </p>
+        </div>
+        <div className="manual-head-actions">
           <SetTakeaway
             canMatch={Boolean(onMatchLinks) && tracks.length > 0}
             canExport={tracks.length > 0}
@@ -218,6 +230,8 @@ export function ManualArrange({
       </div>
 
       {toolbar}
+      <FieldNoticeView notice={linkAlert ?? null} />
+      <FieldNoticeView notice={exportAlert ?? null} />
 
       <div className="manual-add">
         <div className="manual-form">
@@ -267,7 +281,7 @@ export function ManualArrange({
           </button>
         </div>
 
-        {error ? <p className="banner error">{error}</p> : null}
+        <FieldNoticeView notice={error} />
         {status ? <p className="banner status">{status}</p> : null}
       </div>
 
