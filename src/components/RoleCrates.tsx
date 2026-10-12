@@ -153,6 +153,7 @@ export function RoleCrates({
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dropRole, setDropRole] = useState<TrackRole | null>(null);
   const draggedRef = useRef(false);
+  const [flashRole, setFlashRole] = useState<TrackRole | null>(null);
   const dragRef = useRef<{
     role: TrackRole;
     startY: number;
@@ -183,6 +184,22 @@ export function RoleCrates({
           : { ...current.open, [role]: true },
     }));
   }, []);
+
+  /** Open a column, bring it into view and flash it briefly so the jump is visible. */
+  const revealRole = useCallback(
+    (role: TrackRole) => {
+      setOpen(role, true);
+      onSelectRole(role);
+      setFlashRole(role);
+      window.setTimeout(() => {
+        document
+          .getElementById(`crate-col-${role}`)
+          ?.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+      }, 60);
+      window.setTimeout(() => setFlashRole((current) => (current === role ? null : current)), 1800);
+    },
+    [onSelectRole, setOpen],
+  );
 
   const expandAll = () =>
     updatePrefs((current) => ({
@@ -300,7 +317,7 @@ export function RoleCrates({
         </div>
       </details>
 
-      <PlanBStrip tracks={tracks} onSelectRole={onSelectRole} />
+      <PlanBStrip tracks={tracks} onShow={() => revealRole("safety")} />
 
       <div
         className={
@@ -321,8 +338,10 @@ export function RoleCrates({
           return (
             <div
               key={role.id}
+              id={`crate-col-${role.id}`}
               className={[
                 "crate-col",
+                flashRole === role.id ? "is-flash" : "",
                 active ? "active" : "",
                 isOpen ? "is-open" : "is-collapsed",
                 isWide ? "is-wide" : "",
@@ -651,13 +670,7 @@ function SafetySwap({
 }
 
 /** Plan B per phase: at least two Alternativen that fit, so a failed blend never stalls the floor. */
-function PlanBStrip({
-  tracks,
-  onSelectRole,
-}: {
-  tracks: SetTrack[];
-  onSelectRole: (role: TrackRole) => void;
-}) {
+function PlanBStrip({ tracks, onShow }: { tracks: SetTrack[]; onShow: () => void }) {
   const performance = performanceTracks(tracks);
   const phases = PHASES.filter((phase) => performance.some((track) => track.phase === phase.id));
   if (!phases.length) return null;
@@ -684,8 +697,8 @@ function PlanBStrip({
           : `Jede Phase hat mindestens ${PLAN_B_MIN} passende Alternativen.`}
       </p>
       {thin.length ? (
-        <button type="button" className="btn ghost" onClick={() => onSelectRole("safety")}>
-          Alternativen zeigen
+        <button type="button" className="btn ghost" onClick={onShow}>
+          Zu den Alternativen
         </button>
       ) : null}
     </div>

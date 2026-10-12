@@ -6539,3 +6539,26 @@ body {
   line-height: 1.4;
 }
 
+
+/* Short highlight after "Zu den Alternativen". */
+.crate-col.is-flash {
+  animation: crate-flash 1.8s ease-out;
+}
+
+@keyframes crate-flash {
+  0%,
+  60% {
+    box-shadow: 0 0 0 2px #7be495, 0 0 28px rgba(123, 228, 149, 0.35);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crate-col.is-flash {
+    animation: none;
+    box-shadow: 0 0 0 2px #7be495;
+  }
+}
+
