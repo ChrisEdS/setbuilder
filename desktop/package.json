@@ -4,7 +4,10 @@
   "version": "0.1.2",
   "description": "DJ set preparation for Spotify, Tidal, and rekordbox",
   "homepage": "https://github.com/ChrisEdS/setform",
-  "author": "SETFORM contributors",
+  "author": {
+    "name": "SETFORM contributors",
+    "email": "ChrisEdS@users.noreply.github.com"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
