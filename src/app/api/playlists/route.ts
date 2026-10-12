@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import { spotifyRouteError } from "@/lib/api-errors";
+import { requestT } from "@/lib/i18n/server";
 import { listMyPlaylists } from "@/lib/playlist";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const playlists = await listMyPlaylists();
     return NextResponse.json({
@@ -9,13 +11,6 @@ export async function GET() {
       owned: playlists.filter((playlist) => playlist.owned),
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Playlists failed";
-    if (message === "SPOTIFY_AUTH_REQUIRED") {
-      return NextResponse.json(
-        { error: "Spotify-Login nötig.", code: "AUTH_REQUIRED" },
-        { status: 401 },
-      );
-    }
-    return NextResponse.json({ error: message }, { status: 502 });
+    return spotifyRouteError(error, requestT(request), "api.auth.playlists");
   }
 }

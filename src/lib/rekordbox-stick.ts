@@ -1,6 +1,8 @@
 import { distributeRoles } from "@/lib/extract-set";
 import { stickAudioUrl } from "@/lib/stick-audio";
 import { parseEnergyLevel } from "@/lib/energy";
+import { tDe, type Translate } from "@/lib/i18n/core";
+import { LocalizedError } from "@/lib/i18n/error";
 import { parseKeyValue } from "@/lib/key-import";
 import { parseRekordboxPdb, type PdbLibrary, type PdbTrack } from "@/lib/rekordbox-pdb";
 import {
@@ -65,7 +67,9 @@ export async function readRekordboxStick(files: File[]): Promise<RekordboxStickR
     const text = await xml.text();
     const sets = setsFromXml(text);
     if (!sets.length) {
-      throw new Error(
+      throw new LocalizedError(
+        "exports.stick.noPlaylists",
+        undefined,
         "Die XML enthält keine Playlists. Für Keys ohne Set-Reihenfolge die Collection laden.",
       );
     }
@@ -73,18 +77,24 @@ export async function readRekordboxStick(files: File[]): Promise<RekordboxStickR
     return { label: displayPath(xml), sets, library };
   }
 
-  throw new Error(
+  throw new LocalizedError(
+    "exports.stick.notFound",
+    undefined,
     "Kein Rekordbox-Stick erkannt. Den Stick-Ordner wählen oder PIONEER/rekordbox/export.pdb.",
   );
 }
 
-export function applyStickSet(draft: SetDraft, set: RekordboxStickSet): SetDraft {
+export function applyStickSet(
+  draft: SetDraft,
+  set: RekordboxStickSet,
+  t: Translate = tDe,
+): SetDraft {
   const totalMs = set.tracks.reduce((sum, track) => sum + track.durationMs, 0);
   // The slot stays what the brief says; a longer set is trimmed with "Auf Slot kürzen".
   return distributeRoles({
     ...draft,
     title: set.name,
-    tracks: set.tracks.map((track, index) => toSetTrack(track, set, index, totalMs)),
+    tracks: set.tracks.map((track, index) => toSetTrack(track, set, index, totalMs, t)),
   });
 }
 
@@ -150,6 +160,7 @@ export function libraryTrackToSetTrack(
   },
   phase: SetPhaseId,
   role: TrackRole,
+  t: Translate = tDe,
 ): SetTrack {
   const stick = row.stick;
   const slug = `${row.artist}-${row.title}`.toLowerCase().replace(/[^a-z0-9]+/g, "-");
@@ -172,7 +183,7 @@ export function libraryTrackToSetTrack(
     energyLevel: stick?.energyLevel ?? row.energy,
     filePath: stick?.filePath || "",
     source: "rekordbox",
-    why: "Aus der Stick-Bibliothek ins Set gelegt",
+    why: t("exports.stick.whyLibrary"),
     safetyAlt: "",
   };
 }
@@ -182,6 +193,7 @@ function toSetTrack(
   set: RekordboxStickSet,
   index: number,
   totalMs: number,
+  t: Translate,
 ): SetTrack {
   return {
     id: `rekordbox:${set.id}:${track.id}:${index}`,
@@ -204,8 +216,8 @@ function toSetTrack(
     source: "rekordbox",
     why:
       set.kind === "history"
-        ? "Gespielte Reihenfolge aus der Rekordbox-History"
-        : "Reihenfolge der Rekordbox-Playlist",
+        ? t("exports.stick.whyHistory")
+        : t("exports.stick.whyPlaylist"),
     safetyAlt: "",
   };
 }
@@ -233,7 +245,7 @@ function phaseForTrack(index: number, tracks: StickTrack[], totalMs: number): Se
 function setsFromXml(xml: string): RekordboxStickSet[] {
   const doc = new DOMParser().parseFromString(xml, "application/xml");
   if (doc.querySelector("parsererror")) {
-    throw new Error("Ungültiges XML.");
+    throw new LocalizedError("exports.stick.invalidXml", undefined, "Ungültiges XML.");
   }
   const collection = new Map<string, StickTrack>();
   for (const node of doc.querySelectorAll("COLLECTION TRACK, COLLECTION Track")) {

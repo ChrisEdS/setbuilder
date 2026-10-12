@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { spotifyRouteError } from "@/lib/api-errors";
+import { requestT } from "@/lib/i18n/server";
 import { fetchPlaylist } from "@/lib/playlist";
 import {
   fetchAlbumTracks,
@@ -8,15 +10,13 @@ import {
 import { parseSpotifyLink } from "@/lib/spotify-link";
 
 export async function POST(request: Request) {
+  const t = requestT(request);
   try {
     const body = (await request.json()) as { url?: string };
     const parsed = parseSpotifyLink(body.url || "");
     if (!parsed) {
       return NextResponse.json(
-        {
-          error:
-            "Ungültiger Link. Erwarte open.spotify.com/track|playlist|album/… oder spotify:…",
-        },
+        { error: t("api.invalid.spotifyLink") },
         { status: 400 },
       );
     }
@@ -47,26 +47,6 @@ export async function POST(request: Request) {
       owner: playlist.owner,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Crate import failed";
-    if (message === "SPOTIFY_AUTH_REQUIRED") {
-      return NextResponse.json(
-        {
-          error:
-            "Spotify-Login nötig, um Playlist-Tracks zu lesen. Track-Links gehen ohne Login.",
-          code: "AUTH_REQUIRED",
-        },
-        { status: 401 },
-      );
-    }
-    if (message.startsWith("PLAYLIST_FORBIDDEN")) {
-      return NextResponse.json(
-        {
-          error: message.replace(/^PLAYLIST_FORBIDDEN:\s*/, ""),
-          code: "PLAYLIST_FORBIDDEN",
-        },
-        { status: 403 },
-      );
-    }
-    return NextResponse.json({ error: message }, { status: 502 });
+    return spotifyRouteError(error, t, "api.auth.crate");
   }
 }

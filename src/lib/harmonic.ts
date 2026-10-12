@@ -7,6 +7,7 @@
  * than energy.
  */
 
+import { tDe, type Translate } from "@/lib/i18n/core";
 import { energyScore, energyStep, energyText } from "./energy";
 
 export type CamelotCode = `${number}A` | `${number}B`;
@@ -189,22 +190,22 @@ export function relationScore(relation: HarmonicRelation): number {
   }
 }
 
-export function relationLabel(relation: HarmonicRelation): string {
+export function relationLabel(relation: HarmonicRelation, t: Translate = tDe): string {
   switch (relation) {
     case "same":
-      return "gleiche Key";
+      return t("analysis.relation.same");
     case "relative":
-      return "Relative Dur/Moll";
+      return t("analysis.relation.relative");
     case "energyBoost":
-      return "Energy Boost (+2)";
+      return t("analysis.relation.energyBoost");
     case "adjacent":
-      return "Nachbar-Key (±1)";
+      return t("analysis.relation.adjacent");
     case "contrast":
-      return "Key-Contrast";
+      return t("analysis.relation.contrast");
     case "clash":
-      return "Harmonic clash";
+      return t("analysis.relation.clash");
     case "unknown":
-      return "Key offen";
+      return t("analysis.relation.unknown");
   }
 }
 
@@ -213,6 +214,7 @@ type MixSide = { keyCamelot: string; bpm: string; energyLevel?: number };
 export function mixJoin(
   from: MixSide | null | undefined,
   to: MixSide,
+  t: Translate = tDe,
 ): { relation: HarmonicRelation; label: string } | null {
   if (!from) return null;
   const relation = harmonicRelation(from.keyCamelot, to.keyCamelot);
@@ -220,13 +222,13 @@ export function mixJoin(
   const bpmText =
     delta == null ? "" : `${delta > 0 ? "+" : ""}${delta} BPM`;
   const jump = energyStep(from.energyLevel, to.energyLevel) === "jump";
-  const energy = energyText(from.energyLevel, to.energyLevel);
+  const energy = energyText(from.energyLevel, to.energyLevel, t);
   return {
     relation,
     label: [
-      relationLabel(relation),
+      relationLabel(relation, t),
       bpmText,
-      energy ? (jump ? `${energy} (Sprung)` : energy) : "",
+      energy ? (jump ? t("analysis.mix.energyJump", { energy }) : energy) : "",
     ]
       .filter(Boolean)
       .join(" · "),

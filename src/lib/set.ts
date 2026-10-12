@@ -1,3 +1,5 @@
+import { tDe, type Translate } from "@/lib/i18n/core";
+
 export type SetPhaseId =
   | "open"
   | "lift"
@@ -222,15 +224,27 @@ export const ARC_GUIDE: {
   },
 ];
 
+/** Arc guidance in the current language. `ARC_GUIDE` stays the German export. */
+export function arcGuideFor(t: Translate): { phase: SetPhaseId; focus: string }[] {
+  return PHASES.map((phase) => ({
+    phase: phase.id,
+    focus: t(`analysis.arc.${phase.id}`),
+  }));
+}
+
 export function phaseWindowLabel(
   durationMinutes: number,
   phaseId: SetPhaseId,
+  t: Translate = tDe,
 ): string {
   let start = 0;
   for (const phase of PHASES) {
     const end = start + durationMinutes * phase.share;
     if (phase.id === phaseId) {
-      return `${Math.round(start)}–${Math.round(end)} min`;
+      return t("analysis.phaseWindow", {
+        start: Math.round(start),
+        end: Math.round(end),
+      });
     }
     start = end;
   }
@@ -263,6 +277,26 @@ export const PREP_PRINCIPLES: { title: string; body: string }[] = [
     body: "Ein sauberer Übergang sitzt auf 16, 32 oder 64 Takten. Ein passender Camelot-Key rettet keinen Chorus, der mitten in eine Strophe fällt.",
   },
 ];
+
+const PREP_KEYS = ["dramaturgy", "slot", "waves", "plan", "energyFirst", "phrases"] as const;
+
+/** Prep principles in the current language. `PREP_PRINCIPLES` stays the German export. */
+export function prepPrinciplesFor(t: Translate): { title: string; body: string }[] {
+  return PREP_KEYS.map((key) => ({
+    title: t(`analysis.prep.${key}.title`),
+    body: t(`analysis.prep.${key}.body`),
+  }));
+}
+
+const EXTRACT_KEYS = ["pack", "arc", "roles", "harmonic"] as const;
+
+/** Extraction steps in the current language. `EXTRACT_STEPS` stays the German export. */
+export function extractStepsFor(t: Translate): { title: string; body: string }[] {
+  return EXTRACT_KEYS.map((key) => ({
+    title: t(`analysis.extractStep.${key}.title`),
+    body: t(`analysis.extractStep.${key}.body`),
+  }));
+}
 
 /** How playlist → set extraction works (UI explainer) */
 export const EXTRACT_STEPS: { title: string; body: string }[] = [
@@ -332,7 +366,7 @@ export function setPositionById(tracks: SetTrack[]): Map<string, string> {
   return map;
 }
 
-export function exportSetText(draft: SetDraft): string {
+export function exportSetText(draft: SetDraft, t: Translate = tDe): string {
   const lines = [
     draft.title,
     `${draft.vibe}`,
@@ -340,10 +374,13 @@ export function exportSetText(draft: SetDraft): string {
     `Slot: ${draft.slot}`,
     `Audience: ${draft.audience}`,
     `Gear: ${draft.gear}`,
-    `Ziel: ${draft.durationMinutes} min · Ist: ${formatDuration(totalDurationMs(draft.tracks))}`,
+    t("exports.text.target", {
+      target: draft.durationMinutes,
+      actual: formatDuration(totalDurationMs(draft.tracks)),
+    }),
     "",
-    "Prep-Prinzipien:",
-    ...PREP_PRINCIPLES.flatMap((item) => [`• ${item.title}`, `  ${item.body}`]),
+    t("exports.text.prepPrinciples"),
+    ...prepPrinciplesFor(t).flatMap((item) => [`• ${item.title}`, `  ${item.body}`]),
     "",
   ];
 
@@ -352,9 +389,9 @@ export function exportSetText(draft: SetDraft): string {
       (track) => track.phase === phase.id && track.role !== "safety",
     );
     if (phaseTracks.length === 0) continue;
-    const guide = ARC_GUIDE.find((item) => item.phase === phase.id);
+    const guide = arcGuideFor(t).find((item) => item.phase === phase.id);
     lines.push(
-      `## ${phase.label} (${phaseWindowLabel(draft.durationMinutes, phase.id)})`,
+      `## ${t(`domain.phase.${phase.id}.label`)} (${phaseWindowLabel(draft.durationMinutes, phase.id, t)})`,
     );
     if (guide) lines.push(guide.focus);
     phaseTracks.forEach((track, index) => {
@@ -393,6 +430,6 @@ export function exportSetText(draft: SetDraft): string {
 }
 
 /** "1 Track" / "3 Tracks" */
-export function trackCount(count: number): string {
-  return `${count} ${count === 1 ? "Track" : "Tracks"}`;
+export function trackCount(count: number, t: Translate = tDe): string {
+  return t(count === 1 ? "analysis.trackCount.one" : "analysis.trackCount.other", { count });
 }

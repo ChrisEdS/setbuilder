@@ -7,6 +7,8 @@ import {
   type HarmonicRelation,
 } from "@/lib/harmonic";
 import { PHASE_ENERGY, energyStep } from "@/lib/energy";
+import { LocalizedError } from "@/lib/i18n/error";
+import { tDe, type Translate } from "@/lib/i18n/core";
 import { bestPhaseFor } from "@/lib/plan-b";
 import type { SpotifyTrack } from "@/lib/spotify";
 import {
@@ -52,9 +54,14 @@ export function extractSetFromPlaylist(
   tracks: SpotifyTrack[],
   playlistName: string,
   options: ExtractOptions,
+  t: Translate = tDe,
 ): SetDraft {
   if (tracks.length === 0) {
-    throw new Error("Playlist enthält keine abspielbaren Tracks.");
+    throw new LocalizedError(
+      "analysis.extract.noTracks",
+      undefined,
+      tDe("analysis.extract.noTracks"),
+    );
   }
 
   const durationMinutes = Math.max(20, options.durationMinutes || 60);
@@ -111,14 +118,14 @@ export function extractSetFromPlaylist(
     sequenced[sequenced.length - 1].phase = "release";
   }
 
-  const withRoles = assignRolesAndTransitions(sequenced);
-  const withSafety = appendSafetyCrates(withRoles, pool, selected);
+  const withRoles = assignRolesAndTransitions(sequenced, t);
+  const withSafety = appendSafetyCrates(withRoles, pool, selected, t);
 
   return {
     title: options.title?.trim() || playlistName,
-    vibe: options.vibe?.trim() || `Aus Playlist: ${playlistName}`,
+    vibe: options.vibe?.trim() || t("analysis.extract.vibe", { name: playlistName }),
     venue: options.venue ?? DEFAULT_SET.venue,
-    slot: options.slot ?? `${durationMinutes} Min · harmonic arc`,
+    slot: options.slot ?? t("analysis.extract.slot", { minutes: durationMinutes }),
     slotKind: DEFAULT_SET.slotKind,
     audience: options.audience ?? DEFAULT_SET.audience,
     gear: options.gear ?? DEFAULT_SET.gear,
@@ -246,7 +253,7 @@ type RoleInput = Pick<
   | "phase"
 > & { energy?: number; energyLevel?: number };
 
-function assignRolesAndTransitions(tracks: RoleInput[]): SetTrack[] {
+function assignRolesAndTransitions(tracks: RoleInput[], t: Translate): SetTrack[] {
   const peakIndexes = tracks
     .map((track, index) => (track.phase === "peak" ? index : -1))
     .filter((index) => index >= 0);
@@ -293,36 +300,43 @@ function assignRolesAndTransitions(tracks: RoleInput[]): SetTrack[] {
     const energyPivot = energyStepKind === "lift" || energyStepKind === "jump";
 
     let role: TrackRole = "groove";
-    let why = "Groove-Atem im Arc";
+    let why = t("analysis.why.groove");
 
     if (track.phase === "peak" && anchorSlots.has(index)) {
       role = "anchor";
       why =
         index === contrastIdx
-          ? "Peak-Signature / Key-Contrast Moment"
-          : "Peak-Anchor (Impact, danach Groove)";
+          ? t("analysis.why.peakContrast")
+          : t("analysis.why.peakAnchor");
     } else if (isBoundary || keyPivot || bpmPivot || energyPivot) {
       role = "bridge";
       why = isBoundary
-        ? `Phasen-Pivot ${prev?.phase} → ${track.phase}`
+        ? t("analysis.why.phasePivot", { from: prev?.phase ?? "", to: track.phase })
         : keyPivot
           ? relation === "clash"
-            ? "Brücke: Key-Clash, kurz überlappen oder per Break wechseln"
-            : `Brücke: ${relationLabel(relation)}`
+            ? t("analysis.why.bridgeClash")
+            : relation === "energyBoost"
+              ? t("analysis.why.bridgeEnergyBoost")
+              : t("analysis.why.bridgeContrast")
           : energyPivot
-            ? `Brücke: Energie ${(prev?.energyLevel ?? 0)} → ${track.energyLevel ?? 0}${energyStepKind === "jump" ? " (Sprung, Break oder Reset nötig)" : ""}`
-            : "Brücke: BPM-Sprung (>3)";
+            ? t(
+                energyStepKind === "jump"
+                  ? "analysis.why.bridgeEnergyJump"
+                  : "analysis.why.bridgeEnergy",
+                { from: prev?.energyLevel ?? 0, to: track.energyLevel ?? 0 },
+              )
+            : t("analysis.why.bridgeBpm");
     } else if (track.phase === "release" && index === arr.length - 1) {
       role = "anchor";
-      why = "Closing-Anchor — kontrolliert landen";
+      why = t("analysis.why.closing");
     } else if (track.phase === "open" && index === 0) {
       role = "groove";
-      why = "Opener — Headroom, Long Blend";
+      why = t("analysis.why.opener");
     }
 
     if (role === "anchor" && track.phase === "peak" && index === contrastIdx) {
       // keep contrast note even without keys
-      why = "Peak-Signature — bewusster Contrast vor Release";
+      why = t("analysis.why.peakSignature");
     }
 
     const transition = pickTransition(track.phase, role, isBoundary, relation);
@@ -343,7 +357,7 @@ function assignRolesAndTransitions(tracks: RoleInput[]): SetTrack[] {
       keyCamelot: track.keyCamelot,
       energy: track.energy ?? 0.5,
       energyLevel: track.energyLevel,
-      note: noteFor(track.phase, role, transition, relation),
+      note: noteFor(track.phase, role, transition, relation, t),
       why,
       safetyAlt: "",
       harmonicFromPrev: relation,
@@ -377,11 +391,12 @@ function noteFor(
   role: TrackRole,
   transition: TransitionVerb,
   relation: HarmonicRelation,
+  t: Translate,
 ): string {
   const bits = [
     `${phase}/${role}`,
-    `Übergang: ${transition}`,
-    relation !== "unknown" ? relationLabel(relation) : null,
+    t("analysis.note.transition", { transition }),
+    relation !== "unknown" ? relationLabel(relation, t) : null,
   ].filter(Boolean);
   return bits.join(" · ");
 }
@@ -390,6 +405,7 @@ function appendSafetyCrates(
   setTracks: SetTrack[],
   pool: Enriched[],
   selected: Enriched[],
+  t: Translate,
 ): SetTrack[] {
   const used = new Set(selected.map((track) => track.id));
   const leftovers = pool.filter((track) => !used.has(track.id));
@@ -426,8 +442,8 @@ function appendSafetyCrates(
     bpm: track.bpm,
     keyCamelot: track.keyCamelot,
     energy: track.energy,
-    note: "Plan B — nur wenn der Raum dreht",
-    why: "Safety net aus Playlist-Rest (nicht in der Performance-Reihenfolge)",
+    note: t("analysis.note.safety"),
+    why: t("analysis.why.safetyNet"),
     safetyAlt: "",
     harmonicFromPrev: "unknown" as HarmonicRelation,
   }));
@@ -436,7 +452,7 @@ function appendSafetyCrates(
 }
 
 /** Re-run Camelot path per phase on an existing draft (after keys/BPM filled). */
-export function reharmonizeDraft(draft: SetDraft): SetDraft {
+export function reharmonizeDraft(draft: SetDraft, t: Translate = tDe): SetDraft {
   const performance = draft.tracks.filter((track) => track.role !== "safety");
   const safeties = draft.tracks.filter((track) => track.role === "safety");
 
@@ -456,7 +472,7 @@ export function reharmonizeDraft(draft: SetDraft): SetDraft {
     return {
       ...track,
       harmonicFromPrev: relation,
-      note: noteFor(track.phase, track.role, track.transition, relation),
+      note: noteFor(track.phase, track.role, track.transition, relation, t),
     };
   });
 
@@ -469,10 +485,10 @@ export function reharmonizeDraft(draft: SetDraft): SetDraft {
  * links stay untouched; Alternativen are not changed. Existing notes and
  * chosen transitions are kept.
  */
-export function distributeRoles(draft: SetDraft): SetDraft {
+export function distributeRoles(draft: SetDraft, t: Translate = tDe): SetDraft {
   const performance = draft.tracks.filter((track) => track.role !== "safety");
   if (performance.length === 0) return draft;
-  const assigned = assignRolesAndTransitions(performance);
+  const assigned = assignRolesAndTransitions(performance, t);
   const byId = new Map(assigned.map((track) => [track.id, track]));
   return {
     ...draft,
@@ -486,9 +502,9 @@ export function distributeRoles(draft: SetDraft): SetDraft {
         harmonicFromPrev: next.harmonicFromPrev,
         transition: track.transition === "unset" ? next.transition : track.transition,
         // Stick imports keep the rekordbox comment only; drop generated notes
-        // from earlier versions (e.g. "open/groove · Übergang: long-blend").
+        // from earlier versions (e.g. "open/groove · Übergang: long-blend"), in either language.
         note:
-          track.source === "rekordbox" && /^\w+\/\w+ · Übergang:/.test(track.note)
+          track.source === "rekordbox" && /^\w+\/\w+ · (?:Übergang|Transition):/.test(track.note)
             ? ""
             : track.note,
       };
@@ -510,7 +526,7 @@ export type SlotFitResult = {
  * the phase budget of the brief is filled. Everything else moves to
  * Alternativen, so nothing is lost and Plan B comes for free.
  */
-export function fitToSlot(draft: SetDraft): SlotFitResult {
+export function fitToSlot(draft: SetDraft, t: Translate = tDe): SlotFitResult {
   const targetMs = draft.durationMinutes * 60_000;
   const performance = draft.tracks.filter((track) => track.role !== "safety");
   const beforeMs = performance.reduce((sum, track) => sum + track.durationMs, 0);
@@ -606,12 +622,12 @@ export function fitToSlot(draft: SetDraft): SlotFitResult {
             ...track,
             role: "safety" as TrackRole,
             phase: bestPhaseFor(track, remaining),
-            why: "Beim Kürzen auf den Slot unter Alternativen gelegt",
+            why: t("analysis.why.trimmed"),
           }
         : track,
     ),
   };
-  const next = distributeRoles(trimmed);
+  const next = distributeRoles(trimmed, t);
   const keptTracks = next.tracks.filter((track) => track.role !== "safety");
   return {
     draft: next,

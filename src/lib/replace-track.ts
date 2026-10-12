@@ -5,6 +5,7 @@ import {
   relationScore,
 } from "./harmonic";
 import { energyScore, energyStep, energyText } from "./energy";
+import { tDe, type Translate } from "@/lib/i18n/core";
 import type { SetTrack } from "./set";
 
 export type ReplacementOption = {
@@ -17,7 +18,16 @@ export type ReplacementOption = {
 
 type KeyBpm = { keyCamelot: string; bpm: string; energyLevel?: number };
 
-export function sidePhrase(from: KeyBpm | null, to: KeyBpm, who: string): { text: string; score: number } | null {
+/**
+ * One side of a transition as text, e.g. "davor: Nachbar-Key (±1), +1 BPM, Energie +1".
+ * `who` is shown as given (pass `t("analysis.side.before")` / `t("analysis.side.after")`).
+ */
+export function sidePhrase(
+  from: KeyBpm | null,
+  to: KeyBpm,
+  who: string,
+  t: Translate = tDe,
+): { text: string; score: number } | null {
   if (!from) return null;
   const relation = harmonicRelation(from.keyCamelot, to.keyCamelot);
   const delta = bpmDelta(from.bpm, to.bpm);
@@ -27,8 +37,9 @@ export function sidePhrase(from: KeyBpm | null, to: KeyBpm, who: string): { text
   const bpmScore = delta == null ? 0.55 : Math.max(0, 1 - Math.abs(delta) / 12);
   const hasEnergy = from.energyLevel != null && to.energyLevel != null;
   const step = energyStep(from.energyLevel, to.energyLevel);
+  const energy = energyText(from.energyLevel, to.energyLevel, t);
   const energyPart = hasEnergy
-    ? `, ${energyText(from.energyLevel, to.energyLevel)}${step === "jump" ? " (Sprung)" : ""}`
+    ? `, ${step === "jump" ? t("analysis.mix.energyJump", { energy }) : energy}`
     : "";
   // Energy first, then key, then BPM. Without energy data: key and BPM only.
   const raw = hasEnergy
@@ -37,7 +48,7 @@ export function sidePhrase(from: KeyBpm | null, to: KeyBpm, who: string): { text
   // A key clash must never be bought back by matching energy and BPM.
   const score = relation === "clash" ? Math.min(raw, 0.3) : raw;
   return {
-    text: `${who}: ${relationLabel(relation)}${bpmText}${energyPart}`,
+    text: `${who}: ${relationLabel(relation, t)}${bpmText}${energyPart}`,
     score,
   };
 }
@@ -60,7 +71,11 @@ export function neighbors(tracks: SetTrack[], index: number): { prev: SetTrack |
   return { prev, next };
 }
 
-export function rankReplacements(tracks: SetTrack[], targetId: string): ReplacementOption[] {
+export function rankReplacements(
+  tracks: SetTrack[],
+  targetId: string,
+  t: Translate = tDe,
+): ReplacementOption[] {
   const index = tracks.findIndex((track) => track.id === targetId);
   if (index < 0) return [];
   const target = tracks[index];
@@ -69,14 +84,17 @@ export function rankReplacements(tracks: SetTrack[], targetId: string): Replacem
   return tracks
     .filter((track) => track.role === "safety" && track.id !== targetId)
     .map((track) => {
-      const sides = [sidePhrase(prev, track, "davor"), sidePhrase(next, track, "danach")].filter(
+      const sides = [
+        sidePhrase(prev, track, t("analysis.side.before"), t),
+        sidePhrase(next, track, t("analysis.side.after"), t),
+      ].filter(
         (side): side is { text: string; score: number } => Boolean(side),
       );
       const score = sides.length
         ? sides.reduce((sum, side) => sum + side.score, 0) / sides.length
         : 0.5;
-      const key = track.keyCamelot || "Key offen";
-      const bpm = track.bpm ? `${track.bpm} BPM` : "BPM offen";
+      const key = track.keyCamelot || t("analysis.key.open");
+      const bpm = track.bpm ? `${track.bpm} BPM` : t("analysis.bpm.open");
       return {
         id: track.id,
         title: track.name,
@@ -107,6 +125,7 @@ export function rankLibraryReplacements<
   rows: T[],
   toKey: (raw: string) => string,
   limit = 8,
+  t: Translate = tDe,
 ): LibraryReplacement<T>[] {
   const index = tracks.findIndex((track) => track.id === targetId);
   if (index < 0 || tracks[index].role === "safety") return [];
@@ -118,7 +137,10 @@ export function rankLibraryReplacements<
   for (const row of rows) {
     if (inSet.has(`${row.artist || "Unknown"}|${row.title}`.toLowerCase())) continue;
     const candidate = { keyCamelot: toKey(row.key), bpm: row.bpm, energyLevel: row.energy };
-    const sides = [sidePhrase(prev, candidate, "davor"), sidePhrase(next, candidate, "danach")].filter(
+    const sides = [
+      sidePhrase(prev, candidate, t("analysis.side.before"), t),
+      sidePhrase(next, candidate, t("analysis.side.after"), t),
+    ].filter(
       (side): side is { text: string; score: number } => Boolean(side),
     );
     const score = sides.length
@@ -128,7 +150,7 @@ export function rankLibraryReplacements<
       row,
       score,
       detail: [
-        `${candidate.keyCamelot || "Key offen"} · ${row.bpm ? `${row.bpm} BPM` : "BPM offen"}${row.energy != null ? ` · E${row.energy}` : ""}`,
+        `${candidate.keyCamelot || t("analysis.key.open")} · ${row.bpm ? `${row.bpm} BPM` : t("analysis.bpm.open")}${row.energy != null ? ` · E${row.energy}` : ""}`,
         ...sides.map((side) => side.text),
       ].join(" · "),
     });
@@ -136,7 +158,12 @@ export function rankLibraryReplacements<
   return scored.sort((a, b) => b.score - a.score).slice(0, limit);
 }
 
-export function swapIntoSlot(tracks: SetTrack[], targetId: string, replacementId: string): SetTrack[] {
+export function swapIntoSlot(
+  tracks: SetTrack[],
+  targetId: string,
+  replacementId: string,
+  t: Translate = tDe,
+): SetTrack[] {
   const targetIndex = tracks.findIndex((track) => track.id === targetId);
   const replacementIndex = tracks.findIndex((track) => track.id === replacementId);
   if (targetIndex < 0 || replacementIndex < 0 || targetIndex === replacementIndex) return tracks;
@@ -147,12 +174,12 @@ export function swapIntoSlot(tracks: SetTrack[], targetId: string, replacementId
     ...replacement,
     phase: target.phase,
     role: target.role,
-    why: `Ersatz für ${target.name}`,
+    why: t("analysis.why.replacementFor", { name: target.name }),
   };
   next[replacementIndex] = {
     ...target,
     role: "safety",
-    why: `Ersetzt durch ${replacement.name}`,
+    why: t("analysis.why.replacedBy", { name: replacement.name }),
   };
   return next;
 }

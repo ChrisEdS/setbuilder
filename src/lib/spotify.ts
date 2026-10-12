@@ -1,3 +1,5 @@
+import { LocalizedError } from "@/lib/i18n/error";
+
 type SpotifyTokenResponse = {
   access_token: string;
   token_type: string;
@@ -113,7 +115,11 @@ export async function fetchTrackById(
   );
   if (!response.ok) {
     const body = await response.text();
-    throw new Error(`Track laden fehlgeschlagen (${response.status}): ${body}`);
+    throw new LocalizedError(
+      "api.spotify.trackFailed",
+      { status: response.status, body },
+      `Track laden fehlgeschlagen (${response.status}): ${body}`,
+    );
   }
   const track = (await response.json()) as SpotifySearchTrack;
   return mapApiTrack(track);
@@ -133,7 +139,11 @@ export async function fetchAlbumTracks(
   );
   if (!metaRes.ok) {
     const body = await metaRes.text();
-    throw new Error(`Album laden fehlgeschlagen (${metaRes.status}): ${body}`);
+    throw new LocalizedError(
+      "api.spotify.albumFailed",
+      { status: metaRes.status, body },
+      `Album laden fehlgeschlagen (${metaRes.status}): ${body}`,
+    );
   }
   const meta = (await metaRes.json()) as {
     name?: string;

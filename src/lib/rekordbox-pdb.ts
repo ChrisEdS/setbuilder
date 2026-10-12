@@ -7,6 +7,8 @@
  * little-endian integers, DeviceSQL strings.
  */
 
+import { LocalizedError } from "@/lib/i18n/error";
+
 export type PdbTrack = {
   id: number;
   title: string;
@@ -51,7 +53,11 @@ const HEAP = 0x28;
 
 export function parseRekordboxPdb(buffer: ArrayBuffer): PdbLibrary {
   if (buffer.byteLength < 64) {
-    throw new Error("Die Datei ist zu klein für eine rekordbox export.pdb.");
+    throw new LocalizedError(
+      "exports.pdb.tooSmall",
+      undefined,
+      "Die Datei ist zu klein für eine rekordbox export.pdb.",
+    );
   }
   const view = new DataView(buffer);
   const pageLen = view.getUint32(4, true);
@@ -64,7 +70,9 @@ export function parseRekordboxPdb(buffer: ArrayBuffer): PdbLibrary {
     tableCount > 64 ||
     buffer.byteLength < pageLen
   ) {
-    throw new Error(
+    throw new LocalizedError(
+      "exports.pdb.notPdb",
+      undefined,
       "Das ist keine rekordbox export.pdb. Auf dem Stick liegt sie unter PIONEER/rekordbox/export.pdb.",
     );
   }
@@ -103,7 +111,11 @@ export function parseRekordboxPdb(buffer: ArrayBuffer): PdbLibrary {
   ];
 
   if (!tracks.length && !playlists.length) {
-    throw new Error("export.pdb gelesen, aber ohne Tracks oder Playlists.");
+    throw new LocalizedError(
+      "exports.pdb.empty",
+      undefined,
+      "export.pdb gelesen, aber ohne Tracks oder Playlists.",
+    );
   }
 
   return { tracks, playlists };

@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { errorText } from "@/lib/i18n/error";
+import { requestT } from "@/lib/i18n/server";
 import {
   connectionStatus,
   saveConnectionSecrets,
@@ -12,20 +14,23 @@ function localRequest(request: Request): boolean {
 
 export async function GET(request: Request) {
   if (!localRequest(request)) {
-    return NextResponse.json({ error: "Nur lokal." }, { status: 403 });
+    return NextResponse.json({ error: requestT(request)("api.setup.localOnly") }, { status: 403 });
   }
   return NextResponse.json(connectionStatus());
 }
 
 export async function POST(request: Request) {
+  const t = requestT(request);
   if (!localRequest(request)) {
-    return NextResponse.json({ error: "Nur lokal." }, { status: 403 });
+    return NextResponse.json({ error: t("api.setup.localOnly") }, { status: 403 });
   }
   const body = (await request.json()) as Partial<Record<SecretKey, string>>;
   try {
     return NextResponse.json(saveConnectionSecrets(body));
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Speichern fehlgeschlagen.";
-    return NextResponse.json({ error: message }, { status: 400 });
+    return NextResponse.json(
+      { error: errorText(error, t, "api.setup.saveFailed") },
+      { status: 400 },
+    );
   }
 }

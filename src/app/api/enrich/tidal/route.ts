@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { errorText } from "@/lib/i18n/error";
+import { requestT } from "@/lib/i18n/server";
 import { getSpotifyAccessToken } from "@/lib/spotify";
 import { getUserAccessToken } from "@/lib/spotify-auth";
 import {
@@ -65,12 +67,12 @@ async function fetchSpotifyIsrcs(
 }
 
 export async function POST(request: Request) {
+  const t = requestT(request);
   if (!tidalConfigured()) {
     return NextResponse.json({
       available: false,
       reason: "TIDAL_NOT_CONFIGURED",
-      message:
-        "Tidal Keys brauchen TIDAL_CLIENT_ID + TIDAL_CLIENT_SECRET in .env.local (developer.tidal.com).",
+      message: t("api.enrich.notConfigured"),
       enrichments: [] as Enrichment[],
       matched: 0,
       checked: 0,
@@ -142,21 +144,19 @@ export async function POST(request: Request) {
       searchFallback,
       message:
         enrichments.length > 0
-          ? `Tidal: ${enrichments.length}/${tracks.length} Keys/BPM gematcht` +
-            (searchFallback
-              ? ` · ${searchFallback} per Titelsuche`
-              : " · per ISRC")
-          : "Tidal: keine Keys gefunden — Titel prüfen oder rekordbox nutzen.",
+          ? t(searchFallback ? "api.enrich.matchedSearch" : "api.enrich.matchedIsrc", {
+              matched: enrichments.length,
+              checked: tracks.length,
+              search: searchFallback,
+            })
+          : t("api.enrich.noKeys"),
       enrichments,
     });
   } catch (error) {
     return NextResponse.json({
       available: false,
       reason: "TIDAL_ERROR",
-      message:
-        error instanceof Error
-          ? error.message
-          : "Tidal Enrichment fehlgeschlagen.",
+      message: errorText(error, t, "api.enrich.failed"),
       enrichments: [] as Enrichment[],
       matched: 0,
       checked: tracks.length,
@@ -164,11 +164,12 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const t = requestT(request);
   return NextResponse.json({
     configured: tidalConfigured(),
     message: tidalConfigured()
-      ? "Tidal Client Credentials gesetzt."
-      : "TIDAL_CLIENT_ID / TIDAL_CLIENT_SECRET fehlen in .env.local",
+      ? t("api.enrich.credentialsSet")
+      : t("api.enrich.credentialsMissing"),
   });
 }

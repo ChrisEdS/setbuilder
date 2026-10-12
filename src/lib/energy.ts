@@ -11,6 +11,7 @@
  * - Energy matters more than key; key only avoids melodic clashes.
  */
 
+import { tDe, type Translate } from "@/lib/i18n/core";
 import type { SetPhaseId } from "@/lib/set";
 
 /** Where each phase should sit on the 1–10 scale. */
@@ -62,11 +63,11 @@ export function energyScore(from?: number, to?: number): number {
   }
 }
 
-export function energyText(from?: number, to?: number): string {
+export function energyText(from?: number, to?: number, t: Translate = tDe): string {
   if (from == null || to == null) return "";
   const delta = to - from;
-  if (delta === 0) return "Energie gleich";
-  return `Energie ${delta > 0 ? "+" : ""}${delta}`;
+  if (delta === 0) return t("analysis.energy.same");
+  return t("analysis.energy.delta", { delta: `${delta > 0 ? "+" : ""}${delta}` });
 }
 
 /** Whether a level sits inside the target band of its phase. */

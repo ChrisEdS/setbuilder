@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { dataDir } from "@/lib/data-dir";
+import { LocalizedError } from "@/lib/i18n/error";
 
 const SECRET_KEYS = [
   "SPOTIFY_CLIENT_ID",
@@ -83,7 +84,11 @@ export function saveConnectionSecrets(input: Partial<Record<SecretKey, string>>)
     const next = input[key]?.trim();
     if (!next) continue;
     if (next.includes("\n") || next.includes("\r")) {
-      throw new Error("Zugangsdaten dürfen keine Zeilenumbrüche enthalten.");
+      throw new LocalizedError(
+        "api.setup.noLineBreaks",
+        undefined,
+        "Zugangsdaten dürfen keine Zeilenumbrüche enthalten.",
+      );
     }
     values.set(key, next);
     process.env[key] = next;

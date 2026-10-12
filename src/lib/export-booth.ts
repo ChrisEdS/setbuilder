@@ -1,3 +1,4 @@
+import { tDe, type Translate } from "./i18n/core";
 import type { SetDraft, SetTrack } from "./set";
 
 function escapeXml(value: string): string {
@@ -34,13 +35,13 @@ function performance(tracks: SetTrack[]): SetTrack[] {
   return tracks.filter((track) => track.role !== "safety");
 }
 
-function xmlTrack(track: SetTrack, id: number): string {
+function xmlTrack(track: SetTrack, id: number, t: Translate): string {
   const seconds = track.durationMs ? Math.round(track.durationMs / 1000) : 0;
   const bpm = track.bpm ? Number(track.bpm).toFixed(2) : "";
   const location = locationFor(track);
   const comment = [
     track.comment?.trim(),
-    location ? "" : "Pfad fehlt — in rekordbox der Datei zuordnen",
+    location ? "" : t("exports.booth.pathMissing"),
   ]
     .filter(Boolean)
     .join(" · ");
@@ -59,11 +60,13 @@ function xmlTrack(track: SetTrack, id: number): string {
 }
 
 /** rekordbox collection XML: performance order, plus Alternativen as a second playlist. */
-export function buildRekordboxXml(draft: SetDraft): string {
+export function buildRekordboxXml(draft: SetDraft, t: Translate = tDe): string {
   const main = performance(draft.tracks);
   const safety = draft.tracks.filter((track) => track.role === "safety");
   const ordered = [...main, ...safety];
-  const collection = ordered.map((track, index) => xmlTrack(track, index + 1)).join("\n");
+  const collection = ordered
+    .map((track, index) => xmlTrack(track, index + 1, t))
+    .join("\n");
   const mainKeys = main.map((_, index) => `<TRACK Key="${index + 1}" />`).join("");
   const safetyKeys = safety
     .map((_, index) => `<TRACK Key="${main.length + index + 1}" />`)
@@ -73,7 +76,7 @@ export function buildRekordboxXml(draft: SetDraft): string {
   ];
   if (safety.length) {
     folders.push(
-      `<NODE Name="${escapeXml(`${draft.title || "SETFORM"} Alternativen`)}" Type="1" KeyType="0" Entries="${safety.length}">${safetyKeys}</NODE>`,
+      `<NODE Name="${escapeXml(t("exports.booth.alternativesPlaylist", { title: draft.title || "SETFORM" }))}" Type="1" KeyType="0" Entries="${safety.length}">${safetyKeys}</NODE>`,
     );
   }
   return `<?xml version="1.0" encoding="UTF-8"?>

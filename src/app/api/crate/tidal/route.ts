@@ -1,15 +1,18 @@
 import { NextResponse } from "next/server";
+import { errorText } from "@/lib/i18n/error";
+import { requestT } from "@/lib/i18n/server";
 import type { TrackSource } from "@/lib/set";
 import { fetchTidalPlaylist, parseTidalPlaylistId } from "@/lib/tidal-playlist";
 
 export async function POST(request: Request) {
+  const t = requestT(request);
   try {
     const body = (await request.json()) as { playlistId?: string; url?: string };
     const playlistId =
       body.playlistId || parseTidalPlaylistId(body.url || "") || "";
     if (!playlistId) {
       return NextResponse.json(
-        { error: "Tidal-Playlist wählen oder tidal.com/browse/playlist/… einfügen." },
+        { error: t("api.invalid.tidalPlaylist") },
         { status: 400 },
       );
     }
@@ -22,7 +25,9 @@ export async function POST(request: Request) {
       })),
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Tidal Crate failed";
-    return NextResponse.json({ error: message }, { status: 502 });
+    return NextResponse.json(
+      { error: errorText(error, t, "api.genericError") },
+      { status: 502 },
+    );
   }
 }

@@ -1,8 +1,17 @@
 import { mixJoin } from "@/lib/harmonic";
 import { sourceLabel } from "@/lib/music-link";
 import { trackFilePath } from "@/lib/export-booth";
+import { tDe, type Translate } from "@/lib/i18n/core";
 import {
-  ARC_GUIDE,
+  phaseLabel as domainPhaseLabel,
+  roleLabel as domainRoleLabel,
+  slotHint,
+  slotLabel,
+  transitionLabel as domainTransitionLabel,
+} from "@/lib/i18n/domain";
+import { LocalizedError } from "@/lib/i18n/error";
+import {
+  arcGuideFor,
   PHASES,
   SLOT_KINDS,
   TRACK_ROLES,
@@ -24,23 +33,24 @@ function escapeHtml(value: string): string {
     .replaceAll('"', "&quot;");
 }
 
-function roleLabel(track: SetTrack): string {
-  return TRACK_ROLES.find((role) => role.id === track.role)?.label ?? track.role;
+function roleLabel(track: SetTrack, t: Translate): string {
+  return TRACK_ROLES.some((role) => role.id === track.role)
+    ? domainRoleLabel(t, track.role)
+    : track.role;
 }
 
-function transitionLabel(track: SetTrack): string {
+function transitionLabel(track: SetTrack, t: Translate): string {
   if (track.transition === "unset") return "—";
-  return (
-    TRANSITIONS.find((item) => item.id === track.transition)?.label ??
-    track.transition
-  );
+  return TRANSITIONS.some((item) => item.id === track.transition)
+    ? domainTransitionLabel(t, track.transition)
+    : track.transition;
 }
 
-function phaseLabel(phase: SetPhaseId): string {
-  return PHASES.find((item) => item.id === phase)?.label ?? phase;
+function phaseLabel(phase: SetPhaseId, t: Translate): string {
+  return PHASES.some((item) => item.id === phase) ? domainPhaseLabel(t, phase) : phase;
 }
 
-function trackDetail(track: SetTrack): string {
+function trackDetail(track: SetTrack, t: Translate): string {
   const comment = track.comment?.trim() || "";
   const note = track.note?.trim() || "";
   const path = trackFilePath(track);
@@ -48,26 +58,28 @@ function trackDetail(track: SetTrack): string {
     track.album && track.album !== "Manual" ? track.album : "";
   const bits = [
     album ? `<div class="sub">${escapeHtml(album)}</div>` : "",
-    track.why ? `<div class="note">Warum: ${escapeHtml(track.why)}</div>` : "",
+    track.why ? `<div class="note">${escapeHtml(t("exports.pdf.why", { text: track.why }))}</div>` : "",
     comment ? `<div class="note">${escapeHtml(comment)}</div>` : "",
     !comment && note && note !== path
       ? `<div class="note">${escapeHtml(note)}</div>`
       : "",
     track.safetyAlt
-      ? `<div class="note">Ersatz-Notiz: ${escapeHtml(track.safetyAlt)}</div>`
+      ? `<div class="note">${escapeHtml(t("exports.pdf.backupNote", { text: track.safetyAlt }))}</div>`
       : "",
     track.durationMs
       ? ""
-      : `<div class="note">Dauer offen, die Startzeit danach bleibt stehen.</div>`,
+      : `<div class="note">${escapeHtml(t("exports.pdf.durationOpen"))}</div>`,
     track.externalUrl
       ? `<div class="link"><a href="${escapeHtml(track.externalUrl)}">${escapeHtml(sourceLabel(track.source))}</a> <span>${escapeHtml(track.externalUrl)}</span></div>`
-      : `<div class="note">Kein Link</div>`,
-    path ? `<div class="link">Datei <span>${escapeHtml(path)}</span></div>` : "",
+      : `<div class="note">${escapeHtml(t("exports.pdf.noLink"))}</div>`,
+    path ? `<div class="link">${escapeHtml(t("exports.pdf.file"))} <span>${escapeHtml(path)}</span></div>` : "",
   ];
   return bits.join("");
 }
 
-export function buildSetPrintHtml(draft: SetDraft): string {
+export function buildSetPrintHtml(draft: SetDraft, t: Translate = tDe): string {
+  const locale = t("exports.locale");
+  const arcGuide = arcGuideFor(t);
   const main = performanceTracks(draft.tracks);
   const alternatives = draft.tracks.filter((track) => track.role === "safety");
   const filledMs = totalDurationMs(draft.tracks);
@@ -80,17 +92,17 @@ export function buildSetPrintHtml(draft: SetDraft): string {
   const performanceBody = main
     .map((track, index) => {
       const previous = index > 0 ? main[index - 1] : null;
-      const join = mixJoin(previous, track);
+      const join = mixJoin(previous, track, t);
       const phaseChanged = track.phase !== lastPhase;
       lastPhase = track.phase;
-      const guide = ARC_GUIDE.find((item) => item.phase === track.phase);
+      const guide = arcGuide.find((item) => item.phase === track.phase);
       const start = formatDuration(clock);
       clock += track.durationMs;
       const banner = phaseChanged
         ? `<tr class="phase-row">
             <td colspan="6">
-              <strong>${escapeHtml(phaseLabel(track.phase))}</strong>
-              <em>${escapeHtml(phaseWindowLabel(draft.durationMinutes, track.phase))}</em>
+              <strong>${escapeHtml(phaseLabel(track.phase, t))}</strong>
+              <em>${escapeHtml(phaseWindowLabel(draft.durationMinutes, track.phase, t))}</em>
               ${guide ? `<span>${escapeHtml(guide.focus)}</span>` : ""}
             </td>
           </tr>`
@@ -103,14 +115,14 @@ export function buildSetPrintHtml(draft: SetDraft): string {
           <strong>${escapeHtml(track.name)}</strong>
           <div class="sub">${escapeHtml(artists.join(", ") || "—")}${
             track.durationMs ? ` · ${formatDuration(track.durationMs)}` : ""
-          } · ${escapeHtml(roleLabel(track))}</div>
-          ${trackDetail(track)}
+          } · ${escapeHtml(roleLabel(track, t))}</div>
+          ${trackDetail(track, t)}
         </td>
         <td class="key">${escapeHtml(track.keyCamelot || "—")}</td>
         <td class="bpm">${escapeHtml(track.bpm || "—")}</td>
         <td class="mix">
           <div>${escapeHtml(join?.label || "—")}</div>
-          <div class="sub">${escapeHtml(transitionLabel(track))}</div>
+          <div class="sub">${escapeHtml(transitionLabel(track, t))}</div>
         </td>
       </tr>`;
     })
@@ -125,29 +137,29 @@ export function buildSetPrintHtml(draft: SetDraft): string {
           <strong>${escapeHtml(track.name)}</strong>
           <div class="sub">${escapeHtml(artists.join(", ") || "—")}${
             track.durationMs ? ` · ${formatDuration(track.durationMs)}` : ""
-          } · ${escapeHtml(phaseLabel(track.phase))}</div>
-          ${trackDetail(track)}
+          } · ${escapeHtml(phaseLabel(track.phase, t))}</div>
+          ${trackDetail(track, t)}
         </td>
         <td class="key">${escapeHtml(track.keyCamelot || "—")}</td>
         <td class="bpm">${escapeHtml(track.bpm || "—")}</td>
-        <td class="mix"><div class="sub">${escapeHtml(transitionLabel(track))}</div></td>
+        <td class="mix"><div class="sub">${escapeHtml(transitionLabel(track, t))}</div></td>
       </tr>`;
     })
     .join("");
 
   const performanceTable = main.length
     ? `<section>
-        <h2>Performance</h2>
-        <p class="lead">In dieser Reihenfolge spielen. „Start“ ist die Zeit ab Set-Beginn. „Von davor“ ist Key- und BPM-Abstand zum vorherigen Track.</p>
+        <h2>${escapeHtml(t("exports.pdf.performance"))}</h2>
+        <p class="lead">${escapeHtml(t("exports.pdf.performanceLead"))}</p>
         <table>
           <thead>
             <tr>
               <th>#</th>
-              <th>Start</th>
-              <th>Track</th>
-              <th>Key</th>
-              <th>BPM</th>
-              <th>Von davor</th>
+              <th>${escapeHtml(t("exports.pdf.colStart"))}</th>
+              <th>${escapeHtml(t("exports.pdf.colTrack"))}</th>
+              <th>${escapeHtml(t("exports.pdf.colKey"))}</th>
+              <th>${escapeHtml(t("exports.pdf.colBpm"))}</th>
+              <th>${escapeHtml(t("exports.pdf.colFromPrevious"))}</th>
             </tr>
           </thead>
           <tbody>${performanceBody}</tbody>
@@ -157,16 +169,16 @@ export function buildSetPrintHtml(draft: SetDraft): string {
 
   const alternativeTable = alternatives.length
     ? `<section>
-        <h2>Alternativen</h2>
-        <p class="lead">Nicht in der Spielzeit. Plan B, wenn der Floor dreht. In der rekordbox-XML liegen sie als zweite Playlist.</p>
+        <h2>${escapeHtml(t("exports.pdf.alternatives"))}</h2>
+        <p class="lead">${escapeHtml(t("exports.pdf.alternativesLead"))}</p>
         <table>
           <thead>
             <tr>
               <th>#</th>
-              <th colspan="2">Track</th>
-              <th>Key</th>
-              <th>BPM</th>
-              <th>Übergang</th>
+              <th colspan="2">${escapeHtml(t("exports.pdf.colTrack"))}</th>
+              <th>${escapeHtml(t("exports.pdf.colKey"))}</th>
+              <th>${escapeHtml(t("exports.pdf.colBpm"))}</th>
+              <th>${escapeHtml(t("exports.pdf.colTransition"))}</th>
             </tr>
           </thead>
           <tbody>${alternativeBody}</tbody>
@@ -175,10 +187,10 @@ export function buildSetPrintHtml(draft: SetDraft): string {
     : "";
 
   return `<!doctype html>
-<html lang="de">
+<html lang="${locale.slice(0, 2)}">
 <head>
   <meta charset="utf-8" />
-  <title>${escapeHtml(draft.title || "SETFORM")} — Ausdruck</title>
+  <title>${escapeHtml(t("exports.pdf.title", { title: draft.title || "SETFORM" }))}</title>
   <style>
     :root {
       --ink: #161616;
@@ -337,30 +349,30 @@ export function buildSetPrintHtml(draft: SetDraft): string {
 </head>
 <body>
   <div class="toolbar">
-    <p>Ausdruck für die Kabine. Im Druckdialog „Als PDF speichern“ wählen.</p>
+    <p>${escapeHtml(t("exports.pdf.toolbarHint"))}</p>
     <div>
-      <button type="button" onclick="window.print()">Drucken / PDF</button>
-      <button type="button" class="ghost" onclick="window.close()">Schließen</button>
+      <button type="button" onclick="window.print()">${escapeHtml(t("exports.pdf.print"))}</button>
+      <button type="button" class="ghost" onclick="window.close()">${escapeHtml(t("exports.pdf.close"))}</button>
     </div>
   </div>
   <main class="sheet">
-    <p class="brand">SETFORM · Ausdruck</p>
-    <h1>${escapeHtml(draft.title || "Ohne Titel")}</h1>
+    <p class="brand">${escapeHtml(t("exports.pdf.brand"))}</p>
+    <h1>${escapeHtml(draft.title || t("exports.pdf.untitled"))}</h1>
     <p class="vibe">${escapeHtml(draft.vibe || "")}</p>
     <div class="brief">
-      <div><span>Slot</span><strong>${escapeHtml(slotKind?.label ?? draft.slotKind)}${draft.slot ? ` · ${escapeHtml(draft.slot)}` : ""}</strong></div>
-      <div><span>Dauer</span><strong>${formatDuration(filledMs)} / ${draft.durationMinutes}:00${over ? " · über dem Brief" : ""}</strong></div>
-      <div><span>Tracks</span><strong>${main.length} Performance · ${alternatives.length} Alternativen</strong></div>
+      <div><span>${escapeHtml(t("exports.pdf.briefSlot"))}</span><strong>${escapeHtml(slotKind ? slotLabel(t, slotKind.id) : draft.slotKind)}${draft.slot ? ` · ${escapeHtml(draft.slot)}` : ""}</strong></div>
+      <div><span>${escapeHtml(t("exports.pdf.briefDuration"))}</span><strong>${formatDuration(filledMs)} / ${draft.durationMinutes}:00${over ? escapeHtml(t("exports.pdf.briefOverBrief")) : ""}</strong></div>
+      <div><span>${escapeHtml(t("exports.pdf.briefTracks"))}</span><strong>${escapeHtml(t("exports.pdf.briefTrackCounts", { performance: main.length, alternatives: alternatives.length }))}</strong></div>
       <div><span>Venue</span><strong>${escapeHtml(draft.venue || "—")}</strong></div>
       <div><span>Audience</span><strong>${escapeHtml(draft.audience || "—")}</strong></div>
       <div><span>Gear</span><strong>${escapeHtml(draft.gear || "—")}</strong></div>
     </div>
-    <p class="summary">${escapeHtml(slotKind?.hint || "")}</p>
+    <p class="summary">${escapeHtml(slotKind ? slotHint(t, slotKind.id) : "")}</p>
     ${performanceTable}
     ${alternativeTable}
     <div class="legend">
-      <span>Key ist Camelot. Der Übergang steht unter „Von davor“. Alternativen zählen nicht in die Spielzeit.</span>
-      <span>${new Date().toLocaleString("de-DE")}</span>
+      <span>${escapeHtml(t("exports.pdf.legend"))}</span>
+      <span>${new Date().toLocaleString(locale)}</span>
     </div>
   </main>
   <script>
@@ -372,14 +384,16 @@ export function buildSetPrintHtml(draft: SetDraft): string {
 </html>`;
 }
 
-export function openSetPdfExport(draft: SetDraft): void {
+export function openSetPdfExport(draft: SetDraft, t: Translate = tDe): void {
   const popup = window.open("", "_blank");
   if (!popup) {
-    throw new Error(
+    throw new LocalizedError(
+      "exports.pdf.popupBlocked",
+      undefined,
       "Popup blockiert — bitte Popups für SETFORM erlauben und erneut exportieren.",
     );
   }
   popup.document.open();
-  popup.document.write(buildSetPrintHtml(draft));
+  popup.document.write(buildSetPrintHtml(draft, t));
   popup.document.close();
 }

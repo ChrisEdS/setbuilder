@@ -1,3 +1,4 @@
+import { LocalizedError } from "@/lib/i18n/error";
 import type { SpotifyTrack } from "@/lib/spotify";
 import { getTidalAccessToken } from "@/lib/tidal";
 import { getTidalUserAccessToken } from "@/lib/tidal-auth";
@@ -72,11 +73,17 @@ export async function fetchTidalPlaylist(playlistId: string): Promise<{
     { headers, cache: "no-store" },
   );
   if (!metaRes.ok) {
-    throw new Error(
-      metaRes.status === 401 || metaRes.status === 403
-        ? "Tidal-Playlist nicht lesbar. Mit Tidal verbinden oder einen öffentlichen Playlist-Link nutzen."
-        : `Tidal-Playlist fehlgeschlagen (${metaRes.status})`,
-    );
+    throw metaRes.status === 401 || metaRes.status === 403
+      ? new LocalizedError(
+          "api.tidal.playlistUnreadable",
+          undefined,
+          "Tidal-Playlist nicht lesbar. Mit Tidal verbinden oder einen öffentlichen Playlist-Link nutzen.",
+        )
+      : new LocalizedError(
+          "api.tidal.playlistFailed",
+          { status: metaRes.status },
+          `Tidal-Playlist fehlgeschlagen (${metaRes.status})`,
+        );
   }
   const meta = (await metaRes.json()) as {
     data?: { id?: string; attributes?: { title?: string; name?: string } };
@@ -87,7 +94,11 @@ export async function fetchTidalPlaylist(playlistId: string): Promise<{
     "Tidal Playlist";
   const tracks = await fetchTidalPlaylistTracks(playlistId, headers);
   if (!tracks.length) {
-    throw new Error("Tidal-Playlist enthält keine lesbaren Tracks.");
+    throw new LocalizedError(
+      "api.tidal.playlistEmpty",
+      undefined,
+      "Tidal-Playlist enthält keine lesbaren Tracks.",
+    );
   }
   return { id: meta.data?.id || playlistId, name, tracks };
 }

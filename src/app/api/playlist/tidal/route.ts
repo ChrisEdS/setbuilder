@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { extractSetFromPlaylist } from "@/lib/extract-set";
+import { errorText } from "@/lib/i18n/error";
+import { requestT } from "@/lib/i18n/server";
 import { fetchTidalPlaylist, parseTidalPlaylistId } from "@/lib/tidal-playlist";
 
 export async function POST(request: Request) {
+  const t = requestT(request);
   try {
     const body = (await request.json()) as {
       url?: string;
@@ -18,7 +21,7 @@ export async function POST(request: Request) {
     const playlistId = parseTidalPlaylistId(body.url || "");
     if (!playlistId) {
       return NextResponse.json(
-        { error: "Ungültiger Tidal-Link. Erwartet wird tidal.com/browse/playlist/…" },
+        { error: t("api.invalid.tidalLink") },
         { status: 400 },
       );
     }
@@ -52,7 +55,9 @@ export async function POST(request: Request) {
       performanceCount,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Tidal Playlist failed";
-    return NextResponse.json({ error: message }, { status: 502 });
+    return NextResponse.json(
+      { error: errorText(error, t, "api.genericError") },
+      { status: 502 },
+    );
   }
 }

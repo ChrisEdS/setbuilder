@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { spotifyRouteError } from "@/lib/api-errors";
+import { requestT } from "@/lib/i18n/server";
 import { parseMusicLink } from "@/lib/music-link";
 import { fetchPlaylist } from "@/lib/playlist";
 import {
@@ -142,15 +144,13 @@ function fallbackFromHint(
 }
 
 export async function POST(request: Request) {
+  const t = requestT(request);
   try {
     const body = (await request.json()) as { url?: string };
     const parsed = parseMusicLink(body.url || "");
     if (!parsed) {
       return NextResponse.json(
-        {
-          error:
-            "Ungültiger Link. Spotify, Tidal, SoundCloud oder Beatport erwartet.",
-        },
+        { error: t("api.invalid.musicLink") },
         { status: 400 },
       );
     }
@@ -208,8 +208,7 @@ export async function POST(request: Request) {
         tracks: [
           fallbackFromHint("tidal", parsed.url, parsed.id, parsed.hintTitle),
         ],
-        message:
-          "Tidal Playlist/Album: Track-Link bevorzugen, oder manuell Titel setzen.",
+        message: t("api.resolve.tidalCollection"),
       });
     }
 
@@ -224,30 +223,9 @@ export async function POST(request: Request) {
       kind: parsed.kind === "release" ? "release" : "track",
       label: track.name,
       tracks: [track],
-      message:
-        "Beatport-Metadaten sind limited — Titel aus URL, Kommentar/BPM kannst du manuell ergänzen.",
+      message: t("api.resolve.beatportLimited"),
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Link resolve failed";
-    if (message === "SPOTIFY_AUTH_REQUIRED") {
-      return NextResponse.json(
-        {
-          error: "Spotify-Login nötig für Playlist-Links.",
-          code: "AUTH_REQUIRED",
-        },
-        { status: 401 },
-      );
-    }
-    if (message.startsWith("PLAYLIST_FORBIDDEN")) {
-      return NextResponse.json(
-        {
-          error: message.replace(/^PLAYLIST_FORBIDDEN:\s*/, ""),
-          code: "PLAYLIST_FORBIDDEN",
-        },
-        { status: 403 },
-      );
-    }
-    return NextResponse.json({ error: message }, { status: 502 });
+    return spotifyRouteError(error, t, "api.auth.resolveLink");
   }
 }

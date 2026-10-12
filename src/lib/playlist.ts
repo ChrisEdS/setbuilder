@@ -1,3 +1,4 @@
+import { LocalizedError } from "@/lib/i18n/error";
 import type { SpotifyTrack } from "@/lib/spotify";
 import { getUserAccessToken } from "@/lib/spotify-auth";
 
@@ -122,8 +123,11 @@ export async function listMyPlaylists(): Promise<PlaylistSummary[]> {
       cache: "no-store",
     });
     if (!response.ok) {
-      throw new Error(
-        `Eigene Playlists laden fehlgeschlagen (${response.status}): ${await response.text()}`,
+      const body = await response.text();
+      throw new LocalizedError(
+        "api.spotify.playlistsFailed",
+        { status: response.status, body },
+        `Eigene Playlists laden fehlgeschlagen (${response.status}): ${body}`,
       );
     }
     const page = (await response.json()) as {
@@ -181,11 +185,17 @@ export async function fetchPlaylist(playlistId: string): Promise<SpotifyPlaylist
   if (!metaRes.ok) {
     const body = await metaRes.text();
     if (metaRes.status === 403 || metaRes.status === 404) {
-      throw new Error(
+      throw new LocalizedError(
+        "api.forbidden.meta",
+        undefined,
         "PLAYLIST_FORBIDDEN: In Development Mode sind Tracklisten nur für Playlists lesbar, die du besitzt oder als Collaborator hast — nicht für fremde/editorial Playlists.",
       );
     }
-    throw new Error(`Playlist laden fehlgeschlagen (${metaRes.status}): ${body}`);
+    throw new LocalizedError(
+      "api.spotify.playlistFailed",
+      { status: metaRes.status, body },
+      `Playlist laden fehlgeschlagen (${metaRes.status}): ${body}`,
+    );
   }
 
   const meta = (await metaRes.json()) as {
@@ -205,7 +215,9 @@ export async function fetchPlaylist(playlistId: string): Promise<SpotifyPlaylist
     ownerId === userId || Boolean(meta.collaborative);
 
   if (!canReadItems) {
-    throw new Error(
+    throw new LocalizedError(
+      "api.forbidden.notOwned",
+      undefined,
       "PLAYLIST_FORBIDDEN: Diese Playlist gehört dir nicht. Wähle eine eigene Playlist aus der Liste oder mach sie kollaborativ.",
     );
   }
@@ -222,11 +234,17 @@ export async function fetchPlaylist(playlistId: string): Promise<SpotifyPlaylist
     if (!pageRes.ok) {
       const body = await pageRes.text();
       if (pageRes.status === 403 || pageRes.status === 404) {
-        throw new Error(
+        throw new LocalizedError(
+          "api.forbidden.items",
+          undefined,
           "PLAYLIST_FORBIDDEN: Trackliste nicht lesbar. Im Dev Mode funktionieren nur eigene oder kollaborative Playlists.",
         );
       }
-      throw new Error(`Playlist-Tracks fehlgeschlagen (${pageRes.status}): ${body}`);
+      throw new LocalizedError(
+        "api.spotify.playlistTracksFailed",
+        { status: pageRes.status, body },
+        `Playlist-Tracks fehlgeschlagen (${pageRes.status}): ${body}`,
+      );
     }
     const page = (await pageRes.json()) as {
       items?: PlaylistItemRow[];

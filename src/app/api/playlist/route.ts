@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
+import { spotifyRouteError } from "@/lib/api-errors";
 import { extractSetFromPlaylist } from "@/lib/extract-set";
+import { requestT } from "@/lib/i18n/server";
 import { fetchPlaylist, parsePlaylistId } from "@/lib/playlist";
 import { attachTidalCatalog, tidalConfigured } from "@/lib/tidal";
 
 export async function POST(request: Request) {
+  const t = requestT(request);
   try {
     const body = (await request.json()) as {
       url?: string;
@@ -19,10 +22,7 @@ export async function POST(request: Request) {
     const playlistId = parsePlaylistId(body.url || "");
     if (!playlistId) {
       return NextResponse.json(
-        {
-          error:
-            "Ungültige Playlist-URL. Erwarte open.spotify.com/playlist/… oder spotify:playlist:…",
-        },
+        { error: t("api.invalid.playlistUrl") },
         { status: 400 },
       );
     }
@@ -84,26 +84,6 @@ export async function POST(request: Request) {
       draft,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Playlist failed";
-    if (message === "SPOTIFY_AUTH_REQUIRED") {
-      return NextResponse.json(
-        {
-          error:
-            "Spotify-Login nötig: Playlist-Tracks sind seit 2026 nur mit User-Auth lesbar.",
-          code: "AUTH_REQUIRED",
-        },
-        { status: 401 },
-      );
-    }
-    if (message.startsWith("PLAYLIST_FORBIDDEN")) {
-      return NextResponse.json(
-        {
-          error: message.replace(/^PLAYLIST_FORBIDDEN:\s*/, ""),
-          code: "PLAYLIST_FORBIDDEN",
-        },
-        { status: 403 },
-      );
-    }
-    return NextResponse.json({ error: message }, { status: 502 });
+    return spotifyRouteError(error, t, "api.auth.playlist");
   }
 }

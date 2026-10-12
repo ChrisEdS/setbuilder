@@ -1,5 +1,7 @@
 import { parseBpm } from "@/lib/harmonic";
 import { parseEnergyLevel } from "@/lib/energy";
+import { tDe, type Translate } from "@/lib/i18n/core";
+import { LocalizedError } from "@/lib/i18n/error";
 import { parseKeyValue, type KeyImportRow } from "@/lib/key-import";
 
 export type RekordboxParseResult = {
@@ -35,7 +37,11 @@ function rowFromFields(
 export function parseRekordboxXml(xmlText: string): RekordboxParseResult {
   const doc = new DOMParser().parseFromString(xmlText, "application/xml");
   if (doc.querySelector("parsererror")) {
-    throw new Error("Ungültiges XML — rekordbox Export Collection (.xml) erwartet.");
+    throw new LocalizedError(
+      "exports.rekordbox.invalidXml",
+      undefined,
+      "Ungültiges XML — rekordbox Export Collection (.xml) erwartet.",
+    );
   }
 
   const tracks = Array.from(doc.querySelectorAll("TRACK, Track, track"));
@@ -78,7 +84,9 @@ export function parseRekordboxXml(xmlText: string): RekordboxParseResult {
   }
 
   if (!rows.length) {
-    throw new Error(
+    throw new LocalizedError(
+      "exports.rekordbox.noKeyTracks",
+      undefined,
       "Keine Tracks mit Key/BPM im XML gefunden. In rekordbox: Analysis → Key analysieren, dann Collection als XML exportieren.",
     );
   }
@@ -92,6 +100,7 @@ export function parseRekordboxXml(xmlText: string): RekordboxParseResult {
  */
 export async function parseRekordboxDb(
   buffer: ArrayBuffer,
+  t: Translate = tDe,
 ): Promise<RekordboxParseResult> {
   const initSqlJs = (await import("sql.js")).default;
   const SQL = await initSqlJs({
@@ -102,7 +111,9 @@ export async function parseRekordboxDb(
   try {
     db = new SQL.Database(new Uint8Array(buffer));
   } catch {
-    throw new Error(
+    throw new LocalizedError(
+      "exports.rekordbox.dbEncrypted",
+      undefined,
       "rekordbox master.db ist verschlüsselt (SQLCipher ab v6). Bitte in rekordbox: File → Export Collection in XML… und die .xml hier laden.",
     );
   }
@@ -119,8 +130,11 @@ export async function parseRekordboxDb(
       tableNames.find((name) => /content/i.test(name) && !/cue|history/i.test(name));
 
     if (!contentTable) {
-      throw new Error(
-        `Keine Content-Tabelle gefunden (${tableNames.slice(0, 8).join(", ") || "leer"}). Nutze XML-Export.`,
+      const shown = tableNames.slice(0, 8).join(", ");
+      throw new LocalizedError(
+        shown ? "exports.rekordbox.noContentTable" : "exports.rekordbox.noContentTableEmpty",
+        shown ? { tables: shown } : undefined,
+        `Keine Content-Tabelle gefunden (${shown || "leer"}). Nutze XML-Export.`,
       );
     }
 
@@ -140,7 +154,11 @@ export async function parseRekordboxDb(
     const commentCol = pick("Commnt", "Comments", "Comment") || null;
 
     if (!titleCol) {
-      throw new Error("Title-Spalte in der DB nicht gefunden — bitte XML exportieren.");
+      throw new LocalizedError(
+        "exports.rekordbox.noTitleColumn",
+        undefined,
+        "Title-Spalte in der DB nicht gefunden — bitte XML exportieren.",
+      );
     }
 
     // Artist may live in related table; try stock columns first
@@ -190,7 +208,9 @@ export async function parseRekordboxDb(
     }
 
     if (!rows.length) {
-      throw new Error(
+      throw new LocalizedError(
+        "exports.rekordbox.dbNoRows",
+        undefined,
         "DB gelesen, aber keine Key/BPM-Zeilen. In rekordbox Keys analysieren oder XML exportieren.",
       );
     }
@@ -199,8 +219,7 @@ export async function parseRekordboxDb(
       source: "db",
       rows,
       trackCount: rows.length,
-      warning:
-        "Unverschlüsselte DB gelesen. Für rekordbox 6+ ist XML-Export zuverlässiger (Artist + Key).",
+      warning: t("exports.rekordbox.dbWarning"),
     };
   } finally {
     db.close();
@@ -209,6 +228,7 @@ export async function parseRekordboxDb(
 
 export async function parseRekordboxFile(
   file: File,
+  t: Translate = tDe,
 ): Promise<RekordboxParseResult> {
   const name = file.name.toLowerCase();
 
@@ -220,13 +240,17 @@ export async function parseRekordboxFile(
     const { parseKeyImportText } = await import("@/lib/key-import");
     const rows = parseKeyImportText(await file.text());
     if (!rows.length) {
-      throw new Error("CSV ohne erkennbare Artist/Title/Key/BPM-Spalten.");
+      throw new LocalizedError(
+        "exports.rekordbox.csvNoColumns",
+        undefined,
+        "CSV ohne erkennbare Artist/Title/Key/BPM-Spalten.",
+      );
     }
     return { source: "csv", rows, trackCount: rows.length };
   }
 
   if (name.endsWith(".db") || name.endsWith(".sqlite") || name.endsWith(".sqlite3")) {
-    return parseRekordboxDb(await file.arrayBuffer());
+    return parseRekordboxDb(await file.arrayBuffer(), t);
   }
 
   // Sniff XML
@@ -235,7 +259,9 @@ export async function parseRekordboxFile(
     return parseRekordboxXml(await file.text());
   }
 
-  throw new Error(
+  throw new LocalizedError(
+    "exports.rekordbox.unsupportedFile",
+    undefined,
     "Bitte rekordbox Collection-XML (.xml), CSV oder master.db hochladen.",
   );
 }

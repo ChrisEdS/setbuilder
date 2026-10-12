@@ -6,6 +6,7 @@ import {
   pathStats,
   relationLabel,
 } from "@/lib/harmonic";
+import { useI18n } from "@/lib/i18n/react";
 import { performanceTracks, type SetTrack } from "@/lib/set";
 
 type Props = {
@@ -15,7 +16,15 @@ type Props = {
   embedded?: boolean;
 };
 
+/** Renders `**bold**` markers of a message as <strong>. */
+function rich(text: string) {
+  return text
+    .split("**")
+    .map((part, index) => (index % 2 === 1 ? <strong key={index}>{part}</strong> : part));
+}
+
 export function HarmonicPath({ tracks, onHarmonize, embedded }: Props) {
+  const { t } = useI18n();
   const performance = performanceTracks(tracks);
   const stats = pathStats(performance);
   const coverage =
@@ -23,15 +32,15 @@ export function HarmonicPath({ tracks, onHarmonize, embedded }: Props) {
   const scorePct = stats.avg == null ? null : Math.round(stats.avg * 100);
 
   return (
-    <section className="harmonic-path" aria-label="Harmonic path">
+    <section className="harmonic-path" aria-label={t("analysis.harmonic.ariaLabel")}>
       <div className="panel-head">
         <div>
-          {embedded ? <h3>Key-Verlauf</h3> : <h2>Harmonic Path</h2>}
-          <p className="section-note">
-            Camelot entlang der gespielten Reihenfolge. „Harmonisch sortieren“
-            rückt verwandte Keys zusammen und folgt dabei der Energie, soweit
-            Energy Levels da sind. Ein Clash vor dem Peak bleibt erlaubt.
-          </p>
+          {embedded ? (
+            <h3>{t("analysis.harmonic.titleEmbedded")}</h3>
+          ) : (
+            <h2>{t("analysis.harmonic.title")}</h2>
+          )}
+          <p className="section-note">{t("analysis.harmonic.note")}</p>
         </div>
         {embedded ? null : (
           <div className="actions">
@@ -41,7 +50,7 @@ export function HarmonicPath({ tracks, onHarmonize, embedded }: Props) {
               onClick={onHarmonize}
               disabled={performance.length < 2}
             >
-              Harmonisch sortieren
+              {t("analysis.harmonic.harmonize")}
             </button>
           </div>
         )}
@@ -50,14 +59,14 @@ export function HarmonicPath({ tracks, onHarmonize, embedded }: Props) {
       <div className="harm-stats">
         <div>
           <strong>{coverage}%</strong>
-          <span>Keys gesetzt</span>
+          <span>{t("analysis.harmonic.statKeys")}</span>
           <div className="mini-bar" aria-hidden>
             <i style={{ width: `${coverage}%` }} />
           </div>
         </div>
         <div>
           <strong>{scorePct == null ? "—" : `${scorePct}%`}</strong>
-          <span>Mix-Score</span>
+          <span>{t("analysis.harmonic.statScore")}</span>
           <div className="mini-bar" aria-hidden>
             <i
               className={
@@ -75,14 +84,14 @@ export function HarmonicPath({ tracks, onHarmonize, embedded }: Props) {
         </div>
         <div>
           <strong>{stats.clashes}</strong>
-          <span>Clashes</span>
+          <span>{t("analysis.harmonic.statClashes")}</span>
         </div>
       </div>
 
       {performance.length === 0 ? (
         <div className="empty">
-          <p>Noch kein Set.</p>
-          <p>Zuerst eine Playlist vom Stick laden, dann erscheint hier der Key-Verlauf.</p>
+          <p>{t("analysis.harmonic.emptyTitle")}</p>
+          <p>{t("analysis.harmonic.emptyHint")}</p>
         </div>
       ) : (
         <ol className="harm-steps">
@@ -99,10 +108,10 @@ export function HarmonicPath({ tracks, onHarmonize, embedded }: Props) {
               <li key={track.id}>
                 {index > 0 ? (
                   <span className={`harm-link harm-${relation}`}>
-                    {relationLabel(relation)}
+                    {relationLabel(relation, t)}
                   </span>
                 ) : (
-                  <span className="harm-link start">Start</span>
+                  <span className="harm-link start">{t("analysis.harmonic.start")}</span>
                 )}
                 <div
                   className={color ? "harm-node keyed" : "harm-node"}
@@ -138,29 +147,14 @@ export function HarmonicPath({ tracks, onHarmonize, embedded }: Props) {
 
       <details className="explain-fold nested">
         <summary>
-          <span>Camelot &amp; Mix-Score erklärt</span>
+          <span>{t("analysis.harmonic.foldTitle")}</span>
           <em className="fold-toggle" />
         </summary>
         <div className="explain-body">
-          <p>
-            <strong>Mix-Score</strong> bewertet jeden Übergang aus Key und, wenn
-            vorhanden, Energie zu gleichen Teilen, dazu eine kleine BPM-Korrektur.
-            Sicher sind gleicher Key, ±1 Zahl und A↔B auf derselben Zahl.{" "}
-            <strong>Energy Boost</strong> ist +2 mit gleichem Buchstaben, sparsam
-            einsetzen. Clashes brauchen einen Break oder kurzen Übergang.
-          </p>
-          <p>
-            Der Key ist ein Startpunkt, kein Freifahrtschein. Er zählt vor allem,
-            wenn Melodien überlappen, und die Analyse liegt bei etwa 89 %. Bei
-            einem Clash lohnt der Blick auf den relativen Dur- oder Moll-Key.
-          </p>
-          <p>
-            Farben folgen dem Camelot Wheel (1–12). <strong>A</strong> = Moll
-            (kräftiger), <strong>B</strong> = Dur (heller). Keys im
-            Bereich „Set laden & Keys“ importieren oder in der Setliste setzen, dann
-            „Harmonisch sortieren“.
-          </p>
-          <div className="camelot-legend" aria-label="Camelot Farben">
+          <p>{rich(t("analysis.harmonic.explain1"))}</p>
+          <p>{t("analysis.harmonic.explain2")}</p>
+          <p>{rich(t("analysis.harmonic.explain3"))}</p>
+          <div className="camelot-legend" aria-label={t("analysis.harmonic.legendLabel")}>
             {Array.from({ length: 12 }, (_, i) => {
               const n = i + 1;
               const a = camelotColor(`${n}A`)!;
