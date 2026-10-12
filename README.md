@@ -58,7 +58,8 @@ Läuft mit dem eingebauten Node-Testrunner. Die Hooks in [`scripts/test-hooks.mj
 
 - Energy Level 1–10 und die Camelot-Regeln nach Mixed In Key bestimmen Sortierung, Rollen, „Passt zu“ und Ersatz. Ein Key-Clash lässt sich nicht durch gleiche Energie und BPM ausgleichen.
 - „Auf Slot kürzen“ behält pro Phase die Tracks, deren Energie ins Phasenband passt.
-- Ansicht Bogen mit Phasen im Slot, Energie-Verlauf und Key-Verlauf. Die Rollen-Ansicht zeigt Plan B pro Phase.
+- Ansicht Bogen mit Phasen im Slot, Energie-Verlauf und Key-Verlauf.
+- Plan B in der Rollen-Ansicht: pro Phase mindestens zwei Alternativen. Die Phase, die du bei einer Alternative setzt („Ersatz für“), zählt. Liegt die Energie außerhalb des Phasenbands, steht der Grund auf der Karte und der Titel zählt nicht. Vorschläge aus der Bibliothek kommen pro Phase, „Lücken füllen“ setzt alle auf einmal. Bei einem fokussierten Track stehen die passenden Alternativen oben.
 - Setliste mit einklappbaren Details pro Track.
 - Neue Leiste: Tabs, „Set bearbeiten“, Menüs „Mitnehmen“ und „…“ (mit Pfeiltasten und Esc bedienbar).
 - Tests laufen mit `npm test`.

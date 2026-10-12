@@ -2,6 +2,7 @@
 
 import {
   useCallback,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
@@ -14,7 +15,14 @@ import {
   phaseAccent,
   roleAccent,
 } from "@/lib/harmonic";
-import { PLAN_B_MIN, planBCount } from "@/lib/energy";
+import type { LibraryRow } from "@/components/LibraryPanel";
+import { PHASE_ENERGY, PLAN_B_MIN, planBCount, planBState } from "@/lib/energy";
+import {
+  bestPhaseFor,
+  planBFill,
+  suggestPlanB,
+  type PlanBSuggestion,
+} from "@/lib/plan-b";
 import { rankReplacements } from "@/lib/replace-track";
 import {
   PHASES,
@@ -22,6 +30,7 @@ import {
   formatDuration,
   performanceTracks,
   tracksByRole,
+  type SetPhaseId,
   type SetTrack,
   type TrackRole,
 } from "@/lib/set";
@@ -38,6 +47,15 @@ type Props = {
   onMoveRole?: (trackId: string, role: TrackRole) => void;
   onReplace?: (targetId: string, replacementId: string) => void;
   onRemove?: (id: string) => void;
+  /** Stick library, used to suggest Plan B tracks for thin phases. */
+  library?: LibraryRow[];
+  onAddAlternative?: (row: LibraryRow, phase: SetPhaseId) => void;
+  /** Change a track's phase straight from its card. */
+  onSetPhase?: (trackId: string, phase: SetPhaseId) => void;
+  /** Put several library tracks in as Alternativen in one go ("Lücken füllen"). */
+  onFillPlanB?: (picks: PlanBSuggestion<LibraryRow>[]) => void;
+  /** Open the library section so suggestions have something to draw from. */
+  onOpenLibrary?: () => void;
 };
 
 type CratePrefs = {
@@ -148,6 +166,11 @@ export function RoleCrates({
   onMoveRole,
   onReplace,
   onRemove,
+  library,
+  onAddAlternative,
+  onSetPhase,
+  onFillPlanB,
+  onOpenLibrary,
 }: Props) {
   const prefs = useSyncExternalStore(subscribePrefs, readPrefs, () => DEFAULT_PREFS);
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -260,6 +283,13 @@ export function RoleCrates({
     dragRef.current = null;
   }
 
+  // With a performance track in focus, the Alternativen are ordered by how well they replace it.
+  const swapRank = useMemo(() => {
+    const target = tracks.find((track) => track.id === focusedTrackId);
+    if (!target || target.role === "safety") return null;
+    return new Map(rankReplacements(tracks, target.id).map((option) => [option.id, option.score]));
+  }, [tracks, focusedTrackId]);
+
   const openCount = TRACK_ROLES.filter((role) => prefs.open[role.id]).length;
   // All columns share one row height so their bottoms always line up.
   const rowHeight = Math.max(
@@ -317,7 +347,14 @@ export function RoleCrates({
         </div>
       </details>
 
-      <PlanBStrip tracks={tracks} onShow={() => revealRole("safety")} />
+      <PlanBStrip
+        tracks={tracks}
+        library={library}
+        onAdd={onAddAlternative}
+        onFill={onFillPlanB}
+        onOpenLibrary={onOpenLibrary}
+        onShow={() => revealRole("safety")}
+      />
 
       <div
         className={
@@ -328,7 +365,12 @@ export function RoleCrates({
         data-open-count={openCount}
       >
         {TRACK_ROLES.map((role) => {
-          const roleTracks = tracksByRole(tracks, role.id);
+          const roleTracks =
+            role.id === "safety" && swapRank
+              ? [...tracksByRole(tracks, role.id)].sort(
+                  (a, b) => (swapRank.get(b.id) ?? 0) - (swapRank.get(a.id) ?? 0),
+                )
+              : tracksByRole(tracks, role.id);
           const active = activeRole === role.id;
           const accent = roleAccent(role.id);
           const isOpen = prefs.open[role.id];
@@ -445,7 +487,14 @@ export function RoleCrates({
                         const phaseColor = phaseAccent(track.phase);
                         const focused = focusedTrackId === track.id;
                         return (
-                          <li key={`${role.id}-${track.id}`} className="crate-item">
+                          <li
+                            key={`${role.id}-${track.id}`}
+                            className={
+                              isSafety && swapRank && (swapRank.get(track.id) ?? 0) < 0.55
+                                ? "crate-item is-weak"
+                                : "crate-item"
+                            }
+                          >
                             <button
                               type="button"
                               draggable={Boolean(onMoveRole)}
@@ -574,14 +623,6 @@ export function RoleCrates({
                                     Alt für: {track.safetyAlt}
                                   </p>
                                 ) : null}
-                                {isSafety && onReplace && focusedTrackId ? (
-                                  <SafetySwap
-                                    tracks={tracks}
-                                    targetId={focusedTrackId}
-                                    replacementId={track.id}
-                                    onReplace={onReplace}
-                                  />
-                                ) : null}
                                 {isSafety && track.note ? (
                                   <p className="safety-line" title={track.note}>
                                     Cue: {track.note}
@@ -594,6 +635,63 @@ export function RoleCrates({
                                 ) : null}
                               </div>
                             </button>
+                            {isSafety && onReplace && focusedTrackId ? (
+                              <SafetySwap
+                                tracks={tracks}
+                                targetId={focusedTrackId}
+                                replacementId={track.id}
+                                weak={(swapRank?.get(track.id) ?? 1) < 0.55}
+                                onReplace={onReplace}
+                              />
+                            ) : null}
+                            {(focused || isSafety) && (onSetPhase || onMoveRole) ? (
+                              isSafety ? (
+                                <SafetyTools
+                                  track={track}
+                                  tracks={tracks}
+                                  onSetPhase={onSetPhase}
+                                />
+                              ) : (
+                                <div className="crate-item-tools">
+                                  {onSetPhase ? (
+                                    <label>
+                                      <span>Phase</span>
+                                      <select
+                                        value={track.phase}
+                                        aria-label={`Phase für ${track.name}`}
+                                        onChange={(event) =>
+                                          onSetPhase(track.id, event.target.value as SetPhaseId)
+                                        }
+                                      >
+                                        {PHASES.map((phase) => (
+                                          <option key={phase.id} value={phase.id}>
+                                            {phase.label}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </label>
+                                  ) : null}
+                                  {onMoveRole ? (
+                                    <label>
+                                      <span>Rolle</span>
+                                      <select
+                                        value={track.role}
+                                        aria-label={`Rolle für ${track.name}`}
+                                        onChange={(event) =>
+                                          onMoveRole(track.id, event.target.value as TrackRole)
+                                        }
+                                      >
+                                        {TRACK_ROLES.map((item) => (
+                                          <option key={item.id} value={item.id}>
+                                            {item.label}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </label>
+                                  ) : null}
+                                </div>
+                              )
+                            ) : null}
                             {onRemove ? (
                               <button
                                 type="button"
@@ -648,11 +746,13 @@ function SafetySwap({
   tracks,
   targetId,
   replacementId,
+  weak,
   onReplace,
 }: {
   tracks: SetTrack[];
   targetId: string;
   replacementId: string;
+  weak?: boolean;
   onReplace: (targetId: string, replacementId: string) => void;
 }) {
   const target = tracks.find((track) => track.id === targetId);
@@ -662,19 +762,96 @@ function SafetySwap({
   return (
     <div className="safety-swap">
       <p title={option.detail}>{option.detail}</p>
-      <button type="button" className="btn" onClick={() => onReplace(targetId, replacementId)}>
-        Statt Fokus einsetzen
+      <button
+        type="button"
+        className={weak ? "btn ghost" : "btn"}
+        onClick={() => onReplace(targetId, replacementId)}
+      >
+        {weak ? "Trotzdem einsetzen" : "Statt Fokus einsetzen"}
       </button>
     </div>
   );
 }
 
+const phaseLabel = (id: SetPhaseId) => PHASES.find((phase) => phase.id === id)?.label ?? id;
+
+/** One line under the picker of an Alternative: does it count as Plan B, and if not, why. */
+function SafetyTools({
+  track,
+  tracks,
+  onSetPhase,
+}: {
+  track: SetTrack;
+  tracks: SetTrack[];
+  onSetPhase?: (trackId: string, phase: SetPhaseId) => void;
+}) {
+  const state = planBState(track);
+  const band = PHASE_ENERGY[track.phase];
+  const better = state === "below" || state === "above" ? bestPhaseFor(track, tracks) : null;
+  const label = phaseLabel(track.phase);
+  return (
+    <div className="crate-item-tools is-safety">
+      {onSetPhase ? (
+        <label>
+          <span>Ersatz für</span>
+          <select
+            value={track.phase}
+            aria-label={`Ersatz für Phase, ${track.name}`}
+            onChange={(event) => onSetPhase(track.id, event.target.value as SetPhaseId)}
+          >
+            {PHASES.map((phase) => (
+              <option key={phase.id} value={phase.id}>
+                {phase.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+      <p className={`crate-planb-note ${state === "fit" ? "ok" : state === "unknown" ? "" : "thin"}`}>
+        {state === "fit"
+          ? `✓ Passt zu ${label} (E${track.energyLevel}), zählt als Plan B.`
+          : state === "unknown"
+            ? `Ohne Energie zählt die gewählte Phase: ${label}.`
+            : `⚠ E${track.energyLevel} liegt ${state === "below" ? "unter" : "über"} dem ${label}-Band ${band.min}–${band.max} und zählt nicht.`}
+      </p>
+      {better && better !== track.phase && onSetPhase ? (
+        <button type="button" className="btn ghost" onClick={() => onSetPhase(track.id, better)}>
+          Auf {phaseLabel(better)} setzen
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 /** Plan B per phase: at least two Alternativen that fit, so a failed blend never stalls the floor. */
-function PlanBStrip({ tracks, onShow }: { tracks: SetTrack[]; onShow: () => void }) {
+function PlanBStrip({
+  tracks,
+  library,
+  onAdd,
+  onFill,
+  onOpenLibrary,
+  onShow,
+}: {
+  tracks: SetTrack[];
+  library?: LibraryRow[];
+  onAdd?: (row: LibraryRow, phase: SetPhaseId) => void;
+  onFill?: (picks: PlanBSuggestion<LibraryRow>[]) => void;
+  onOpenLibrary?: () => void;
+  onShow: () => void;
+}) {
+  // null: follow the first thin phase; "closed": the user collapsed the suggestions.
+  const [chosen, setChosen] = useState<SetPhaseId | "closed" | null>(null);
   const performance = performanceTracks(tracks);
   const phases = PHASES.filter((phase) => performance.some((track) => track.phase === phase.id));
-  if (!phases.length) return null;
   const thin = phases.filter((phase) => planBCount(tracks, phase.id) < PLAN_B_MIN);
+  const hasLibrary = Boolean(library?.length);
+  const fill = hasLibrary && library ? planBFill(library, tracks) : [];
+  const activeId = chosen === "closed" ? null : (chosen ?? thin[0]?.id ?? null);
+  const activePhase = phases.find((phase) => phase.id === activeId) ?? null;
+  const missing = activePhase ? PLAN_B_MIN - planBCount(tracks, activePhase.id) : 0;
+  const items =
+    activeId && hasLibrary && library ? suggestPlanB(library, tracks, activeId, 3) : [];
+  if (!phases.length) return null;
   return (
     <div className="planb-strip" role="group" aria-label="Plan B pro Phase">
       <span className="planb-label">Plan B</span>
@@ -682,24 +859,98 @@ function PlanBStrip({ tracks, onShow }: { tracks: SetTrack[]; onShow: () => void
         {phases.map((phase) => {
           const count = planBCount(tracks, phase.id);
           const ok = count >= PLAN_B_MIN;
+          const selected = activeId === phase.id;
           return (
-            <li key={phase.id} className={ok ? "planb-chip ok" : "planb-chip thin"}>
-              <span>{phase.label}</span>
-              <strong>{count}</strong>
-              <em>{ok ? "gedeckt" : `mind. ${PLAN_B_MIN}`}</em>
+            <li key={phase.id}>
+              <button
+                type="button"
+                className={`planb-chip ${ok ? "ok" : "thin"}${selected ? " selected" : ""}`}
+                aria-pressed={selected}
+                title={ok ? "Gedeckt. Antippen für weitere Vorschläge." : "Lücke. Antippen für Vorschläge."}
+                onClick={() => setChosen(selected ? "closed" : phase.id)}
+              >
+                <span>{phase.label}</span>
+                <strong>
+                  {Math.min(count, 9)}/{PLAN_B_MIN}
+                </strong>
+              </button>
             </li>
           );
         })}
       </ul>
-      <p>
-        {thin.length
-          ? `Es fehlen Alternativen in ${thin.map((phase) => phase.label).join(", ")}. Passende Titel aus der Bibliothek unter Alternativen legen.`
-          : `Jede Phase hat mindestens ${PLAN_B_MIN} passende Alternativen.`}
-      </p>
-      {thin.length ? (
+      <div className="planb-actions">
+        {thin.length && hasLibrary && onFill ? (
+          <button
+            type="button"
+            className="btn"
+            disabled={!fill.length}
+            title={fill.length ? "Setzt die besten Vorschläge in alle Lücken." : "Keine passenden Titel gefunden."}
+            onClick={() => onFill(fill)}
+          >
+            Lücken füllen{fill.length ? ` (${fill.length})` : ""}
+          </button>
+        ) : null}
+        {thin.length && !hasLibrary && onOpenLibrary ? (
+          <button type="button" className="btn" onClick={onOpenLibrary}>
+            Bibliothek laden
+          </button>
+        ) : null}
         <button type="button" className="btn ghost" onClick={onShow}>
           Zu den Alternativen
         </button>
+      </div>
+
+      {!thin.length ? (
+        <p className="planb-hint">Jede Phase hat mindestens {PLAN_B_MIN} passende Alternativen.</p>
+      ) : null}
+
+      {thin.length && !hasLibrary ? (
+        <p className="planb-hint">
+          Ohne Bibliothek gibt es keine Vorschläge. Du kannst Titel auch selbst als Alternativen
+          setzen oder in der Bibliothek die Rolle „Alternativen“ wählen.
+        </p>
+      ) : null}
+
+      {activePhase && hasLibrary ? (
+        <div className="planb-suggest">
+          <h4>
+            {activePhase.label}
+            <span>
+              {" "}
+              · {missing > 0 ? `${missing} fehlen` : "gedeckt"}, Energie{" "}
+              {PHASE_ENERGY[activePhase.id].min}–{PHASE_ENERGY[activePhase.id].max}, Key und BPM
+              passend
+            </span>
+          </h4>
+          {items.length === 0 ? (
+            <p className="planb-hint">Keine passenden Titel in der Bibliothek.</p>
+          ) : (
+            <ul>
+              {items.map(({ row, keyCamelot, energy }) => (
+                <li key={`${row.artist}-${row.title}`}>
+                  <div>
+                    <strong title={row.title}>{row.title}</strong>
+                    <span title={row.artist}>{row.artist}</span>
+                  </div>
+                  <em>
+                    {keyCamelot} · {row.bpm || "BPM offen"}
+                    {energy != null ? ` · E${energy}` : ""}
+                  </em>
+                  {onAdd ? (
+                    <button
+                      type="button"
+                      className="btn ghost"
+                      onClick={() => onAdd(row, activePhase.id)}
+                      aria-label={`${row.title} als Alternative für ${activePhase.label} einsetzen`}
+                    >
+                      + Alternative
+                    </button>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       ) : null}
     </div>
   );

@@ -6562,3 +6562,255 @@ body {
   }
 }
 
+
+/* Plan B suggestions from the library. */
+.planb-hint {
+  flex: 1 1 100% !important;
+  color: #b9b9b9 !important;
+}
+
+.planb-suggest {
+  flex: 1 1 100%;
+  display: grid;
+  gap: 0.375rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.planb-suggest h4 {
+  margin: 0;
+  color: #ffc46b;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.planb-suggest h4 span {
+  color: #b9b9b9;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.planb-suggest ul {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.planb-suggest li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.planb-suggest li > div {
+  display: grid;
+  min-width: 0;
+}
+
+.planb-suggest li strong,
+.planb-suggest li span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.planb-suggest li strong {
+  font-size: 0.85rem;
+}
+
+.planb-suggest li span {
+  color: #b9b9b9;
+  font-size: 0.75rem;
+}
+
+.planb-suggest li em {
+  color: #7be495;
+  font-size: 0.78rem;
+  font-style: normal;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.planb-suggest li .btn {
+  min-height: 34px !important;
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .planb-suggest li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .planb-suggest li em {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .planb-suggest li .btn {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+}
+
+
+/* Phase and role pickers under a focused card, and under every Alternative. */
+.crate-item-tools {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.375rem;
+  padding: 0.25rem 0.5rem 0.5rem;
+}
+
+.crate-item-tools label {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.crate-item-tools label span {
+  color: #b9b9b9;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.crate-item-tools select {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  padding: 0 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: #121212;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+
+.crate-planb-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #b9b9b9;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+
+/* Plan B strip, second pass: chips are buttons, actions on one line. */
+.planb-strip .planb-chip {
+  appearance: none;
+  cursor: pointer;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  min-height: 32px;
+  padding: 0.25rem 0.75rem;
+}
+
+.planb-strip .planb-chip.ok {
+  color: #7be495;
+}
+
+.planb-strip .planb-chip.thin {
+  color: #ffc46b;
+}
+
+.planb-strip .planb-chip.selected {
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 0 1px currentColor;
+}
+
+.planb-strip .planb-chip:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.planb-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.planb-actions .btn {
+  min-height: 36px !important;
+  white-space: nowrap;
+}
+
+/* Alternativen: one picker, one verdict line. */
+.crate-item-tools.is-safety {
+  grid-template-columns: 1fr;
+}
+
+.crate-item-tools.is-safety .btn {
+  min-height: 34px !important;
+  justify-self: start;
+  white-space: nowrap;
+}
+
+.crate-planb-note.ok {
+  color: #7be495;
+}
+
+.crate-planb-note.thin {
+  color: #ffc46b;
+}
+
+/* Alternatives that would be a poor swap for the focused track fade back. */
+.crate-item.is-weak .crate-card {
+  opacity: 0.55;
+}
+
+.crate-item.is-weak:hover .crate-card,
+.crate-item.is-weak:focus-within .crate-card {
+  opacity: 1;
+}
+
+
+/* The swap panel now sits under the card, not inside the card button. */
+.crate-item > .safety-swap {
+  display: grid;
+  gap: 0.375rem;
+  padding: 0.25rem 0.5rem 0.5rem;
+}
+
+.crate-item > .safety-swap p {
+  margin: 0;
+  color: #cfcfcf;
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.crate-item > .safety-swap .btn {
+  justify-self: start;
+  min-height: 34px !important;
+  white-space: nowrap;
+}
+
+
+/* Narrow Alternativen column: nothing may poke out on the right. */
+.crate-item-tools,
+.crate-item > .safety-swap {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.crate-item-tools select {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.crate-item > .safety-swap .btn {
+  max-width: 100%;
+  height: auto;
+  padding: 0.4rem 0.9rem !important;
+  line-height: 1.2;
+  white-space: normal !important;
+}
+

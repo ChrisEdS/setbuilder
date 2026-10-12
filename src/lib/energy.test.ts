@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { PLAN_B_MIN, energyStep, parseEnergyLevel, planBCount } from "./energy.ts";
+import { PLAN_B_MIN, energyStep, parseEnergyLevel, planBCount, planBState } from "./energy.ts";
 
 test("reads the Mixed In Key comment format", () => {
   assert.equal(parseEnergyLevel("7A - Energy 6"), 6);
@@ -18,16 +18,23 @@ test("energy steps follow the one-step rule", () => {
   assert.equal(energyStep(undefined, 5), "unknown");
 });
 
-test("Plan B counts Alternativen that fit the phase band", () => {
+test("Plan B counts Alternativen set for the phase unless their energy contradicts it", () => {
   const tracks = [
     { role: "safety", phase: "peak" as const, energyLevel: 9 },
-    { role: "safety", phase: "peak" as const, energyLevel: 7 },
+    { role: "safety", phase: "peak" as const, energyLevel: 5 },
     { role: "safety", phase: "open" as const },
+    { role: "safety", phase: "open" as const, energyLevel: 4 },
     { role: "groove", phase: "peak" as const, energyLevel: 9 },
   ];
-  assert.equal(planBCount(tracks, "peak"), 1, "only the E9 alternative fits peak");
-  assert.equal(planBCount(tracks, "open"), 1, "without energy the placed phase counts");
-  assert.equal(planBCount(tracks, "rise"), 1, "E7 fits rise");
-  assert.equal(planBCount(tracks, "release"), 0);
+  assert.equal(planBCount(tracks, "peak"), 1, "E5 contradicts the peak band 8-10");
+  assert.equal(planBCount(tracks, "open"), 2, "no energy counts, E4 fits open 3-5");
+  assert.equal(planBCount(tracks, "rise"), 0, "the phase you set is what counts");
   assert.equal(PLAN_B_MIN, 2);
+});
+
+test("Plan B state names why an Alternative does not count", () => {
+  assert.equal(planBState({ phase: "lift", energyLevel: 6 }), "fit");
+  assert.equal(planBState({ phase: "lift", energyLevel: 3 }), "below");
+  assert.equal(planBState({ phase: "open", energyLevel: 9 }), "above");
+  assert.equal(planBState({ phase: "open" }), "unknown");
 });

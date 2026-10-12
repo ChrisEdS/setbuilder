@@ -17,6 +17,7 @@ import { PreviewPlayer } from "@/components/PreviewPlayer";
 import { ReplaceMenu } from "@/components/ReplaceMenu";
 import type { LibraryRow } from "@/components/LibraryPanel";
 import { libraryTrackToSetTrack } from "@/lib/rekordbox-stick";
+import { bestPhaseFor } from "@/lib/plan-b";
 import { SetMenus, SetTools } from "@/components/SetTakeaway";
 import { RoleCrates } from "@/components/RoleCrates";
 import {
@@ -867,7 +868,12 @@ export function SetBuilder() {
     );
   }
 
-  function addLibraryTrack(track: SetTrack) {
+  function addLibraryTrack(incoming: SetTrack) {
+    // An Alternative whose energy contradicts the chosen phase goes to the phase it fits.
+    const track =
+      incoming.role === "safety"
+        ? { ...incoming, phase: bestPhaseFor(incoming, draft.tracks) }
+        : incoming;
     const same = draft.tracks.some(
       (item) =>
         item.id === track.id ||
@@ -882,6 +888,24 @@ export function SetBuilder() {
     setStatus(
       `+ ${track.name} → ${PHASES.find((p) => p.id === track.phase)?.label} / ${TRACK_ROLES.find((r) => r.id === track.role)?.label}`,
     );
+  }
+
+  function fillPlanB(picks: { row: LibraryRow; phase: SetPhaseId }[]) {
+    if (!picks.length) return;
+    addTracksBulk(picks.map(({ row, phase }) => libraryTrackToSetTrack(row, phase, "safety")));
+    const counts = PHASES.map((phase) => ({
+      label: phase.label,
+      n: picks.filter((pick) => pick.phase === phase.id).length,
+    })).filter((item) => item.n > 0);
+    setStatus(
+      `Plan B gefüllt: +${picks.length} Alternativen (${counts.map((item) => `${item.label} ${item.n}`).join(", ")}).`,
+    );
+  }
+
+  function openLibrary() {
+    const section = document.getElementById("library-section");
+    if (section instanceof HTMLDetailsElement) section.open = true;
+    section?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function playLibraryTrack(track: SetTrack) {
@@ -1466,7 +1490,7 @@ export function SetBuilder() {
 
       {status ? <p className="banner status">{status}</p> : null}
 
-      <details className="explain-fold section-fold" open>
+      <details id="library-section" className="explain-fold section-fold" open>
         <summary>
           <span>Set laden &amp; Keys</span>
           <em>
@@ -2314,8 +2338,23 @@ export function SetBuilder() {
             }}
             onReplace={replaceTrack}
             onRemove={removeTrack}
+            library={libraryRows}
+            onSetPhase={(id, phase) => patchTrack(id, { phase, why: "Manuell gesetzt" })}
+            onFillPlanB={fillPlanB}
+            onOpenLibrary={openLibrary}
+            onAddAlternative={(row, phase) =>
+              addLibraryTrack(libraryTrackToSetTrack(row, phase, "safety"))
+            }
             onMoveRole={(id, role) => {
-              patchTrack(id, { role, why: "Manuell gesetzt" });
+              const moving = draft.tracks.find((item) => item.id === id);
+              patchTrack(id, {
+                role,
+                why: "Manuell gesetzt",
+                // Landing in Alternativen: keep the phase if the energy fits, else take the best one.
+                ...(role === "safety" && moving
+                  ? { phase: bestPhaseFor(moving, draft.tracks.filter((item) => item.id !== id)) }
+                  : {}),
+              });
               setActiveRole(role);
               setRoleFilter(role);
             }}

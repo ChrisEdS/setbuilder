@@ -7,6 +7,7 @@ import {
   type HarmonicRelation,
 } from "@/lib/harmonic";
 import { PHASE_ENERGY, energyStep } from "@/lib/energy";
+import { bestPhaseFor } from "@/lib/plan-b";
 import type { SpotifyTrack } from "@/lib/spotify";
 import {
   DEFAULT_SET,
@@ -596,6 +597,7 @@ export function fitToSlot(draft: SetDraft): SlotFitResult {
     moveIds.add(pick.id);
   }
 
+  const remaining = draft.tracks.filter((track) => !moveIds.has(track.id));
   const trimmed: SetDraft = {
     ...draft,
     tracks: draft.tracks.map((track) =>
@@ -603,6 +605,7 @@ export function fitToSlot(draft: SetDraft): SlotFitResult {
         ? {
             ...track,
             role: "safety" as TrackRole,
+            phase: bestPhaseFor(track, remaining),
             why: "Beim Kürzen auf den Slot unter Alternativen gelegt",
           }
         : track,

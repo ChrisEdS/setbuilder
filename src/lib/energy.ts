@@ -79,17 +79,31 @@ export function energyFitsPhase(level: number | undefined, phase: SetPhaseId): b
 /** Minimum Alternativen per phase before the set counts as covered. */
 export const PLAN_B_MIN = 2;
 
+export type PlanBState = "fit" | "below" | "above" | "unknown";
+
 /**
- * Plan B per phase: Alternativen whose energy fits the phase band, or, without
- * energy data, that were placed in the phase.
+ * How an Alternative sits in the phase it was set for: its energy is inside the phase
+ * band ("fit"), under or over it, or unknown (then the chosen phase simply counts).
+ */
+export function planBState(track: { phase: SetPhaseId; energyLevel?: number }): PlanBState {
+  if (track.energyLevel == null) return "unknown";
+  const band = PHASE_ENERGY[track.phase];
+  if (track.energyLevel < band.min) return "below";
+  if (track.energyLevel > band.max) return "above";
+  return "fit";
+}
+
+/**
+ * Plan B per phase: Alternativen set for the phase whose energy does not contradict it.
+ * What you set is what counts; an energy outside the band is flagged and does not count.
  */
 export function planBCount(
   tracks: { role: string; phase: SetPhaseId; energyLevel?: number }[],
   phase: SetPhaseId,
 ): number {
   return tracks.filter((track) => {
-    if (track.role !== "safety") return false;
-    if (track.energyLevel != null) return energyFitsPhase(track.energyLevel, phase) === true;
-    return track.phase === phase;
+    if (track.role !== "safety" || track.phase !== phase) return false;
+    const state = planBState(track);
+    return state === "fit" || state === "unknown";
   }).length;
 }
