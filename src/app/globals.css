@@ -6196,6 +6196,63 @@ details[open] > summary > .fold-toggle::after {
   font-size: 0.6875rem;
 }
 
+/* Setliste: key, BPM, energy, transition and comment live in a per-track fold */
+.track-details {
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--line);
+}
+.track-details > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 36px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+.track-details > summary::-webkit-details-marker {
+  display: none;
+}
+.track-details > summary::after {
+  content: "";
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin: 0 4px 3px auto;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 0.15s var(--ease);
+}
+.track-details[open] > summary::after {
+  margin-bottom: 0;
+  transform: rotate(-135deg);
+}
+.track-details > summary:hover,
+.track-details > summary:focus-visible {
+  color: var(--ink);
+}
+.track-details .td-label {
+  color: var(--ink);
+  font-weight: 600;
+}
+.track-details .td-values {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.track-details[open] {
+  padding-bottom: 0.25rem;
+}
+.track-details .manual-comment {
+  margin-top: 0.5rem;
+}
+.details-toggle {
+  margin-left: auto;
+  white-space: nowrap; /* one line */
+}
+
 /* Setliste: the comment field starts as one line and grows when you type */
 .manual-comment textarea {
   min-height: 44px !important;

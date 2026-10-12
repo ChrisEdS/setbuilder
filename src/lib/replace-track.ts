@@ -31,9 +31,11 @@ export function sidePhrase(from: KeyBpm | null, to: KeyBpm, who: string): { text
     ? `, ${energyText(from.energyLevel, to.energyLevel)}${step === "jump" ? " (Sprung)" : ""}`
     : "";
   // Energy first, then key, then BPM. Without energy data: key and BPM only.
-  const score = hasEnergy
+  const raw = hasEnergy
     ? energyScore(from.energyLevel, to.energyLevel) * 0.4 + relScore * 0.35 + bpmScore * 0.25
     : relScore * 0.7 + bpmScore * 0.3;
+  // A key clash must never be bought back by matching energy and BPM.
+  const score = relation === "clash" ? Math.min(raw, 0.3) : raw;
   return {
     text: `${who}: ${relationLabel(relation)}${bpmText}${energyPart}`,
     score,

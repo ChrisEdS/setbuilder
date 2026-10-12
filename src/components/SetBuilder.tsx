@@ -248,6 +248,8 @@ export function SetBuilder() {
   const [libraryRows, setLibraryRows] = useState<LibraryRow[]>([]);
   const [matchingLinks, setMatchingLinks] = useState(false);
   const [replaceFor, setReplaceFor] = useState<string | null>(null);
+  /** Setliste: tracks whose key, BPM, energy and comment fields are open */
+  const [openDetails, setOpenDetails] = useState<Set<string>>(() => new Set());
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const dragIdRef = useRef<string | null>(null);
@@ -1964,6 +1966,23 @@ export function SetBuilder() {
                     ? ` / ${draft.durationMinutes}:00 Slot${filledMs > targetMs * 1.05 ? " · zu lang" : ""}`
                     : ""}
                 </p>
+                <button
+                  type="button"
+                  className="btn ghost details-toggle"
+                  disabled={visibleTimeline.length === 0}
+                  onClick={() =>
+                    setOpenDetails((current) =>
+                      visibleTimeline.every((track) => current.has(track.id))
+                        ? new Set()
+                        : new Set(visibleTimeline.map((track) => track.id)),
+                    )
+                  }
+                >
+                  {visibleTimeline.length > 0 &&
+                  visibleTimeline.every((track) => openDetails.has(track.id))
+                    ? "Details zu"
+                    : "Details auf"}
+                </button>
                 <div className="seg" role="group" aria-label="Setliste filtern">
                   <button
                     type="button"
@@ -2184,6 +2203,36 @@ export function SetBuilder() {
                         <strong>Warum hier:</strong> {track.why}
                       </p>
                     ) : null}
+                    <details
+                      className="track-details"
+                      open={openDetails.has(track.id)}
+                      onToggle={(event) => {
+                        const open = event.currentTarget.open;
+                        setOpenDetails((current) => {
+                          if (current.has(track.id) === open) return current;
+                          const next = new Set(current);
+                          if (open) next.add(track.id);
+                          else next.delete(track.id);
+                          return next;
+                        });
+                      }}
+                    >
+                      <summary>
+                        <span className="td-label">Details</span>
+                        <span className="td-values">
+                          {[
+                            track.keyCamelot || "Key offen",
+                            track.bpm ? `${track.bpm} BPM` : "BPM offen",
+                            track.energyLevel != null ? `Energie ${track.energyLevel}` : null,
+                            track.transition !== "unset"
+                              ? TRANSITIONS.find((item) => item.id === track.transition)?.label
+                              : null,
+                            (track.comment || "").trim() ? "Kommentar" : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </span>
+                      </summary>
                     <label className="manual-comment">
                       <span>Kommentar</span>
                       <textarea
@@ -2252,6 +2301,7 @@ export function SetBuilder() {
                         ))}
                       </select>
                     </div>
+                    </details>
                   </div>
                 </li>
               ))}

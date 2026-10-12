@@ -65,6 +65,7 @@ export function energyScore(from?: number, to?: number): number {
 export function energyText(from?: number, to?: number): string {
   if (from == null || to == null) return "";
   const delta = to - from;
+  if (delta === 0) return "Energie gleich";
   return `Energie ${delta > 0 ? "+" : ""}${delta}`;
 }
 
