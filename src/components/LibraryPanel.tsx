@@ -252,82 +252,63 @@ export function LibraryPanel({ draft, onApply, onMatchLinks, matchingLinks }: Pr
           ? `${keyStats.keyed} von ${keyStats.total} Tracks mit Key`
           : "Alle Performance-Tracks haben Keys";
 
-  const sources: {
-    id: SourceTab;
-    label: string;
-    hint: string;
-  }[] = [
+  const sources: { id: SourceTab; label: string; note: string }[] = [
     {
       id: "rekordbox",
       label: "rekordbox",
-      hint: "XML · CSV · DB",
+      note: "Der Stick lädt ein fertiges Set. Die Collection legt nur Key und BPM auf die Tracks, die schon da sind.",
     },
     {
       id: "tidal",
       label: "Tidal",
-      hint:
-        tidalConfigured === null
-          ? "…"
-          : tidalConfigured
-            ? "Catalog Keys"
-            : "IDs nötig",
+      note: tidalConfigured
+        ? "Tidal schreibt Key und BPM an die Tracks, zuerst über die ISRC."
+        : "Dafür fehlen TIDAL_CLIENT_ID und TIDAL_CLIENT_SECRET in der Umgebung.",
     },
     {
       id: "csv",
       label: "CSV",
-      hint: "Paste",
+      note: "Tabelle einfügen, zum Beispiel aus Mixed In Key oder Serato. Camelot, Open Key oder Am/C.",
     },
     {
       id: "spotify",
       label: "Spotify",
-      hint: "oft gesperrt",
+      note: "Audio-Features sind im Dev Mode meist gesperrt. rekordbox oder Tidal sind die verlässliche Quelle.",
     },
   ];
+  const sourceNote = sources.find((item) => item.id === source)?.note ?? "";
 
   return (
-    <section className="library-panel" aria-label="Key Library">
+    <section className="library-panel" aria-label="Rekordbox">
       <div className="panel-head library-head">
         <div>
-          <h2>Key Library</h2>
-          <p className="timeline-filter">{statusLabel}</p>
+          <h2>Rekordbox</h2>
+          <p className="section-note">
+            Erster Schritt. Stick-Ordner wählen und eine Playlist oder History
+            als Set laden. Key, BPM und Dateipfad kommen mit.
+          </p>
         </div>
-        <div className="library-meter" aria-label="Key-Abdeckung">
-          <strong>{keyStats.share}%</strong>
-          <span>
-            {keyStats.keyed}/{keyStats.total || "—"}
-          </span>
-        </div>
+        <p className="head-meta" aria-label="Key-Abdeckung">
+          {statusLabel}
+        </p>
       </div>
 
-      <div
-        className="library-progress"
-        role="progressbar"
-        aria-valuenow={keyStats.share}
-        aria-valuemin={0}
-        aria-valuemax={100}
-      >
-        <i
-          style={{
-            width: `${Math.max(keyStats.share, keyStats.total ? 2 : 0)}%`,
-          }}
-        />
-      </div>
-
-      <div className="seg library-source-seg" role="tablist" aria-label="Key-Quelle">
+      <div className="seg crate-service-seg" role="tablist" aria-label="Key-Quelle">
         {sources.map((item) => (
           <button
             key={item.id}
             type="button"
             role="tab"
+            title={item.note}
             aria-selected={source === item.id}
             className={source === item.id ? "seg-item active" : "seg-item"}
             onClick={() => setSource(item.id)}
           >
             {item.label}
-            <i>{item.hint}</i>
           </button>
         ))}
       </div>
+      <p className="section-note library-source-note">{sourceNote}</p>
 
       <div className="library-source-pane" role="tabpanel">
         {source === "rekordbox" ? (
@@ -512,15 +493,12 @@ export function LibraryPanel({ draft, onApply, onMatchLinks, matchingLinks }: Pr
             ))}
           </ul>
         </div>
-      ) : (
-        <div className="library-empty">
-          <strong>Noch kein rekordbox-Index</strong>
-          <span>
-            Optional — nach XML-Import kannst du hier suchen und erneut matchen.
-            Tidal braucht keinen Index.
-          </span>
-        </div>
-      )}
+      ) : source === "rekordbox" ? (
+        <p className="section-note library-source-note">
+          Noch kein Index. Nach dem Collection-Import kannst du hier suchen und
+          erneut matchen.
+        </p>
+      ) : null}
     </section>
   );
 }

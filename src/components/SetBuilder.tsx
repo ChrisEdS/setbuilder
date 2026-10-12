@@ -13,6 +13,7 @@ import { LibraryPanel } from "@/components/LibraryPanel";
 import { ManualArrange } from "@/components/ManualArrange";
 import { PreviewPlayer } from "@/components/PreviewPlayer";
 import { ReplaceMenu } from "@/components/ReplaceMenu";
+import { SetTakeaway } from "@/components/SetTakeaway";
 import { RoleCrates } from "@/components/RoleCrates";
 import {
   boothFileName,
@@ -25,7 +26,7 @@ import { pickStreamingMatch } from "@/lib/match-link";
 import { swapIntoSlot } from "@/lib/replace-track";
 import { CAMELOT_CODES, mixJoin } from "@/lib/harmonic";
 import { reharmonizeDraft } from "@/lib/extract-set";
-import { looksLikeSpotifyLink } from "@/lib/spotify-link";
+import { looksLikeMusicLink, parseMusicLink, sourceLabel } from "@/lib/music-link";
 import {
   ARC_GUIDE,
   DEFAULT_SET,
@@ -200,7 +201,9 @@ export function SetBuilder() {
   const [query, setQuery] = useState("tech house");
   const [linkUrl, setLinkUrl] = useState("");
   const [crateMode, setCrateMode] = useState<"search" | "link">("search");
-  const [crateService, setCrateService] = useState<"spotify" | "tidal">("spotify");
+  const [crateService, setCrateService] = useState<
+    "spotify" | "tidal" | "beatport"
+  >("spotify");
   const [tidalPlaylists, setTidalPlaylists] = useState<
     Array<{ id: string; name: string; trackCount: number | null }>
   >([]);
@@ -457,7 +460,6 @@ export function SetBuilder() {
   );
   const filledMs = totalDurationMs(draft.tracks);
   const targetMs = draft.durationMinutes * 60_000;
-  const fillRatio = Math.min(filledMs / targetMs, 1);
   const activeGuide = ARC_GUIDE.find((item) => item.phase === activePhase);
 
   const visibleTimeline = useMemo(() => {
@@ -478,10 +480,21 @@ export function SetBuilder() {
       return;
     }
 
-    if (looksLikeSpotifyLink(trimmed)) {
+    if (looksLikeMusicLink(trimmed)) {
+      const parsed = parseMusicLink(trimmed);
+      if (parsed?.source === "beatport") setCrateService("beatport");
+      if (parsed?.source === "tidal") setCrateService("tidal");
+      if (parsed?.source === "spotify") setCrateService("spotify");
       setCrateMode("link");
       setLinkUrl(trimmed);
       void importCrateLink(trimmed);
+      return;
+    }
+
+    if (crateService === "beatport") {
+      setError(
+        "Beatport durchsucht SETFORM nicht. Einen Track- oder Release-Link einfügen.",
+      );
       return;
     }
 
@@ -546,6 +559,50 @@ export function SetBuilder() {
       setError("Playlist- oder Track-Link einfügen.");
       return;
     }
+    if (
+      crateService === "beatport" ||
+      trimmed.toLowerCase().includes("beatport.com")
+    ) {
+      setCrateService("beatport");
+      setHasSearched(true);
+      setError(null);
+      setStatus(null);
+      startTransition(async () => {
+        try {
+          const response = await fetch("/api/resolve-link", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: trimmed }),
+          });
+          const data = (await response.json()) as {
+            label?: string;
+            message?: string;
+            tracks?: SearchTrack[];
+            error?: string;
+          };
+          if (!response.ok) {
+            throw new Error(data.error || "Beatport-Link fehlgeschlagen.");
+          }
+          const tracks = data.tracks ?? [];
+          setResults(tracks);
+          setCrateSource(data.label ? `Beatport: ${data.label}` : "Beatport");
+          setStatus(
+            data.message ||
+              (tracks.length
+                ? "Beatport geladen — mit + dazu ins Set."
+                : "Keine Tracks im Link."),
+          );
+        } catch (err) {
+          setResults([]);
+          setCrateSource(null);
+          setError(
+            err instanceof Error ? err.message : "Beatport-Link fehlgeschlagen.",
+          );
+        }
+      });
+      return;
+    }
+
     if (crateService === "tidal" || trimmed.toLowerCase().includes("tidal.com")) {
       setHasSearched(true);
       startTransition(async () => {
@@ -750,7 +807,9 @@ export function SetBuilder() {
   function exportPdf() {
     try {
       openSetPdfExport(draft);
-      setStatus("PDF-Ansicht geöffnet — im Dialog „Als PDF speichern“ wählen.");
+      setStatus(
+        "Druckansicht geöffnet. Dort drucken oder „Als PDF speichern“ wählen.",
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "PDF-Export fehlgeschlagen.");
     }
@@ -1048,10 +1107,11 @@ export function SetBuilder() {
           <p className="brand">SETFORM</p>
           <h1>Dramaturgie statt Playlist.</h1>
           <p className="lede">
-            SETFORM macht aus einer Playlist ein Set. Du lädst Tracks von
-            Spotify, Tidal oder einem Rekordbox-Stick, formst den Bogen nach
-            Slot und Dauer und siehst an Key und BPM, ob der Übergang zum
-            nächsten Track trägt.
+            SETFORM formt aus dem Rekordbox-Stick ein Set. Playlist oder
+            History laden, den Bogen nach Slot und Dauer legen, und an Key und
+            BPM sehen, ob der Übergang zum nächsten Track trägt. Spotify, Tidal
+            und Beatport sind die Ergänzung, wenn ein Track noch nicht auf dem
+            Stick liegt.
           </p>
         </div>
         <div className="hero-meta" aria-label="Set brief">
@@ -1150,161 +1210,19 @@ export function SetBuilder() {
         </div>
       </header>
 
-      {renderSetups()}
+      {status ? <p className="banner status">{status}</p> : null}
+      {error ? <p className="banner error">{error}</p> : null}
 
-      <section className="import-panel" aria-label="Playlist import">
-        <div className="panel-head">
-          <h2>Playlist → Set extrahieren</h2>
-          <p>
-            {spotifyConnected === null
-              ? "Auth prüfen…"
-              : spotifyConnected
-                ? "Spotify verbunden"
-                : "Spotify-Login nötig"}
-          </p>
-        </div>
-
-        <div className="import-actions">
-          {spotifyConnected ? (
-            <button
-              type="button"
-              className="btn ghost"
-              onClick={async () => {
-                await fetch("/api/auth/logout", { method: "POST" });
-                setSpotifyConnected(false);
-                setMyPlaylists([]);
-                setStatus("Spotify getrennt.");
-              }}
-            >
-              Spotify trennen
-            </button>
-          ) : (
-            <a className="button-link" href="/api/auth/login">
-              Mit Spotify verbinden
-            </a>
-          )}
-          {tidalConnected ? (
-            <button
-              type="button"
-              className="btn ghost"
-              onClick={async () => {
-                await fetch("/api/auth/tidal/logout", { method: "POST" });
-                setTidalConnected(false);
-                setStatus("Tidal getrennt.");
-              }}
-            >
-              Tidal trennen
-            </button>
-          ) : (
-            <a className="button-link tidal-login" href="/api/auth/tidal/login">
-              Mit Tidal verbinden
-            </a>
-          )}
-        </div>
-        {tidalConnected ? null : (
-          <p className="import-hint">
-            Tidal-Fehler 1002: In der Entwickler-App müssen genau diese Scopes
-            an sein: <code>user.read</code> und <code>playlists.read</code>.
-            Redirect-URI exakt{" "}
-            <code>http://127.0.0.1:4317/api/auth/tidal/callback</code>. Danach
-            speichern und den Login neu starten.
-          </p>
-        )}
-
-        {spotifyConnected && myPlaylists.length > 0 ? (
-          <div className="playlist-picker">
-            <label>
-              <span>Eigene Playlists</span>
-              <select
-                value=""
-                onChange={(e) => {
-                  const id = e.target.value;
-                  if (!id) return;
-                  setPlaylistUrl(`https://open.spotify.com/playlist/${id}`);
-                  setError(null);
-                }}
-                aria-label="Eigene Playlist wählen"
-              >
-                <option value="">Playlist wählen…</option>
-                {myPlaylists.map((playlist) => (
-                  <option key={playlist.id} value={playlist.id}>
-                    {playlist.name} ({playlist.trackCount})
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-        ) : null}
-
-        <form
-          className="search-row import-row"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void extractFromPlaylist();
-          }}
-        >
-          <input
-            value={playlistUrl}
-            onChange={(e) => setPlaylistUrl(e.target.value)}
-            placeholder="Spotify- oder Tidal-Playlist-Link"
-            aria-label="Playlist URL"
-          />
-          <button type="submit" disabled={isExtracting || !playlistUrl.trim()}>
-            {isExtracting ? "Extrahiere…" : "Set extrahieren"}
-          </button>
-        </form>
-
-        {error ? <p className="banner error">{error}</p> : null}
-        {status ? <p className="banner status">{status}</p> : null}
-
-        <details className="explain-fold">
-          <summary>
-            <span>So funktioniert die Extraktion</span>
-            <em>Aufklappen</em>
-          </summary>
-          <div className="explain-body">
-            <p>
-              SETFORM nimmt eine Playlist und legt daraus ein Set mit Dauer,
-              Phasen und Übergängen. Die Playlist ist das Material, die
-              Performance-Reihenfolge ist die Geschichte des Abends.
-            </p>
-            <ol className="explain-steps">
-              {EXTRACT_STEPS.map((step) => (
-                <li key={step.title}>
-                  <strong>{step.title}</strong>
-                  <span>{step.body}</span>
-                </li>
-              ))}
-            </ol>
-            <p className="explain-note">
-              Spotify Dev Mode: nur <strong>eigene</strong> oder collaborative
-              Playlists — keine fremden/editorial Charts. Redirect URI:{" "}
-              <code>{redirectUri}</code>
-            </p>
-          </div>
-        </details>
-      </section>
-
-      <details className="explain-fold principles" aria-label="Dramaturgie-Prinzipien">
-        <summary>
-          <span>Dramaturgie-Prinzipien</span>
-          <em>Aufklappen</em>
-        </summary>
-        <div className="explain-body">
-          <p>
-            Diese Prinzipien bestimmen, wie SETFORM den Bogen legt und worauf du
-            in der Timeline achten solltest.
-          </p>
-          <ul className="explain-steps">
-            {PREP_PRINCIPLES.map((item) => (
-              <li key={item.title}>
-                <strong>{item.title}</strong>
-                <span>{item.body}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </details>
+      <LibraryPanel
+        draft={draft}
+        onMatchLinks={() => void matchStreamingLinks()}
+        matchingLinks={matchingLinks}
+        onApply={(next, message) => {
+          setDraft(next);
+          setError(null);
+          setStatus(message);
+        }}
+      />
 
       <section className="curve" aria-label="Energy curve">
         <div className="curve-head">
@@ -1317,35 +1235,71 @@ export function SetBuilder() {
             Alternativen
           </p>
         </div>
-        <div
-          className="curve-bar"
-          role="progressbar"
-          aria-valuenow={Math.round(fillRatio * 100)}
-          aria-valuemin={0}
-          aria-valuemax={100}
-        >
-          <span style={{ width: `${Math.max(fillRatio * 100, 3)}%` }} />
-        </div>
+        <details className="explain-fold nested principles">
+          <summary>
+            <span>Dramaturgie-Prinzipien</span>
+            <em>Aufklappen</em>
+          </summary>
+          <div className="explain-body">
+            <p>
+              Diese Prinzipien bestimmen, wie SETFORM den Bogen legt und worauf
+              du in der Timeline achten solltest.
+            </p>
+            <ul className="explain-steps">
+              {PREP_PRINCIPLES.map((item) => (
+                <li key={item.title}>
+                  <strong>{item.title}</strong>
+                  <span>{item.body}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </details>
         <div className="phase-grid">
           {PHASES.map((phase) => {
             const actual = phaseDurationMs(draft.tracks, phase.id);
             const target = targetMs * phase.share;
+            const ratio = target > 0 ? actual / target : 0;
+            const minutes = Math.round(target / 60000);
+            const active = activePhase === phase.id;
+            const label = `${phase.label}: ${formatDuration(actual)} von etwa ${minutes} min`;
             return (
-              <button
-                key={phase.id}
-                type="button"
-                className={activePhase === phase.id ? "phase active" : "phase"}
-                onClick={() => setActivePhase(phase.id)}
-              >
-                <strong>{phase.label}</strong>
-                <span>{phase.hint}</span>
-                <em>
-                  {formatDuration(actual)} / ~{Math.round(target / 60000)} min
-                </em>
-              </button>
+              <div key={phase.id} className="phase-slot">
+                <button
+                  type="button"
+                  className={["curve-seg", active ? "active" : "", ratio > 1 ? "over" : ""]
+                    .filter(Boolean)
+                    .join(" ")}
+                  title={label}
+                  aria-label={`${label}. Klick legt neue Tracks in diese Phase.`}
+                  aria-pressed={active}
+                  onClick={() => setActivePhase(phase.id)}
+                >
+                  <i style={{ width: `${Math.min(ratio, 1) * 100}%` }} />
+                </button>
+                <button
+                  type="button"
+                  className={["phase", active ? "active" : "", ratio > 1 ? "over" : ""]
+                    .filter(Boolean)
+                    .join(" ")}
+                  aria-pressed={active}
+                  title={`${label}. Klick legt neue Tracks in diese Phase.`}
+                  onClick={() => setActivePhase(phase.id)}
+                >
+                  <strong>{phase.label}</strong>
+                  <span className="phase-hint">{phase.hint}</span>
+                  <em>
+                    {formatDuration(actual)} / ~{minutes} min
+                  </em>
+                </button>
+              </div>
             );
           })}
         </div>
+        <p className="curve-note">
+          Die Breite ist der Anteil am Brief, die Füllung die schon gelegte
+          Spielzeit. Gelb heißt, die Phase liegt über ihrem Fenster.
+        </p>
         {activeGuide ? (
           <p className="guide-line">
             <strong>
@@ -1356,6 +1310,11 @@ export function SetBuilder() {
         ) : null}
       </section>
 
+      <details className="explain-fold section-fold" open>
+        <summary>
+          <span>Crate-Rollen</span>
+          <em>{draft.tracks.length} Tracks</em>
+        </summary>
       <RoleCrates
         tracks={draft.tracks}
         positions={positions}
@@ -1381,19 +1340,15 @@ export function SetBuilder() {
           }
         }}
       />
+      </details>
 
-      <LibraryPanel
-        draft={draft}
-        onMatchLinks={() => void matchStreamingLinks()}
-        matchingLinks={matchingLinks}
-        onApply={(next, message) => {
-          setDraft(next);
-          setError(null);
-          setStatus(message);
-        }}
-      />
-
-      <HarmonicPath tracks={draft.tracks} onHarmonize={harmonizeSet} />
+      <details className="explain-fold section-fold">
+        <summary>
+          <span>Harmonic Path</span>
+          <em>Key-Prüfung</em>
+        </summary>
+        <HarmonicPath tracks={draft.tracks} onHarmonize={harmonizeSet} />
+      </details>
 
       <PreviewPlayer
         tracks={draft.tracks}
@@ -1411,6 +1366,7 @@ export function SetBuilder() {
             workspaceMode === "manual" ? "seg-item active" : "seg-item"
           }
           onClick={() => setWorkspaceMode("manual")}
+          title="Tracks von Hand oder per Link sortieren, dann als PDF, M3U oder rekordbox mitnehmen."
         >
           Manual Arrange
         </button>
@@ -1420,6 +1376,7 @@ export function SetBuilder() {
           aria-selected={workspaceMode === "auto"}
           className={workspaceMode === "auto" ? "seg-item active" : "seg-item"}
           onClick={() => setWorkspaceMode("auto")}
+          title="Optional: Tracks von Spotify, Tidal oder Beatport dazunehmen, dann in der Timeline feinschleifen."
         >
           Crate + Timeline
         </button>
@@ -1444,24 +1401,22 @@ export function SetBuilder() {
           onExportPdf={exportPdf}
           onExportM3u={exportM3u}
           onExportRekordbox={exportRekordbox}
-          toolbar={renderSetups()}
         />
       ) : (
       <div className="workspace crate-stack">
         <section className="panel search-panel">
           <div className="panel-head">
-            <h2>
-              Crate füllen · {crateService === "tidal" ? "Tidal" : "Spotify"}
-            </h2>
+            <h2>Crate ergänzen</h2>
             <p>
-              Aktiv: {PHASES.find((p) => p.id === activePhase)?.label} /{" "}
-              {activeRole}
+              Neue Tracks: {PHASES.find((p) => p.id === activePhase)?.label} ·{" "}
+              {TRACK_ROLES.find((role) => role.id === activeRole)?.label}
             </p>
           </div>
 
           <div className="seg crate-service-seg" role="tablist" aria-label="Crate-Dienst">
             <button
               type="button"
+              title="Katalog durchsuchen oder einen Spotify-Link laden."
               className={
                 crateService === "spotify"
                   ? "seg-item active source-spotify"
@@ -1478,6 +1433,7 @@ export function SetBuilder() {
             </button>
             <button
               type="button"
+              title="Eigene Playlist wählen oder einen Tidal-Link einfügen."
               className={
                 crateService === "tidal"
                   ? "seg-item active source-tidal"
@@ -1492,7 +1448,32 @@ export function SetBuilder() {
             >
               Tidal
             </button>
+            <button
+              type="button"
+              title="Track- oder Release-Link von beatport.com. Den Katalog gibt Beatport ohne Login nicht frei."
+              className={
+                crateService === "beatport"
+                  ? "seg-item active source-beatport"
+                  : "seg-item"
+              }
+              onClick={() => {
+                setCrateService("beatport");
+                setCrateMode("link");
+                setResults([]);
+                setCrateSource(null);
+                setHasSearched(false);
+              }}
+            >
+              Beatport
+            </button>
           </div>
+          <p className="crate-service-note">
+            {crateService === "spotify"
+              ? "Optional. Katalog durchsuchen oder einen Track-, Playlist- oder Album-Link laden."
+              : crateService === "tidal"
+                ? "Eigene Playlist wählen oder einen Tidal-Link einfügen."
+                : "Beatport gibt den Katalog ohne Login nicht frei. Ein Track- oder Release-Link reicht, der Titel kommt aus der Adresse."}
+          </p>
 
           {crateService === "tidal" ? (
             <div className="playlist-picker">
@@ -1526,6 +1507,7 @@ export function SetBuilder() {
             </div>
           ) : null}
 
+          {crateService === "beatport" ? null : (
           <div className="seg crate-mode-seg" role="tablist" aria-label="Crate-Quelle">
             <button
               type="button"
@@ -1546,8 +1528,9 @@ export function SetBuilder() {
               Link / Playlist
             </button>
           </div>
+          )}
 
-          {crateMode === "search" ? (
+          {crateService !== "beatport" && crateMode === "search" ? (
             <form
               className="search-row"
               onSubmit={(e) => {
@@ -1558,8 +1541,14 @@ export function SetBuilder() {
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Artist, Track, Genre… oder Spotify-Link"
-                aria-label="Spotify Suche"
+                placeholder={
+                  crateService === "tidal"
+                    ? "Artist, Track… oder tidal.com-Link"
+                    : "Artist, Track, Genre… oder Spotify-Link"
+                }
+                aria-label={
+                  crateService === "tidal" ? "Tidal Suche" : "Spotify Suche"
+                }
               />
               <button type="submit" disabled={isPending}>
                 {isPending ? "Suche…" : "Suchen"}
@@ -1576,8 +1565,20 @@ export function SetBuilder() {
               <input
                 value={linkUrl}
                 onChange={(e) => setLinkUrl(e.target.value)}
-                placeholder="open.spotify.com/track|playlist|album/… "
-                aria-label="Spotify Link"
+                placeholder={
+                  crateService === "beatport"
+                    ? "beatport.com/track/… oder /release/…"
+                    : crateService === "tidal"
+                      ? "tidal.com/browse/playlist/… oder /track/…"
+                      : "open.spotify.com/track, /playlist oder /album"
+                }
+                aria-label={
+                  crateService === "beatport"
+                    ? "Beatport Link"
+                    : crateService === "tidal"
+                      ? "Tidal Link"
+                      : "Spotify Link"
+                }
               />
               <button type="submit" disabled={isPending}>
                 {isPending ? "Lade…" : "Laden"}
@@ -1604,9 +1605,13 @@ export function SetBuilder() {
           {!hasSearched ? (
             <div className="empty">
               <p>
-                {crateMode === "search"
-                  ? "Suche starten — oder Spotify-Link einfügen."
-                  : "Track-, Playlist- oder Album-Link laden. Playlists: eigene/collaborative in Dev Mode."}
+                {crateService === "beatport"
+                  ? "Link einfügen und laden. Danach den Track mit + dazu in die Phase legen."
+                  : crateMode === "search"
+                    ? "Suche starten. Ein Link im Feld wird direkt geladen."
+                    : crateService === "tidal"
+                      ? "Playlist- oder Track-Link einfügen."
+                      : "Track-, Playlist- oder Album-Link. Playlists: eigene oder collaborative, im Dev Mode."}
               </p>
             </div>
           ) : results.length === 0 ? (
@@ -1630,9 +1635,7 @@ export function SetBuilder() {
                         <em
                           className={`source-pill source-${track.source || crateService}`}
                         >
-                          {track.source === "tidal" || crateService === "tidal"
-                            ? "Tidal"
-                            : "Spotify"}
+                          {sourceLabel(track.source || crateService)}
                         </em>
                         {track.artists.join(", ")}
                         {track.durationMs
@@ -1642,7 +1645,7 @@ export function SetBuilder() {
                     </div>
                   </div>
                   <button type="button" onClick={() => addTrack(track)}>
-                    + Add
+                    + dazu
                   </button>
                 </li>
               ))}
@@ -1673,6 +1676,7 @@ export function SetBuilder() {
                 <button
                   type="button"
                   className={roleFilter === "all" ? "seg-item active" : "seg-item"}
+                  title="Performance-Reihenfolge, ohne die Alternativen."
                   onClick={() => setRoleFilter("all")}
                 >
                   Alle
@@ -1684,55 +1688,33 @@ export function SetBuilder() {
                     className={
                       roleFilter === role.id ? "seg-item active" : "seg-item"
                     }
+                    title={role.hint}
                     onClick={() => setRoleFilter(role.id)}
                   >
                     {role.label}
                   </button>
                 ))}
               </div>
-              <button
-                type="button"
-                className="btn ghost"
-                onClick={() => void matchStreamingLinks()}
-                disabled={matchingLinks || draft.tracks.length === 0}
-              >
-                {matchingLinks ? "Suche…" : "Spotify-Links"}
-              </button>
-              <button
-                type="button"
-                className="btn"
-                onClick={exportPdf}
-                disabled={mainTracks.length === 0}
-              >
-                PDF
-              </button>
-              <button
-                type="button"
-                className="btn ghost"
-                onClick={exportM3u}
-                disabled={draft.tracks.length === 0}
-              >
-                M3U
-              </button>
-              <button
-                type="button"
-                className="btn ghost"
-                onClick={exportRekordbox}
-                disabled={draft.tracks.length === 0}
-              >
-                rekordbox
-              </button>
-              <button
-                type="button"
-                className="btn ghost"
-                onClick={copyExport}
-                disabled={draft.tracks.length === 0}
-              >
-                Text
-              </button>
-              <button type="button" className="btn ghost" onClick={resetSet}>
-                Reset
-              </button>
+              <SetTakeaway
+                canMatch={draft.tracks.length > 0}
+                canExport={draft.tracks.length > 0}
+                matchingLinks={matchingLinks}
+                onMatchLinks={() => void matchStreamingLinks()}
+                onExportPdf={exportPdf}
+                onExportM3u={exportM3u}
+                onExportRekordbox={exportRekordbox}
+                onCopyText={() => void copyExport()}
+                extra={
+                  <span className="tip">
+                    <button type="button" className="btn ghost" onClick={resetSet}>
+                      Reset
+                    </button>
+                    <span className="tip-bubble" role="tooltip">
+                      Set leeren und zum leeren Brief zurück. Gespeicherte Setups bleiben.
+                    </span>
+                  </span>
+                }
+              />
             </div>
           </div>
 
@@ -1985,6 +1967,154 @@ export function SetBuilder() {
         </section>
       </div>
       )}
+
+      <details className="explain-fold optional-source">
+        <summary>
+          <span>Spotify, Tidal, Beatport</span>
+          <em>Optional</em>
+        </summary>
+      <section className="import-panel" aria-label="Playlist import">
+        <p className="section-note">
+          Nur wenn der Track noch nicht auf dem Stick liegt. Key und BPM kommen
+          aus diesen Playlists meist nicht mit.
+        </p>
+        <div className="panel-head">
+          <h2>Playlist laden</h2>
+          <p>
+            {spotifyConnected === null
+              ? "Auth prüfen…"
+              : spotifyConnected
+                ? "Spotify verbunden"
+                : "Spotify-Login nötig"}
+          </p>
+        </div>
+
+        <div className="import-actions">
+          {spotifyConnected ? (
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={async () => {
+                await fetch("/api/auth/logout", { method: "POST" });
+                setSpotifyConnected(false);
+                setMyPlaylists([]);
+                setStatus("Spotify getrennt.");
+              }}
+            >
+              Spotify trennen
+            </button>
+          ) : (
+            <a className="button-link" href="/api/auth/login">
+              Mit Spotify verbinden
+            </a>
+          )}
+          {tidalConnected ? (
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={async () => {
+                await fetch("/api/auth/tidal/logout", { method: "POST" });
+                setTidalConnected(false);
+                setStatus("Tidal getrennt.");
+              }}
+            >
+              Tidal trennen
+            </button>
+          ) : (
+            <a className="button-link tidal-login" href="/api/auth/tidal/login">
+              Mit Tidal verbinden
+            </a>
+          )}
+        </div>
+        {tidalConnected ? null : (
+          <p className="import-hint">
+            Tidal-Fehler 1002: In der Entwickler-App müssen genau diese Scopes
+            an sein: <code>user.read</code> und <code>playlists.read</code>.
+            Redirect-URI exakt{" "}
+            <code>http://127.0.0.1:4317/api/auth/tidal/callback</code>. Danach
+            speichern und den Login neu starten.
+          </p>
+        )}
+
+        {spotifyConnected && myPlaylists.length > 0 ? (
+          <div className="playlist-picker">
+            <label>
+              <span>Eigene Playlists</span>
+              <select
+                value=""
+                onChange={(e) => {
+                  const id = e.target.value;
+                  if (!id) return;
+                  setPlaylistUrl(`https://open.spotify.com/playlist/${id}`);
+                  setError(null);
+                }}
+                aria-label="Eigene Playlist wählen"
+              >
+                <option value="">Playlist wählen…</option>
+                {myPlaylists.map((playlist) => (
+                  <option key={playlist.id} value={playlist.id}>
+                    {playlist.name} ({playlist.trackCount})
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        ) : null}
+
+        <form
+          className="search-row import-row"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void extractFromPlaylist();
+          }}
+        >
+          <input
+            value={playlistUrl}
+            onChange={(e) => setPlaylistUrl(e.target.value)}
+            placeholder="Spotify- oder Tidal-Playlist-Link"
+            aria-label="Playlist URL"
+          />
+          <button type="submit" disabled={isExtracting || !playlistUrl.trim()}>
+            {isExtracting ? "Extrahiere…" : "Set extrahieren"}
+          </button>
+        </form>
+
+        <details className="explain-fold">
+          <summary>
+            <span>So funktioniert die Extraktion</span>
+            <em>Aufklappen</em>
+          </summary>
+          <div className="explain-body">
+            <p>
+              SETFORM nimmt eine Playlist und legt daraus ein Set mit Dauer,
+              Phasen und Übergängen. Die Playlist ist das Material, die
+              Performance-Reihenfolge ist die Geschichte des Abends.
+            </p>
+            <ol className="explain-steps">
+              {EXTRACT_STEPS.map((step) => (
+                <li key={step.title}>
+                  <strong>{step.title}</strong>
+                  <span>{step.body}</span>
+                </li>
+              ))}
+            </ol>
+            <p className="explain-note">
+              Spotify Dev Mode: nur <strong>eigene</strong> oder collaborative
+              Playlists — keine fremden/editorial Charts. Redirect URI:{" "}
+              <code>{redirectUri}</code>
+            </p>
+          </div>
+        </details>
+      </section>
+      </details>
+
+      <details className="explain-fold section-fold">
+        <summary>
+          <span>Einstellungen</span>
+          <em>Sichern</em>
+        </summary>
+        {renderSetups()}
+      </details>
     </div>
   );
 }

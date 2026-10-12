@@ -25,8 +25,9 @@ export function HarmonicPath({ tracks, onHarmonize }: Props) {
       <div className="panel-head">
         <div>
           <h2>Harmonic Path</h2>
-          <p className="timeline-filter">
-            Camelot-Nachbarschaft entlang der Performance-Tracks
+          <p className="section-note">
+            Camelot entlang der gespielten Reihenfolge. Sortieren rückt
+            verwandte Keys zusammen, ein Clash vor dem Peak bleibt erlaubt.
           </p>
         </div>
         <div className="actions">
@@ -74,7 +75,7 @@ export function HarmonicPath({ tracks, onHarmonize }: Props) {
       </div>
 
       {performance.length === 0 ? (
-        <p className="guide-line">Noch kein Set — zuerst Playlist extrahieren.</p>
+        <p className="guide-line">Noch kein Set — zuerst eine Playlist vom Stick laden.</p>
       ) : (
         <ol className="harm-steps">
           {performance.map((track, index) => {

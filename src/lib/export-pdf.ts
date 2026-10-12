@@ -1,14 +1,18 @@
-import { relationLabel } from "@/lib/harmonic";
+import { mixJoin } from "@/lib/harmonic";
 import { sourceLabel } from "@/lib/music-link";
+import { trackFilePath } from "@/lib/export-booth";
 import {
   ARC_GUIDE,
-  phaseWindowLabel,
   PHASES,
+  SLOT_KINDS,
+  TRACK_ROLES,
+  TRANSITIONS,
+  phaseWindowLabel,
   formatDuration,
   performanceTracks,
-  setPositionById,
   totalDurationMs,
   type SetDraft,
+  type SetPhaseId,
   type SetTrack,
 } from "@/lib/set";
 
@@ -20,113 +24,153 @@ function escapeHtml(value: string): string {
     .replaceAll('"', "&quot;");
 }
 
-function trackNotes(track: SetTrack): string {
-  const comment = track.comment?.trim() || track.note?.trim() || "";
+function roleLabel(track: SetTrack): string {
+  return TRACK_ROLES.find((role) => role.id === track.role)?.label ?? track.role;
+}
+
+function transitionLabel(track: SetTrack): string {
+  if (track.transition === "unset") return "—";
+  return (
+    TRANSITIONS.find((item) => item.id === track.transition)?.label ??
+    track.transition
+  );
+}
+
+function phaseLabel(phase: SetPhaseId): string {
+  return PHASES.find((item) => item.id === phase)?.label ?? phase;
+}
+
+function trackDetail(track: SetTrack): string {
+  const comment = track.comment?.trim() || "";
+  const note = track.note?.trim() || "";
+  const path = trackFilePath(track);
+  const album =
+    track.album && track.album !== "Manual" ? track.album : "";
   const bits = [
-    track.why ? `<div class="why">${escapeHtml(track.why)}</div>` : "",
-    comment ? `<div class="cue">${escapeHtml(comment)}</div>` : "",
+    album ? `<div class="sub">${escapeHtml(album)}</div>` : "",
+    track.why ? `<div class="note">Warum: ${escapeHtml(track.why)}</div>` : "",
+    comment ? `<div class="note">${escapeHtml(comment)}</div>` : "",
+    !comment && note && note !== path
+      ? `<div class="note">${escapeHtml(note)}</div>`
+      : "",
     track.safetyAlt
-      ? `<div class="cue">Safety: ${escapeHtml(track.safetyAlt)}</div>`
+      ? `<div class="note">Ersatz-Notiz: ${escapeHtml(track.safetyAlt)}</div>`
       : "",
+    track.durationMs
+      ? ""
+      : `<div class="note">Dauer offen, die Startzeit danach bleibt stehen.</div>`,
     track.externalUrl
-      ? `<div class="link">${escapeHtml(sourceLabel(track.source))} · ${escapeHtml(track.externalUrl)}</div>`
-      : "",
+      ? `<div class="link"><a href="${escapeHtml(track.externalUrl)}">${escapeHtml(sourceLabel(track.source))}</a> <span>${escapeHtml(track.externalUrl)}</span></div>`
+      : `<div class="note">Kein Link</div>`,
+    path ? `<div class="link">Datei <span>${escapeHtml(path)}</span></div>` : "",
   ];
   return bits.join("");
 }
 
 export function buildSetPrintHtml(draft: SetDraft): string {
   const main = performanceTracks(draft.tracks);
-  const safeties = draft.tracks.filter((track) => track.role === "safety");
-  const filled = formatDuration(totalDurationMs(draft.tracks));
-  const positions = setPositionById(draft.tracks);
+  const alternatives = draft.tracks.filter((track) => track.role === "safety");
+  const filledMs = totalDurationMs(draft.tracks);
+  const targetMs = draft.durationMinutes * 60_000;
+  const over = filledMs > targetMs;
+  const slotKind = SLOT_KINDS.find((slot) => slot.id === draft.slotKind);
 
-  const orderRows = draft.tracks
-    .map((track) => {
-      return `<tr>
-        <td class="num">${escapeHtml(positions.get(track.id) ?? "—")}</td>
-        <td>
-          <strong>${escapeHtml(track.name)}</strong><br/>
-          <span class="muted">${escapeHtml(track.artists.join(", ") || "—")}</span>
-          ${trackNotes(track)}
+  let clock = 0;
+  let lastPhase: SetPhaseId | "" = "";
+  const performanceBody = main
+    .map((track, index) => {
+      const previous = index > 0 ? main[index - 1] : null;
+      const join = mixJoin(previous, track);
+      const phaseChanged = track.phase !== lastPhase;
+      lastPhase = track.phase;
+      const guide = ARC_GUIDE.find((item) => item.phase === track.phase);
+      const start = formatDuration(clock);
+      clock += track.durationMs;
+      const banner = phaseChanged
+        ? `<tr class="phase-row">
+            <td colspan="6">
+              <strong>${escapeHtml(phaseLabel(track.phase))}</strong>
+              <em>${escapeHtml(phaseWindowLabel(draft.durationMinutes, track.phase))}</em>
+              ${guide ? `<span>${escapeHtml(guide.focus)}</span>` : ""}
+            </td>
+          </tr>`
+        : "";
+      const artists = track.artists.filter((name) => name && name !== "Unknown");
+      return `${banner}<tr>
+        <td class="num">${index + 1}</td>
+        <td class="clock">${start}</td>
+        <td class="track">
+          <strong>${escapeHtml(track.name)}</strong>
+          <div class="sub">${escapeHtml(artists.join(", ") || "—")}${
+            track.durationMs ? ` · ${formatDuration(track.durationMs)}` : ""
+          } · ${escapeHtml(roleLabel(track))}</div>
+          ${trackDetail(track)}
         </td>
-        <td>${escapeHtml(PHASES.find((phase) => phase.id === track.phase)?.label ?? track.phase)}</td>
-        <td>${escapeHtml(track.role)}</td>
-        <td>${escapeHtml(sourceLabel(track.source))}</td>
-        <td>${escapeHtml(track.keyCamelot || "—")}</td>
-        <td>${escapeHtml(track.bpm || "—")}</td>
-        <td>${track.durationMs ? formatDuration(track.durationMs) : "—"}</td>
+        <td class="key">${escapeHtml(track.keyCamelot || "—")}</td>
+        <td class="bpm">${escapeHtml(track.bpm || "—")}</td>
+        <td class="mix">
+          <div>${escapeHtml(join?.label || "—")}</div>
+          <div class="sub">${escapeHtml(transitionLabel(track))}</div>
+        </td>
       </tr>`;
     })
     .join("");
 
-  const orderBlock = draft.tracks.length
-    ? `<section class="phase">
-        <h2>Set-Reihenfolge</h2>
-        <p class="focus">Manuelle Reihenfolge inkl. Comments und Quell-Links.</p>
+  const alternativeBody = alternatives
+    .map((track, index) => {
+      const artists = track.artists.filter((name) => name && name !== "Unknown");
+      return `<tr>
+        <td class="num">S${index + 1}</td>
+        <td class="track" colspan="2">
+          <strong>${escapeHtml(track.name)}</strong>
+          <div class="sub">${escapeHtml(artists.join(", ") || "—")}${
+            track.durationMs ? ` · ${formatDuration(track.durationMs)}` : ""
+          } · ${escapeHtml(phaseLabel(track.phase))}</div>
+          ${trackDetail(track)}
+        </td>
+        <td class="key">${escapeHtml(track.keyCamelot || "—")}</td>
+        <td class="bpm">${escapeHtml(track.bpm || "—")}</td>
+        <td class="mix"><div class="sub">${escapeHtml(transitionLabel(track))}</div></td>
+      </tr>`;
+    })
+    .join("");
+
+  const performanceTable = main.length
+    ? `<section>
+        <h2>Performance</h2>
+        <p class="lead">In dieser Reihenfolge spielen. „Start“ ist die Zeit ab Set-Beginn. „Von davor“ ist Key- und BPM-Abstand zum vorherigen Track.</p>
         <table>
           <thead>
             <tr>
-              <th>#</th><th>Track</th><th>Phase</th><th>Rolle</th><th>Quelle</th><th>Key</th><th>BPM</th><th>Dauer</th>
+              <th>#</th>
+              <th>Start</th>
+              <th>Track</th>
+              <th>Key</th>
+              <th>BPM</th>
+              <th>Von davor</th>
             </tr>
           </thead>
-          <tbody>${orderRows}</tbody>
+          <tbody>${performanceBody}</tbody>
         </table>
       </section>`
     : "";
 
-  const phaseBlocks = PHASES.map((phase) => {
-    const tracks = main.filter((track) => track.phase === phase.id);
-    if (!tracks.length) return "";
-    const guide = ARC_GUIDE.find((item) => item.phase === phase.id);
-    const rows = tracks
-      .map((track, index) => {
-        const harm =
-          track.harmonicFromPrev && track.harmonicFromPrev !== "unknown"
-            ? relationLabel(track.harmonicFromPrev)
-            : "—";
-        return `<tr>
-          <td class="num">${index + 1}</td>
-          <td>
-            <strong>${escapeHtml(track.name)}</strong><br/>
-            <span class="muted">${escapeHtml(track.artists.join(", "))}</span>
-            ${trackNotes(track)}
-          </td>
-          <td>${escapeHtml(track.role)}</td>
-          <td>${escapeHtml(track.keyCamelot || "—")}</td>
-          <td>${escapeHtml(track.bpm || "—")}</td>
-          <td>${formatDuration(track.durationMs)}</td>
-          <td>${escapeHtml(track.transition === "unset" ? "—" : track.transition)}</td>
-          <td>${escapeHtml(harm)}</td>
-        </tr>`;
-      })
-      .join("");
-
-    return `<section class="phase">
-      <h2>${escapeHtml(phase.label)} <span>${escapeHtml(phaseWindowLabel(draft.durationMinutes, phase.id))}</span></h2>
-      ${guide ? `<p class="focus">${escapeHtml(guide.focus)}</p>` : ""}
-      <table>
-        <thead>
-          <tr>
-            <th>#</th><th>Track</th><th>Role</th><th>Key</th><th>BPM</th><th>Dur</th><th>Transition</th><th>Harmonic</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </section>`;
-  }).join("");
-
-  const safetyBlock = safeties.length
-    ? `<section class="phase">
-        <h2>Safety nets</h2>
-        <ol class="safety">
-          ${safeties
-            .map(
-              (track) =>
-                `<li><strong>${escapeHtml(track.name)}</strong> — ${escapeHtml(track.artists.join(", "))} <span class="muted">(${formatDuration(track.durationMs)})</span></li>`,
-            )
-            .join("")}
-        </ol>
+  const alternativeTable = alternatives.length
+    ? `<section>
+        <h2>Alternativen</h2>
+        <p class="lead">Nicht in der Spielzeit. Plan B, wenn der Floor dreht. In der rekordbox-XML liegen sie als zweite Playlist.</p>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th colspan="2">Track</th>
+              <th>Key</th>
+              <th>BPM</th>
+              <th>Übergang</th>
+            </tr>
+          </thead>
+          <tbody>${alternativeBody}</tbody>
+        </table>
       </section>`
     : "";
 
@@ -134,82 +178,102 @@ export function buildSetPrintHtml(draft: SetDraft): string {
 <html lang="de">
 <head>
   <meta charset="utf-8" />
-  <title>${escapeHtml(draft.title)} — SETFORM</title>
+  <title>${escapeHtml(draft.title || "SETFORM")} — Ausdruck</title>
   <style>
     :root {
-      --ink: #14201c;
-      --muted: #5a6862;
-      --line: #d5ddd7;
-      --paper: #f7faf7;
-      --accent: #c8f06c;
+      --ink: #161616;
+      --muted: #5e5e5e;
+      --line: #d8d8d8;
+      --band: #f3f3f3;
+      --paper: #fff;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       color: var(--ink);
-      background: white;
-      font: 12.5px/1.45 "IBM Plex Sans", "Segoe UI", sans-serif;
+      background: #ececec;
+      font: 11.5px/1.4 "Avenir Next", "Segoe UI", sans-serif;
+    }
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 22px;
+      background: #161616;
+      color: #f5f5f5;
+    }
+    .toolbar p { margin: 0; font-size: 12px; color: #cfcfcf; }
+    .toolbar div { display: flex; gap: 8px; }
+    .toolbar button {
+      border: 0;
+      background: #fff;
+      color: #161616;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font: inherit;
+      font-weight: 650;
+      cursor: pointer;
+    }
+    .toolbar button.ghost {
+      background: transparent;
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.35);
     }
     .sheet {
       max-width: 920px;
-      margin: 0 auto;
-      padding: 28px 32px 48px;
+      margin: 18px auto 32px;
+      padding: 28px 32px 36px;
+      background: var(--paper);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.08);
     }
     .brand {
+      margin: 0 0 8px;
       font-size: 11px;
-      letter-spacing: 0.18em;
+      letter-spacing: 0.16em;
       text-transform: uppercase;
       color: var(--muted);
-      margin: 0 0 8px;
     }
     h1 {
       margin: 0;
       font-size: 28px;
       letter-spacing: -0.03em;
-      line-height: 1.1;
+      line-height: 1.05;
     }
-    .meta {
-      margin-top: 14px;
+    .vibe { margin: 6px 0 0; font-size: 14px; }
+    .brief {
+      margin: 16px 0 0;
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px 18px;
-      padding: 12px 14px;
-      border: 1px solid var(--line);
-      background: var(--paper);
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px 16px;
+      padding: 12px 0 0;
+      border-top: 2px solid var(--ink);
     }
-    .meta div span {
+    .brief div span {
       display: block;
-      font-size: 10px;
+      font-size: 9px;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--muted);
     }
-    .meta div strong {
-      font-size: 13px;
-      font-weight: 600;
+    .brief div strong { font-size: 12.5px; font-weight: 650; }
+    .summary {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 12px;
     }
-    .phase { margin-top: 22px; break-inside: avoid; }
-    .phase h2 {
-      margin: 0 0 6px;
+    section { margin-top: 22px; }
+    h2 {
+      margin: 0 0 4px;
       font-size: 16px;
       letter-spacing: -0.02em;
-      border-bottom: 2px solid var(--ink);
-      padding-bottom: 4px;
     }
-    .phase h2 span {
-      font-size: 12px;
-      color: var(--muted);
-      font-weight: 500;
-    }
-    .focus {
-      margin: 0 0 8px;
-      color: var(--muted);
-      font-size: 12px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
+    .lead { margin: 0 0 8px; color: var(--muted); font-size: 11.5px; }
+    table { width: 100%; border-collapse: collapse; }
+    thead { display: table-header-group; }
     th, td {
       border-bottom: 1px solid var(--line);
       padding: 7px 6px;
@@ -217,83 +281,91 @@ export function buildSetPrintHtml(draft: SetDraft): string {
       text-align: left;
     }
     th {
-      font-size: 10px;
-      letter-spacing: 0.06em;
+      font-size: 9px;
+      letter-spacing: 0.07em;
       text-transform: uppercase;
       color: var(--muted);
-      font-weight: 600;
+      font-weight: 650;
     }
-    td.num { width: 24px; color: var(--muted); }
-    .muted { color: var(--muted); }
-    .why, .cue, .link { margin-top: 3px; font-size: 11px; color: var(--muted); word-break: break-all; }
-    .safety { margin: 8px 0 0; padding-left: 18px; }
-    .footer {
-      margin-top: 28px;
+    td.num { width: 28px; color: var(--muted); }
+    td.clock { width: 48px; font-variant-numeric: tabular-nums; }
+    td.key, td.bpm { width: 42px; font-variant-numeric: tabular-nums; }
+    td.mix { width: 132px; }
+    .track strong { font-size: 12.5px; }
+    .sub, .note, .link { margin-top: 2px; color: var(--muted); font-size: 10.5px; }
+    .note { white-space: pre-wrap; }
+    .link span, .link a { word-break: break-all; }
+    a { color: inherit; }
+    tr.phase-row td {
+      background: var(--band);
+      border-bottom-color: #cfcfcf;
+      padding-top: 9px;
+      padding-bottom: 8px;
+    }
+    tr.phase-row strong { font-size: 13px; }
+    tr.phase-row em {
+      margin-left: 8px;
+      font-style: normal;
+      color: var(--muted);
+      font-size: 11px;
+    }
+    tr.phase-row span {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+    tr { break-inside: avoid; }
+    .legend {
+      margin-top: 22px;
       padding-top: 10px;
       border-top: 1px solid var(--line);
       color: var(--muted);
-      font-size: 11px;
+      font-size: 10.5px;
       display: flex;
       justify-content: space-between;
-      gap: 12px;
+      gap: 16px;
     }
-    .toolbar {
-      position: sticky;
-      top: 0;
-      display: flex;
-      gap: 8px;
-      justify-content: flex-end;
-      padding: 10px 32px;
-      background: rgba(255,255,255,0.92);
-      border-bottom: 1px solid var(--line);
-      backdrop-filter: blur(8px);
-    }
-    .toolbar button {
-      border: 1px solid var(--ink);
-      background: var(--ink);
-      color: #f4faf4;
-      padding: 8px 12px;
-      cursor: pointer;
-      font: inherit;
-    }
-    .toolbar button.ghost {
-      background: white;
-      color: var(--ink);
-    }
+    @page { size: A4; margin: 12mm; }
     @media print {
+      body { background: #fff; }
       .toolbar { display: none !important; }
-      .sheet { padding: 0; max-width: none; }
-      a { color: inherit; text-decoration: none; }
+      .sheet { margin: 0; max-width: none; padding: 0; box-shadow: none; }
+      a { text-decoration: none; }
     }
   </style>
 </head>
 <body>
   <div class="toolbar">
-    <button type="button" onclick="window.print()">Als PDF speichern…</button>
-    <button type="button" class="ghost" onclick="window.close()">Schließen</button>
+    <p>Ausdruck für die Kabine. Im Druckdialog „Als PDF speichern“ wählen.</p>
+    <div>
+      <button type="button" onclick="window.print()">Drucken / PDF</button>
+      <button type="button" class="ghost" onclick="window.close()">Schließen</button>
+    </div>
   </div>
   <main class="sheet">
-    <p class="brand">SETFORM</p>
-    <h1>${escapeHtml(draft.title)}</h1>
-    <div class="meta">
-      <div><span>Vibe</span><strong>${escapeHtml(draft.vibe)}</strong></div>
-      <div><span>Dauer</span><strong>${filled} / ${draft.durationMinutes}:00 · ${main.length} Tracks</strong></div>
-      <div><span>Venue</span><strong>${escapeHtml(draft.venue)}</strong></div>
-      <div><span>Slot</span><strong>${escapeHtml(draft.slot)}${draft.slotKind ? ` · ${escapeHtml(draft.slotKind)}` : ""}</strong></div>
-      <div><span>Audience</span><strong>${escapeHtml(draft.audience)}</strong></div>
-      <div><span>Gear</span><strong>${escapeHtml(draft.gear)}</strong></div>
+    <p class="brand">SETFORM · Ausdruck</p>
+    <h1>${escapeHtml(draft.title || "Ohne Titel")}</h1>
+    <p class="vibe">${escapeHtml(draft.vibe || "")}</p>
+    <div class="brief">
+      <div><span>Slot</span><strong>${escapeHtml(slotKind?.label ?? draft.slotKind)}${draft.slot ? ` · ${escapeHtml(draft.slot)}` : ""}</strong></div>
+      <div><span>Dauer</span><strong>${formatDuration(filledMs)} / ${draft.durationMinutes}:00${over ? " · über dem Brief" : ""}</strong></div>
+      <div><span>Tracks</span><strong>${main.length} Performance · ${alternatives.length} Alternativen</strong></div>
+      <div><span>Venue</span><strong>${escapeHtml(draft.venue || "—")}</strong></div>
+      <div><span>Audience</span><strong>${escapeHtml(draft.audience || "—")}</strong></div>
+      <div><span>Gear</span><strong>${escapeHtml(draft.gear || "—")}</strong></div>
     </div>
-    ${orderBlock}
-    ${phaseBlocks}
-    ${safetyBlock}
-    <div class="footer">
-      <span>Exportiert mit SETFORM · Harmonic Arc Prep</span>
+    <p class="summary">${escapeHtml(slotKind?.hint || "")}</p>
+    ${performanceTable}
+    ${alternativeTable}
+    <div class="legend">
+      <span>Key ist Camelot. Der Übergang steht unter „Von davor“. Alternativen zählen nicht in die Spielzeit.</span>
       <span>${new Date().toLocaleString("de-DE")}</span>
     </div>
   </main>
   <script>
     window.addEventListener("load", () => {
-      setTimeout(() => window.print(), 250);
+      setTimeout(() => window.print(), 300);
     });
   </script>
 </body>
@@ -301,14 +373,13 @@ export function buildSetPrintHtml(draft: SetDraft): string {
 }
 
 export function openSetPdfExport(draft: SetDraft): void {
-  const html = buildSetPrintHtml(draft);
-  const popup = window.open("", "_blank", "noopener,noreferrer,width=960,height=900");
+  const popup = window.open("", "_blank");
   if (!popup) {
     throw new Error(
       "Popup blockiert — bitte Popups für SETFORM erlauben und erneut exportieren.",
     );
   }
   popup.document.open();
-  popup.document.write(html);
+  popup.document.write(buildSetPrintHtml(draft));
   popup.document.close();
 }

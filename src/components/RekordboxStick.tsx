@@ -125,7 +125,7 @@ export function RekordboxStick({
               disabled={pending || matchingLinks || draft.tracks.length === 0}
               onClick={onMatchLinks}
             >
-              {matchingLinks ? "Suche…" : "Spotify-Links"}
+              {matchingLinks ? "Suche…" : "Links suchen"}
             </button>
           ) : null}
           <label className={"btn ghost library-file" + (pending ? " is-busy" : "")}>

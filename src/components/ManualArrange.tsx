@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition, type ReactNode } from "react";
 import { ReplaceMenu } from "@/components/ReplaceMenu";
+import { SetTakeaway } from "@/components/SetTakeaway";
 import { CAMELOT_CODES, mixJoin } from "@/lib/harmonic";
 import { sourceLabel } from "@/lib/music-link";
 import {
@@ -192,47 +193,27 @@ export function ManualArrange({
       <div className="panel-head">
         <div>
           <h2>Manual Arrange</h2>
-          <p className="timeline-filter">
-            Links aus Spotify · Tidal · SoundCloud · Beatport — Zeile an der Nummer ziehen
+          <p className="section-note">
+            Link oder Titel eintragen, an der Nummer sortieren. Links suchen
+            hängt fehlende Spotify-Adressen an. PDF, M3U und rekordbox nehmen
+            das Set mit.
           </p>
         </div>
         <div className="manual-head-actions">
-          <p className="timeline-filter">
-            {performance.length} Tracks · aktiv{" "}
-            {PHASES.find((p) => p.id === activePhase)?.label}/{activeRole}
+          <p className="head-meta">
+            {performance.length} in der Performance · neue Tracks:{" "}
+            {PHASES.find((phase) => phase.id === activePhase)?.label} ·{" "}
+            {TRACK_ROLES.find((role) => role.id === activeRole)?.label}
           </p>
-          <button
-            type="button"
-            className="btn ghost"
-            onClick={onMatchLinks}
-            disabled={!onMatchLinks || matchingLinks || tracks.length === 0}
-          >
-            {matchingLinks ? "Suche…" : "Spotify-Links"}
-          </button>
-          <button
-            type="button"
-            className="btn"
-            onClick={onExportPdf}
-            disabled={!onExportPdf || tracks.length === 0}
-          >
-            PDF
-          </button>
-          <button
-            type="button"
-            className="btn ghost"
-            onClick={onExportM3u}
-            disabled={!onExportM3u || tracks.length === 0}
-          >
-            M3U
-          </button>
-          <button
-            type="button"
-            className="btn ghost"
-            onClick={onExportRekordbox}
-            disabled={!onExportRekordbox || tracks.length === 0}
-          >
-            rekordbox
-          </button>
+          <SetTakeaway
+            canMatch={Boolean(onMatchLinks) && tracks.length > 0}
+            canExport={tracks.length > 0}
+            matchingLinks={matchingLinks}
+            onMatchLinks={onMatchLinks}
+            onExportPdf={onExportPdf}
+            onExportM3u={onExportM3u}
+            onExportRekordbox={onExportRekordbox}
+          />
         </div>
       </div>
 
@@ -253,6 +234,7 @@ export function ManualArrange({
             type="button"
             className="btn manual-form-btn"
             disabled={pending}
+            title="Lädt Track, Playlist oder Album von Spotify, Tidal, SoundCloud oder Beatport in die Phase oben."
             onClick={importLink}
           >
             {pending ? "Lade…" : "Link laden"}
