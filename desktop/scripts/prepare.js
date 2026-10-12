@@ -9,12 +9,23 @@ const standalone = path.join(repoRoot, distDirName, "standalone");
 const target = path.join(appDir, "bundle", "setform");
 
 const npx = process.platform === "win32" ? "npx.cmd" : "npx";
-execFileSync(npx, ["next", "build", "--webpack"], {
-  cwd: repoRoot,
-  env: { ...process.env, SETFORM_STANDALONE: "1" },
-  stdio: "inherit",
-  shell: process.platform === "win32",
-});
+// next/font fetches the Google fonts at build time. That request fails now and then on CI,
+// so a failed build gets two more tries before the packaging gives up.
+const attempts = 3;
+for (let attempt = 1; attempt <= attempts; attempt += 1) {
+  try {
+    execFileSync(npx, ["next", "build", "--webpack"], {
+      cwd: repoRoot,
+      env: { ...process.env, SETFORM_STANDALONE: "1" },
+      stdio: "inherit",
+      shell: process.platform === "win32",
+    });
+    break;
+  } catch (error) {
+    if (attempt === attempts) throw error;
+    console.warn(`next build failed (attempt ${attempt}/${attempts}), trying again...`);
+  }
+}
 
 if (!fs.existsSync(path.join(standalone, "server.js"))) {
   throw new Error(`Standalone-Server fehlt: ${standalone}`);
