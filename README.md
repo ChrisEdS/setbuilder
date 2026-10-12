@@ -12,10 +12,11 @@ SETFORM bereitet DJ-Sets vor: Rekordbox-Stick oder Playlist laden, den Bogen nac
 - **Export zurück**: M3U und rekordbox-XML der Performance-Reihenfolge, Alternativen als zweite Playlist
 - **Ersatz**: aus den Alternativen oder der ganzen Stick-Bibliothek einsetzen, sortiert nach Key- und BPM-Abstand zu Vorgänger und Nachfolger, mit Vorhören
 - **Bibliothek**: alle Tracks vom Stick durchsuchen, abspielen, nach „Passt zu“ filtern und mit Phase und Rolle ins Set legen
-- **Energie**: Energy Level 1–10 aus Mixed In Key (Kommentar „7A - Energy 6“, Collection-XML, CSV-Spalte `Energy` oder von Hand), Energie-Verlauf gegen das Zielband jeder Phase, Sprünge ab 3 Stufen, Plan-B-Abdeckung; Energie fließt in Sortierung, Rollen und Ersatz ein
+- **Energie**: Energy Level 1–10 aus Mixed In Key (Kommentar „7A - Energy 6“, Collection-XML, CSV-Spalte `Energy` oder von Hand), Energie-Verlauf gegen das Zielband jeder Phase, Sprünge ab 3 Stufen, Plan-B-Abdeckung (mind. 2 passende Alternativen pro Phase, auch in der Rollen-Ansicht); Energie fließt in Sortierung, Rollen und Ersatz ein
 - **Harmonic Path**: Camelot-Kompatibilität nach Mixed-In-Key-Regeln (gleich, ±1, A↔B sicher; +2 als Energy Boost), Mix-Score aus Key und Energie, „Harmonisch sortieren“
 - **Preview**: Spotify-Embed-Player pro Track
-- **Export**: PDF und Text, inklusive Alternativen
+- **Export**: Menü „Mitnehmen“ mit PDF, rekordbox-XML, M3U und Text, jeweils mit Alternativen; „Zurücksetzen“ liegt im „…“-Menü
+- **Set bearbeiten**: „Harmonisch sortieren“, „Auf Slot kürzen“, „Rollen verteilen“ und „Links suchen“ als eigene Gruppe über der Liste
 
 ## Setup
 
@@ -44,6 +45,23 @@ npm run dev
 ```
 
 Entwicklung: [http://127.0.0.1:4327](http://127.0.0.1:4327). Die Desktop-App bleibt auf Port 4317.
+
+## Tests
+
+```bash
+npm test
+```
+
+Läuft mit dem eingebauten Node-Testrunner. Die Hooks in [`scripts/test-hooks.mjs`](scripts/test-hooks.mjs) lösen den `@/`-Alias und Imports ohne Endung auf. Getestet sind Energie, Camelot-Regeln, Slot-Kürzen, Ersatz-Ranking, Export und der Stick-Import.
+
+## Version 2
+
+- Energy Level 1–10 und die Camelot-Regeln nach Mixed In Key bestimmen Sortierung, Rollen, „Passt zu“ und Ersatz. Ein Key-Clash lässt sich nicht durch gleiche Energie und BPM ausgleichen.
+- „Auf Slot kürzen“ behält pro Phase die Tracks, deren Energie ins Phasenband passt.
+- Ansicht Bogen mit Phasen im Slot, Energie-Verlauf und Key-Verlauf. Die Rollen-Ansicht zeigt Plan B pro Phase.
+- Setliste mit einklappbaren Details pro Track.
+- Neue Leiste: Tabs, „Set bearbeiten“, Menüs „Mitnehmen“ und „…“ (mit Pfeiltasten und Esc bedienbar).
+- Tests laufen mit `npm test`.
 
 ## Desktop (Mac, Windows, Linux)
 

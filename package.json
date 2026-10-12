@@ -1,12 +1,13 @@
 {
   "name": "setform",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "license": "MIT",
   "scripts": {
     "dev": "next dev -p 4327 -H 127.0.0.1",
     "build": "next build",
     "start": "next start -H 0.0.0.0",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=DEP0205 --import ./scripts/test-register.mjs --test \"src/**/*.test.ts\""
   },
   "dependencies": {
     "next": "16.4.0",

@@ -17,7 +17,7 @@ import { PreviewPlayer } from "@/components/PreviewPlayer";
 import { ReplaceMenu } from "@/components/ReplaceMenu";
 import type { LibraryRow } from "@/components/LibraryPanel";
 import { libraryTrackToSetTrack } from "@/lib/rekordbox-stick";
-import { SetTakeaway } from "@/components/SetTakeaway";
+import { SetMenus, SetTools } from "@/components/SetTakeaway";
 import { RoleCrates } from "@/components/RoleCrates";
 import {
   boothFileName,
@@ -1861,7 +1861,7 @@ export function SetBuilder() {
             </div>
           </details>
 
-          <div className="crate-view-bar">
+          <div className="set-bar">
             <div className="seg" role="tablist" aria-label="Ansicht">
               {(
                 [
@@ -1883,70 +1883,60 @@ export function SetBuilder() {
                 </button>
               ))}
             </div>
-            <SetTakeaway
-              canMatch={draft.tracks.length > 0}
+            <SetMenus
               canExport={draft.tracks.length > 0}
-              matchingLinks={matchingLinks}
-              onMatchLinks={() => void matchStreamingLinks()}
               onExportPdf={exportPdf}
               onExportM3u={exportM3u}
               onExportRekordbox={exportRekordbox}
               onCopyText={() => void copyExport()}
-              leading={
-                <>
-                  <span className="tip">
-                    <button
-                      type="button"
-                      className="btn ghost"
-                      onClick={harmonizeSet}
-                      disabled={mainTracks.length < 2}
-                    >
-                      Harmonisch sortieren
-                    </button>
-                    <span className="tip-bubble" role="tooltip">
-                      Ordnet jede Phase nach Camelot-Key und BPM neu. Die Rollen bleiben.
-                    </span>
-                  </span>
-                  <span className="tip">
-                    <button
-                      type="button"
-                      className="btn ghost"
-                      onClick={fitSlot}
-                      disabled={filledMs <= targetMs * 1.05}
-                    >
-                      Auf Slot kürzen
-                    </button>
-                    <span className="tip-bubble" role="tooltip">
-                      Kürzt das Set auf die Dauer im Brief. Pro Phase bleiben gleichmäßig verteilte Tracks, der Rest wandert unter Alternativen. Nichts geht verloren.
-                    </span>
-                  </span>
-                  <span className="tip">
-                    <button
-                      type="button"
-                      className="btn ghost"
-                      onClick={assignRoles}
-                      disabled={mainTracks.length < 2}
-                    >
-                      Rollen verteilen
-                    </button>
-                    <span className="tip-bubble" role="tooltip">
-                      Setzt Anchor, Bridge und Groove neu nach Phase, Key und BPM. Die Reihenfolge bleibt.
-                    </span>
-                  </span>
-                </>
-              }
-              extra={
-                <span className="tip tip-end">
-                  <button type="button" className="btn ghost" onClick={resetSet}>
-                    Zurücksetzen
-                  </button>
-                  <span className="tip-bubble" role="tooltip">
-                    Set leeren und zum leeren Brief zurück. Gespeicherte Setups bleiben.
-                  </span>
-                </span>
-              }
+              onReset={resetSet}
             />
           </div>
+          <SetTools
+            canMatch={draft.tracks.length > 0}
+            matchingLinks={matchingLinks}
+            onMatchLinks={() => void matchStreamingLinks()}
+          >
+            <span className="tip">
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={harmonizeSet}
+                disabled={mainTracks.length < 2}
+              >
+                Harmonisch sortieren
+              </button>
+              <span className="tip-bubble" role="tooltip">
+                Ordnet jede Phase nach Camelot-Key und BPM neu. Die Rollen bleiben.
+              </span>
+            </span>
+            <span className="tip">
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={fitSlot}
+                disabled={filledMs <= targetMs * 1.05}
+              >
+                Auf Slot kürzen
+              </button>
+              <span className="tip-bubble" role="tooltip">
+                Kürzt das Set auf die Dauer im Brief. Pro Phase bleiben gleichmäßig verteilte Tracks, der Rest wandert unter Alternativen. Nichts geht verloren.
+              </span>
+            </span>
+            <span className="tip">
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={assignRoles}
+                disabled={mainTracks.length < 2}
+              >
+                Rollen verteilen
+              </button>
+              <span className="tip-bubble" role="tooltip">
+                Setzt Anchor, Bridge und Groove neu nach Phase, Key und BPM. Die Reihenfolge bleibt.
+              </span>
+            </span>
+          </SetTools>
           <FieldNoticeView notice={localNotice("library")} />
           <FieldNoticeView notice={localNotice("export")} />
 

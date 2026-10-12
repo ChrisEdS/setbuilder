@@ -75,3 +75,21 @@ export function energyFitsPhase(level: number | undefined, phase: SetPhaseId): b
   const band = PHASE_ENERGY[phase];
   return level >= band.min && level <= band.max;
 }
+
+/** Minimum Alternativen per phase before the set counts as covered. */
+export const PLAN_B_MIN = 2;
+
+/**
+ * Plan B per phase: Alternativen whose energy fits the phase band, or, without
+ * energy data, that were placed in the phase.
+ */
+export function planBCount(
+  tracks: { role: string; phase: SetPhaseId; energyLevel?: number }[],
+  phase: SetPhaseId,
+): number {
+  return tracks.filter((track) => {
+    if (track.role !== "safety") return false;
+    if (track.energyLevel != null) return energyFitsPhase(track.energyLevel, phase) === true;
+    return track.phase === phase;
+  }).length;
+}

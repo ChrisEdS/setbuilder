@@ -3,28 +3,20 @@
 import type { CSSProperties } from "react";
 import {
   PHASE_ENERGY,
+  PLAN_B_MIN,
   energyFitsPhase,
   energyStep,
+  planBCount,
 } from "@/lib/energy";
 import {
   PHASES,
   performanceTracks,
-  type SetPhaseId,
   type SetTrack,
 } from "@/lib/set";
 
 type Props = {
   tracks: SetTrack[];
 };
-
-/** Plan B per phase: Alternativen whose energy fits (or, without data, that sit in the phase). */
-function planBCount(tracks: SetTrack[], phase: SetPhaseId): number {
-  return tracks.filter((track) => {
-    if (track.role !== "safety") return false;
-    if (track.energyLevel != null) return energyFitsPhase(track.energyLevel, phase) === true;
-    return track.phase === phase;
-  }).length;
-}
 
 export function EnergyPath({ tracks }: Props) {
   const performance = performanceTracks(tracks);
@@ -92,9 +84,9 @@ export function EnergyPath({ tracks }: Props) {
                 <div className="energy-phase-head">
                   <strong>{phase.label}</strong>
                   <span>Ziel {band.min}–{band.max}</span>
-                  <em className={backup < 2 ? "thin" : undefined}>
+                  <em className={backup < PLAN_B_MIN ? "thin" : undefined}>
                     Plan B: {backup}
-                    {backup < 2 ? " · mind. 2 empfohlen" : ""}
+                    {backup < PLAN_B_MIN ? ` · mind. ${PLAN_B_MIN} empfohlen` : ""}
                   </em>
                 </div>
                 <div className="energy-bars-wrap">

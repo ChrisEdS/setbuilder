@@ -14,6 +14,7 @@ import {
   phaseAccent,
   roleAccent,
 } from "@/lib/harmonic";
+import { PLAN_B_MIN, planBCount } from "@/lib/energy";
 import { rankReplacements } from "@/lib/replace-track";
 import {
   PHASES,
@@ -298,6 +299,8 @@ export function RoleCrates({
           </ul>
         </div>
       </details>
+
+      <PlanBStrip tracks={tracks} onSelectRole={onSelectRole} />
 
       <div
         className={
@@ -643,6 +646,48 @@ function SafetySwap({
       <button type="button" className="btn" onClick={() => onReplace(targetId, replacementId)}>
         Statt Fokus einsetzen
       </button>
+    </div>
+  );
+}
+
+/** Plan B per phase: at least two Alternativen that fit, so a failed blend never stalls the floor. */
+function PlanBStrip({
+  tracks,
+  onSelectRole,
+}: {
+  tracks: SetTrack[];
+  onSelectRole: (role: TrackRole) => void;
+}) {
+  const performance = performanceTracks(tracks);
+  const phases = PHASES.filter((phase) => performance.some((track) => track.phase === phase.id));
+  if (!phases.length) return null;
+  const thin = phases.filter((phase) => planBCount(tracks, phase.id) < PLAN_B_MIN);
+  return (
+    <div className="planb-strip" role="group" aria-label="Plan B pro Phase">
+      <span className="planb-label">Plan B</span>
+      <ul>
+        {phases.map((phase) => {
+          const count = planBCount(tracks, phase.id);
+          const ok = count >= PLAN_B_MIN;
+          return (
+            <li key={phase.id} className={ok ? "planb-chip ok" : "planb-chip thin"}>
+              <span>{phase.label}</span>
+              <strong>{count}</strong>
+              <em>{ok ? "gedeckt" : `mind. ${PLAN_B_MIN}`}</em>
+            </li>
+          );
+        })}
+      </ul>
+      <p>
+        {thin.length
+          ? `Es fehlen Alternativen in ${thin.map((phase) => phase.label).join(", ")}. Passende Titel aus der Bibliothek unter Alternativen legen.`
+          : `Jede Phase hat mindestens ${PLAN_B_MIN} passende Alternativen.`}
+      </p>
+      {thin.length ? (
+        <button type="button" className="btn ghost" onClick={() => onSelectRole("safety")}>
+          Alternativen zeigen
+        </button>
+      ) : null}
     </div>
   );
 }
