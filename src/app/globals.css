@@ -5318,3 +5318,90 @@ button.drag-handle:active i {
   outline-offset: -1px;
   background: rgba(255, 255, 255, 0.04) !important;
 }
+
+/* Text roles: body copy, status chips and hints look different. */
+.section-note {
+  color: #c4c4c4 !important;
+  font-size: 0.85rem !important;
+  line-height: 1.5 !important;
+}
+
+.head-meta,
+.timeline-panel .timeline-filter,
+.manual-head-actions .timeline-filter {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.5rem;
+  width: fit-content;
+  margin: 0.7rem 0 0 !important;
+  padding: 0.22rem 0.7rem !important;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #d9d9d9 !important;
+  font-size: 0.72rem !important;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+}
+
+.head-meta::before,
+.timeline-panel .timeline-filter::before {
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #8a8a8a;
+}
+
+.library-source-note,
+.section-note.library-source-note,
+.curve-note,
+.import-hint,
+.setups-connect-note,
+.crate-service-note,
+.explain-note {
+  padding-left: 0.7rem;
+  border-left: 2px solid rgba(255, 255, 255, 0.18);
+  color: #8f8f8f !important;
+  font-size: 0.75rem !important;
+  line-height: 1.5 !important;
+  max-width: 62ch;
+}
+
+.curve-head > p {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.5rem;
+  width: fit-content;
+  margin: 0 0 0.85rem !important;
+  padding: 0.22rem 0.7rem !important;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #d9d9d9 !important;
+  font-size: 0.72rem !important;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.curve-head > p::before {
+  /* status dot */
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #8a8a8a;
+}
+
+.library-source-note,
+.section-note.library-source-note,
+.curve-note,
+.import-hint,
+.setups-connect-note,
+.crate-service-note,
+.explain-note {
+  color: #9a9a9a !important;
+}
