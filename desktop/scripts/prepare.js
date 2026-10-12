@@ -8,7 +8,8 @@ const distDirName = ".next-standalone";
 const standalone = path.join(repoRoot, distDirName, "standalone");
 const target = path.join(appDir, "bundle", "setform");
 
-execFileSync("npm", ["run", "build"], {
+const npx = process.platform === "win32" ? "npx.cmd" : "npx";
+execFileSync(npx, ["next", "build", "--webpack"], {
   cwd: repoRoot,
   env: { ...process.env, SETFORM_STANDALONE: "1" },
   stdio: "inherit",
