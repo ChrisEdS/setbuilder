@@ -1,6 +1,6 @@
 # SETFORM
 
-**Version 2.0** · Dramaturgie statt Playlist.
+**Version 2.0.1** · Dramaturgie statt Playlist.
 
 SETFORM bereitet DJ-Sets vor. Du lädst einen Rekordbox-Stick, eine Collection-XML oder eine Playlist, legst den Bogen nach Slot und Dauer, prüfst Energie, Key und BPM und nimmst das Set als PDF, rekordbox-XML, M3U oder Text mit. Der Ablauf folgt dem [DJ.Studio Prep-Workflow](https://dj.studio/blog/dj-set-preparation#crafting-a-dj-set-that-feels-right-advanced-tips): Brief → Set bauen (mit Bogen) → Transitions → Export. Die Logik dahinter folgt den Regeln von Mixed In Key: erst Energie, dann Key, dann BPM.
 

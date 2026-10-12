@@ -52,15 +52,3 @@ export function parseSpotifyLink(
 
   return null;
 }
-
-export function looksLikeSpotifyLink(input: string): boolean {
-  const value = input.trim().toLowerCase();
-  if (!value) return false;
-  return (
-    value.includes("open.spotify.com/") ||
-    value.includes("spotify.link/") ||
-    value.startsWith("spotify:track:") ||
-    value.startsWith("spotify:playlist:") ||
-    value.startsWith("spotify:album:")
-  );
-}

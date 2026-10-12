@@ -1,7 +1,7 @@
 {
   "name": "setform",
   "productName": "SETFORM",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "DJ set preparation for Spotify, Tidal, and rekordbox",
   "homepage": "https://github.com/ChrisEdS/setform",
   "author": {
@@ -38,7 +38,9 @@
       {
         "from": "bundle/setform",
         "to": "setform",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       },
       {
         "from": "bundle/setform/node_modules",
@@ -51,7 +53,10 @@
     ],
     "mac": {
       "category": "public.app-category.music",
-      "target": ["dmg", "zip"],
+      "target": [
+        "dmg",
+        "zip"
+      ],
       "darkModeSupport": true,
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
@@ -59,14 +64,19 @@
       "entitlementsInherit": "build/entitlements.mac.plist"
     },
     "win": {
-      "target": ["nsis"]
+      "target": [
+        "nsis"
+      ]
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
     },
     "linux": {
-      "target": ["AppImage", "deb"],
+      "target": [
+        "AppImage",
+        "deb"
+      ],
       "category": "AudioVideo",
       "synopsis": "DJ set preparation"
     }
