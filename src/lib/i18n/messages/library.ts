@@ -142,9 +142,9 @@ const de = {
   // Set toolbar: "Set bearbeiten" group and menus
   "library.tools.label": "Set bearbeiten",
   "library.tools.matchTip":
-    "Sucht für Tracks ohne Adresse einen Spotify-Treffer und hängt den Link an. Titel und Artist müssen passen.",
+    "Zum Vorhören: sucht bei Spotify zu jedem Track ohne Link einen Treffer und hängt ihn an, damit du ihn im Set anspielen kannst. Titel und Artist müssen passen. Dein rekordbox-Export ändert sich dadurch nicht. Braucht die Spotify-Zugangsdaten in .env.local.",
   "library.tools.searching": "Suche…",
-  "library.tools.matchLinks": "Links suchen",
+  "library.tools.matchLinks": "Spotify-Links suchen",
   "library.menu.take": "Mitnehmen",
   "library.menu.pdfHint":
     "Druckansicht mit Brief, Reihenfolge, Key, BPM, Übergang und Alternativen. Im Dialog „Als PDF speichern“ wählen.",
@@ -300,9 +300,9 @@ const en: Record<keyof typeof de, string> = {
   // Set toolbar: "Edit set" group and menus
   "library.tools.label": "Edit set",
   "library.tools.matchTip":
-    "Looks for a Spotify match for tracks without an address and attaches the link. Title and artist have to match.",
+    "For previewing: looks up each track without a link on Spotify and attaches the match, so you can play it in the set. Title and artist have to match. Your rekordbox export doesn't change. Needs the Spotify credentials in .env.local.",
   "library.tools.searching": "Searching…",
-  "library.tools.matchLinks": "Find links",
+  "library.tools.matchLinks": "Find Spotify links",
   "library.menu.take": "Take with you",
   "library.menu.pdfHint":
     "Print view with brief, order, key, BPM, transition and alternatives. Choose “Save as PDF” in the dialog.",

@@ -2,7 +2,7 @@
 
 **Deutsch** · [English](README.md)
 
-**Version 2.2.3** · Dramaturgie statt Playlist.
+**Version 2.2.4** · Dramaturgie statt Playlist.
 
 SETFORM bereitet DJ-Sets für rekordbox vor. Du lädst Playlist oder History vom Export-Stick (oder eine Collection-XML), legst den Bogen nach Slot und Dauer, prüfst Energie, Key und BPM und nimmst das Set als rekordbox-XML, PDF, M3U oder Text mit. Die Logik folgt Mixed In Key: erst Energie, dann Key, dann BPM. Der Ablauf folgt dem [DJ.Studio Prep-Workflow](https://dj.studio/blog/dj-set-preparation#crafting-a-dj-set-that-feels-right-advanced-tips): Brief → Set bauen → Transitions → Export.
 
@@ -35,7 +35,7 @@ Jeder Track zeigt die Quelle (rekordbox), Phase und Rolle. Darunter stehen Key, 
 - **Harmonisch sortieren:** ordnet innerhalb der Phasen nach Camelot-Key und BPM
 - **Auf Slot kürzen:** behält pro Phase die Tracks, deren Energie ins Band passt; der Rest wandert unter Alternativen
 - **Rollen verteilen:** Anchor auf den stärksten Peak-Tracks und den Schluss, Bridge bei Phasenwechsel, Key-Clash, BPM- oder Energie-Sprung, sonst Groove
-- **Links suchen:** sucht zu den Tracks Spotify-Links zum Vorhören
+- **Spotify-Links suchen:** sucht zu Tracks ohne Link einen Spotify-Treffer, damit du sie im Set vorhören kannst (braucht die Spotify-Zugangsdaten, siehe Setup). Der rekordbox-Export bleibt davon unberührt.
 
 ## 3. Rollen und Plan B
 

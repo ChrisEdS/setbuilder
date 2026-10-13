@@ -1182,6 +1182,8 @@ export function SetBuilder() {
       { externalUrl: string; imageUrl: string | null }
     >();
     let found = 0;
+    let failed = 0;
+    let firstError = "";
     try {
       for (let i = 0; i < pending.length; i += 4) {
         const chunk = pending.slice(i, i + 4);
@@ -1194,7 +1196,16 @@ export function SetBuilder() {
             const response = await fetch(
               `/api/search?q=${encodeURIComponent(query)}&market=DE`,
             );
-            if (!response.ok) return;
+            if (!response.ok) {
+              failed += 1;
+              if (!firstError) {
+                const body = (await response.json().catch(() => null)) as {
+                  error?: string;
+                } | null;
+                firstError = body?.error ?? "";
+              }
+              return;
+            }
             const data = (await response.json()) as {
               tracks?: Array<{
                 name: string;
@@ -1221,6 +1232,10 @@ export function SetBuilder() {
             total: pending.length,
           }),
         );
+      }
+      // The search itself failed (e.g. no credentials): say so instead of "no match".
+      if (failed === pending.length) {
+        throw new Error(firstError || t("builder.fail.spotifySearch"));
       }
       setDraft((current) => ({
         ...current,

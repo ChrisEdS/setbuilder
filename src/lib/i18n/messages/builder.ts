@@ -307,7 +307,7 @@ const de = {
   "builder.fail.pdfHint": "Pop-ups für diese Seite erlauben und PDF noch einmal öffnen.",
   "builder.fail.spotifySearch": "Spotify-Suche fehlgeschlagen.",
   "builder.fail.spotifySearchHint":
-    "Unter „Verbindungen & Setups“ mit Spotify verbinden und Links suchen erneut starten.",
+    "Die Suche braucht SPOTIFY_CLIENT_ID und SPOTIFY_CLIENT_SECRET in .env.local (siehe README). Danach „Spotify-Links suchen“ erneut starten.",
   "builder.fail.notSetup": "Datei enthält kein SETFORM-Setup.",
   "builder.fail.file": "Datei ungültig.",
   "builder.fail.fileHint":
@@ -605,7 +605,7 @@ const en: Record<keyof typeof de, string> = {
   "builder.fail.pdfHint": "Allow pop-ups for this page and open the PDF again.",
   "builder.fail.spotifySearch": "Spotify search failed.",
   "builder.fail.spotifySearchHint":
-    "Connect with Spotify under “Connections & setups” and run Find links again.",
+    "The search needs SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET in .env.local (see README). Then run “Find Spotify links” again.",
   "builder.fail.notSetup": "The file doesn't contain a SETFORM setup.",
   "builder.fail.file": "Invalid file.",
   "builder.fail.fileHint": "Use a file that was saved here via Download.",
