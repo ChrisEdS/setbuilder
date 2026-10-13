@@ -57,20 +57,20 @@ test("PDF html stays German by default and switches to English with t", () => {
   assert.match(de, /<title>Friday — Ausdruck<\/title>/);
   assert.match(de, /Von davor/);
   assert.match(de, /Alternativen/);
-  assert.match(de, /Warum: Opener/);
+  assert.doesNotMatch(de, /Warum|Opener/);
   assert.match(de, /Drucken \/ PDF/);
   assert.match(de, /1 Performance · 1 Alternativen|2 Performance · 1 Alternativen/);
-  assert.match(de, /Dauer offen/);
+  assert.match(de, /Dauer einzelner Tracks offen/);
 
   const en = buildSetPrintHtml(draft, tEn);
   assert.match(en, /<html lang="en">/);
   assert.match(en, /<title>Friday — Printout<\/title>/);
   assert.match(en, /From previous/);
   assert.match(en, /<h2>Alternatives<\/h2>/);
-  assert.match(en, /Why: Opener/);
+  assert.doesNotMatch(en, /Why|Opener/);
   assert.match(en, /Print \/ PDF/);
   assert.match(en, /2 Performance · 1 Alternatives/);
-  assert.match(en, /Duration unknown/);
+  assert.match(en, /track lengths unknown/);
   assert.match(en, /Backup note: swap/);
   assert.doesNotMatch(en, /Von davor|Ausdruck|Warum|Übergang/);
 });
@@ -78,10 +78,10 @@ test("PDF html stays German by default and switches to English with t", () => {
 test("text export is English with tEn and unchanged in German", () => {
   const de = exportSetText(draft);
   assert.match(de, /Ziel: 60 min · Ist: /);
-  assert.match(de, /Prep-Prinzipien:/);
+  assert.doesNotMatch(de, /Prep-Prinzipien/);
   const en = exportSetText(draft, tEn);
   assert.match(en, /Target: 60 min · Actual: /);
-  assert.match(en, /Prep principles:/);
+  assert.doesNotMatch(en, /Prep principles/);
   assert.doesNotMatch(en, /Ziel:|Prep-Prinzipien|Dramaturgie/);
 });
 
@@ -135,4 +135,28 @@ test("stick set helpers accept a translator", () => {
     tEn,
   );
   assert.equal(picked.why, "Added to the set from the stick library");
+});
+
+test("the printout and the text list stay short for a three hour set", () => {
+  const long: SetDraft = {
+    ...draft,
+    durationMinutes: 180,
+    tracks: Array.from({ length: 40 }, (_, i) =>
+      track({
+        id: `t${i}`,
+        name: `Track ${i + 1}`,
+        phase: (["open", "lift", "rise", "peak", "release"] as const)[Math.floor(i / 8)],
+        durationMs: 270_000,
+        externalUrl: "https://example.com/very/long/link",
+        why: "Long explanation that does not belong on paper",
+        comment: "7A - Energy 6",
+      }),
+    ),
+  };
+  const html = buildSetPrintHtml(long);
+  assert.equal((html.match(/<tr>/g) ?? []).length, 40 + 1); // 40 tracks + the header row
+  assert.doesNotMatch(html, /example\.com|Long explanation|Energy 6/);
+  const text = exportSetText(long);
+  assert.doesNotMatch(text, /example\.com|Long explanation/);
+  assert.ok(text.split("\n").length < 60);
 });

@@ -367,61 +367,56 @@ export function setPositionById(tracks: SetTrack[]): Map<string, string> {
 }
 
 export function exportSetText(draft: SetDraft, t: Translate = tDe): string {
+  // A list for the booth: one line per track, no links, no explanations.
   const lines = [
     draft.title,
-    `${draft.vibe}`,
-    `Venue: ${draft.venue}`,
-    `Slot: ${draft.slot}`,
-    `Audience: ${draft.audience}`,
-    `Gear: ${draft.gear}`,
+    [draft.vibe, draft.slot, draft.venue, draft.audience, draft.gear]
+      .map((part) => part?.trim())
+      .filter(Boolean)
+      .join(" · "),
     t("exports.text.target", {
       target: draft.durationMinutes,
       actual: formatDuration(totalDurationMs(draft.tracks)),
     }),
     "",
-    t("exports.text.prepPrinciples"),
-    ...prepPrinciplesFor(t).flatMap((item) => [`• ${item.title}`, `  ${item.body}`]),
-    "",
   ];
 
+  const line = (track: SetTrack) => {
+    const artists = track.artists.filter((name) => name && name !== "Unknown").join(", ");
+    const meta = [
+      track.durationMs ? formatDuration(track.durationMs) : "",
+      track.keyCamelot,
+      track.bpm,
+      track.transition !== "unset" ? t(`domain.transition.${track.transition}`) : "",
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    return `${artists ? `${artists} – ` : ""}${track.name}${meta ? `  (${meta})` : ""}`;
+  };
+
+  let number = 0;
   for (const phase of PHASES) {
     const phaseTracks = draft.tracks.filter(
       (track) => track.phase === phase.id && track.role !== "safety",
     );
     if (phaseTracks.length === 0) continue;
-    const guide = arcGuideFor(t).find((item) => item.phase === phase.id);
     lines.push(
-      `## ${t(`domain.phase.${phase.id}.label`)} (${phaseWindowLabel(draft.durationMinutes, phase.id, t)})`,
+      `${t(`domain.phase.${phase.id}.label`)} (${phaseWindowLabel(draft.durationMinutes, phase.id, t)})`,
     );
-    if (guide) lines.push(guide.focus);
-    phaseTracks.forEach((track, index) => {
-      const meta = [
-        track.role,
-        track.bpm ? `${track.bpm} BPM` : null,
-        track.keyCamelot || null,
-        track.transition !== "unset" ? track.transition : null,
-      ]
-        .filter(Boolean)
-        .join(" · ");
-      lines.push(
-        `${index + 1}. ${track.artists.join(", ")} – ${track.name} (${formatDuration(track.durationMs)}) [${meta}]`,
-      );
-      if (track.note) lines.push(`   Cue: ${track.note}`);
-      if (track.safetyAlt) lines.push(`   Safety: ${track.safetyAlt}`);
-      lines.push(`   ${track.externalUrl}`);
-    });
+    for (const track of phaseTracks) {
+      number += 1;
+      lines.push(`${number}. ${line(track)}`);
+      const cue = [track.note?.trim(), track.safetyAlt?.trim()].filter(Boolean).join(" · ");
+      if (cue) lines.push(`   ${cue}`);
+    }
     lines.push("");
   }
 
   const safeties = draft.tracks.filter((track) => track.role === "safety");
   if (safeties.length) {
-    lines.push("## Safety nets");
+    lines.push(t("exports.pdf.alternatives"));
     safeties.forEach((track, index) => {
-      lines.push(
-        `${index + 1}. ${track.artists.join(", ")} – ${track.name} (${formatDuration(track.durationMs)})`,
-      );
-      if (track.why) lines.push(`   ${track.why}`);
-      lines.push(`   ${track.externalUrl}`);
+      lines.push(`S${index + 1}. ${line(track)}`);
     });
     lines.push("");
   }
