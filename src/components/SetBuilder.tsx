@@ -1698,7 +1698,7 @@ export function SetBuilder() {
             </div>
           </div>
 
-          <details className="explain-fold nested crate-add" open>
+          <details className="explain-fold nested crate-add">
             <summary>
               <span>{t("builder.add.title")}</span>
               <em className="fold-toggle" />
