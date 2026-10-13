@@ -58,6 +58,13 @@ const de = {
   "exports.pdbWrite.noRoom": "In der Stick-Datenbank ist kein Platz mehr für eine weitere Playlist. Es wurde nichts verändert.",
   "exports.pdbWrite.unknownTracks": "Ein Titel des Sets liegt nicht in dieser Stick-Datenbank.",
   "exports.pdbWrite.verifyFailed": "Die Prüfung der neuen Stick-Datenbank ist fehlgeschlagen ({detail}).",
+  "exports.stickWrite.notFound": "Auf diesem Laufwerk wurde keine PIONEER/rekordbox/export.pdb gefunden. Den ganzen Stick wählen.",
+  "exports.stickWrite.noneOnStick": "Keiner der Titel liegt auf diesem Stick. Es wurde nichts verändert.",
+  "exports.stickWrite.backupFailed": "Die Sicherung konnte nicht geschrieben werden. Es wurde nichts verändert.",
+  "exports.stickWrite.readBack": "Die geschriebene Datei weicht von der geplanten ab.",
+  "exports.stickWrite.rolledBack": "Die Stick-Datenbank hat die Prüfung nach dem Schreiben nicht bestanden. Der vorherige Stand ist wiederhergestellt. ({detail})",
+  "exports.stickWrite.restoreFailed": "Die Stick-Datenbank konnte nicht zurückgesetzt werden. Bitte den Stick in rekordbox neu exportieren oder die Datei aus SETFORM-Backup zurückkopieren.",
+  "exports.stickWrite.noBackup": "Auf diesem Stick gibt es noch keine SETFORM-Sicherung.",
 } as const;
 
 const en: Record<keyof typeof de, string> = {
@@ -111,6 +118,13 @@ const en: Record<keyof typeof de, string> = {
   "exports.pdbWrite.noRoom": "The stick database has no room left for another playlist. Nothing was changed.",
   "exports.pdbWrite.unknownTracks": "A track of the set is not in this stick database.",
   "exports.pdbWrite.verifyFailed": "Checking the new stick database failed ({detail}).",
+  "exports.stickWrite.notFound": "No PIONEER/rekordbox/export.pdb found on this drive. Choose the whole stick.",
+  "exports.stickWrite.noneOnStick": "None of the tracks are on this stick. Nothing was changed.",
+  "exports.stickWrite.backupFailed": "The backup could not be written. Nothing was changed.",
+  "exports.stickWrite.readBack": "The written file differs from the planned one.",
+  "exports.stickWrite.rolledBack": "The stick database failed the check after writing. The previous state has been restored. ({detail})",
+  "exports.stickWrite.restoreFailed": "The stick database could not be reset. Please export the stick again in rekordbox, or copy the file from SETFORM-Backup back.",
+  "exports.stickWrite.noBackup": "There is no SETFORM backup on this stick yet.",
 };
 
 export const exports_ = { de, en };

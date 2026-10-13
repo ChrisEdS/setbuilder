@@ -170,6 +170,7 @@ type MenusProps = {
   onExportPdf?: () => void;
   onExportM3u?: () => void;
   onExportRekordbox?: () => void;
+  onWriteStick?: () => void;
   onCopyText?: () => void;
   onReset?: () => void;
 };
@@ -180,6 +181,7 @@ export function SetMenus({
   onExportPdf,
   onExportM3u,
   onExportRekordbox,
+  onWriteStick,
   onCopyText,
   onReset,
 }: MenusProps) {
@@ -198,6 +200,12 @@ export function SetMenus({
           hint={t("library.menu.rekordboxHint")}
           disabled={!canExport}
           onClick={onExportRekordbox}
+        />
+        <MenuItem
+          title={t("library.menu.stick")}
+          hint={t("library.menu.stickHint")}
+          disabled={!canExport}
+          onClick={onWriteStick}
         />
         <MenuItem
           title="M3U"

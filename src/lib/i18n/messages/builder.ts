@@ -232,7 +232,7 @@ const de = {
     "Druckansicht geöffnet. Dort drucken oder „Als PDF speichern“ wählen.",
   "builder.status.m3u": "M3U der Performance-Reihenfolge gespeichert.",
   "builder.status.rekordbox":
-    "rekordbox-XML gespeichert. In rekordbox: File → Import Playlist. Alternativen liegen in der zweiten Playlist.",
+    "SETFORM-rekordbox.xml gespeichert (Ordner Downloads). In rekordbox: Einstellungen → Erweitert → Datenbank → „rekordbox xml“ → diese Datei wählen. Dann links unter „rekordbox xml“ die Playlist per Rechtsklick „Playlist importieren“. Alternativen liegen in der zweiten Playlist.",
   "builder.status.replaced":
     "Alternative eingesetzt. Der ersetzte Track liegt bei den Alternativen.",
   "builder.status.replacedFromLibrary":
@@ -534,7 +534,7 @@ const en: Record<keyof typeof de, string> = {
   "builder.status.pdf": "Print view opened. Print there or choose “Save as PDF”.",
   "builder.status.m3u": "M3U of the performance order saved.",
   "builder.status.rekordbox":
-    "rekordbox XML saved. In rekordbox: File → Import Playlist. Alternatives are in the second playlist.",
+    "SETFORM-rekordbox.xml saved (Downloads folder). In rekordbox: Preferences → Advanced → Database → “rekordbox xml” → choose this file. Then, under “rekordbox xml” in the left tree, right-click the playlist → “Import Playlist”. Alternatives are in the second playlist.",
   "builder.status.replaced":
     "Alternative swapped in. The replaced track is now in Alternatives.",
   "builder.status.replacedFromLibrary":

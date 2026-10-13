@@ -2,7 +2,7 @@
 
 [Deutsch](README.de.md) · **English**
 
-**Version 2.2.5** · Dramaturgy, not a playlist.
+**Version 2.3.0** · Dramaturgy, not a playlist.
 
 SETFORM prepares DJ sets for rekordbox. You load a playlist or history from the export stick (or a collection XML), lay out the arc by slot and duration, check energy, key and BPM, and take the set with you as rekordbox XML, PDF, M3U or text. The logic follows Mixed In Key: energy first, then key, then BPM. The workflow follows the [DJ.Studio prep workflow](https://dj.studio/blog/dj-set-preparation#crafting-a-dj-set-that-feels-right-advanced-tips): brief → build the set → transitions → export.
 
@@ -72,7 +72,8 @@ The arc shows how the phases fill the slot (green fits, yellow runs over the win
 
 The **Take with you** menu exports:
 
-- **rekordbox:** XML for import. The performance and the alternatives come as two playlists, so the alternatives are ready on the stick.
+- **Write to stick:** adds the set as a playlist `SETFORM - <title>` straight into the `export.pdb` of your rekordbox stick, so the stick can go into the player. Chrome, Edge or the desktop app. Only tracks that are already on the stick are written; the rest is listed and left out. Before every write, the original is copied to `SETFORM-Backup/` on the stick and checked. After writing, the database is read again and verified (old content untouched, exactly one new playlist, same track order); if that fails the original is put back. *Restore last backup* is in the same dialog. Your rekordbox library on the computer is never touched. Newer players that read the encrypted `exportLibrary.db` are not covered, and the feature is not yet tested on every player model, so try it on a spare or copied stick first.
+- **rekordbox XML:** saved as `SETFORM-rekordbox.xml`. In rekordbox set *Preferences → Advanced → Database → rekordbox xml* to this file once; the playlist then appears under *rekordbox xml* in the left tree, right-click → *Import Playlist*. The performance and the alternatives come as two playlists.
 - **PDF:** print view with brief, order, key, BPM, transition and alternatives
 - **M3U:** playlist in performance order
 - **Copy text:** the set with brief and comments

@@ -5780,3 +5780,59 @@ body {
 
 
 
+
+/* Write the set to a rekordbox stick. */
+.stick-dialog {
+  margin: auto;
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 1.25rem 1.4rem 1.1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 16px;
+  background: #151515;
+  color: var(--ink);
+  box-shadow: var(--shadow-md);
+}
+.stick-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+.stick-dialog h2 {
+  margin: 0 0 0.6rem;
+  font-size: 1.15rem;
+}
+.stick-dialog p {
+  margin: 0 0 0.7rem;
+  line-height: 1.45;
+}
+.stick-dialog .stick-safety,
+.stick-dialog .stick-hint {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+.stick-dialog .stick-warn {
+  padding: 0.55rem 0.7rem;
+  border: 1px solid rgba(248, 113, 113, 0.5);
+  border-radius: var(--radius-sm);
+  color: #fecaca;
+  font-size: 0.9rem;
+}
+.stick-missing {
+  margin: 0 0 0.7rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+}
+.stick-missing ul {
+  margin: 0.3rem 0 0.2rem;
+  padding-left: 1.1rem;
+  color: var(--muted);
+}
+.stick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}

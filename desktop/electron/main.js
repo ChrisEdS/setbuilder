@@ -314,6 +314,9 @@ function createWindow() {
     shell.openExternal(url);
   });
 
+  // No permission handler on purpose: Electron grants the File System Access API (used by
+  // "Write to stick") by default, and a handler that denies other permissions could break
+  // clipboard or playback features.
   mainWindow.loadURL(`http://${APP_HOST}:${PORT}/`);
 }
 

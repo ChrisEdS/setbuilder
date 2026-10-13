@@ -36,6 +36,7 @@ import type { LibraryRow } from "@/components/LibraryPanel";
 import { libraryTrackToSetTrack } from "@/lib/rekordbox-stick";
 import { bestPhaseFor } from "@/lib/plan-b";
 import { SetMenus, SetTools } from "@/components/SetTakeaway";
+import { StickWriteDialog } from "@/components/StickWriteDialog";
 import { RoleCrates } from "@/components/RoleCrates";
 import {
   boothFileName,
@@ -290,6 +291,7 @@ export function SetBuilder() {
     "link",
   );
   const [crateView, setCrateView] = useState<"list" | "roles" | "keys">("list");
+  const [stickOpen, setStickOpen] = useState(false);
   const [manualTitle, setManualTitle] = useState("");
   const [manualArtist, setManualArtist] = useState("");
   const [manualLink, setManualLink] = useState("");
@@ -1133,7 +1135,7 @@ export function SetBuilder() {
 
   function exportRekordbox() {
     downloadText(
-      boothFileName(draft.title, "xml"),
+      "SETFORM-rekordbox.xml",
       buildRekordboxXml(draft, t),
       "application/xml",
     );
@@ -2071,8 +2073,15 @@ export function SetBuilder() {
               onExportPdf={exportPdf}
               onExportM3u={exportM3u}
               onExportRekordbox={exportRekordbox}
+              onWriteStick={() => setStickOpen(true)}
               onCopyText={() => void copyExport()}
               onReset={resetSet}
+            />
+            <StickWriteDialog
+              open={stickOpen}
+              onClose={() => setStickOpen(false)}
+              tracks={mainTracks}
+              title={draft.title}
             />
           </div>
           <SetTools
