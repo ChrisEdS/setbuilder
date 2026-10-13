@@ -84,6 +84,7 @@ function ensureConfigFile() {
     }
   }
   const body = `# SETFORM, nur auf diesem Mac. Nicht ins Repo legen.
+# Alles hier ist optional: rekordbox funktioniert ohne Spotify und Tidal.
 # Spotify: https://developer.spotify.com/dashboard
 # Redirect URI dort exakt so eintragen wie hier:
 #   ${spotifyRedirect}
@@ -316,19 +317,6 @@ function createWindow() {
   mainWindow.loadURL(`http://${APP_HOST}:${PORT}/`);
 }
 
-function warnIfCredentialsMissing() {
-  if (process.env.SPOTIFY_CLIENT_ID) return;
-  dialog.showMessageBox({
-    type: "info",
-    title: "Spotify verbinden",
-    message: "SETFORM braucht noch die Spotify-Zugangsdaten.",
-    detail:
-      `Trag Client ID und Secret in diese Datei ein und starte die App neu:\n\n${userEnvFile()}\n\n` +
-      `Redirect-URI in der Spotify-Developer-App, exakt:\nhttp://${APP_HOST}:${PORT}/api/auth/callback\n\n` +
-      "Tidal ist optional und nutzt TIDAL_CLIENT_ID, TIDAL_CLIENT_SECRET und TIDAL_REDIRECT_URI.",
-  });
-}
-
 app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 
 const gotLock = app.requestSingleInstanceLock();
@@ -365,7 +353,6 @@ if (!gotLock) {
         await waitForServer();
       }
       createWindow();
-      warnIfCredentialsMissing();
     } catch (error) {
       const raw = error instanceof Error ? error.message : String(error);
       const busy = raw.includes("EADDRINUSE");

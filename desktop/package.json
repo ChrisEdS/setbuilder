@@ -1,8 +1,8 @@
 {
   "name": "setform",
   "productName": "SETFORM",
-  "version": "2.2.1",
-  "description": "DJ set preparation for Spotify, Tidal, and rekordbox",
+  "version": "2.2.2",
+  "description": "DJ set preparation for rekordbox",
   "homepage": "https://github.com/ChrisEdS/setform",
   "author": {
     "name": "SETFORM contributors",

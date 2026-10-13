@@ -1,6 +1,6 @@
 # SETFORM Desktop
 
-Electron-Hülle für Mac, Windows und Linux. Sie startet den SETFORM-Server lokal und öffnet ihn im eigenen Fenster. Spotify- und Tidal-Redirects bleiben `http://127.0.0.1:4317/...`.
+Electron-Hülle für Mac, Windows und Linux. Sie startet den SETFORM-Server lokal und öffnet ihn im eigenen Fenster. Spotify und Tidal sind optional und brauchen keine Zugangsdaten zum Start. Ihre Redirects bleiben `http://127.0.0.1:4317/...`.
 
 Der Next-Server wird auf dem Rechner gebaut, auf dem die App entstehen soll. Die Bildbibliothek ist an das Betriebssystem gebunden.
 
