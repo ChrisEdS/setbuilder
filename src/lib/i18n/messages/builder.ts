@@ -286,6 +286,8 @@ const de = {
     "Camelot-Reise: das Set läuft im Uhrzeigersinn ums Wheel.",
   "builder.status.sorted.waves":
     "Wellen: im Peak wechseln Groove und Impact.",
+  "builder.status.sorted.unchanged":
+    "Reihenfolge unverändert: innerhalb jeder Phase passt die Lage schon, oder Key, Energie und BPM fehlen. Tracks zwischen Phasen ziehen oder die Werte in der Setliste setzen.",
   "builder.status.fits": "Das Set passt schon in den Slot.",
   "builder.status.fitStuck":
     "Nicht weiter kürzbar: der erste und der letzte Track und ein Track pro Phase bleiben immer. Lange Tracks von Hand auf Alternativen setzen.",
@@ -639,6 +641,8 @@ const en: Record<keyof typeof de, string> = {
     "Camelot journey: the set walks clockwise around the wheel.",
   "builder.status.sorted.waves":
     "Waves: in the peak, groove and impact alternate.",
+  "builder.status.sorted.unchanged":
+    "Order unchanged: within each phase it already fits, or key, energy and BPM are missing. Drag tracks across phases or set the values in the setlist.",
   "builder.status.fits": "The set already fits the slot.",
   "builder.status.fitStuck":
     "Cannot trim further: the first and last track and one track per phase always stay. Move long tracks to Alternatives by hand.",

@@ -501,7 +501,10 @@ export function SetBuilder() {
   }, []);
 
   function setDraft(updater: SetDraft | ((current: SetDraft) => SetDraft)) {
-    const next = typeof updater === "function" ? updater(draft) : updater;
+    // Always read the store — never the render closure. The stick-reconnect
+    // effect and rapid Sortieren clicks would otherwise rewrite a stale draft.
+    const current = readStoredDraft();
+    const next = typeof updater === "function" ? updater(current) : updater;
     persistDraft(next);
   }
 
@@ -1433,8 +1436,17 @@ export function SetBuilder() {
   }
 
   function sortSet(technique: SetSortTechnique) {
-    setDraft(reorderDraft(draft, technique));
-    setStatus(t(`builder.status.sorted.${technique}`));
+    const current = readStoredDraft();
+    const next = reorderDraft(current, technique);
+    const changed = next.tracks.some(
+      (track, index) => track.id !== current.tracks[index]?.id,
+    );
+    setDraft(next);
+    setStatus(
+      changed
+        ? t(`builder.status.sorted.${technique}`)
+        : t("builder.status.sorted.unchanged"),
+    );
   }
 
   function harmonizeSet() {
@@ -1442,28 +1454,32 @@ export function SetBuilder() {
   }
 
   function fitSlot() {
-    const result = fitToSlot(draft, t);
-    if (!result.moved) {
-      // Nothing moved: either it fits, or only untouchable tracks are left (first, last, one per phase).
+    setDraft((current) => {
+      const result = fitToSlot(current, t);
+      if (!result.moved) {
+        // Nothing moved: either it fits, or only untouchable tracks are left (first, last, one per phase).
+        setStatus(
+          t(result.beforeMs > targetMs * 1.05 ? "builder.status.fitStuck" : "builder.status.fits"),
+        );
+        return current;
+      }
       setStatus(
-        t(result.beforeMs > targetMs * 1.05 ? "builder.status.fitStuck" : "builder.status.fits"),
+        t("builder.status.trimmed", {
+          before: formatDuration(result.beforeMs),
+          after: formatDuration(result.afterMs),
+          kept: trackCount(result.kept, t),
+          moved: trackCount(result.moved, t),
+        }),
       );
-      return;
-    }
-    setDraft(result.draft);
-    setStatus(
-      t("builder.status.trimmed", {
-        before: formatDuration(result.beforeMs),
-        after: formatDuration(result.afterMs),
-        kept: trackCount(result.kept, t),
-        moved: trackCount(result.moved, t),
-      }),
-    );
+      return result.draft;
+    });
   }
 
   function assignRoles() {
-    setDraft(distributeRoles(draft, t));
-    setStatus(t("builder.status.roles"));
+    setDraft((current) => {
+      setStatus(t("builder.status.roles"));
+      return distributeRoles(current, t);
+    });
   }
 
   function renderSetups() {

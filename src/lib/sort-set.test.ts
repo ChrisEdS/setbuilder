@@ -70,3 +70,51 @@ test("reorderDraft keeps alternatives at the end and phases intact", () => {
     ["Cue bei 2:10", ""],
   );
 });
+
+test("switching sort techniques can change order; repeating one does not", () => {
+  const track = (
+    id: string,
+    phase: "open" | "peak",
+    over: { keyCamelot?: string; bpm?: string; energyLevel?: number } = {},
+  ) =>
+    ({
+      id,
+      name: id,
+      artists: ["X"],
+      album: "",
+      durationMs: 1,
+      uri: "",
+      externalUrl: "",
+      imageUrl: null,
+      phase,
+      role: "groove" as const,
+      transition: "unset" as const,
+      bpm: over.bpm ?? "124",
+      keyCamelot: over.keyCamelot ?? "8A",
+      energyLevel: over.energyLevel,
+      note: "",
+      why: "",
+      safetyAlt: "",
+    });
+  const draft = {
+    ...DEFAULT_SET,
+    tracks: [
+      track("a", "peak", { keyCamelot: "8A", bpm: "120", energyLevel: 9 }),
+      track("b", "peak", { keyCamelot: "3A", bpm: "128", energyLevel: 4 }),
+      track("c", "peak", { keyCamelot: "9A", bpm: "124", energyLevel: 6 }),
+      track("d", "open", { keyCamelot: "8A", bpm: "118", energyLevel: 3 }),
+      track("e", "open", { keyCamelot: "10A", bpm: "122", energyLevel: 5 }),
+    ],
+  };
+  const byEnergy = reorderDraft(draft, "energy");
+  const byTempo = reorderDraft(byEnergy, "tempo");
+  const energyAgain = reorderDraft(byEnergy, "energy");
+  assert.notDeepEqual(
+    byEnergy.tracks.map((item) => item.id),
+    byTempo.tracks.map((item) => item.id),
+  );
+  assert.deepEqual(
+    byEnergy.tracks.map((item) => item.id),
+    energyAgain.tracks.map((item) => item.id),
+  );
+});
