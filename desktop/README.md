@@ -47,7 +47,7 @@ Ab 3.1.0 heißt das Paket **SETBUILDER.app** (früher SETFORM.app). Beim ersten 
 
 ## Signierung
 
-Linux braucht keine Signatur. Mac und Windows signiert GitHub Actions beim nächsten Tag, sobald die Secrets im Repo `ChrisEdS/setform` unter Settings → Secrets and variables → Actions liegen. Leere Secrets lassen den Build unsigniert.
+Linux braucht keine Signatur. Mac und Windows signiert GitHub Actions beim nächsten Tag, sobald die Secrets im Repo `ChrisEdS/setbuilder` unter Settings → Secrets and variables → Actions liegen. Leere Secrets lassen den Build unsigniert.
 
 ### macOS
 
