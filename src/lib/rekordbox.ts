@@ -1,5 +1,5 @@
 import { parseBpm } from "@/lib/harmonic";
-import { parseEnergyLevel } from "@/lib/energy";
+import { energyFromRekordboxTags } from "@/lib/energy";
 import { tDe, type Translate } from "@/lib/i18n/core";
 import { LocalizedError } from "@/lib/i18n/error";
 import { parseKeyValue, type KeyImportRow } from "@/lib/key-import";
@@ -17,11 +17,17 @@ function rowFromFields(
   keyRaw: string,
   bpmRaw: string,
   comment = "",
+  extra?: { grouping?: string; label?: string; remixer?: string },
 ): KeyImportRow | null {
   const keyCamelot = parseKeyValue(keyRaw);
   const bpmNum = parseBpm(bpmRaw);
   if (!title && !artist) return null;
-  const energyLevel = parseEnergyLevel(comment);
+  const energyLevel = energyFromRekordboxTags({
+    comment,
+    grouping: extra?.grouping,
+    label: extra?.label,
+    remixer: extra?.remixer,
+  });
   if (!keyCamelot && bpmNum == null) return null;
   return {
     artist: artist.trim(),
@@ -79,6 +85,11 @@ export function parseRekordboxXml(xmlText: string): RekordboxParseResult {
       keyRaw,
       bpmRaw,
       track.getAttribute("Comments") || track.getAttribute("Comment") || "",
+      {
+        grouping: track.getAttribute("Grouping") || "",
+        label: track.getAttribute("Label") || "",
+        remixer: track.getAttribute("Remixer") || "",
+      },
     );
     if (row) rows.push(row);
   }
@@ -152,6 +163,9 @@ export async function parseRekordboxDb(
     const keyCol = pick("Key", "Tonality", "key", "tonality");
     const bpmCol = pick("BPM", "Bpm", "Tempo", "AverageBpm", "bpm");
     const commentCol = pick("Commnt", "Comments", "Comment") || null;
+    const groupingCol = pick("Grouping", "Group", "ColorGroup") || null;
+    const labelCol = pick("Label", "LabelName") || null;
+    const remixerCol = pick("Remixer", "RemixerName") || null;
 
     if (!titleCol) {
       throw new LocalizedError(
@@ -162,7 +176,16 @@ export async function parseRekordboxDb(
     }
 
     // Artist may live in related table; try stock columns first
-    const selectCols = [titleCol, keyCol, bpmCol, artistCol, commentCol]
+    const selectCols = [
+      titleCol,
+      keyCol,
+      bpmCol,
+      artistCol,
+      commentCol,
+      groupingCol,
+      labelCol,
+      remixerCol,
+    ]
       .filter(Boolean)
       .map((name) => `"${String(name).replaceAll('"', '""')}"`)
       .join(", ");
@@ -194,8 +217,18 @@ export async function parseRekordboxDb(
       if (commentCol) {
         comment = String(value[idx++] ?? "");
       }
+      let grouping = "";
+      if (groupingCol) grouping = String(value[idx++] ?? "");
+      let label = "";
+      if (labelCol) label = String(value[idx++] ?? "");
+      let remixer = "";
+      if (remixerCol) remixer = String(value[idx++] ?? "");
 
-      const row = rowFromFields(artist, title, keyRaw, bpmRaw, comment);
+      const row = rowFromFields(artist, title, keyRaw, bpmRaw, comment, {
+        grouping,
+        label,
+        remixer,
+      });
       if (row) rows.push(row);
     }
 

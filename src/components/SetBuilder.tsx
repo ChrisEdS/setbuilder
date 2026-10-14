@@ -4,6 +4,7 @@ import { LanguageSwitch } from "@/components/LanguageSwitch";
 import {
   createTranslate,
   errorText,
+  isGeneratedNote,
   localizeNote,
   localizeWhy,
   phaseHint,
@@ -12,6 +13,7 @@ import {
   roleLabel,
   slotHint,
   slotLabel,
+  transitionHint,
   transitionLabel,
   type Lang,
   type Translate,
@@ -49,7 +51,7 @@ import { sanitizeDraftImages } from "@/lib/media";
 import { TrackArt } from "@/components/TrackArt";
 import { StickReloadBanner } from "@/components/StickReloadBanner";
 import { bestPhaseFor } from "@/lib/plan-b";
-import { SetMenus, SetTools } from "@/components/SetTakeaway";
+import { SetMenus, SetSortMenu, SetTools } from "@/components/SetTakeaway";
 import { StickWriteDialog } from "@/components/StickWriteDialog";
 import { RoleCrates } from "@/components/RoleCrates";
 import {
@@ -61,8 +63,10 @@ import {
 import { openSetPdfExport } from "@/lib/export-pdf";
 import { pickStreamingMatch } from "@/lib/match-link";
 import { swapIntoSlot } from "@/lib/replace-track";
-import { CAMELOT_CODES, mixJoin } from "@/lib/harmonic";
-import { distributeRoles, fitToSlot, reharmonizeDraft } from "@/lib/extract-set";
+import { CAMELOT_CODES, mixJoin, relationHint } from "@/lib/harmonic";
+import { distributeRoles, fitToSlot, reorderDraft } from "@/lib/extract-set";
+import { parseEnergyLevel } from "@/lib/energy";
+import type { SetSortTechnique } from "@/lib/sort-set";
 import { looksLikeMusicLink, sourceLabel } from "@/lib/music-link";
 import {
   DEFAULT_SET,
@@ -79,6 +83,7 @@ import {
   type SetTrack,
   type TrackRole,
   type TransitionVerb,
+  artistLine,
   exportSetText,
   formatDuration,
   performanceTracks,
@@ -94,7 +99,14 @@ function MixJoinLine({ tracks, track }: { tracks: SetTrack[]; track: SetTrack })
   const index = tracks.findIndex((item) => item.id === track.id);
   const join = index > 0 ? mixJoin(tracks[index - 1], track, t) : null;
   if (!join) return null;
-  return <p className={`mix-join harm-${join.relation}`}>{join.label}</p>;
+  return (
+    <p
+      className={`mix-join harm-${join.relation}`}
+      title={relationHint(join.relation, t)}
+    >
+      {join.label}
+    </p>
+  );
 }
 
 type SearchTrack = {
@@ -111,6 +123,9 @@ type SearchTrack = {
 
 const STORAGE_KEY = "setform-draft-v4";
 const SETUPS_KEY = "setform-setups-v1";
+/** Brief duration in minutes: a short warm-up up to an all-nighter. */
+const MIN_DURATION = 20;
+const MAX_DURATION = 480;
 
 type SavedSetup = {
   id: string;
@@ -122,14 +137,18 @@ const DRAFT_EVENT = "setform-draft";
 
 let cachedRaw: string | null | undefined;
 let cachedDraft: SetDraft = DEFAULT_SET;
+/** Whether the last draft write reached storage (quota, private mode …). */
+let draftPersisted = true;
 
 function normalizeTrack(track: SetTrack): SetTrack {
   return {
     ...track,
     comment: track.comment ?? "",
     source: track.source ?? "spotify",
-    note: track.note ?? "",
+    // Machine notes from earlier versions ("open/groove · Übergang: long-blend") are noise.
+    note: isGeneratedNote(track.note) ? "" : (track.note ?? ""),
     safetyAlt: track.safetyAlt ?? "",
+    energyLevel: track.energyLevel ?? parseEnergyLevel(track.comment),
   };
 }
 
@@ -173,6 +192,8 @@ function localizeBrief(draft: SetDraft, lang: Lang): SetDraft {
 }
 
 function readStoredDraft(): SetDraft {
+  // Storage refused the last write: the session copy is the truth.
+  if (!draftPersisted) return cachedDraft;
   try {
     const raw =
       localStorage.getItem(STORAGE_KEY) ??
@@ -254,7 +275,12 @@ let setupsRaw: string | null = null;
 let setupsSnap: SavedSetup[] = EMPTY_SETUPS;
 
 function readSetupsSnapshot(): SavedSetup[] {
-  const raw = localStorage.getItem(SETUPS_KEY) || "[]";
+  let raw = "[]";
+  try {
+    raw = localStorage.getItem(SETUPS_KEY) || "[]";
+  } catch {
+    // storage blocked: no saved setups
+  }
   if (raw === setupsRaw) return setupsSnap;
   setupsRaw = raw;
   try {
@@ -271,15 +297,30 @@ function subscribeSetups(onStoreChange: () => void) {
   return () => window.removeEventListener("setform-setups", onStoreChange);
 }
 
-function writeSetups(setups: SavedSetup[]) {
-  localStorage.setItem(SETUPS_KEY, JSON.stringify(setups));
-  setupsRaw = null;
+function writeSetups(setups: SavedSetup[]): boolean {
+  const raw = JSON.stringify(setups);
+  let stored = true;
+  try {
+    localStorage.setItem(SETUPS_KEY, raw);
+  } catch {
+    stored = false;
+  }
+  // The list follows the change either way; the caller says when it did not persist.
+  setupsRaw = raw;
+  setupsSnap = setups;
   window.dispatchEvent(new Event("setform-setups"));
+  return stored;
 }
 
 function persistDraft(draft: SetDraft) {
   const raw = JSON.stringify(sanitizeDraftImages(draft));
-  localStorage.setItem(STORAGE_KEY, raw);
+  try {
+    localStorage.setItem(STORAGE_KEY, raw);
+    draftPersisted = true;
+  } catch {
+    // The set keeps working for this session; the UI is told below.
+    draftPersisted = false;
+  }
   cachedRaw = raw;
   cachedDraft = draft;
   window.dispatchEvent(new Event(DRAFT_EVENT));
@@ -304,7 +345,7 @@ export function SetBuilder() {
   const draft = localizeBrief(storedDraft, lang);
   const [activePhase, setActivePhase] = useState<SetPhaseId>("open");
   const [activeRole, setActiveRole] = useState<TrackRole>("anchor");
-  const [query, setQuery] = useState("tech house");
+  const [query, setQuery] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
   const [addTab, setAddTab] = useState<"search" | "link" | "manual" | "auto">(
     "link",
@@ -353,14 +394,27 @@ export function SetBuilder() {
   const [settingsNote, setSettingsNote] = useState<
     "ready" | "missing" | { raw: string } | null
   >(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  // null = not touched yet: then a failed OAuth return opens the fold so the fix is in view.
+  const [settingsOpenState, setSettingsOpen] = useState<boolean | null>(null);
+  /** What the duration field shows while it is being edited (null = the draft value). */
+  const [durationText, setDurationText] = useState<string | null>(null);
 
   // Feedback like "+ Titel → Peak / Anchor" is a toast: it follows the scroll and fades after a while.
+  // Longer texts (the rekordbox import steps) stay long enough to be read.
   useEffect(() => {
     if (!status) return;
-    const timer = window.setTimeout(() => setStatus(null), 8000);
+    const timer = window.setTimeout(
+      () => setStatus(null),
+      Math.min(24000, 6000 + status.length * 50),
+    );
     return () => window.clearTimeout(timer);
   }, [status]);
+
+  const persisted = useSyncExternalStore(
+    subscribeDraft,
+    () => draftPersisted,
+    () => true,
+  );
 
   function noteSettings(note: string) {
     const known = (["ready", "missing"] as const).find((kind) => {
@@ -402,11 +456,7 @@ export function SetBuilder() {
     () => null,
   );
   const authNote = authNoteRaw ? authNoteText(authNoteRaw, t) : null;
-  // The OAuth-return effect below runs once but may finish after a language change: it reads the latest t.
-  const tRef = useRef(t);
-  useEffect(() => {
-    tRef.current = t;
-  }, [t]);
+  const settingsOpen = settingsOpenState ?? authNoteRaw?.status === "error";
   const [myPlaylists, setMyPlaylists] = useState<
     Array<{
       id: string;
@@ -431,7 +481,7 @@ export function SetBuilder() {
     void (async () => {
       const handle = await loadPersistedStickHandle();
       if (!handle || cancelled) return;
-      if (!(await stickPermission(handle, "readwrite", false))) return;
+      if (!(await stickPermission(handle, "read", false))) return;
       try {
         const stick = await readStickFromHandle(handle);
         if (cancelled) return;
@@ -504,64 +554,18 @@ export function SetBuilder() {
     }
   }
 
+  // Once on launch: which services are connected. The OAuth return itself is shown by
+  // the banner above (readAuthNote).
   useEffect(() => {
     let cancelled = false;
-    const params = new URLSearchParams(window.location.search);
-    const auth = params.get("auth");
-    const message = params.get("message") || "";
-    if (auth) window.history.replaceState({}, "", "/");
-
-    (async () => {
-      try {
-        const response = await fetch("/api/auth/status");
-        const data = (await response.json()) as {
-          connected?: boolean;
-          redirectUri?: string;
-        };
-        if (cancelled) return;
-        const tidalRes = await fetch("/api/auth/tidal/status");
-        const tidal = (await tidalRes.json()) as { connected?: boolean };
-        if (!cancelled) setTidalConnected(Boolean(tidal.connected));
-        if (!cancelled && tidal.connected) {
-          const listRes = await fetch("/api/tidal/playlists");
-          const list = (await listRes.json()) as {
-            playlists?: Array<{ id: string; name: string; trackCount: number | null }>;
-          };
-          if (!cancelled && listRes.ok) setTidalPlaylists(list.playlists ?? []);
-        }
-        const connected = Boolean(data.connected);
-        setSpotifyConnected(connected);
-        if (connected) {
-          const listRes = await fetch("/api/playlists");
-          const listData = (await listRes.json()) as {
-            owned?: Array<{
-              id: string;
-              name: string;
-              owner: string;
-              trackCount: number;
-              owned: boolean;
-              externalUrl: string;
-            }>;
-          };
-          if (!cancelled && listRes.ok) setMyPlaylists(listData.owned ?? []);
-        }
-        if (auth === "ok") {
-          setStatus(tRef.current("builder.auth.connectedStatus"));
-        } else if (auth === "error") {
-          fail(
-            "connect",
-            authFailureText(message, tRef.current),
-            tRef.current("builder.auth.failedHint"),
-          );
-        }
-      } catch {
-        if (!cancelled) setSpotifyConnected(false);
-      }
+    void (async () => {
+      await Promise.resolve();
+      if (!cancelled) await refreshAuthStatus();
     })();
-
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function extractFromPlaylist() {
@@ -1122,18 +1126,12 @@ export function SetBuilder() {
     }));
   }
 
+  /** Arrow buttons swap with the neighbour the list shows, not with a hidden Alternative. */
   function moveTrack(id: string, direction: -1 | 1) {
-    setDraft((current) => {
-      const index = current.tracks.findIndex((track) => track.id === id);
-      const nextIndex = index + direction;
-      if (index < 0 || nextIndex < 0 || nextIndex >= current.tracks.length) {
-        return current;
-      }
-      const tracks = [...current.tracks];
-      const [item] = tracks.splice(index, 1);
-      tracks.splice(nextIndex, 0, item);
-      return { ...current, tracks };
-    });
+    const index = visibleTimeline.findIndex((track) => track.id === id);
+    const neighbour = index < 0 ? undefined : visibleTimeline[index + direction];
+    if (!neighbour) return;
+    reorderTrack(id, neighbour.id);
   }
 
   function reorderTrack(activeId: string, overId: string) {
@@ -1150,8 +1148,16 @@ export function SetBuilder() {
   }
 
   async function copyExport() {
-    await navigator.clipboard.writeText(exportSetText(draft, t));
-    setStatus(t("builder.status.copied"));
+    const text = exportSetText(draft, t);
+    try {
+      await navigator.clipboard.writeText(text);
+      clearNotice();
+      setStatus(t("builder.status.copied"));
+    } catch {
+      // Clipboard blocked (permissions, insecure context): hand the text over as a file.
+      downloadText(boothFileName(draft.title, "txt"), text, "text/plain");
+      fail("export", t("builder.fail.copy"), t("builder.fail.copyHint"));
+    }
   }
 
   function exportPdf() {
@@ -1325,9 +1331,14 @@ export function SetBuilder() {
       nextSetup,
       ...setups.filter((item) => item.id !== nextSetup.id && item.name !== name),
     ];
-    writeSetups(next);
+    const stored = writeSetups(next);
     setSelectedSetup(nextSetup.id);
     setSetupName(name);
+    if (!stored) {
+      fail("settings", t("builder.fail.setupStorage"), t("builder.fail.setupStorageHint"));
+      return;
+    }
+    clearNotice();
     setStatus(t("builder.status.setupSaved", { name }));
   }
 
@@ -1402,25 +1413,41 @@ export function SetBuilder() {
         );
       }
     };
+    reader.onerror = () => {
+      fail("settings", t("builder.fail.file"), t("builder.fail.fileHint"));
+    };
     reader.readAsText(file);
   }
 
   function resetSet() {
+    // Destructive and not undoable: ask once, naming what goes.
+    if (
+      draft.tracks.length > 0 &&
+      !window.confirm(t("builder.reset.confirm", { tracks: trackCount(draft.tracks.length, t) }))
+    ) {
+      return;
+    }
     setDraft(DEFAULT_SET);
     setFocusTrackId(null);
     setStatus(t("builder.status.reset"));
   }
 
+  function sortSet(technique: SetSortTechnique) {
+    setDraft(reorderDraft(draft, technique));
+    setStatus(t(`builder.status.sorted.${technique}`));
+  }
+
   function harmonizeSet() {
-    const next = reharmonizeDraft(draft, t);
-    setDraft(next);
-    setStatus(t("builder.status.harmonized"));
+    sortSet("harmonic");
   }
 
   function fitSlot() {
     const result = fitToSlot(draft, t);
     if (!result.moved) {
-      setStatus(t("builder.status.fits"));
+      // Nothing moved: either it fits, or only untouchable tracks are left (first, last, one per phase).
+      setStatus(
+        t(result.beforeMs > targetMs * 1.05 ? "builder.status.fitStuck" : "builder.status.fits"),
+      );
       return;
     }
     setDraft(result.draft);
@@ -1698,30 +1725,52 @@ export function SetBuilder() {
             <span>{t("builder.brief.duration")}</span>
             <input
               type="number"
-              min={30}
-              max={240}
-              value={draft.durationMinutes}
-              onChange={(e) =>
-                setDraft((c) => ({
-                  ...c,
-                  durationMinutes: Number(e.target.value) || 60,
-                }))
-              }
+              min={MIN_DURATION}
+              max={MAX_DURATION}
+              inputMode="numeric"
+              value={durationText ?? draft.durationMinutes}
+              onChange={(e) => {
+                // Let the field go empty while typing; the draft follows valid values.
+                const text = e.target.value;
+                setDurationText(text);
+                const minutes = Number(text);
+                if (text && Number.isFinite(minutes) && minutes >= MIN_DURATION && minutes <= MAX_DURATION) {
+                  setDraft((c) => ({ ...c, durationMinutes: minutes }));
+                }
+              }}
+              onBlur={() => {
+                const minutes = Number(durationText);
+                if (durationText !== null && durationText !== "" && Number.isFinite(minutes)) {
+                  const clamped = Math.min(MAX_DURATION, Math.max(MIN_DURATION, Math.round(minutes)));
+                  if (clamped !== draft.durationMinutes) {
+                    setDraft((c) => ({ ...c, durationMinutes: clamped }));
+                  }
+                }
+                setDurationText(null);
+              }}
             />
           </label>
         </div>
       </header>
 
+      {!persisted ? (
+        <p className="banner error" role="alert">
+          {t("builder.storage.blocked")}
+        </p>
+      ) : null}
+
       {status ? <p className="banner status">{status}</p> : null}
 
-      <StickReloadBanner
-        draft={draft}
-        onLoaded={(rows) => {
-          setLibraryRows(rows);
-          const library = rows.flatMap((row) => (row.stick ? [row.stick] : []));
-          if (library.length) setDraft((current) => rehydrateStickCovers(current, library));
-        }}
-      />
+      {libraryRows.length === 0 ? (
+        <StickReloadBanner
+          draft={draft}
+          onLoaded={(rows) => {
+            setLibraryRows(rows);
+            const library = rows.flatMap((row) => (row.stick ? [row.stick] : []));
+            if (library.length) setDraft((current) => rehydrateStickCovers(current, library));
+          }}
+        />
+      ) : null}
 
       <details id="library-section" className="explain-fold section-fold" open>
         <summary>
@@ -1943,13 +1992,16 @@ export function SetBuilder() {
                     </div>
                   ) : null}
                   {!hasSearched ? (
-                    <div className="empty">
-                      <p>
-                        {addTab === "search"
-                          ? t("builder.crate.emptySearch")
-                          : t("builder.crate.emptyLink")}
-                      </p>
-                    </div>
+                    // The notice above already says what to do next: no second box under it.
+                    localNotice("crate") ? null : (
+                      <div className="empty">
+                        <p>
+                          {addTab === "search"
+                            ? t("builder.crate.emptySearch")
+                            : t("builder.crate.emptyLink")}
+                        </p>
+                      </div>
+                    )
                   ) : results.length === 0 ? (
                     <div className="empty">
                       <p>{t("builder.crate.none")}</p>
@@ -2139,19 +2191,10 @@ export function SetBuilder() {
             matchingLinks={matchingLinks}
             onMatchLinks={() => void matchStreamingLinks()}
           >
-            <span className="tip">
-              <button
-                type="button"
-                className="btn ghost"
-                onClick={harmonizeSet}
-                disabled={mainTracks.length < 2}
-              >
-                {t("builder.tool.harmonize")}
-              </button>
-              <span className="tip-bubble" role="tooltip">
-                {t("builder.tool.harmonizeTip")}
-              </span>
-            </span>
+            <SetSortMenu
+              disabled={mainTracks.length < 2}
+              onSort={sortSet}
+            />
             <span className="tip">
               <button
                 type="button"
@@ -2322,7 +2365,7 @@ export function SetBuilder() {
                         <span className="manual-copy">
                           <strong>{track.name}</strong>
                           <span>
-                            {track.artists.join(", ")}
+                            {artistLine(track.artists, t)}
                             {track.durationMs
                               ? ` · ${formatDuration(track.durationMs)}`
                               : ""}
@@ -2343,25 +2386,45 @@ export function SetBuilder() {
                             })
                           }
                           aria-label={t("builder.row.phaseAria", { name: track.name })}
+                          title={t("builder.row.phaseHint")}
                         >
                           {PHASES.map((phase) => (
-                            <option key={phase.id} value={phase.id}>
+                            <option
+                              key={phase.id}
+                              value={phase.id}
+                              title={phaseHint(t, phase.id)}
+                            >
                               {phaseLabel(t, phase.id)}
                             </option>
                           ))}
                         </select>
                         <select
                           value={track.role}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            const role = e.target.value as TrackRole;
                             patchTrack(track.id, {
-                              role: e.target.value as TrackRole,
+                              role,
                               why: t("analysis.why.manual"),
-                            })
-                          }
+                              // Same rule as in the Rollen view: an Alternative sits in the phase its energy fits.
+                              ...(role === "safety"
+                                ? {
+                                    phase: bestPhaseFor(
+                                      track,
+                                      draft.tracks.filter((item) => item.id !== track.id),
+                                    ),
+                                  }
+                                : {}),
+                            });
+                          }}
                           aria-label={t("builder.row.roleAria", { name: track.name })}
+                          title={t("builder.row.roleHint")}
                         >
                           {TRACK_ROLES.map((role) => (
-                            <option key={role.id} value={role.id}>
+                            <option
+                              key={role.id}
+                              value={role.id}
+                              title={roleHint(t, role.id)}
+                            >
                               {roleLabel(t, role.id)}
                             </option>
                           ))}
@@ -2485,6 +2548,7 @@ export function SetBuilder() {
                         }
                         placeholder={t("builder.row.bpmPlaceholder")}
                         aria-label={t("builder.row.bpmAria", { name: track.name })}
+                        title={t("builder.row.bpmHint")}
                       />
                       <select
                         value={track.keyCamelot}
@@ -2492,6 +2556,7 @@ export function SetBuilder() {
                           patchTrack(track.id, { keyCamelot: e.target.value })
                         }
                         aria-label={t("builder.row.keyAria", { name: track.name })}
+                        title={t("builder.row.keyHint")}
                       >
                         <option value="">{t("builder.row.keyOption")}</option>
                         {CAMELOT_CODES.map((code) => (
@@ -2508,6 +2573,7 @@ export function SetBuilder() {
                           })
                         }
                         aria-label={t("builder.row.energyAria", { name: track.name })}
+                        title={t("builder.row.energyHint")}
                       >
                         <option value="">{t("builder.row.energyOption")}</option>
                         {Array.from({ length: 10 }, (_, i) => i + 1).map((level) => (
@@ -2524,9 +2590,14 @@ export function SetBuilder() {
                           })
                         }
                         aria-label={t("builder.row.transitionAria", { name: track.name })}
+                        title={t("builder.row.transitionHint")}
                       >
                         {TRANSITIONS.map((item) => (
-                          <option key={item.id} value={item.id}>
+                          <option
+                            key={item.id}
+                            value={item.id}
+                            title={transitionHint(t, item.id)}
+                          >
                             {transitionLabel(t, item.id)}
                           </option>
                         ))}

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { fitToSlot } from "./extract-set.ts";
+import { distributeRoles, fitToSlot } from "./extract-set.ts";
+import { tEn } from "./i18n/core.ts";
 import { DEFAULT_SET, PHASES } from "./set.ts";
 
 const mk = (i: number, phase: string, energy?: number) => ({
@@ -21,4 +22,18 @@ test("slot fit trims to the brief and prefers tracks in the phase band", () => {
   assert.equal(kept[kept.length-1].id, "t18");
   for (const t of kept.filter((t:any)=>t.phase==="peak")) assert.ok(t.energyLevel >= 8, "peak keeps 8+");
   assert.equal(r.moved, r.draft.tracks.filter((t:any)=>t.role==="safety").length);
+});
+
+test("roles name the phase pivot with labels, and drop legacy machine notes", () => {
+  const tracks = [mk(0, "open", 4), mk(1, "lift", 5), mk(2, "lift", 5)];
+  tracks[2].note = "lift/groove · Übergang: long-blend · Nachbar-Key (±1)";
+  tracks[1].note = "Vocal erst ab 1:30";
+  const draft: any = { ...DEFAULT_SET, tracks };
+  const de = distributeRoles(draft);
+  assert.equal(de.tracks[1].role, "bridge");
+  assert.equal(de.tracks[1].why, "Phasen-Pivot Open → Lift");
+  assert.equal(de.tracks[1].note, "Vocal erst ab 1:30");
+  assert.equal(de.tracks[2].note, "");
+  const en = distributeRoles(draft, tEn);
+  assert.equal(en.tracks[1].why, "Phase pivot Open → Lift");
 });

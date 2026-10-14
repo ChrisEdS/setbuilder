@@ -9,10 +9,6 @@ const de = {
     "Der Tidal-Login ist nicht zurückgekommen. Einmal neu verbinden und warten, bis die Seite wieder da ist.",
   "builder.auth.tidalFailed": "Tidal-Login fehlgeschlagen: {error}",
   "builder.auth.spotifyFailed": "Spotify-Login fehlgeschlagen: {message}",
-  "builder.auth.connectedStatus":
-    "Spotify verbunden — wähle eine eigene Playlist und extrahiere das Set.",
-  "builder.auth.failedHint":
-    "Redirect URI in der Developer-App prüfen, Zugangsdaten unter „Verbindungen & Setups“ speichern, dann erneut verbinden.",
 
   // Sample brief shown while the brief is still untouched
   "builder.defaults.title": "Nachtlinie 01",
@@ -146,9 +142,22 @@ const de = {
   "builder.view.keys.label": "Bogen",
   "builder.view.keys.hint":
     "Phasen im Slot, Energie pro Track und Camelot-Keys entlang der Reihenfolge, mit Mix-Score und Clashes.",
-  "builder.tool.harmonize": "Harmonisch sortieren",
-  "builder.tool.harmonizeTip":
-    "Ordnet jede Phase nach Camelot-Key und BPM neu. Die Rollen bleiben.",
+  "builder.tool.sort": "Sortieren",
+  "builder.sort.harmonic": "Harmonisch",
+  "builder.sort.harmonicHint":
+    "Nächster Track: verwandter Camelot-Key, weiche Energie, kleine BPM-Schritte. Hebt den Mix-Score, senkt Clashes.",
+  "builder.sort.energy": "Energie-Welle",
+  "builder.sort.energyHint":
+    "Open bis Peak steigt die Energie, Release fällt. Key ist nur der Tiebreaker.",
+  "builder.sort.tempo": "Tempo aufbauen",
+  "builder.sort.tempoHint":
+    "BPM steigt in der Phase (Release fällt). Klassische House/Techno-Rampe.",
+  "builder.sort.journey": "Camelot-Reise",
+  "builder.sort.journeyHint":
+    "Läuft im Uhrzeigersinn ums Wheel, statt denselben Key zu stapeln.",
+  "builder.sort.waves": "Wellen",
+  "builder.sort.wavesHint":
+    "Im Peak wechseln Groove und Impact. Davor steigt die Energie, danach fällt sie.",
   "builder.tool.fit": "Auf Slot kürzen",
   "builder.tool.fitTip":
     "Kürzt das Set auf die Dauer im Brief. Pro Phase bleiben gleichmäßig verteilte Tracks, der Rest wandert unter Alternativen. Nichts geht verloren.",
@@ -190,12 +199,24 @@ const de = {
   "builder.row.bpmAria": "BPM für {name}",
   "builder.row.keyOption": "Key",
   "builder.row.keyAria": "Key für {name}",
+  "builder.row.keyHint":
+    "Camelot-Key, z. B. 8A. A = Moll, B = Dur. Gleicher Key, ±1 oder A↔B mischt weich. Ändern ändert Mix-Score und Clashes.",
   "builder.row.energyOption": "Energie",
   "builder.row.energyAria": "Energy Level für {name}",
+  "builder.row.energyHint":
+    "Energy Level 1–10 (Mixed In Key): wie hart der Track im Raum wirkt. 1–3 warm, 7–8 Rise, 8–10 Peak. Ändern ändert den Energie-Bogen.",
+  "builder.row.bpmHint":
+    "Tempo. Kleine Schritte gleicht der Pitch aus. Sprünge über 3 BPM brauchen einen Break.",
+  "builder.row.phaseHint":
+    "Wo der Track im Slot sitzt: Open wärmt, Peak ist der Höhepunkt, Release landet. Die Phase setzt das Energie-Zielband.",
+  "builder.row.roleHint":
+    "Anchor ist Signature, Bridge braucht Sorgfalt (Clash, Sprung), Groove ist der Atem, Alternativen sind Plan B.",
+  "builder.row.transitionHint":
+    "Wie du in den nächsten Track gehst: Long Blend weich, EQ oder Break bei Clash, Reset wenn die Energie fällt.",
   "builder.row.transitionAria": "Übergang für {name}",
 
   // Arc view
-  "builder.curve.aria": "Energy curve",
+  "builder.curve.aria": "Phasen im Slot",
   "builder.curve.title": "Phasen im Slot",
   "builder.curve.summary":
     "{duration} / {minutes}:00 · {performance} Performance · {safety} Alternativen",
@@ -255,8 +276,19 @@ const de = {
   "builder.status.setupFromFile": "„{name}“ aus Datei geladen.",
   "builder.status.fileDownloaded": "Einstellungsdatei heruntergeladen.",
   "builder.status.reset": "Brief zurückgesetzt — das Set ist leer.",
-  "builder.status.harmonized": "Set innerhalb der Phasen nach Camelot/BPM neu sortiert.",
+  "builder.status.sorted.harmonic":
+    "Harmonisch sortiert: verwandte Keys beieinander. Mix-Score und Clashes im Bogen prüfen.",
+  "builder.status.sorted.energy":
+    "Nach Energie sortiert: die Welle folgt den Phasen. Mix-Score im Bogen prüfen.",
+  "builder.status.sorted.tempo":
+    "Nach Tempo sortiert: BPM baut auf, im Release wieder runter.",
+  "builder.status.sorted.journey":
+    "Camelot-Reise: das Set läuft im Uhrzeigersinn ums Wheel.",
+  "builder.status.sorted.waves":
+    "Wellen: im Peak wechseln Groove und Impact.",
   "builder.status.fits": "Das Set passt schon in den Slot.",
+  "builder.status.fitStuck":
+    "Nicht weiter kürzbar: der erste und der letzte Track und ein Track pro Phase bleiben immer. Lange Tracks von Hand auf Alternativen setzen.",
   "builder.status.trimmed":
     "Auf Slot gekürzt: {before} → {after} · {kept} bleiben, {moved} liegen unter Alternativen.",
   "builder.status.roles":
@@ -314,11 +346,23 @@ const de = {
   "builder.fail.pdfHint": "Pop-ups für diese Seite erlauben und PDF noch einmal öffnen.",
   "builder.fail.spotifySearch": "Spotify-Suche fehlgeschlagen.",
   "builder.fail.spotifySearchHint":
-    "Die Suche braucht SPOTIFY_CLIENT_ID und SPOTIFY_CLIENT_SECRET in .env.local (siehe README). Danach „Spotify-Links suchen“ erneut starten.",
+    "Spotify unter „Verbindungen & Setups“ einrichten (Client ID und Secret), danach „Spotify-Links suchen“ erneut starten. Der rekordbox-Export braucht das nicht.",
   "builder.fail.notSetup": "Datei enthält kein SETFORM-Setup.",
   "builder.fail.file": "Datei ungültig.",
   "builder.fail.fileHint":
     "Eine Datei verwenden, die hier über Herunterladen gespeichert wurde.",
+  "builder.fail.copy": "Zwischenablage nicht erreichbar.",
+  "builder.fail.copyHint":
+    "Der Text liegt stattdessen als Datei im Ordner Downloads.",
+  "builder.fail.setupStorage": "Setup nicht gespeichert.",
+  "builder.fail.setupStorageHint":
+    "Der Browser-Speicher ist voll oder blockiert. Stattdessen „Herunterladen“ nutzen.",
+
+  // Destructive actions and storage
+  "builder.reset.confirm":
+    "{tracks} aus dem Set entfernen und zum Beispiel-Brief zurück? Das lässt sich nicht rückgängig machen. Gespeicherte Setups bleiben.",
+  "builder.storage.blocked":
+    "Dieser Browser speichert das Set gerade nicht (Speicher voll oder blockiert). Änderungen gelten nur bis zum Neuladen — unter „Verbindungen & Setups“ als Datei sichern.",
 } as const;
 
 const en: Record<keyof typeof de, string> = {
@@ -330,10 +374,6 @@ const en: Record<keyof typeof de, string> = {
     "The Tidal login didn't come back. Reconnect once and wait until the page has loaded again.",
   "builder.auth.tidalFailed": "Tidal login failed: {error}",
   "builder.auth.spotifyFailed": "Spotify login failed: {message}",
-  "builder.auth.connectedStatus":
-    "Spotify connected — pick one of your playlists and extract the set.",
-  "builder.auth.failedHint":
-    "Check the redirect URI in the developer app, save the credentials under “Connections & setups”, then connect again.",
 
   "builder.defaults.title": "Nightline 01",
   "builder.defaults.vibe": "Tech house → melodic peak",
@@ -460,9 +500,22 @@ const en: Record<keyof typeof de, string> = {
   "builder.view.keys.label": "Arc",
   "builder.view.keys.hint":
     "Phases in the slot, energy per track and Camelot keys along the order, with mix score and clashes.",
-  "builder.tool.harmonize": "Sort harmonically",
-  "builder.tool.harmonizeTip":
-    "Re-sorts each phase by Camelot key and BPM. Roles stay.",
+  "builder.tool.sort": "Sort",
+  "builder.sort.harmonic": "Harmonic",
+  "builder.sort.harmonicHint":
+    "Next track: related Camelot key, smooth energy, small BPM steps. Raises the mix score, cuts clashes.",
+  "builder.sort.energy": "Energy wave",
+  "builder.sort.energyHint":
+    "Energy rises from Open to Peak, falls in Release. Key is only the tie-breaker.",
+  "builder.sort.tempo": "Build tempo",
+  "builder.sort.tempoHint":
+    "BPM rises in the phase (falls in Release). Classic house/techno ramp.",
+  "builder.sort.journey": "Camelot journey",
+  "builder.sort.journeyHint":
+    "Walks clockwise around the wheel instead of stacking the same key.",
+  "builder.sort.waves": "Waves",
+  "builder.sort.wavesHint":
+    "In the peak, groove and impact alternate. Before that energy rises, after that it falls.",
   "builder.tool.fit": "Trim to slot",
   "builder.tool.fitTip":
     "Trims the set to the duration in the brief. Evenly spread tracks stay in each phase, the rest moves to Alternatives. Nothing is lost.",
@@ -503,8 +556,20 @@ const en: Record<keyof typeof de, string> = {
   "builder.row.bpmAria": "BPM for {name}",
   "builder.row.keyOption": "Key",
   "builder.row.keyAria": "Key for {name}",
+  "builder.row.keyHint":
+    "Camelot key, e.g. 8A. A = minor, B = major. Same key, ±1 or A↔B mix smoothly. Changing it changes mix score and clashes.",
   "builder.row.energyOption": "Energy",
   "builder.row.energyAria": "Energy Level for {name}",
+  "builder.row.energyHint":
+    "Energy Level 1–10 (Mixed In Key): how hard the track hits the room. 1–3 warm, 7–8 rise, 8–10 peak. Changing it changes the energy path.",
+  "builder.row.bpmHint":
+    "Tempo. Pitch evens out small steps. Jumps over 3 BPM need a break.",
+  "builder.row.phaseHint":
+    "Where the track sits in the slot: Open warms up, Peak is the high point, Release lands. The phase sets the energy target band.",
+  "builder.row.roleHint":
+    "Anchor is the signature, Bridge needs care (clash, jump), Groove is the breath, Alternatives are Plan B.",
+  "builder.row.transitionHint":
+    "How you go into the next track: long blend when it's smooth, EQ or a break on a clash, a reset when energy drops.",
   "builder.row.transitionAria": "Transition for {name}",
 
   "builder.curve.aria": "Energy curve",
@@ -564,8 +629,19 @@ const en: Record<keyof typeof de, string> = {
   "builder.status.setupFromFile": "“{name}” loaded from file.",
   "builder.status.fileDownloaded": "Settings file downloaded.",
   "builder.status.reset": "Brief reset — the set is empty.",
-  "builder.status.harmonized": "Set re-sorted within the phases by Camelot/BPM.",
+  "builder.status.sorted.harmonic":
+    "Sorted harmonically: related keys together. Check mix score and clashes on the Arc.",
+  "builder.status.sorted.energy":
+    "Sorted by energy: the wave follows the phases. Check the mix score on the Arc.",
+  "builder.status.sorted.tempo":
+    "Sorted by tempo: BPM builds, then drops in the release.",
+  "builder.status.sorted.journey":
+    "Camelot journey: the set walks clockwise around the wheel.",
+  "builder.status.sorted.waves":
+    "Waves: in the peak, groove and impact alternate.",
   "builder.status.fits": "The set already fits the slot.",
+  "builder.status.fitStuck":
+    "Cannot trim further: the first and last track and one track per phase always stay. Move long tracks to Alternatives by hand.",
   "builder.status.trimmed":
     "Trimmed to slot: {before} → {after} · keeping {kept}, {moved} moved to Alternatives.",
   "builder.status.roles":
@@ -619,10 +695,20 @@ const en: Record<keyof typeof de, string> = {
   "builder.fail.pdfHint": "Allow pop-ups for this page and open the PDF again.",
   "builder.fail.spotifySearch": "Spotify search failed.",
   "builder.fail.spotifySearchHint":
-    "The search needs SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET in .env.local (see README). Then run “Find Spotify links” again.",
+    "Set up Spotify under “Connections & setups” (client ID and secret), then run “Find Spotify links” again. The rekordbox export does not need it.",
   "builder.fail.notSetup": "The file doesn't contain a SETFORM setup.",
   "builder.fail.file": "Invalid file.",
   "builder.fail.fileHint": "Use a file that was saved here via Download.",
+  "builder.fail.copy": "Clipboard not available.",
+  "builder.fail.copyHint": "The text was saved as a file in your Downloads folder instead.",
+  "builder.fail.setupStorage": "Setup not saved.",
+  "builder.fail.setupStorageHint":
+    "Browser storage is full or blocked. Use “Download” instead.",
+
+  "builder.reset.confirm":
+    "Remove {tracks} from the set and return to the sample brief? This cannot be undone. Saved setups stay.",
+  "builder.storage.blocked":
+    "This browser is not saving the set right now (storage full or blocked). Changes last until reload — save it as a file under “Connections & setups”.",
 };
 
 export const builder = { de, en };

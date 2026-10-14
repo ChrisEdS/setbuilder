@@ -1,5 +1,6 @@
 import { parseKeyValue } from "@/lib/key-import";
 import type { CamelotCode } from "@/lib/harmonic";
+import { LocalizedError } from "@/lib/i18n/error";
 import type { SpotifyTrack } from "@/lib/spotify";
 
 type TidalTokenResponse = {
@@ -52,7 +53,7 @@ let cachedToken: { value: string; expiresAt: number } | null = null;
 function requireEnv(name: string): string {
   const value = process.env[name];
   if (!value) {
-    throw new Error(`Missing ${name}. Add it to .env.local`);
+    throw new LocalizedError("api.tidal.notConfigured", undefined, `Missing ${name}. Add it to .env.local`);
   }
   return value;
 }

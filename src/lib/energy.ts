@@ -23,16 +23,48 @@ export const PHASE_ENERGY: Record<SetPhaseId, { min: number; max: number }> = {
   release: { min: 4, max: 6 },
 };
 
+const LABELED_ENERGY =
+  /\benerg(?:y|ie)(?:\s*level)?[\s:=–—-]*?(10|[1-9])(?:\s*\/\s*10)?\b/i;
+const VALUE_THEN_ENERGY = /\b(10|[1-9])\s*energ(?:y|ie)\b/i;
+const LONE_ENERGY = /^(?:e(?:nergy)?[\s:=–—-]*)?(10|[1-9])(?:\s*\/\s*10)?$/i;
+
 /**
- * Reads an Energy Level out of a tag text. Mixed In Key writes it into the
- * comment, for example "7A - Energy 6". Only an explicit "Energy n" counts, so
- * stray digits in notes are never mistaken for an energy value.
+ * Reads an Energy Level out of a comment or title. Mixed In Key writes
+ * "7A - Energy 6"; German files use "Energie". A bare 7 in a cue note
+ * ("Cue 7 bei 2:30") does not count.
  */
 export function parseEnergyLevel(text: string | undefined | null): number | undefined {
   if (!text) return undefined;
-  const match = text.match(/\benergy(?:\s*level)?\s*[:=-]?\s*(10|[1-9])\b/i);
+  const match = text.match(LABELED_ENERGY) ?? text.match(VALUE_THEN_ENERGY);
   if (!match) return undefined;
   return Number(match[1]);
+}
+
+/**
+ * Dedicated fields (Grouping, Label, Energy column): a lone 1–10 or "E6"
+ * counts, because Mixed In Key often writes only the number there.
+ */
+export function parseEnergyField(text: string | undefined | null): number | undefined {
+  const labeled = parseEnergyLevel(text);
+  if (labeled != null) return labeled;
+  if (!text) return undefined;
+  const lone = text.trim().match(LONE_ENERGY);
+  return lone ? Number(lone[1]) : undefined;
+}
+
+/** First Mixed In Key-style value across the rekordbox tag fields we can see. */
+export function energyFromRekordboxTags(parts: {
+  comment?: string | null;
+  grouping?: string | null;
+  label?: string | null;
+  remixer?: string | null;
+}): number | undefined {
+  return (
+    parseEnergyLevel(parts.comment) ??
+    parseEnergyField(parts.grouping) ??
+    parseEnergyField(parts.label) ??
+    parseEnergyField(parts.remixer)
+  );
 }
 
 export type EnergyStep = "same" | "smooth" | "lift" | "jump" | "unknown";

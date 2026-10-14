@@ -20,14 +20,17 @@ const de = {
   "crates.col.resizeTitle": "Höhe ziehen",
   "crates.empty.drop": "Hier ablegen",
   "crates.empty.safety":
-    "Noch keine Alternativen. Beim Extrahieren landen übrige Tracks hier, oder du setzt Tracks selbst auf die Rolle Alternativen.",
-  "crates.empty.default": "Noch keine Tracks",
+    "Noch keine Alternativen. Hier landen Tracks, die du auf die Rolle Alternativen setzt, die „Ersatz“ aus dem Set nimmt oder die „Auf Slot kürzen“ herausnimmt.",
+  "crates.empty.default": "Noch keine Tracks. In der Setliste die Rolle setzen oder eine Karte hierher ziehen.",
 
   // RoleCrates: track card
   "crates.card.dragTitle": "In eine andere Rolle ziehen",
   "crates.card.keyUnset": "Key offen",
   "crates.card.keyUnsetTitle": "Key noch setzen",
-  "crates.card.energyTitle": "Energy Level {level} von 10",
+  "crates.card.camelotHint":
+    "{key}: A = Moll, B = Dur. Gleicher Key, ±1 oder A↔B mischt weich.",
+  "crates.card.energyTitle":
+    "Energy {level} von 10 — wie hart der Track wirkt. In der Setliste ändern.",
   "crates.card.altFor": "Alt für: {name}",
   "crates.card.phase": "Phase",
   "crates.card.phaseAria": "Phase für {name}",
@@ -81,7 +84,7 @@ const de = {
   "crates.replace.groupLibrary":
     "Aus der Bibliothek, passend zu Vorgänger und Nachfolger",
   "crates.replace.insert": "Einsetzen",
-  "crates.replace.unknownArtist": "Unknown",
+  "crates.replace.unknownArtist": "unbekannt",
   "crates.replace.playAria": "{title} abspielen",
   "crates.replace.play": "Abspielen",
   "crates.replace.playNeedsStick":
@@ -118,13 +121,16 @@ const en: Record<keyof typeof de, string> = {
   "crates.col.resizeTitle": "Drag to resize height",
   "crates.empty.drop": "Drop here",
   "crates.empty.safety":
-    "No alternatives yet. When extracting, leftover tracks land here, or you set tracks to the Alternatives role yourself.",
-  "crates.empty.default": "No tracks yet",
+    "No alternatives yet. Tracks land here when you set them to the Alternatives role, when “Replace” takes them out of the set, or when “Trim to slot” removes them.",
+  "crates.empty.default": "No tracks yet. Set the role in the setlist or drag a card here.",
 
   "crates.card.dragTitle": "Drag to another role",
   "crates.card.keyUnset": "Key unknown",
   "crates.card.keyUnsetTitle": "Set the key",
-  "crates.card.energyTitle": "Energy Level {level} of 10",
+  "crates.card.camelotHint":
+    "{key}: A = minor, B = major. Same key, ±1 or A↔B mix smoothly.",
+  "crates.card.energyTitle":
+    "Energy {level} of 10 — how hard the track hits. Change it in the setlist.",
   "crates.card.altFor": "Alt for: {name}",
   "crates.card.phase": "Phase",
   "crates.card.phaseAria": "Phase for {name}",
@@ -174,7 +180,7 @@ const en: Record<keyof typeof de, string> = {
   "crates.replace.groupLibrary":
     "From the library, fitting the previous and next track",
   "crates.replace.insert": "Insert",
-  "crates.replace.unknownArtist": "Unknown",
+  "crates.replace.unknownArtist": "unknown",
   "crates.replace.playAria": "Play {title}",
   "crates.replace.play": "Play",
   "crates.replace.playNeedsStick":

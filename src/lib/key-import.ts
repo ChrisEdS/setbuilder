@@ -1,5 +1,5 @@
 import { normalizeCamelot, parseBpm, type CamelotCode } from "@/lib/harmonic";
-import { parseEnergyLevel } from "@/lib/energy";
+import { parseEnergyField, parseEnergyLevel } from "@/lib/energy";
 import type { SetDraft, SetTrack } from "@/lib/set";
 
 export type KeyImportRow = {
@@ -135,7 +135,10 @@ function looksLikeHeader(cells: string[]): boolean {
     joined.includes("song") ||
     joined.includes("camelot") ||
     joined.includes("bpm") ||
-    joined.includes("key")
+    joined.includes("key") ||
+    joined.includes("energy") ||
+    joined.includes("grouping") ||
+    joined.includes("comment")
   );
 }
 
@@ -161,6 +164,8 @@ export function parseKeyImportText(text: string): KeyImportRow[] {
   let keyIdx = 2;
   let bpmIdx = 3;
   let energyIdx = -1;
+  let commentIdx = -1;
+  let groupingIdx = -1;
   let start = 0;
 
   if (hasHeader) {
@@ -168,7 +173,9 @@ export function parseKeyImportText(text: string): KeyImportRow[] {
     titleIdx = headerIndex(firstCells, ["title", "track", "song", "name"]);
     keyIdx = headerIndex(firstCells, ["camelot", "key", "tonart"]);
     bpmIdx = headerIndex(firstCells, ["bpm", "tempo"]);
-    energyIdx = headerIndex(firstCells, ["energy"]);
+    energyIdx = headerIndex(firstCells, ["energy", "energie"]);
+    commentIdx = headerIndex(firstCells, ["comment", "kommentar"]);
+    groupingIdx = headerIndex(firstCells, ["grouping", "gruppierung", "gruppe"]);
     if (artistIdx < 0) artistIdx = 0;
     if (titleIdx < 0) titleIdx = 1;
     if (keyIdx < 0) keyIdx = 2;
@@ -212,8 +219,12 @@ export function parseKeyImportText(text: string): KeyImportRow[] {
     if (!keyCamelot && bpmNum == null) continue;
 
     const energyCell = energyIdx >= 0 ? cells[energyIdx] || "" : "";
+    const commentCell = commentIdx >= 0 ? cells[commentIdx] || "" : "";
+    const groupingCell = groupingIdx >= 0 ? cells[groupingIdx] || "" : "";
     const energyLevel =
-      parseEnergyLevel(`energy ${energyCell}`) ?? undefined;
+      parseEnergyField(energyCell) ??
+      parseEnergyLevel(commentCell) ??
+      parseEnergyField(groupingCell);
     rows.push({
       artist: artist.trim(),
       title: title.trim(),

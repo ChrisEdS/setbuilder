@@ -13,6 +13,7 @@ import {
   camelotColor,
   mixJoin,
   phaseAccent,
+  relationHint,
   roleAccent,
 } from "@/lib/harmonic";
 import {
@@ -21,6 +22,8 @@ import {
   phaseLabel,
   roleHint,
   roleLabel,
+  transitionHint,
+  transitionLabel,
 } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n/react";
 import { TrackArt } from "@/components/TrackArt";
@@ -36,6 +39,7 @@ import { rankReplacements } from "@/lib/replace-track";
 import {
   PHASES,
   TRACK_ROLES,
+  artistLine,
   formatDuration,
   performanceTracks,
   tracksByRole,
@@ -543,9 +547,9 @@ export function RoleCrates({
                                 </div>
                                 <span
                                   className="artists"
-                                  title={track.artists.join(", ")}
+                                  title={artistLine(track.artists, t)}
                                 >
-                                  {track.artists.join(", ")}
+                                  {artistLine(track.artists, t)}
                                 </span>
                                 <div className="crate-meta">
                                   <span
@@ -571,7 +575,9 @@ export function RoleCrates({
                                         color: keyColor.fg,
                                         borderColor: keyColor.border,
                                       }}
-                                      title={`Camelot ${track.keyCamelot}`}
+                                      title={t("crates.card.camelotHint", {
+                                        key: track.keyCamelot,
+                                      })}
                                     >
                                       <i
                                         className="key-dot"
@@ -621,7 +627,7 @@ export function RoleCrates({
                                     })}
                                   </p>
                                 ) : null}
-                                {isSafety && track.note ? (
+                                {isSafety && localizeNote(track.note, t) ? (
                                   <p
                                     className="safety-line"
                                     title={localizeNote(track.note, t)}
@@ -630,8 +636,13 @@ export function RoleCrates({
                                   </p>
                                 ) : null}
                                 {track.transition !== "unset" ? (
-                                  <p className="transition-line">
-                                    → {track.transition}
+                                  <p
+                                    className="transition-line"
+                                    title={transitionHint(t, track.transition)}
+                                  >
+                                    {t("analysis.note.transition", {
+                                      transition: transitionLabel(t, track.transition),
+                                    })}
                                   </p>
                                 ) : null}
                               </div>
@@ -747,7 +758,14 @@ function SetJoin({ tracks, track }: { tracks: SetTrack[]; track: SetTrack }) {
   const index = performance.findIndex((item) => item.id === track.id);
   const join = index > 0 ? mixJoin(performance[index - 1], track, t) : null;
   if (!join || join.relation === "unknown") return null;
-  return <p className={`harm harm-${join.relation}`}>{join.label}</p>;
+  return (
+    <p
+      className={`harm harm-${join.relation}`}
+      title={relationHint(join.relation, t)}
+    >
+      {join.label}
+    </p>
+  );
 }
 
 function SafetySwap({

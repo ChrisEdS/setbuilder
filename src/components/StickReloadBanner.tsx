@@ -47,9 +47,9 @@ export function StickReloadBanner({
     try {
       const existing = await loadPersistedStickHandle();
       const handle =
-        existing && (await stickPermission(existing, "readwrite", true))
+        existing && (await stickPermission(existing, "read", true))
           ? existing
-          : await pickAndRememberStick();
+          : await pickAndRememberStick("read");
       if (!handle) return;
       const stick = await readStickFromHandle(handle);
       await hydrateStickMedia(handle, mediaPathsForDraft(draft, stick.library));

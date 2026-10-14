@@ -29,5 +29,5 @@ test("Energie gleich reads naturally in the join label", () => {
     { keyCamelot: "8A", bpm: "124", energyLevel: 5 },
     { keyCamelot: "8A", bpm: "124", energyLevel: 5 },
   ).label;
-  assert.ok(label.includes("gleiche Key"));
+  assert.ok(label.includes("Gleicher Key"));
 });

@@ -1,12 +1,13 @@
 "use client";
 
-import { Fragment, useEffect, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { FieldNoticeView, type FieldNotice } from "@/components/FieldNotice";
 import { StickHealthCard } from "@/components/StickHealthCard";
 import {
   applyStickSet,
   mediaPathsForDraft,
   readRekordboxStick,
+  rehydrateStickCovers,
   stickLibraryRows,
   type RekordboxStickSet,
   type StickTrack,
@@ -17,6 +18,7 @@ import { rememberStickFiles } from "@/lib/stick-audio";
 import { formatDuration, trackCount, type SetDraft } from "@/lib/set";
 import {
   hydrateStickMedia,
+  isPickerBlocked,
   loadPersistedStickHandle,
   pickAndRememberStick,
   readStickFromHandle,
@@ -52,7 +54,13 @@ function rich(text: string, parts: Record<string, ReactNode>): ReactNode[] {
 }
 
 /** What went wrong, kept as data so the notice follows the language switcher. */
-type StickError = { kind: "noSets" } | { kind: "read"; error: unknown };
+type StickError =
+  | { kind: "noSets" }
+  | { kind: "empty" }
+  | { kind: "blocked" }
+  | { kind: "read"; error: unknown };
+
+type LoadPhase = "idle" | "picking" | "listing" | "reading";
 
 export function RekordboxStick({
   draft,
@@ -61,7 +69,7 @@ export function RekordboxStick({
   onIndexed,
 }: Props) {
   const { t } = useI18n();
-  const [localBusy, setLocalBusy] = useState(false);
+  const [phase, setPhase] = useState<LoadPhase>("idle");
   const [label, setLabel] = useState<string | null>(null);
   const [sets, setSets] = useState<RekordboxStickSet[]>([]);
   const [error, setError] = useState<StickError | null>(null);
@@ -69,6 +77,8 @@ export function RekordboxStick({
   const [checkingHealth, setCheckingHealth] = useState(false);
   const [healthRoot, setHealthRoot] = useState<DirLike | null>(null);
   const [healthFiles, setHealthFiles] = useState<File[] | null>(null);
+  const dirInput = useRef<HTMLInputElement>(null);
+  const loadGen = useRef(0);
 
   async function refreshHealth(source: { handle?: DirLike | null; files?: File[] | null } = {}) {
     const handle = source.handle !== undefined ? source.handle : healthRoot;
@@ -95,77 +105,106 @@ export function RekordboxStick({
     void (async () => {
       const handle = await loadPersistedStickHandle();
       if (!handle || !(await stickPermission(handle, "read", false))) return;
-      setHealthRoot(handle);
-      await refreshHealth({ handle, files: null });
+      try {
+        await applyHandle(handle);
+      } catch {
+        setHealthRoot(handle);
+        await refreshHealth({ handle, files: null });
+      }
     })();
     // Once: remembered stick, no prompt.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  function beginLoad(): number {
+    loadGen.current += 1;
+    return loadGen.current;
+  }
+
+  function stillCurrent(token: number) {
+    return token === loadGen.current;
+  }
+
+  function cancelLoad() {
+    beginLoad();
+    setPhase("idle");
+  }
+
+  async function applyHandle(handle: DirLike) {
+    setHealthRoot(handle);
+    setHealthFiles(null);
+    const read = await readStickFromHandle(handle);
+    setLabel(read.label);
+    setSets(read.sets);
+    onIndexed(stickLibraryRows(read.library));
+    if (!read.sets.length) setError({ kind: "noSets" });
+    void inspectStick(handle)
+      .then((next) => setHealth(next))
+      .catch(() => setHealth(null));
+  }
+
   async function load(list: FileList | null) {
     const files = list ? Array.from(list) : [];
-    if (!files.length) return;
-    setLocalBusy(true);
+    if (!files.length) {
+      setError({ kind: "empty" });
+      setPhase("idle");
+      return;
+    }
+    const token = beginLoad();
+    setPhase("listing");
     setError(null);
     setHealthRoot(null);
     setHealthFiles(files);
     try {
-      const [read, check] = await Promise.allSettled([
-        readRekordboxStick(files),
-        inspectStickFiles(files),
-      ]);
-      if (check.status === "fulfilled") setHealth(check.value);
-      else setHealth(null);
-      if (read.status === "rejected") {
-        setSets([]);
-        setLabel(null);
-        setError({ kind: "read", error: read.reason });
-        return;
-      }
+      setPhase("reading");
+      const read = await readRekordboxStick(files);
+      if (!stillCurrent(token)) return;
       rememberStickFiles(files);
-      setLabel(read.value.label);
-      setSets(read.value.sets);
-      onIndexed(stickLibraryRows(read.value.library));
-      if (!read.value.sets.length) setError({ kind: "noSets" });
+      setLabel(read.label);
+      setSets(read.sets);
+      onIndexed(stickLibraryRows(read.library));
+      if (!read.sets.length) setError({ kind: "noSets" });
+      void inspectStickFiles(files)
+        .then((next) => {
+          if (stillCurrent(token)) setHealth(next);
+        })
+        .catch(() => {
+          if (stillCurrent(token)) setHealth(null);
+        });
     } catch (caught) {
+      if (!stillCurrent(token)) return;
       setSets([]);
       setLabel(null);
       setError({ kind: "read", error: caught });
     } finally {
-      setLocalBusy(false);
+      if (stillCurrent(token)) setPhase("idle");
     }
   }
 
   async function chooseFolder() {
-    setLocalBusy(true);
     setError(null);
+    if (!stickPicker()) {
+      dirInput.current?.click();
+      return;
+    }
+    const token = beginLoad();
+    setPhase("picking");
     try {
-      const handle = await pickAndRememberStick();
-      if (!handle) return;
-      setHealthRoot(handle);
-      setHealthFiles(null);
-      const [read, check] = await Promise.allSettled([
-        readStickFromHandle(handle),
-        inspectStick(handle),
-      ]);
-      if (check.status === "fulfilled") setHealth(check.value);
-      else setHealth(null);
-      if (read.status === "rejected") {
-        setSets([]);
-        setLabel(null);
-        setError({ kind: "read", error: read.reason });
+      const handle = await pickAndRememberStick("read");
+      if (!stillCurrent(token)) return;
+      if (!handle) {
+        setPhase("idle");
         return;
       }
-      setLabel(read.value.label);
-      setSets(read.value.sets);
-      onIndexed(stickLibraryRows(read.value.library));
-      if (!read.value.sets.length) setError({ kind: "noSets" });
+      setPhase("reading");
+      await applyHandle(handle);
     } catch (caught) {
+      if (!stillCurrent(token)) return;
       setSets([]);
       setLabel(null);
-      setError({ kind: "read", error: caught });
+      setError(isPickerBlocked(caught) ? { kind: "blocked" } : { kind: "read", error: caught });
     } finally {
-      setLocalBusy(false);
+      if (stillCurrent(token)) setPhase("idle");
     }
   }
 
@@ -174,24 +213,30 @@ export function RekordboxStick({
     const next = applyStickSet(draft, set, t);
     const keyed = set.tracks.filter((track) => track.keyCamelot).length;
     const minutes = set.tracks.reduce((sum, track) => sum + track.durationMs, 0);
-    onApply(
-      next,
+    const message =
       t("library.stick.applied", {
         kind: kindLabel(set),
         name: set.name,
         tracks: trackCount(set.tracks.length, t),
       }) +
-        (keyed ? ` · ${t("library.stick.withKey", { count: keyed })}` : "") +
-        (minutes ? ` · ${formatDuration(minutes)}` : "") +
-        (set.missing ? ` · ${t("library.stick.unmatched", { count: set.missing })}` : ""),
-    );
-    void loadPersistedStickHandle().then((handle) => {
+      (keyed ? ` · ${t("library.stick.withKey", { count: keyed })}` : "") +
+      (minutes ? ` · ${formatDuration(minutes)}` : "") +
+      (set.missing ? ` · ${t("library.stick.unmatched", { count: set.missing })}` : "");
+    onApply(next, message);
+    const rootPromise = healthRoot
+      ? Promise.resolve(healthRoot)
+      : loadPersistedStickHandle();
+    void rootPromise.then(async (handle) => {
       if (!handle) return;
-      return hydrateStickMedia(handle, mediaPathsForDraft(next, set.tracks));
+      const hydrated = await hydrateStickMedia(handle, mediaPathsForDraft(next, set.tracks));
+      if (hydrated > 0) {
+        onApply(rehydrateStickCovers(next, set.tracks), message);
+      }
     });
   }
 
-  const pending = busy || localBusy;
+  const locking = busy || phase === "listing" || phase === "reading";
+  const pending = locking || phase === "picking";
 
   function kindLabel(set: RekordboxStickSet) {
     return t(set.kind === "history" ? "library.stick.history" : "library.stick.playlist");
@@ -201,10 +246,23 @@ export function RekordboxStick({
     ? null
     : error.kind === "noSets"
       ? { text: t("library.stick.noSets.text"), hint: t("library.stick.noSets.hint") }
-      : {
-          text: errorText(error.error, t, "library.stick.readFailed.text"),
-          hint: t("library.stick.readFailed.hint"),
-        };
+      : error.kind === "empty"
+        ? { text: t("library.stick.emptyPick.text"), hint: t("library.stick.emptyPick.hint") }
+        : error.kind === "blocked"
+          ? { text: t("library.stick.blocked.text"), hint: t("library.stick.blocked.hint") }
+          : {
+              text: errorText(error.error, t, "library.stick.readFailed.text"),
+              hint: t("library.stick.readFailed.hint"),
+            };
+
+  const live: FieldNotice | null =
+    phase === "picking"
+      ? { text: t("library.stick.picking"), hint: t("library.stick.pickingHint") }
+      : phase === "listing"
+        ? { text: t("library.stick.listing"), hint: t("library.stick.listingHint") }
+        : phase === "reading"
+          ? { text: t("library.stick.reading"), hint: t("library.stick.readingHint") }
+          : null;
 
   return (
     <div className="stick-import">
@@ -226,49 +284,65 @@ export function RekordboxStick({
           </p>
         </div>
         <div className="stick-actions">
-          {stickPicker() ? (
+          <button
+            type="button"
+            className={"btn" + (pending ? " is-busy" : "")}
+            disabled={pending}
+            onClick={() => void chooseFolder()}
+          >
+            {locking ? t("library.stick.reading") : t("library.stick.choose")}
+          </button>
+          <input
+            ref={dirInput}
+            type="file"
+            hidden
+            multiple
+            disabled={locking}
+            // Nonstandard directory picker. Always available if showDirectoryPicker fails.
+            {...{ webkitdirectory: "", directory: "" }}
+            onChange={(event) => {
+              void load(event.target.files);
+              event.currentTarget.value = "";
+            }}
+          />
+          {phase === "picking" || error?.kind === "blocked" ? (
             <button
               type="button"
-              className={"btn" + (pending ? " is-busy" : "")}
-              disabled={pending}
-              onClick={() => void chooseFolder()}
+              className={"btn ghost library-file" + (locking ? " is-busy" : "")}
+              disabled={locking}
+              onClick={() => dirInput.current?.click()}
             >
-              {pending ? t("library.loading") : t("library.stick.choose")}
+              {t("library.stick.chooseFolder")}
             </button>
-          ) : (
-          <label className={"btn library-file" + (pending ? " is-busy" : "")}>
-            {pending ? t("library.loading") : t("library.stick.choose")}
-            <input
-              type="file"
-              hidden
-              multiple
-              disabled={pending}
-              // Nonstandard directory picker. The browser returns every file
-              // under the chosen volume; only export.pdb is read.
-              {...{ webkitdirectory: "", directory: "" }}
-              onChange={(event) => {
-                void load(event.target.files);
-                event.currentTarget.value = "";
-              }}
-            />
-          </label>
-          )}
-          <label className={"btn ghost library-file" + (pending ? " is-busy" : "")}>
-            export.pdb
+          ) : null}
+          <label className={"btn ghost library-file" + (locking ? " is-busy" : "")}>
+            {t("library.stick.choosePdb")}
             <input
               type="file"
               hidden
               accept=".pdb,.xml,application/xml"
-              disabled={pending}
+              disabled={locking}
               onChange={(event) => {
                 void load(event.target.files);
                 event.currentTarget.value = "";
               }}
             />
           </label>
+          {phase !== "idle" ? (
+            <button type="button" className="btn ghost" onClick={cancelLoad}>
+              {t("library.stick.cancel")}
+            </button>
+          ) : null}
         </div>
       </div>
-      <FieldNoticeView notice={notice} />
+      {live ? (
+        <p className="field-notice" role="status">
+          <strong>{live.text}</strong>
+          <span>{live.hint}</span>
+        </p>
+      ) : (
+        <FieldNoticeView notice={notice} />
+      )}
       {health ? (
         <StickHealthCard
           health={health}

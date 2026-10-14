@@ -47,6 +47,8 @@ const de = {
   // rekordbox stick
   "exports.stick.noPlaylists": "Die XML enthält keine Playlists. Für Keys ohne Set-Reihenfolge die Collection laden.",
   "exports.stick.notFound": "Kein Rekordbox-Stick erkannt. Den Stick-Ordner wählen oder PIONEER/rekordbox/export.pdb.",
+  "exports.stick.denied":
+    "Kein Lesezugriff auf diesen Ordner. Im Dialog erlauben oder die Datei export.pdb wählen.",
   "exports.stick.invalidXml": "Ungültiges XML.",
   "exports.stick.whyLibrary": "Aus der Stick-Bibliothek ins Set gelegt",
   "exports.stick.whyHistory": "Gespielte Reihenfolge aus der Rekordbox-History",
@@ -114,6 +116,8 @@ const en: Record<keyof typeof de, string> = {
 
   "exports.stick.noPlaylists": "The XML contains no playlists. To get keys without a set order, load the collection.",
   "exports.stick.notFound": "No rekordbox stick found. Choose the stick folder or PIONEER/rekordbox/export.pdb.",
+  "exports.stick.denied":
+    "No read access to this folder. Allow it in the dialog, or choose the export.pdb file.",
   "exports.stick.invalidXml": "Invalid XML.",
   "exports.stick.whyLibrary": "Added to the set from the stick library",
   "exports.stick.whyHistory": "Played order from the rekordbox history",

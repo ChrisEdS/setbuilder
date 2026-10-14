@@ -3,11 +3,13 @@ import {
   harmonicRelation,
   normalizeCamelot,
   orderByHarmonicPath,
-  relationLabel,
   type HarmonicRelation,
 } from "@/lib/harmonic";
+import { orderPhase, type SetSortTechnique } from "@/lib/sort-set";
 import { PHASE_ENERGY, energyStep } from "@/lib/energy";
+import { phaseLabel } from "@/lib/i18n/domain";
 import { LocalizedError } from "@/lib/i18n/error";
+import { isGeneratedNote } from "@/lib/i18n/stored";
 import { tDe, type Translate } from "@/lib/i18n/core";
 import { bestPhaseFor } from "@/lib/plan-b";
 import type { SpotifyTrack } from "@/lib/spotify";
@@ -311,7 +313,10 @@ function assignRolesAndTransitions(tracks: RoleInput[], t: Translate): SetTrack[
     } else if (isBoundary || keyPivot || bpmPivot || energyPivot) {
       role = "bridge";
       why = isBoundary
-        ? t("analysis.why.phasePivot", { from: prev?.phase ?? "", to: track.phase })
+        ? t("analysis.why.phasePivot", {
+            from: prev ? phaseLabel(t, prev.phase) : "",
+            to: phaseLabel(t, track.phase),
+          })
         : keyPivot
           ? relation === "clash"
             ? t("analysis.why.bridgeClash")
@@ -357,7 +362,8 @@ function assignRolesAndTransitions(tracks: RoleInput[], t: Translate): SetTrack[
       keyCamelot: track.keyCamelot,
       energy: track.energy ?? 0.5,
       energyLevel: track.energyLevel,
-      note: noteFor(track.phase, role, transition, relation, t),
+      // The row shows phase, role, transition and the live key relation; no machine note.
+      note: "",
       why,
       safetyAlt: "",
       harmonicFromPrev: relation,
@@ -384,21 +390,6 @@ function pickTransition(
   if (phase === "peak") return "loop-filter";
   if (phase === "release") return "echo-out";
   return "eq-swap";
-}
-
-function noteFor(
-  phase: SetPhaseId,
-  role: TrackRole,
-  transition: TransitionVerb,
-  relation: HarmonicRelation,
-  t: Translate,
-): string {
-  const bits = [
-    `${phase}/${role}`,
-    t("analysis.note.transition", { transition }),
-    relation !== "unknown" ? relationLabel(relation, t) : null,
-  ].filter(Boolean);
-  return bits.join(" · ");
 }
 
 function appendSafetyCrates(
@@ -452,18 +443,21 @@ function appendSafetyCrates(
 }
 
 /** Re-run Camelot path per phase on an existing draft (after keys/BPM filled). */
-export function reharmonizeDraft(draft: SetDraft, t: Translate = tDe): SetDraft {
+export function reharmonizeDraft(draft: SetDraft): SetDraft {
+  return reorderDraft(draft, "harmonic");
+}
+
+/** Reorder the performance inside each phase. Alternativen stay at the end. */
+export function reorderDraft(draft: SetDraft, technique: SetSortTechnique): SetDraft {
   const performance = draft.tracks.filter((track) => track.role !== "safety");
   const safeties = draft.tracks.filter((track) => track.role === "safety");
 
   const phased: SetTrack[] = [];
   for (const phase of PHASES) {
     const group = performance.filter((track) => track.phase === phase.id);
-    const ordered = orderByHarmonicPath(group, phase.id !== "release");
-    phased.push(...ordered);
+    phased.push(...orderPhase(group, phase.id, technique));
   }
 
-  // Recompute relations after reorder
   const withRelations = phased.map((track, index, arr) => {
     const prev = index > 0 ? arr[index - 1] : null;
     const relation = prev
@@ -472,7 +466,7 @@ export function reharmonizeDraft(draft: SetDraft, t: Translate = tDe): SetDraft 
     return {
       ...track,
       harmonicFromPrev: relation,
-      note: noteFor(track.phase, track.role, track.transition, relation, t),
+      note: isGeneratedNote(track.note) ? "" : track.note,
     };
   });
 
@@ -501,12 +495,8 @@ export function distributeRoles(draft: SetDraft, t: Translate = tDe): SetDraft {
         why: next.why,
         harmonicFromPrev: next.harmonicFromPrev,
         transition: track.transition === "unset" ? next.transition : track.transition,
-        // Stick imports keep the rekordbox comment only; drop generated notes
-        // from earlier versions (e.g. "open/groove · Übergang: long-blend"), in either language.
-        note:
-          track.source === "rekordbox" && /^\w+\/\w+ · (?:Übergang|Transition):/.test(track.note)
-            ? ""
-            : track.note,
+        // Drop machine notes from earlier versions ("open/groove · Übergang: long-blend").
+        note: isGeneratedNote(track.note) ? "" : track.note,
       };
     }),
   };

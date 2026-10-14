@@ -119,6 +119,58 @@ export function assessStick(input: StickHealthInput): StickHealth {
   };
 }
 
+/** The one button the strip shows. Everything else goes into the details fold. */
+export type StickAction = "prepare" | "eject" | "openRekordbox";
+
+export type StickActionCaps = {
+  /** We hold a writable directory handle and exportLibrary.db can be set aside. */
+  canPrepare: boolean;
+  /** The desktop helper can eject this volume. */
+  canEject: boolean;
+  /** rekordbox is installed on this machine. */
+  canOpenRekordbox: boolean;
+};
+
+/**
+ * One next step per verdict, pure and testable.
+ * broken → rekordbox; needsRekordbox → prepare (or rekordbox when we only saw files);
+ * hidden folder → rekordbox recreates PIONEER, else eject and try; ready or set aside → eject.
+ */
+export function primaryStickAction(
+  health: Pick<StickHealth, "verdict" | "libraryAside">,
+  caps: StickActionCaps,
+): StickAction | null {
+  const rekordbox = caps.canOpenRekordbox ? "openRekordbox" : null;
+  const eject = caps.canEject ? "eject" : null;
+  switch (health.verdict) {
+    case "broken":
+      return rekordbox;
+    case "empty":
+      return null;
+    case "needsRekordbox":
+      return caps.canPrepare ? "prepare" : rekordbox;
+    case "ready":
+      return eject;
+    case "hiddenFolder":
+      return health.libraryAside ? (eject ?? rekordbox) : (rekordbox ?? eject);
+    case "incomplete":
+      return null;
+  }
+}
+
+/** The actions that still make sense but are not the next step. */
+export function secondaryStickActions(
+  health: Pick<StickHealth, "verdict" | "libraryAside">,
+  caps: StickActionCaps & { canRestore: boolean },
+): Array<StickAction | "restore"> {
+  const primary = primaryStickAction(health, caps);
+  const list: Array<StickAction | "restore"> = [];
+  if (caps.canEject && primary !== "eject") list.push("eject");
+  if (caps.canOpenRekordbox && primary !== "openRekordbox") list.push("openRekordbox");
+  if (caps.canRestore && health.libraryAside) list.push("restore");
+  return list;
+}
+
 function foldPath(value: string): string {
   return value.replaceAll("\\", "/").replace(/^\/+/, "").toLowerCase();
 }

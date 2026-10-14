@@ -1,13 +1,54 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { PLAN_B_MIN, energyStep, parseEnergyLevel, planBCount, planBState } from "./energy.ts";
+import {
+  PLAN_B_MIN,
+  energyFromRekordboxTags,
+  energyStep,
+  parseEnergyField,
+  parseEnergyLevel,
+  planBCount,
+  planBState,
+} from "./energy.ts";
+import { parseKeyImportText } from "./key-import.ts";
 
 test("reads the Mixed In Key comment format", () => {
   assert.equal(parseEnergyLevel("7A - Energy 6"), 6);
   assert.equal(parseEnergyLevel("8B - Energy 10 - vocal in"), 10);
   assert.equal(parseEnergyLevel("energy: 4"), 4);
+  assert.equal(parseEnergyLevel("7A – Energie 6"), 6);
+  assert.equal(parseEnergyLevel("Energy6"), 6);
+  assert.equal(parseEnergyLevel("6 Energy"), 6);
+  assert.equal(parseEnergyLevel("Energy 7/10"), 7);
   assert.equal(parseEnergyLevel("Cue 7 bei 2:30"), undefined);
+  assert.equal(parseEnergyLevel("10mKEY:10m;"), undefined);
+  assert.equal(parseEnergyLevel("spotify:track:abc"), undefined);
   assert.equal(parseEnergyLevel(""), undefined);
+});
+
+test("CSV Grouping and Energy columns become Energy Levels", () => {
+  const grouped = parseKeyImportText(
+    "Artist,Title,Key,BPM,Grouping\nAda,Night Drive,8A,124,7\n",
+  );
+  assert.equal(grouped[0]?.energyLevel, 7);
+  const comments = parseKeyImportText(
+    "Artist,Title,Key,BPM,Comments\nAda,Night Drive,8A,124,7A - Energy 4\n",
+  );
+  assert.equal(comments[0]?.energyLevel, 4);
+});
+
+test("dedicated fields accept a lone level", () => {
+  assert.equal(parseEnergyField("6"), 6);
+  assert.equal(parseEnergyField("E8"), 8);
+  assert.equal(parseEnergyField("e 10"), 10);
+  assert.equal(parseEnergyField("vocal house"), undefined);
+  assert.equal(
+    energyFromRekordboxTags({ comment: "spotify:track:x", grouping: "7" }),
+    7,
+  );
+  assert.equal(
+    energyFromRekordboxTags({ comment: "7A - Energy 5", grouping: "9" }),
+    5,
+  );
 });
 
 test("energy steps follow the one-step rule", () => {

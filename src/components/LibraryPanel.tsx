@@ -319,11 +319,10 @@ export function LibraryPanel({
       note: t("library.sources.rekordboxNote"),
     },
     {
+      // The tab note says what Tidal does; whether credentials exist is said once, in the pane.
       id: "tidal",
       label: "Tidal",
-      note: tidalConfigured
-        ? t("library.sources.tidalNote")
-        : t("library.sources.tidalMissingNote"),
+      note: t("library.sources.tidalNote"),
     },
     {
       id: "csv",
@@ -448,34 +447,15 @@ export function LibraryPanel({
 
         {source === "csv" ? (
           <div className="library-csv-pane">
-            <div className="library-pane-grid">
-              <div>
-                <h3>{t("library.csv.title")}</h3>
-                <p>
-                  {rich(t("library.csv.body"), {
-                    camelot: <code>8A</code>,
-                    minor: <code>Am</code>,
-                    major: <code>C</code>,
-                  })}
-                </p>
-              </div>
-              <div className="library-inline-actions">
-                <button
-                  type="button"
-                  className="btn ghost"
-                  onClick={() => setText(EXAMPLE)}
-                >
-                  {t("library.csv.example")}
-                </button>
-                <button
-                  type="button"
-                  className="btn"
-                  disabled={!text.trim() || draft.tracks.length === 0}
-                  onClick={() => applyText(text)}
-                >
-                  {t("library.csv.match")}
-                </button>
-              </div>
+            <div>
+              <h3>{t("library.csv.title")}</h3>
+              <p>
+                {rich(t("library.csv.body"), {
+                  camelot: <code>8A</code>,
+                  minor: <code>Am</code>,
+                  major: <code>C</code>,
+                })}
+              </p>
             </div>
             <textarea
               value={text}
@@ -484,6 +464,25 @@ export function LibraryPanel({
               placeholder={"Artist,Title,Key,BPM\n…"}
               aria-label={t("library.csv.aria")}
             />
+            {/* Actions sit under the field they act on; the primary one first. */}
+            <div className="library-inline-actions">
+              <button
+                type="button"
+                className="btn"
+                disabled={!text.trim() || draft.tracks.length === 0}
+                title={draft.tracks.length === 0 ? t("library.status.noSet") : undefined}
+                onClick={() => applyText(text)}
+              >
+                {t("library.csv.match")}
+              </button>
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={() => setText(EXAMPLE)}
+              >
+                {t("library.csv.example")}
+              </button>
+            </div>
           </div>
         ) : null}
       </div>
@@ -591,7 +590,7 @@ export function LibraryPanel({
                   ) : null}
                   <div>
                     <strong>{row.title}</strong>
-                    <span>{row.artist || "Unknown"}</span>
+                    <span>{row.artist || t("common.unknown")}</span>
                   </div>
                   <em>
                     {row.key || "—"}

@@ -21,3 +21,5 @@ export const slotHint = (t: Translate, id: SetSlotKind) =>
   t(`domain.slot.${id}.hint`);
 export const transitionLabel = (t: Translate, id: TransitionVerb) =>
   t(`domain.transition.${id}`);
+export const transitionHint = (t: Translate, id: TransitionVerb) =>
+  t(`domain.transition.${id}.hint`);

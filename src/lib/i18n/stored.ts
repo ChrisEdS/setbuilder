@@ -42,16 +42,6 @@ export const WHY_KEYS = [
 
 export type WhyKey = (typeof WHY_KEYS)[number];
 
-const RELATION_KEYS = [
-  "analysis.relation.same",
-  "analysis.relation.relative",
-  "analysis.relation.energyBoost",
-  "analysis.relation.adjacent",
-  "analysis.relation.contrast",
-  "analysis.relation.clash",
-  "analysis.relation.unknown",
-] as const satisfies readonly MessageKey[];
-
 type Template = { key: MessageKey; regex: RegExp; names: string[] };
 
 function escapeRegex(text: string): string {
@@ -100,7 +90,6 @@ function matchTemplates(
 
 let whyTemplates: Template[] | null = null;
 let transitionTemplates: Template[] | null = null;
-let relationTemplates: Template[] | null = null;
 let safetyNoteTemplates: Template[] | null = null;
 
 /** A stored `track.why` in the current language; unknown text is returned unchanged. */
@@ -112,27 +101,28 @@ export function localizeWhy(why: string | undefined, t: Translate): string {
 }
 
 /**
- * A stored `track.note` in the current language. Only the generated cues are recognised
- * ("open/groove · Übergang: long-blend · Nachbar-Key (±1)" and the Plan B note); a note
- * the user typed or edited is returned unchanged.
+ * Earlier versions wrote a machine note onto every sorted track
+ * ("open/groove · Übergang: long-blend · Nachbar-Key (±1)"). It repeats what the row
+ * already shows and leaks raw ids, so it is dropped wherever it still sits in a saved draft.
+ */
+export function isGeneratedNote(note: string | undefined): boolean {
+  if (!note) return false;
+  const parts = note.split(" · ");
+  if (parts.length < 2 || parts.length > 3) return false;
+  if (!/^\w+\/\w+$/.test(parts[0])) return false;
+  transitionTemplates ??= compileAll(["analysis.note.transition"]);
+  // "phase/role · Übergang: x" is enough; the third part was a relation label whose
+  // wording has changed over time.
+  return Boolean(matchTemplates(transitionTemplates, parts[1]));
+}
+
+/**
+ * A stored `track.note` in the current language. The Plan B note is translated, a legacy
+ * machine note disappears, and a note the user typed or edited is returned unchanged.
  */
 export function localizeNote(note: string | undefined, t: Translate): string {
   if (!note) return "";
   safetyNoteTemplates ??= compileAll(["analysis.note.safety"]);
   if (matchTemplates(safetyNoteTemplates, note)) return t("analysis.note.safety");
-
-  const parts = note.split(" · ");
-  if (parts.length < 2 || parts.length > 3) return note;
-  if (!/^\w+\/\w+$/.test(parts[0])) return note;
-  transitionTemplates ??= compileAll(["analysis.note.transition"]);
-  const transition = matchTemplates(transitionTemplates, parts[1]);
-  if (!transition) return note;
-  const out = [parts[0], t("analysis.note.transition", transition.vars)];
-  if (parts.length === 3) {
-    relationTemplates ??= compileAll(RELATION_KEYS);
-    const relation = matchTemplates(relationTemplates, parts[2]);
-    if (!relation) return note;
-    out.push(t(relation.key));
-  }
-  return out.join(" · ");
+  return isGeneratedNote(note) ? "" : note;
 }

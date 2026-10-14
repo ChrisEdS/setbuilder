@@ -1,3 +1,4 @@
+import { LocalizedError } from "@/lib/i18n/error";
 import { readRekordboxStick, type RekordboxStickRead } from "@/lib/rekordbox-stick";
 import { rememberStickFiles } from "@/lib/stick-audio";
 import { findStickDatabase, type DirLike, type FileLike } from "@/lib/rekordbox-stick-write";
@@ -11,13 +12,32 @@ const DB_NAME = "setform-stick";
 const STORE = "handles";
 const KEY = "root";
 
-type Picker = (options: { mode: "readwrite" }) => Promise<PersistableDir>;
+type PickerMode = "read" | "readwrite";
+type Picker = (options?: { mode?: PickerMode }) => Promise<PersistableDir>;
 
 export function stickPicker(): Picker | null {
   if (typeof window === "undefined") return null;
   const fn = (window as unknown as { showDirectoryPicker?: Picker }).showDirectoryPicker;
   return typeof fn === "function" ? fn.bind(window) : null;
 }
+
+export function isPickerCancel(error: unknown): boolean {
+  return (error as { name?: string }).name === "AbortError";
+}
+
+/** Picker exists but the OS dialog cannot open (no user gesture, Electron, iframe). */
+export function isPickerBlocked(error: unknown): boolean {
+  const name = (error as { name?: string }).name;
+  return name === "SecurityError" || name === "NotAllowedError";
+}
+
+export function pickerFailureKind(error: unknown): "cancel" | "blocked" | "error" {
+  if (isPickerCancel(error)) return "cancel";
+  if (isPickerBlocked(error)) return "blocked";
+  return "error";
+}
+
+let sessionHandle: PersistableDir | null = null;
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -29,6 +49,8 @@ function openDb(): Promise<IDBDatabase> {
 }
 
 export async function rememberStickHandle(handle: PersistableDir): Promise<void> {
+  sessionHandle = handle;
+  if (typeof indexedDB === "undefined") return;
   const db = await openDb();
   await new Promise<void>((resolve, reject) => {
     const tx = db.transaction(STORE, "readwrite");
@@ -40,6 +62,7 @@ export async function rememberStickHandle(handle: PersistableDir): Promise<void>
 }
 
 export async function loadPersistedStickHandle(): Promise<PersistableDir | null> {
+  if (sessionHandle) return sessionHandle;
   if (typeof indexedDB === "undefined") return null;
   try {
     const db = await openDb();
@@ -50,6 +73,7 @@ export async function loadPersistedStickHandle(): Promise<PersistableDir | null>
       request.onerror = () => reject(request.error);
     });
     db.close();
+    if (handle) sessionHandle = handle;
     return handle;
   } catch {
     return null;
@@ -136,6 +160,17 @@ export async function hydrateStickMedia(root: DirLike, paths: string[]): Promise
 }
 
 export async function readStickFromHandle(root: DirLike): Promise<RekordboxStickRead> {
+  const persistable = root as PersistableDir;
+  if (
+    (persistable.queryPermission || persistable.requestPermission) &&
+    !(await stickPermission(persistable, "read", true))
+  ) {
+    throw new LocalizedError(
+      "exports.stick.denied",
+      undefined,
+      "Kein Lesezugriff auf diesen Ordner. Im Dialog erlauben oder die Datei export.pdb wählen.",
+    );
+  }
   const location = await findStickDatabase(root);
   const buffer = await (await location.file.getFile()).arrayBuffer();
   const file = new File([buffer], "export.pdb");
@@ -150,17 +185,26 @@ export async function readStickFromHandle(root: DirLike): Promise<RekordboxStick
   return readRekordboxStick([file]);
 }
 
-export async function pickAndRememberStick(): Promise<PersistableDir | null> {
+export async function pickAndRememberStick(
+  mode: PickerMode = "readwrite",
+): Promise<PersistableDir | null> {
   const pick = stickPicker();
   if (!pick) return null;
+  let handle: PersistableDir;
   try {
-    const handle = await pick({ mode: "readwrite" });
-    await rememberStickHandle(handle);
-    return handle;
+    handle = await pick({ mode });
   } catch (error) {
-    if ((error as { name?: string }).name === "AbortError") return null;
+    if (isPickerCancel(error)) return null;
     throw error;
   }
+  // IndexedDB can abort (same AbortError name) when storing a volume handle.
+  // The pick already succeeded — keep the handle for this session.
+  try {
+    await rememberStickHandle(handle);
+  } catch {
+    /* optional: write-dialog can ask again */
+  }
+  return handle;
 }
 
 export async function requestStickEject(name: string): Promise<void> {

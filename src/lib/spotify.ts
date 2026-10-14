@@ -31,7 +31,8 @@ let cachedToken: { value: string; expiresAt: number } | null = null;
 function requireEnv(name: string): string {
   const value = process.env[name];
   if (!value) {
-    throw new Error(`Missing ${name}. Add it to .env.local`);
+    // The user-facing text follows the request language; the message keeps the machine marker.
+    throw new LocalizedError("api.spotify.notConfigured", undefined, `Missing ${name}. Add it to .env.local`);
   }
   return value;
 }

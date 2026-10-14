@@ -1,4 +1,6 @@
+import { parseBpm } from "./harmonic";
 import { tDe, type Translate } from "./i18n/core";
+import { isGeneratedNote } from "./i18n/stored";
 import type { SetDraft, SetTrack } from "./set";
 import { stickAlternativesPlaylistName } from "./stick-names";
 
@@ -17,7 +19,14 @@ export function trackFilePath(track: {
   uri?: string;
 }): string {
   if (track.filePath?.trim()) return track.filePath.trim();
-  if (track.source === "rekordbox" && track.note?.includes("/")) return track.note.trim();
+  // Early stick imports kept the file path in the note.
+  if (
+    track.source === "rekordbox" &&
+    track.note?.includes("/") &&
+    !isGeneratedNote(track.note)
+  ) {
+    return track.note.trim();
+  }
   if (track.uri?.startsWith("/")) return track.uri.trim();
   return "";
 }
@@ -38,7 +47,9 @@ function performance(tracks: SetTrack[]): SetTrack[] {
 
 function xmlTrack(track: SetTrack, id: number, t: Translate): string {
   const seconds = track.durationMs ? Math.round(track.durationMs / 1000) : 0;
-  const bpm = track.bpm ? Number(track.bpm).toFixed(2) : "";
+  // "122,5" from a German keyboard must not become AverageBpm="NaN".
+  const bpmValue = parseBpm(track.bpm);
+  const bpm = bpmValue == null ? "" : bpmValue.toFixed(2);
   const location = locationFor(track);
   const comment = [
     track.comment?.trim(),
@@ -126,7 +137,7 @@ export function buildM3uAlternatives(draft: SetDraft, t: Translate = tDe): strin
   return `#EXTM3U\n# ${t("exports.pdf.alternatives")}\n${m3uBody(alternatives).join("\n")}\n`;
 }
 
-export function boothFileName(title: string, extension: "m3u" | "xml"): string {
+export function boothFileName(title: string, extension: "m3u" | "xml" | "txt"): string {
   const slug = (title || "setform-set")
     .replace(/[^\p{L}\p{N}]+/gu, "-")
     .replace(/^-|-$/g, "");

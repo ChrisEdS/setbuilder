@@ -5,13 +5,27 @@ const de = {
   "analysis.energy.delta": "Energie {delta}",
 
   // Harmonic relations and mix joins
-  "analysis.relation.same": "gleiche Key",
+  "analysis.relation.same": "Gleicher Key",
+  "analysis.relation.same.hint":
+    "Gleicher Camelot-Key. Melodien dürfen überlappen — weich mischen.",
   "analysis.relation.relative": "Relative Dur/Moll",
+  "analysis.relation.relative.hint":
+    "A↔B auf derselben Zahl, z. B. 8A → 8B. Relatives Dur/Moll, fast so weich wie derselbe Key.",
   "analysis.relation.energyBoost": "Energy Boost (+2)",
+  "analysis.relation.energyBoost.hint":
+    "Zwei Schritte vorwärts, gleicher Buchstabe (8A → 10A). Hebt die Energie — sparsam einsetzen.",
   "analysis.relation.adjacent": "Nachbar-Key (±1)",
-  "analysis.relation.contrast": "Key-Contrast",
-  "analysis.relation.clash": "Harmonic clash",
+  "analysis.relation.adjacent.hint":
+    "Nächste Zahl auf dem Wheel, gleicher Buchstabe (8A → 9A oder 7A). Sicherer Standard-Mix.",
+  "analysis.relation.contrast": "Key-Kontrast",
+  "analysis.relation.contrast.hint":
+    "Weiter als ±1, aber kein Clash. Klingt spannend — mit EQ oder kurzem Break mischen.",
+  "analysis.relation.clash": "Key-Clash",
+  "analysis.relation.clash.hint":
+    "Keys liegen weit auseinander. Melodien beißen sich, außer du brichst, filterst oder EQst. Sortieren, tauschen oder den Key ändern senkt die Zahl.",
   "analysis.relation.unknown": "Key offen",
+  "analysis.relation.unknown.hint":
+    "Mindestens ein Track hat keinen Camelot-Key. In der Setliste setzen, dann zählt der Übergang im Mix-Score.",
   "analysis.mix.energyJump": "{energy} (Sprung)",
   "analysis.side.before": "davor",
   "analysis.side.after": "danach",
@@ -99,10 +113,20 @@ const de = {
   "analysis.energyPath.note":
     "Energy Level 1–10 pro Track gegen das Zielband der Phase. Energie entscheidet, wie der Raum sich anfühlt. Der Key sorgt nur dafür, dass es nicht schief klingt.",
   "analysis.energyPath.statKnown": "Tracks mit Energie",
+  "analysis.energyPath.statKnownHint":
+    "Wie viele Performance-Tracks ein Energy Level 1–10 haben (Mixed In Key). Ohne Wert bleibt der Balken leer. In der Setliste setzen oder Tags neu laden.",
   "analysis.energyPath.statJumps": "Sprünge ab 3 Stufen",
+  "analysis.energyPath.statJumpsHint":
+    "Energie springt um drei oder mehr Stufen. Wirkt abrupt — außer als Reset über einen Break. Reihenfolge oder Energie in der Setliste ändern das.",
   "analysis.energyPath.statOutside": "Außerhalb Phasenband",
+  "analysis.energyPath.statOutsideHint":
+    "Energy Level liegt nicht im Zielband der Phase (Open eher 3–5, Peak 8–10). Phase oder Energie in der Setliste ändern.",
+  "analysis.energyPath.planBHint":
+    "Alternativen für diese Phase, wenn der Floor dreht. Mindestens zwei empfohlen. Unter Rollen nachlegen.",
+  "analysis.energyPath.targetHint":
+    "Das Energie-Fenster dieser Phase. Balken außerhalb sind gelb.",
   "analysis.energyPath.noLevels":
-    "Noch keine Energy Levels. Mixed In Key schreibt sie als Kommentar („7A - Energy 6“) in deine rekordbox-Tracks. In rekordbox die Tags neu laden („Reload Tags“), dann Stick oder Collection erneut laden. Du kannst die Energie auch in der Setliste pro Track von Hand setzen.",
+    "Noch keine Energy Levels. Mixed In Key schreibt sie als Kommentar („7A - Energy 6“) oder ins Grouping. In rekordbox die Tags neu laden („Reload Tags“), dann Stick oder die Collection-XML erneut laden. Grouping kommt über die XML, nicht über den USB-export.pdb. Du kannst die Energie auch in der Setliste pro Track von Hand setzen.",
   "analysis.energyPath.target": "Ziel {min}–{max}",
   "analysis.energyPath.bandLabel": "Ziel",
   "analysis.energyPath.planB": "Plan B: {count}",
@@ -124,15 +148,34 @@ const de = {
     "Mixed In Key liegt beim Key bei etwa 89 %. Klingt ein Übergang falsch, den relativen Dur- oder Moll-Key probieren. Kritische Übergänge vorher testen und pro Richtung zwei Ausweichtracks bereithalten.",
 
   // HarmonicPath component. `**text**` marks bold text.
-  "analysis.harmonic.ariaLabel": "Harmonic path",
-  "analysis.harmonic.title": "Harmonic Path",
+  "analysis.harmonic.ariaLabel": "Key-Verlauf",
+  "analysis.harmonic.title": "Key-Verlauf",
   "analysis.harmonic.titleEmbedded": "Key-Verlauf",
   "analysis.harmonic.note":
     "Camelot entlang der gespielten Reihenfolge. „Harmonisch sortieren“ rückt verwandte Keys zusammen und folgt dabei der Energie, soweit Energy Levels da sind. Ein Clash vor dem Peak bleibt erlaubt.",
   "analysis.harmonic.harmonize": "Harmonisch sortieren",
   "analysis.harmonic.statKeys": "Keys gesetzt",
+  "analysis.harmonic.statKeysHint":
+    "Anteil der Performance-Tracks mit Camelot-Key. Ohne Key zählt der Übergang nicht im Mix-Score. In der Setliste setzen.",
   "analysis.harmonic.statScore": "Mix-Score",
-  "analysis.harmonic.statClashes": "Clashes",
+  "analysis.harmonic.statScoreHint":
+    "Mittel aller Übergänge: Key und Energie zu gleichen Teilen, plus eine kleine BPM-Korrektur. Über 75 % ist weich, unter 50 % knallt es oft. Sortieren, ziehen oder Key/Energie ändern das.",
+  "analysis.harmonic.statClashes.one": "Key-Clash",
+  "analysis.harmonic.statClashes.other": "Key-Clashes",
+  "analysis.harmonic.statClashesHint":
+    "Übergänge, deren Keys auf dem Camelot-Wheel weit auseinanderliegen. Melodien beißen sich, außer du brichst oder EQst. Sortieren, tauschen oder den Key ändern senkt die Zahl.",
+  "analysis.harmonic.camelotHint":
+    "{key}: A = Moll (kräftiger), B = Dur (heller). Gleicher Key, ±1 oder A↔B auf derselben Zahl mischt weich. In der Setliste ändern.",
+  "analysis.harmonic.camelotOpenHint":
+    "Noch kein Camelot-Key. In der Setliste setzen, dann zählt der Übergang im Mix-Score.",
+  "analysis.harmonic.advice.ok":
+    "Mix-Score {score} % — die Keys liegen nah beieinander. Reihenfolge, Key oder Energie in der Setliste ändern das.",
+  "analysis.harmonic.advice.mid":
+    "Mix-Score {score} % — mehrere Übergänge sind weit. Sortieren oder einzelne Keys in der Setliste ändern hebt die Zahl.",
+  "analysis.harmonic.advice.clashes":
+    "{clashes} Clashes, Mix-Score {score} %. Ein Clash heißt: der nächste Key ist weit weg. Sortieren, den Track tauschen oder den Key ändern senkt die Zahl.",
+  "analysis.harmonic.advice.clashOne":
+    "1 Clash, Mix-Score {score} %. Ein Clash heißt: der nächste Key ist weit weg. Sortieren, den Track tauschen oder den Key ändern löst ihn.",
   "analysis.harmonic.emptyTitle": "Noch kein Set.",
   "analysis.harmonic.emptyHint":
     "Zuerst eine Playlist vom Stick laden, dann erscheint hier der Key-Verlauf.",
@@ -152,12 +195,26 @@ const en: Record<keyof typeof de, string> = {
   "analysis.energy.delta": "Energy {delta}",
 
   "analysis.relation.same": "same key",
+  "analysis.relation.same.hint":
+    "Same Camelot key. Melodies can overlap — mix smoothly.",
   "analysis.relation.relative": "Relative major/minor",
+  "analysis.relation.relative.hint":
+    "A↔B on the same number, e.g. 8A → 8B. Relative major/minor, almost as smooth as the same key.",
   "analysis.relation.energyBoost": "Energy Boost (+2)",
+  "analysis.relation.energyBoost.hint":
+    "Two steps forward, same letter (8A → 10A). Lifts the energy — use sparingly.",
   "analysis.relation.adjacent": "Adjacent key (±1)",
+  "analysis.relation.adjacent.hint":
+    "Next number on the wheel, same letter (8A → 9A or 7A). The safe standard mix.",
   "analysis.relation.contrast": "Key contrast",
+  "analysis.relation.contrast.hint":
+    "Farther than ±1, but not a clash. Sounds tense — mix with EQ or a short break.",
   "analysis.relation.clash": "Harmonic clash",
+  "analysis.relation.clash.hint":
+    "Keys sit far apart. Melodies fight unless you break, filter or EQ. Sorting, swapping or changing the key lowers the number.",
   "analysis.relation.unknown": "Key unknown",
+  "analysis.relation.unknown.hint":
+    "At least one track has no Camelot key. Set it in the setlist so the transition counts in the mix score.",
   "analysis.mix.energyJump": "{energy} (jump)",
   "analysis.side.before": "before",
   "analysis.side.after": "after",
@@ -240,10 +297,20 @@ const en: Record<keyof typeof de, string> = {
   "analysis.energyPath.note":
     "Energy Level 1–10 per track against the target band of the phase. Energy decides how the room feels. The key only makes sure it doesn't sound off.",
   "analysis.energyPath.statKnown": "Tracks with energy",
+  "analysis.energyPath.statKnownHint":
+    "How many performance tracks have an Energy Level 1–10 (Mixed In Key). Without a value the bar stays empty. Set it in the setlist or reload tags.",
   "analysis.energyPath.statJumps": "Jumps of 3+ levels",
+  "analysis.energyPath.statJumpsHint":
+    "Energy jumps three or more levels. Feels abrupt — unless it is a reset over a break. Order or energy in the setlist change this.",
   "analysis.energyPath.statOutside": "Outside phase band",
+  "analysis.energyPath.statOutsideHint":
+    "Energy Level is outside the phase target band (Open closer to 3–5, Peak 8–10). Change the phase or the energy in the setlist.",
+  "analysis.energyPath.planBHint":
+    "Alternatives for this phase if the floor turns. At least two recommended. Add more under Roles.",
+  "analysis.energyPath.targetHint":
+    "The energy window of this phase. Bars outside it turn yellow.",
   "analysis.energyPath.noLevels":
-    "No Energy Levels yet. Mixed In Key writes them as a comment (“7A - Energy 6”) into your rekordbox tracks. In rekordbox reload the tags (“Reload Tags”), then load the stick or collection again. You can also set the energy by hand per track in the setlist.",
+    "No Energy Levels yet. Mixed In Key writes them as a comment (“7A - Energy 6”) or into Grouping. In rekordbox reload the tags (“Reload Tags”), then load the stick or the collection XML again. Grouping comes from the XML, not from the USB export.pdb. You can also set the energy by hand per track in the setlist.",
   "analysis.energyPath.target": "Target {min}–{max}",
   "analysis.energyPath.bandLabel": "Target",
   "analysis.energyPath.planB": "Plan B: {count}",
@@ -271,8 +338,27 @@ const en: Record<keyof typeof de, string> = {
     "Camelot along the played order. “Sort harmonically” moves related keys together and follows the energy as far as Energy Levels exist. A clash before the peak stays allowed.",
   "analysis.harmonic.harmonize": "Sort harmonically",
   "analysis.harmonic.statKeys": "Keys set",
+  "analysis.harmonic.statKeysHint":
+    "Share of performance tracks that have a Camelot key. Without a key the transition does not count in the mix score. Set it in the setlist.",
   "analysis.harmonic.statScore": "Mix score",
-  "analysis.harmonic.statClashes": "Clashes",
+  "analysis.harmonic.statScoreHint":
+    "Average of every transition: key and energy in equal parts, plus a small BPM correction. Above 75 % is smooth, below 50 % often clashes. Sorting, dragging or changing key/energy changes this.",
+  "analysis.harmonic.statClashes.one": "Clash",
+  "analysis.harmonic.statClashes.other": "Clashes",
+  "analysis.harmonic.statClashesHint":
+    "Transitions whose keys sit far apart on the Camelot wheel. Melodies fight unless you break or EQ. Sorting, swapping or changing the key lowers the number.",
+  "analysis.harmonic.camelotHint":
+    "{key}: A = minor (stronger), B = major (lighter). Same key, ±1 or A↔B on the same number mix smoothly. Change it in the setlist.",
+  "analysis.harmonic.camelotOpenHint":
+    "No Camelot key yet. Set it in the setlist so the transition counts in the mix score.",
+  "analysis.harmonic.advice.ok":
+    "Mix score {score} % — the keys sit close together. Order, key or energy in the setlist change this.",
+  "analysis.harmonic.advice.mid":
+    "Mix score {score} % — several transitions are far. Sorting or changing a key in the setlist raises the number.",
+  "analysis.harmonic.advice.clashes":
+    "{clashes} clashes, mix score {score} %. A clash means the next key is far away. Sorting, swapping the track or changing the key lowers the number.",
+  "analysis.harmonic.advice.clashOne":
+    "1 clash, mix score {score} %. A clash means the next key is far away. Sorting, swapping the track or changing the key resolves it.",
   "analysis.harmonic.emptyTitle": "No set yet.",
   "analysis.harmonic.emptyHint":
     "Load a playlist from the stick first, then the key path shows up here.",

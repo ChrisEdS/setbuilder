@@ -22,7 +22,11 @@ import {
 
 const LANG_EVENT = "setform-lang";
 
+/** The choice of this session, so the switch still works when storage is blocked. */
+let sessionLang: Lang | null = null;
+
 function readLang(): Lang {
+  if (sessionLang) return sessionLang;
   try {
     const stored = localStorage.getItem(LANG_STORAGE_KEY);
     if (isLang(stored)) return stored;
@@ -33,10 +37,15 @@ function readLang(): Lang {
 }
 
 function subscribe(onChange: () => void) {
-  window.addEventListener("storage", onChange);
+  // Another tab switched: follow storage again.
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === null || event.key === LANG_STORAGE_KEY) sessionLang = null;
+    onChange();
+  };
+  window.addEventListener("storage", onStorage);
   window.addEventListener(LANG_EVENT, onChange);
   return () => {
-    window.removeEventListener("storage", onChange);
+    window.removeEventListener("storage", onStorage);
     window.removeEventListener(LANG_EVENT, onChange);
   };
 }
@@ -56,6 +65,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const lang = useSyncExternalStore<Lang>(subscribe, readLang, () => "de");
 
   const setLang = useCallback((next: Lang) => {
+    sessionLang = next;
     try {
       localStorage.setItem(LANG_STORAGE_KEY, next);
     } catch {

@@ -1,9 +1,12 @@
 "use client";
 
+import type { CSSProperties } from "react";
+import { Hint } from "@/components/Hint";
 import {
   camelotColor,
   harmonicRelation,
   pathStats,
+  relationHint,
   relationLabel,
 } from "@/lib/harmonic";
 import { useI18n } from "@/lib/i18n/react";
@@ -58,15 +61,27 @@ export function HarmonicPath({ tracks, onHarmonize, embedded }: Props) {
 
       <div className="harm-stats">
         <div>
-          <strong>{coverage}%</strong>
-          <span>{t("analysis.harmonic.statKeys")}</span>
+          <strong>{stats.total === 0 ? "—" : `${coverage}%`}</strong>
+          <Hint
+            className="stat-label"
+            text={t("analysis.harmonic.statKeysHint")}
+            mark={performance.length > 0}
+          >
+            {t("analysis.harmonic.statKeys")}
+          </Hint>
           <div className="mini-bar" aria-hidden>
             <i style={{ width: `${coverage}%` }} />
           </div>
         </div>
         <div>
           <strong>{scorePct == null ? "—" : `${scorePct}%`}</strong>
-          <span>{t("analysis.harmonic.statScore")}</span>
+          <Hint
+            className="stat-label"
+            text={t("analysis.harmonic.statScoreHint")}
+            mark={performance.length > 0}
+          >
+            {t("analysis.harmonic.statScore")}
+          </Hint>
           <div className="mini-bar" aria-hidden>
             <i
               className={
@@ -84,9 +99,44 @@ export function HarmonicPath({ tracks, onHarmonize, embedded }: Props) {
         </div>
         <div>
           <strong>{stats.clashes}</strong>
-          <span>{t("analysis.harmonic.statClashes")}</span>
+          <Hint
+            className="stat-label"
+            text={t("analysis.harmonic.statClashesHint")}
+            mark={performance.length > 0}
+          >
+            {t(
+              stats.clashes === 1
+                ? "analysis.harmonic.statClashes.one"
+                : "analysis.harmonic.statClashes.other",
+            )}
+          </Hint>
         </div>
       </div>
+
+      {performance.length >= 2 && scorePct != null ? (
+        <p className={stats.clashes > 0 ? "harm-advice warn" : "harm-advice"}>
+          {stats.clashes === 1
+            ? t("analysis.harmonic.advice.clashOne", { score: scorePct })
+            : stats.clashes > 1
+              ? t("analysis.harmonic.advice.clashes", {
+                  clashes: stats.clashes,
+                  score: scorePct,
+                })
+            : scorePct >= 75
+              ? t("analysis.harmonic.advice.ok", { score: scorePct })
+              : t("analysis.harmonic.advice.mid", { score: scorePct })}
+          {stats.clashes > 0 ? (
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={onHarmonize}
+              disabled={performance.length < 2}
+            >
+              {t("analysis.harmonic.harmonize")}
+            </button>
+          ) : null}
+        </p>
+      ) : null}
 
       {performance.length === 0 ? (
         <div className="empty">
@@ -105,9 +155,12 @@ export function HarmonicPath({ tracks, onHarmonize, embedded }: Props) {
                   );
             const color = camelotColor(track.keyCamelot);
             return (
-              <li key={track.id}>
+              <li key={track.id} style={{ "--i": index } as CSSProperties}>
                 {index > 0 ? (
-                  <span className={`harm-link harm-${relation}`}>
+                  <span
+                    className={`harm-link harm-${relation}`}
+                    title={relationHint(relation, t)}
+                  >
                     {relationLabel(relation, t)}
                   </span>
                 ) : (
@@ -125,7 +178,15 @@ export function HarmonicPath({ tracks, onHarmonize, embedded }: Props) {
                       : undefined
                   }
                 >
-                  <strong>
+                  <strong
+                    title={
+                      track.keyCamelot
+                        ? t("analysis.harmonic.camelotHint", {
+                            key: track.keyCamelot,
+                          })
+                        : t("analysis.harmonic.camelotOpenHint")
+                    }
+                  >
                     {color ? (
                       <i
                         className="key-dot"

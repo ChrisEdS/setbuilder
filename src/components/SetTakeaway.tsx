@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import { useI18n } from "@/lib/i18n/react";
+import type { SetSortTechnique } from "@/lib/sort-set";
 
 function Tip({
   text,
@@ -133,6 +134,44 @@ function MenuItem({
       <strong>{title}</strong>
       <span>{hint}</span>
     </button>
+  );
+}
+
+const SORTS: SetSortTechnique[] = [
+  "harmonic",
+  "energy",
+  "tempo",
+  "journey",
+  "waves",
+];
+
+export function SetSortMenu({
+  disabled,
+  onSort,
+}: {
+  disabled?: boolean;
+  onSort: (technique: SetSortTechnique) => void;
+}) {
+  const { t } = useI18n();
+  return (
+    <Menu
+      label={
+        <>
+          {t("builder.tool.sort")} <span aria-hidden="true">▾</span>
+        </>
+      }
+      disabled={disabled}
+    >
+      {SORTS.map((id) => (
+        <MenuItem
+          key={id}
+          title={t(`builder.sort.${id}`)}
+          hint={t(`builder.sort.${id}Hint`)}
+          disabled={disabled}
+          onClick={() => onSort(id)}
+        />
+      ))}
+    </Menu>
   );
 }
 

@@ -27,6 +27,8 @@ const de = {
   "api.resolve.beatportLimited": "Beatport-Metadaten sind limited — Titel aus URL, Kommentar/BPM kannst du manuell ergänzen.",
 
   // Spotify API failures
+  "api.spotify.notConfigured":
+    "Spotify ist nicht eingerichtet. Client ID und Secret unter „Verbindungen & Setups“ eintragen — für rekordbox allein ist das nicht nötig.",
   "api.spotify.trackFailed": "Track laden fehlgeschlagen ({status}): {body}",
   "api.spotify.albumFailed": "Album laden fehlgeschlagen ({status}): {body}",
   "api.spotify.playlistsFailed": "Eigene Playlists laden fehlgeschlagen ({status}): {body}",
@@ -34,6 +36,8 @@ const de = {
   "api.spotify.playlistTracksFailed": "Playlist-Tracks fehlgeschlagen ({status}): {body}",
 
   // Tidal playlists
+  "api.tidal.notConfigured":
+    "Tidal ist nicht eingerichtet. Client ID und Secret unter „Verbindungen & Setups“ eintragen.",
   "api.tidal.playlistUnreadable": "Tidal-Playlist nicht lesbar. Mit Tidal verbinden oder einen öffentlichen Playlist-Link nutzen.",
   "api.tidal.playlistFailed": "Tidal-Playlist fehlgeschlagen ({status})",
   "api.tidal.playlistEmpty": "Tidal-Playlist enthält keine lesbaren Tracks.",
@@ -81,12 +85,16 @@ const en: Record<keyof typeof de, string> = {
   "api.resolve.tidalCollection": "Tidal playlist/album: prefer a track link, or set the title manually.",
   "api.resolve.beatportLimited": "Beatport metadata is limited — the title comes from the URL, you can add comment/BPM manually.",
 
+  "api.spotify.notConfigured":
+    "Spotify is not set up. Enter the client ID and secret under “Connections & setups” — rekordbox alone does not need it.",
   "api.spotify.trackFailed": "Loading track failed ({status}): {body}",
   "api.spotify.albumFailed": "Loading album failed ({status}): {body}",
   "api.spotify.playlistsFailed": "Loading your playlists failed ({status}): {body}",
   "api.spotify.playlistFailed": "Loading playlist failed ({status}): {body}",
   "api.spotify.playlistTracksFailed": "Loading playlist tracks failed ({status}): {body}",
 
+  "api.tidal.notConfigured":
+    "Tidal is not set up. Enter the client ID and secret under “Connections & setups”.",
   "api.tidal.playlistUnreadable": "Tidal playlist not readable. Connect Tidal or use a public playlist link.",
   "api.tidal.playlistFailed": "Tidal playlist failed ({status})",
   "api.tidal.playlistEmpty": "The Tidal playlist has no readable tracks.",

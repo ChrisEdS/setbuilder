@@ -18,6 +18,8 @@ export type PdbTrack = {
   bpm: string;
   durationMs: number;
   comment: string;
+  /** Remix / mix name — Mixed In Key sometimes writes Energy here. */
+  mixName: string;
   filePath: string;
   filename: string;
   /** Cover path on the stick, e.g. /PIONEER/Artwork/00001/a1.jpg */
@@ -192,6 +194,7 @@ function readTracks(
       bpm: tempo ? String(Math.round(tempo / 100)) : "",
       durationMs: duration * 1000,
       comment: trackString(view, row, pageEnd, 16),
+      mixName: trackString(view, row, pageEnd, 12),
       filePath: trackString(view, row, pageEnd, 20),
       filename,
       artworkPath: artwork.get(view.getUint32(row + 28, true)) || "",

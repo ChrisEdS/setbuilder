@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { tDe, tEn } from "./core";
-import { WHY_KEYS, localizeNote, localizeWhy } from "./stored";
+import { WHY_KEYS, isGeneratedNote, localizeNote, localizeWhy } from "./stored";
 import { messages } from "./messages";
 
 const sample: Record<string, Record<string, string>> = {
@@ -54,17 +54,26 @@ test("registered why keys all exist and have no regex trouble", () => {
   }
 });
 
-test("stored notes are localized, edited notes are not", () => {
-  assert.equal(
-    localizeNote("open/groove · Übergang: long-blend · Nachbar-Key (±1)", tEn),
-    "open/groove · Transition: long-blend · Adjacent key (±1)",
-  );
-  assert.equal(
-    localizeNote("peak/anchor · Transition: break-to-drop · Harmonic clash", tDe),
-    "peak/anchor · Übergang: break-to-drop · Harmonic clash",
-  );
-  assert.equal(localizeNote("lift/groove · Übergang: stem-vocal", tEn), "lift/groove · Transition: stem-vocal");
+test("the Plan B note is localized, edited notes are not", () => {
   assert.equal(localizeNote("Plan B — nur wenn der Raum dreht", tEn), "Plan B — only if the room turns");
   assert.equal(localizeNote("Drop at 2:10 · careful", tEn), "Drop at 2:10 · careful");
   assert.equal(localizeNote(undefined, tEn), "");
+});
+
+test("legacy machine notes are recognised in both languages and dropped", () => {
+  const legacy = [
+    "open/groove · Übergang: long-blend · Nachbar-Key (±1)",
+    "peak/anchor · Transition: break-to-drop · Harmonic clash",
+    "lift/groove · Übergang: stem-vocal",
+  ];
+  for (const note of legacy) {
+    assert.equal(isGeneratedNote(note), true, note);
+    assert.equal(localizeNote(note, tEn), "", note);
+    assert.equal(localizeNote(note, tDe), "", note);
+  }
+  assert.equal(isGeneratedNote("Drop at 2:10 · careful"), false);
+  assert.equal(isGeneratedNote("open/groove · Cue bei 2:10"), false);
+  assert.equal(isGeneratedNote("/Contents/Artist/Track.mp3"), false);
+  assert.equal(isGeneratedNote(""), false);
+  assert.equal(isGeneratedNote(undefined), false);
 });

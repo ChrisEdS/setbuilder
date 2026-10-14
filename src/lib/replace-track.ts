@@ -6,7 +6,7 @@ import {
 } from "./harmonic";
 import { energyScore, energyStep, energyText } from "./energy";
 import { tDe, type Translate } from "@/lib/i18n/core";
-import type { SetTrack } from "./set";
+import { artistLine, type SetTrack } from "./set";
 
 export type ReplacementOption = {
   id: string;
@@ -98,7 +98,7 @@ export function rankReplacements(
       return {
         id: track.id,
         title: track.name,
-        artist: track.artists.join(", "),
+        artist: artistLine(track.artists, t),
         detail: [`${key} · ${bpm}${track.energyLevel != null ? ` · E${track.energyLevel}` : ""}`, ...sides.map((side) => side.text)].join(" · "),
         score,
       };

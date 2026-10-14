@@ -1,6 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
+import { Hint } from "@/components/Hint";
 import {
   PHASE_ENERGY,
   PLAN_B_MIN,
@@ -50,15 +51,33 @@ export function EnergyPath({ tracks }: Props) {
           <strong>
             {known}/{performance.length}
           </strong>
-          <span>{t("analysis.energyPath.statKnown")}</span>
+          <Hint
+            className="stat-label"
+            text={t("analysis.energyPath.statKnownHint")}
+            mark={known > 0}
+          >
+            {t("analysis.energyPath.statKnown")}
+          </Hint>
         </div>
         <div>
           <strong>{jumps}</strong>
-          <span>{t("analysis.energyPath.statJumps")}</span>
+          <Hint
+            className="stat-label"
+            text={t("analysis.energyPath.statJumpsHint")}
+            mark={known > 0}
+          >
+            {t("analysis.energyPath.statJumps")}
+          </Hint>
         </div>
         <div>
           <strong>{outside}</strong>
-          <span>{t("analysis.energyPath.statOutside")}</span>
+          <Hint
+            className="stat-label"
+            text={t("analysis.energyPath.statOutsideHint")}
+            mark={known > 0}
+          >
+            {t("analysis.energyPath.statOutside")}
+          </Hint>
         </div>
       </div>
 
@@ -68,21 +87,31 @@ export function EnergyPath({ tracks }: Props) {
 
       {known > 0 && performance.length > 0 ? (
         <div className="energy-phases">
-          {PHASES.map((phase) => {
+          {PHASES.map((phase, phaseIndex) => {
             const group = performance.filter((track) => track.phase === phase.id);
             if (!group.length) return null;
             const band = PHASE_ENERGY[phase.id];
             const backup = planBCount(tracks, phase.id);
             return (
-              <div key={phase.id} className="energy-phase">
+              <div
+                key={phase.id}
+                className="energy-phase"
+                style={{ "--p": phaseIndex } as CSSProperties}
+              >
                 <div className="energy-phase-head">
                   <strong>{phaseLabel(t, phase.id)}</strong>
-                  <span>
+                  <span title={t("analysis.energyPath.targetHint")}>
                     {t("analysis.energyPath.target", { min: band.min, max: band.max })}
                   </span>
-                  <em className={backup < PLAN_B_MIN ? "thin" : undefined}>
+                  <em
+                    className={backup < PLAN_B_MIN ? "thin" : undefined}
+                    title={t("analysis.energyPath.planBHint")}
+                  >
                     {backup < PLAN_B_MIN
-                      ? t("analysis.energyPath.planBThin", { count: backup, min: PLAN_B_MIN })
+                      ? t("analysis.energyPath.planBThin", {
+                          count: backup,
+                          min: PLAN_B_MIN,
+                        })
                       : t("analysis.energyPath.planB", { count: backup })}
                   </em>
                 </div>
@@ -101,8 +130,9 @@ export function EnergyPath({ tracks }: Props) {
                   className="energy-bars"
                   style={
                     {
+                      // 10px top padding + value line + two gaps + name line, plus the tallest bar.
                       "--bars-h": `${
-                        44 +
+                        56 +
                         Math.max(
                           band.max,
                           ...group.map((track) => track.energyLevel ?? 0),
@@ -112,7 +142,7 @@ export function EnergyPath({ tracks }: Props) {
                     } as CSSProperties
                   }
                 >
-                  {group.map((track) => {
+                  {group.map((track, barIndex) => {
                     const index = performance.indexOf(track);
                     const prev = index > 0 ? performance[index - 1] : null;
                     const jump = energyStep(prev?.energyLevel, track.energyLevel) === "jump";
@@ -121,6 +151,7 @@ export function EnergyPath({ tracks }: Props) {
                     return (
                       <li
                         key={track.id}
+                        style={{ "--i": barIndex } as CSSProperties}
                         title={
                           level != null
                             ? t("analysis.energyPath.trackEnergy", { name: track.name, level })

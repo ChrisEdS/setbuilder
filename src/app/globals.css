@@ -1026,11 +1026,28 @@ a.button-link.tidal-login {
   letter-spacing: -0.03em;
 }
 
-.harm-stats span {
+.harm-stats > div > span,
+.harm-stats .stat-label {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.2rem;
   color: var(--muted);
   font-size: 0.75rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.harm-stats .tip-bubble {
+  text-transform: none;
+  letter-spacing: normal;
+  word-spacing: normal;
+  color: #f4f4f4;
+  font-size: 0.75rem;
+}
+
+.harm-stats .hint-mark {
+  color: #b3b3b3;
 }
 
 .mini-bar {
@@ -1101,7 +1118,7 @@ a.button-link.tidal-login {
   font-size: 1.15rem;
 }
 
-.harm-node span {
+.harm-node > span {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -1434,6 +1451,28 @@ button {
   }
 }
 
+@keyframes bar-grow {
+  from {
+    opacity: 0.35;
+    transform: scaleY(0);
+  }
+  to {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 @media (max-width: 1100px) {
   .crate-columns,
   .crate-columns.wide-anchor,
@@ -1516,9 +1555,9 @@ button {
 
 .library-pane-grid {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 1.25rem;
-  align-items: end;
+  grid-template-columns: 1fr;
+  gap: 0.9rem;
+  align-items: start;
 }
 
 .library-source-pane h3 {
@@ -1549,7 +1588,8 @@ button {
   justify-content: center;
   text-align: center;
   cursor: pointer;
-  align-self: end;
+  justify-self: start;
+  align-self: start;
 }
 
 .library-file.is-busy {
@@ -1569,7 +1609,7 @@ button {
   flex-wrap: wrap;
   gap: 0.45rem;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .library-inline-status {
@@ -2631,7 +2671,7 @@ body {
 .library-source-pane p,
 .empty p,
 .library-list span,
-.harm-node span,
+.harm-node > span,
 .preview-meta span,
 .muted {
   color: #b3b3b3 !important;
@@ -2989,6 +3029,21 @@ label.btn:hover {
 
 .harm-link {
   color: #b3b3b3 !important;
+}
+
+.harm-link.harm-same,
+.harm-link.harm-relative,
+.harm-link.harm-adjacent,
+.harm-link.harm-energyBoost {
+  color: #1ed760 !important;
+}
+
+.harm-link.harm-contrast {
+  color: #fbbf24 !important;
+}
+
+.harm-link.harm-clash {
+  color: #f87171 !important;
 }
 
 .camelot-legend {
@@ -3701,6 +3756,10 @@ button.drag-handle:active i {
 }
 
 .mix-join {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.2rem;
   margin: 0.15rem 0 0;
   font-size: 0.78rem;
   font-weight: 700;
@@ -3865,7 +3924,7 @@ button.drag-handle:active i {
   min-height: 1.5rem;
 }
 
-.harm-node span {
+.harm-node > span {
   min-height: 2.5rem;
 }
 
@@ -3995,7 +4054,7 @@ button.drag-handle:active i {
 
 .tip-bubble {
   position: absolute;
-  z-index: 40;
+  z-index: 80;
   top: calc(100% + 8px);
   right: 0;
   width: max-content;
@@ -4008,8 +4067,9 @@ button.drag-handle:active i {
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
   font-size: 0.75rem;
   font-weight: 450;
-  letter-spacing: 0;
-  line-height: 1.35;
+  letter-spacing: normal;
+  word-spacing: normal;
+  line-height: 1.45;
   text-align: left;
   text-transform: none;
   white-space: normal;
@@ -4019,9 +4079,44 @@ button.drag-handle:active i {
 }
 
 .tip:hover .tip-bubble,
-.tip:focus-within .tip-bubble {
+.tip:focus-within .tip-bubble,
+.tip.is-open .tip-bubble {
   opacity: 1;
   visibility: visible;
+}
+
+.hint {
+  align-items: center;
+  gap: 0.28rem;
+  max-width: 100%;
+}
+
+.hint-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 1.05rem;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+  text-transform: none;
+  opacity: 0.55;
+  cursor: help;
+}
+
+.hint-mark:hover,
+.hint:focus-within .hint-mark,
+.hint.is-open .hint-mark {
+  opacity: 1;
 }
 
 .curve-seg {
@@ -4122,7 +4217,8 @@ button.drag-handle:active i {
 }
 
 .stick-actions .library-file,
-.stick-collection .library-file {
+.stick-collection .library-file,
+.library-pane-grid > .library-file {
   min-width: 0 !important;
   width: auto;
   justify-self: start;
@@ -4995,6 +5091,8 @@ html[lang="en"] .energy-bars li.jump::before {
   padding-top: 10px;
   height: var(--bars-h, 128px);
   text-align: center;
+  animation: fade-in 420ms ease-out both;
+  animation-delay: calc(90ms + var(--i, 0) * 42ms);
 }
 .energy-bars li i {
   display: block;
@@ -5002,6 +5100,36 @@ html[lang="en"] .energy-bars li.jump::before {
   width: 100%;
   border-radius: 6px 6px 2px 2px;
   background: var(--accent);
+  transform-origin: bottom center;
+  animation: bar-grow 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(110ms + var(--i, 0) * 42ms);
+}
+.energy-phase {
+  animation: fade-in 500ms ease-out both;
+  animation-delay: calc(var(--p, 0) * 70ms);
+}
+.energy-path .harm-stats > div,
+.harmonic-path .harm-stats > div {
+  animation: fade-in 480ms ease-out both;
+}
+.energy-path .harm-stats > div:nth-child(2),
+.harmonic-path .harm-stats > div:nth-child(2) {
+  animation-delay: 70ms;
+}
+.energy-path .harm-stats > div:nth-child(3),
+.harmonic-path .harm-stats > div:nth-child(3) {
+  animation-delay: 140ms;
+}
+.energy-hint {
+  animation: fade-in 520ms ease-out both;
+}
+.energy-band {
+  animation: fade-in 700ms ease-out both;
+  animation-delay: 180ms;
+}
+.harm-steps li {
+  animation: slide-in 500ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * 48ms);
 }
 .energy-bars li.off i {
   background: #fbbf24;
@@ -5234,6 +5362,30 @@ body {
   white-space: nowrap;
 }
 
+.set-tools .menu-panel {
+  left: 0;
+  right: auto;
+}
+
+.harm-advice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 0.85rem;
+  margin: 0 0 0.85rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.harm-advice.warn {
+  border-color: color-mix(in oklab, var(--danger) 35%, var(--line));
+  background: color-mix(in oklab, var(--danger) 8%, transparent);
+}
+
 .menu {
   position: relative;
 }
@@ -5418,6 +5570,16 @@ body {
   .crate-col.is-flash {
     animation: none;
     box-shadow: 0 0 0 2px #7be495;
+  }
+  .energy-bars li,
+  .energy-bars li i,
+  .energy-phase,
+  .energy-hint,
+  .energy-band,
+  .energy-path .harm-stats > div,
+  .harmonic-path .harm-stats > div,
+  .harm-steps li {
+    animation: none !important;
   }
 }
 
@@ -5683,10 +5845,9 @@ body {
   min-width: 0;
 }
 
-.tip:not(:hover):not(:focus-within) > .tip-bubble {
+.tip:not(:hover):not(:focus-within):not(.is-open) > .tip-bubble {
   display: none;
 }
-
 
 .energy-phases,
 .manual-body {
@@ -5727,6 +5888,9 @@ body {
 
 /* Long single-word titles wrap instead of being clipped in narrow role columns. */
 .crate-item .crate-title-row strong {
+  /* No clamp here: with `overflow: visible` the clamped lines would paint over the artist row. */
+  display: block;
+  -webkit-line-clamp: none;
   overflow: visible;
   min-width: 0;
   overflow-wrap: anywhere;
@@ -5845,9 +6009,9 @@ body {
 .stick-actions {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: flex-start;
+  align-items: center;
   gap: 0.5rem;
-  margin-top: 0.9rem;
 }
 
 .stick-reload {
@@ -5885,129 +6049,232 @@ body {
 .stick-reload-actions .btn {
   cursor: pointer;
 }
-.stick-health {
-  margin: 0.85rem 0 0;
-  padding: 0.75rem 0.85rem 0.7rem;
+/* Stick health strip: one verdict line, one button, facts folded away.
+   Sits under the chooser buttons; the playlist list below stays the main content. */
+.stick-strip {
+  margin: 0;
+  padding: 0.6rem 0.75rem 0.6rem 0.85rem;
   border: 1px solid var(--line-strong);
-  border-left-width: 3px;
   border-radius: var(--radius-sm);
-  background: #161616;
+  background: #181818;
 }
-.stick-health.is-ready {
-  border-left-color: var(--ok);
+.stick-strip-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
 }
-.stick-health.is-needsRekordbox,
-.stick-health.is-hiddenFolder,
-.stick-health.is-incomplete {
-  border-left-color: #fbbf24;
+.stick-strip-dot {
+  flex: 0 0 auto;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--line-strong);
 }
-.stick-health.is-empty {
-  border-left-color: var(--slate);
+.stick-strip.is-ok .stick-strip-dot {
+  background: var(--ok);
 }
-.stick-health.is-broken {
-  border-left-color: var(--danger);
+.stick-strip.is-warn .stick-strip-dot {
+  background: #fbbf24;
 }
-.stick-health-head {
+.stick-strip.is-bad .stick-strip-dot {
+  background: var(--danger);
+}
+.stick-strip-verdict {
+  min-width: 0;
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+.stick-strip-actions {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.55rem 0.8rem;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
 }
-.stick-health-kicker {
-  display: block;
-  margin-bottom: 0.2rem;
-  color: var(--muted);
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-.stick-health-head strong {
-  display: block;
-  font-size: 0.95rem;
-  line-height: 1.35;
-}
-.stick-health-head .btn {
-  flex: 0 0 auto;
+.stick-strip-actions .btn {
   font-size: 0.82rem;
 }
-.stick-health-advice {
-  margin: 0.5rem 0 0.55rem;
-  color: var(--ink);
-  font-size: 0.88rem;
-  line-height: 1.45;
+.stick-strip-toggle {
+  padding-inline: 0.75rem;
 }
-.stick-health-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
+/* .library-source-pane p sets measure and size for every paragraph; the strip keeps its own. */
+.stick-strip .stick-strip-note {
+  margin: 0.5rem 0 0 1.3rem;
+  max-width: none;
   color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+.stick-strip-details {
+  margin: 0.65rem 0 0 1.3rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--line);
+}
+.stick-strip-facts {
+  display: grid;
+  gap: 0.25rem 0.9rem;
+  margin: 0;
   font-size: 0.8rem;
   line-height: 1.4;
 }
-.stick-health-list li {
+.stick-strip-facts > div {
   position: relative;
-  padding: 0.12rem 0 0.12rem 0.85rem;
+  display: grid;
+  grid-template-columns: 8.5rem minmax(0, 1fr);
+  gap: 0 0.6rem;
+  padding-left: 0.85rem;
 }
-.stick-health-list li::before {
+.stick-strip-facts > div::before {
   content: "";
   position: absolute;
-  top: 0.55em;
+  top: 0.5em;
   left: 0;
   width: 0.4rem;
   height: 0.4rem;
   border-radius: 50%;
   background: var(--line-strong);
 }
-.stick-health-list li.is-ok::before {
-  background: var(--ok);
-}
-.stick-health-list li.is-warn::before {
+.stick-strip-facts > div.is-warn::before {
   background: #fbbf24;
 }
-.stick-health-list li.is-bad::before {
+.stick-strip-facts > div.is-bad::before {
   background: var(--danger);
 }
-.stick-dialog .stick-health {
-  margin-top: 0.4rem;
-  margin-bottom: 0.75rem;
-}
-.stick-health-prepare {
-  margin: 0 0 0.7rem;
-  padding: 0.6rem 0.7rem 0.55rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-xs);
-  background: #121212;
-}
-.stick-health-prepare strong {
-  display: block;
-  margin-bottom: 0.35rem;
-  font-size: 0.82rem;
-}
-.stick-health-prepare ol {
-  margin: 0 0 0.55rem;
-  padding-left: 1.2rem;
+.stick-strip-facts dt {
   color: var(--muted);
-  font-size: 0.82rem;
+}
+.stick-strip-facts dd {
+  margin: 0;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.stick-strip-facts > div.is-mute dd {
+  color: var(--muted);
+}
+.stick-strip .stick-strip-why {
+  margin: 0.6rem 0 0;
+  max-width: 64ch;
+  color: var(--muted);
+  font-size: 0.8rem;
   line-height: 1.45;
 }
-.stick-health-prepare li.is-ok {
-  color: var(--ok);
-}
-.stick-health-prepare li.is-warn {
-  color: #fbbf24;
-}
-.stick-health-prepare-actions {
+.stick-strip-more {
   display: flex;
   flex-wrap: wrap;
   gap: 0.45rem;
+  margin-top: 0.65rem;
 }
-.stick-health-prepare-actions .btn {
-  font-size: 0.82rem;
-}
-.stick-health-prepare-note {
-  margin: 0.45rem 0 0;
-  color: var(--muted);
+.stick-strip-more .btn {
   font-size: 0.8rem;
-  line-height: 1.4;
+}
+@media (max-width: 720px) {
+  .stick-strip-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .stick-strip-actions {
+    grid-column: 2;
+    justify-content: flex-start;
+  }
+  .stick-strip .stick-strip-note,
+  .stick-strip-details {
+    margin-left: 0;
+  }
+  .stick-strip-facts > div {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Stat labels are uppercase + tracked. The bubble is a descendant, so those
+   styles leak unless we reset them here — last in the file so dark-theme
+   !important color wipes cannot beat a later rule. fade-in leaves
+   transform: translateY(0) on both the stat card and .energy-hint, which
+   creates stacking contexts; the hint is later in the DOM and painted on
+   top of the tooltip. Lift the stats row above the empty-state box. */
+.energy-path .harm-stats,
+.harmonic-path .harm-stats {
+  position: relative;
+  z-index: 3;
+}
+
+.energy-path .harm-stats > div,
+.harmonic-path .harm-stats > div {
+  position: relative;
+  overflow: visible;
+}
+
+.energy-path .harm-stats > div:has(.tip:hover),
+.energy-path .harm-stats > div:has(.tip:focus-within),
+.energy-path .harm-stats > div:has(.tip.is-open),
+.harmonic-path .harm-stats > div:has(.tip:hover),
+.harmonic-path .harm-stats > div:has(.tip:focus-within),
+.harmonic-path .harm-stats > div:has(.tip.is-open) {
+  z-index: 4;
+}
+
+.energy-hint,
+.harmonic-path .empty {
+  position: relative;
+  z-index: 0;
+}
+
+.tip-bubble,
+.harm-stats .tip-bubble,
+.harm-stats .stat-label .tip-bubble,
+.energy-path .tip-bubble,
+.harmonic-path .tip-bubble {
+  z-index: 80;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  word-spacing: normal !important;
+  font-variant: normal !important;
+  font-stretch: normal;
+  font-kerning: normal;
+  font-weight: 450 !important;
+  line-height: 1.45 !important;
+  color: #f4f4f4 !important;
+  background: #1c1c1c !important;
+  background-color: #1c1c1c !important;
+  white-space: normal !important;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.tip:hover > .tip-bubble,
+.tip:focus-within > .tip-bubble,
+.tip.is-open > .tip-bubble {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* The active phase is a selection (where new tracks land), not a verdict: green stays
+   reserved for "fits", yellow for "over the window". */
+.phase-grid .phase.active {
+  background: #242424 !important;
+  color: #fff !important;
+  border-color: #fff !important;
+  box-shadow: inset 0 0 0 1px #fff;
+}
+
+.phase-grid .phase.active span,
+.phase-grid .phase.active em {
+  color: rgba(255, 255, 255, 0.72) !important;
+}
+
+.phase-grid .phase.over em {
+  color: #fbbf24 !important;
+}
+
+/* Every track of the key path stays visible: wrap instead of a hidden horizontal scroll. */
+.harm-steps {
+  flex-wrap: wrap;
+  overflow: visible;
+  scroll-snap-type: none;
+}
+
+.harm-steps li {
+  flex: 1 1 9.2rem;
+  max-width: 14rem;
 }

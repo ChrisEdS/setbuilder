@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { assessStick, inspectStick } from "./stick-health.ts";
+import {
+  assessStick,
+  inspectStick,
+  primaryStickAction,
+  secondaryStickActions,
+  type StickActionCaps,
+} from "./stick-health.ts";
 import type { DirLike, FileLike } from "./rekordbox-stick-write.ts";
 import { fixture } from "./testing/pdb-fixture.ts";
 
@@ -165,6 +171,61 @@ test("a missing or empty database is broken", () => {
     }).verdict,
     "broken",
   );
+});
+
+const ALL: StickActionCaps = { canPrepare: true, canEject: true, canOpenRekordbox: true };
+const NONE: StickActionCaps = { canPrepare: false, canEject: false, canOpenRekordbox: false };
+
+test("one primary action per verdict", () => {
+  const at = (verdict: Parameters<typeof primaryStickAction>[0]["verdict"], libraryAside = false) => ({
+    verdict,
+    libraryAside,
+  });
+  assert.equal(primaryStickAction(at("ready"), ALL), "eject");
+  assert.equal(primaryStickAction(at("ready", true), ALL), "eject");
+  assert.equal(primaryStickAction(at("needsRekordbox"), ALL), "prepare");
+  assert.equal(primaryStickAction(at("broken"), ALL), "openRekordbox");
+  assert.equal(primaryStickAction(at("hiddenFolder"), ALL), "openRekordbox");
+  assert.equal(primaryStickAction(at("hiddenFolder", true), ALL), "eject");
+  assert.equal(primaryStickAction(at("empty"), ALL), null);
+  assert.equal(primaryStickAction(at("incomplete"), ALL), null);
+});
+
+test("the primary action falls back when a capability is missing", () => {
+  const files = { ...NONE, canOpenRekordbox: true };
+  // Only export.pdb picked: we cannot move exportLibrary.db, rekordbox is the way.
+  assert.equal(primaryStickAction({ verdict: "needsRekordbox", libraryAside: false }, files), "openRekordbox");
+  assert.equal(primaryStickAction({ verdict: "needsRekordbox", libraryAside: false }, NONE), null);
+  assert.equal(primaryStickAction({ verdict: "ready", libraryAside: false }, NONE), null);
+  assert.equal(primaryStickAction({ verdict: "broken", libraryAside: false }, NONE), null);
+  // No rekordbox installed: eject and try the player anyway.
+  assert.equal(
+    primaryStickAction({ verdict: "hiddenFolder", libraryAside: false }, { ...ALL, canOpenRekordbox: false }),
+    "eject",
+  );
+  assert.equal(
+    primaryStickAction({ verdict: "hiddenFolder", libraryAside: true }, { ...ALL, canEject: false }),
+    "openRekordbox",
+  );
+});
+
+test("secondary actions never repeat the primary and only restore when a backup exists", () => {
+  const caps = { ...ALL, canRestore: true };
+  assert.deepEqual(secondaryStickActions({ verdict: "ready", libraryAside: false }, caps), ["openRekordbox"]);
+  assert.deepEqual(secondaryStickActions({ verdict: "ready", libraryAside: true }, caps), [
+    "openRekordbox",
+    "restore",
+  ]);
+  assert.deepEqual(secondaryStickActions({ verdict: "needsRekordbox", libraryAside: false }, caps), [
+    "eject",
+    "openRekordbox",
+  ]);
+  assert.deepEqual(secondaryStickActions({ verdict: "broken", libraryAside: false }, caps), ["eject"]);
+  assert.deepEqual(
+    secondaryStickActions({ verdict: "ready", libraryAside: true }, { ...caps, canRestore: false }),
+    ["openRekordbox"],
+  );
+  assert.deepEqual(secondaryStickActions({ verdict: "empty", libraryAside: false }, { ...NONE, canRestore: false }), []);
 });
 
 test("inspectStick reads PIONEER/rekordbox and flags a player library", async () => {

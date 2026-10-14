@@ -430,6 +430,12 @@ export function exportSetText(draft: SetDraft, t: Translate = tDe): string {
   return `${lines.join("\n").trim()}\n`;
 }
 
+/** Artist line for the UI: the "Unknown" placeholder of hand-made entries reads in the current language. */
+export function artistLine(artists: string[], t: Translate = tDe): string {
+  const named = artists.filter((name) => name && name !== "Unknown");
+  return named.length ? named.join(", ") : t("common.unknown");
+}
+
 /** "1 Track" / "3 Tracks" */
 export function trackCount(count: number, t: Translate = tDe): string {
   return t(count === 1 ? "analysis.trackCount.one" : "analysis.trackCount.other", { count });

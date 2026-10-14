@@ -93,7 +93,7 @@ async function file(dir: DirLike, name: string): Promise<FileLike | null> {
 /** Finds PIONEER/rekordbox/export.pdb below the folder the user picked (or the folder itself). */
 export async function findStickDatabase(root: DirLike): Promise<StickLocation> {
   const candidates: DirLike[] = [];
-  for (const pioneer of ["PIONEER", ".PIONEER", "Pioneer"]) {
+  for (const pioneer of ["PIONEER", ".PIONEER", "Pioneer", "pioneer"]) {
     const dir = await child(root, pioneer);
     const rekordbox = dir ? await child(dir, "rekordbox") : null;
     if (rekordbox) candidates.push(rekordbox);

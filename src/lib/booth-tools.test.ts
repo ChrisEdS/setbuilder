@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { buildM3u, buildRekordboxXml } from "./export-booth.ts";
+import { tEn } from "./i18n/core.ts";
 import { pickStreamingMatch } from "./match-link.ts";
 import { rankReplacements, swapIntoSlot } from "./replace-track.ts";
-import type { SetDraft, SetTrack } from "./set.ts";
+import { artistLine, type SetDraft, type SetTrack } from "./set.ts";
 import { matchStickFile } from "./stick-audio.ts";
 
 function track(partial: Partial<SetTrack> & Pick<SetTrack, "id" | "name">): SetTrack {
@@ -59,12 +60,46 @@ test("rekordbox XML keeps performance order and a second alternatives playlist",
   assert.ok(main > 0 && alt > main);
 });
 
+test("rekordbox XML reads a comma BPM and never writes NaN or a machine note as path", () => {
+  const xml = buildRekordboxXml({
+    ...draft,
+    tracks: [
+      track({ id: "a", name: "Komma", bpm: "122,5" }),
+      track({ id: "b", name: "Leer", bpm: "" }),
+      track({ id: "c", name: "Text", bpm: "fast" }),
+      track({
+        id: "d",
+        name: "Alt",
+        source: "rekordbox",
+        note: "open/groove · Übergang: long-blend · Nachbar-Key (±1)",
+      }),
+    ],
+  });
+  assert.match(xml, /AverageBpm="122\.50"/);
+  assert.equal(xml.includes("NaN"), false);
+  assert.equal(xml.includes("Location=\"file://localhost/open"), false);
+});
+
 test("m3u lists only the performance order", () => {
   const m3u = buildM3u(draft);
   assert.match(m3u, /#EXTM3U/);
   assert.match(m3u, /Ada - Night Drive/);
   assert.match(m3u, /SETFORM - Freitag Alternativen/);
   assert.equal(m3u.includes("Plan B"), false);
+});
+
+test("the Unknown placeholder of hand-made entries reads in the UI language", () => {
+  assert.equal(artistLine(["Unknown"]), "unbekannt");
+  assert.equal(artistLine(["Unknown"], tEn), "unknown");
+  assert.equal(artistLine([]), "unbekannt");
+  assert.equal(artistLine(["Ada", "Unknown", ""]), "Ada");
+  assert.equal(rankReplacements(
+    [
+      track({ id: "slot", name: "Slot" }),
+      track({ id: "alt", name: "Alt", role: "safety", artists: ["Unknown"] }),
+    ],
+    "slot",
+  )[0]?.artist, "unbekannt");
 });
 
 test("replacement ranking prefers the closer key and bpm", () => {

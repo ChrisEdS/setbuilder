@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { usableImageUrl } from "@/lib/media";
 
-/** Cover that never shows a broken-image icon. Dead blob URLs become the fallback tile. */
+/**
+ * Cover that never shows a broken-image icon. Blob URLs from the stick are shown while
+ * they live (dead ones are stripped when a draft is read back from storage); anything
+ * that fails to load becomes the fallback tile.
+ */
 export function TrackArt({
   url,
   size = 48,
@@ -15,7 +18,7 @@ export function TrackArt({
   className?: string;
   fallbackClassName?: string;
 }) {
-  const src = usableImageUrl(url);
+  const src = url?.trim() || null;
   const [broken, setBroken] = useState<string | null>(null);
   if (!src || broken === src) {
     return (

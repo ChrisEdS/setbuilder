@@ -11,33 +11,49 @@ const de = {
   "domain.slot.closing.hint": "Nachhall, bewusst landen oder Twist",
 
   "domain.phase.open.label": "Open",
-  "domain.phase.open.hint": "Low–mid · Headroom lassen",
+  "domain.phase.open.hint": "Aufwärmen, Energie 3–5, Headroom lassen",
   "domain.phase.lift.label": "Lift",
-  "domain.phase.lift.hint": "Textures · Vocals einführen",
+  "domain.phase.lift.hint": "Textures und Vocals, Energie steigt langsam",
   "domain.phase.rise.label": "Rise",
-  "domain.phase.rise.hint": "BPM/Mood anheben",
+  "domain.phase.rise.hint": "Auf 7–8, BPM und Mood anheben",
   "domain.phase.peak.label": "Peak",
-  "domain.phase.peak.hint": "Impact + Groove abwechseln",
+  "domain.phase.peak.hint": "8–10, Impact und Groove abwechseln",
   "domain.phase.release.label": "Release",
-  "domain.phase.release.hint": "Kontrolliert landen, nicht maxen",
+  "domain.phase.release.hint": "Landen, 2–3 Stufen runter, nicht maxen",
 
   "domain.role.anchor.label": "Anchor",
-  "domain.role.anchor.hint": "Crowd-Connector / Signature",
+  "domain.role.anchor.hint": "Signature-Moment, Crowd-Connector",
   "domain.role.bridge.label": "Bridge",
-  "domain.role.bridge.hint": "Pivot: Key, BPM, Energie",
+  "domain.role.bridge.hint": "Sorgfalt: Key-Clash, BPM- oder Energie-Sprung",
   "domain.role.groove.label": "Groove",
-  "domain.role.groove.hint": "Atem zwischen Peaks",
+  "domain.role.groove.hint": "Atem zwischen Peaks, weicher Mix",
   "domain.role.safety.label": "Alternativen",
-  "domain.role.safety.hint": "Plan B wenn der Floor dreht",
+  "domain.role.safety.hint": "Plan B, wenn der Floor dreht",
 
   "domain.transition.unset": "Übergang wählen…",
+  "domain.transition.unset.hint":
+    "Noch kein Übergang gewählt. Sagt, wie du in den nächsten Track gehst.",
   "domain.transition.long-blend": "Long blend",
+  "domain.transition.long-blend.hint":
+    "Langer Überblend, 16–32 Takte. Für gleichen oder nahen Key, Energie ±1.",
   "domain.transition.eq-swap": "EQ swap",
+  "domain.transition.eq-swap.hint":
+    "Bass raus, Bass rein. Gut bei Clash oder wenn Melodien sich beißen.",
   "domain.transition.echo-out": "Echo-out",
+  "domain.transition.echo-out.hint":
+    "Track ausklingen lassen, dann neu starten. Reset, wenn Energie oder Key springt.",
   "domain.transition.break-to-drop": "Break → drop",
+  "domain.transition.break-to-drop.hint":
+    "Im Break wechseln, auf den Drop des Nächsten. Für Energy Boost oder Peak.",
   "domain.transition.stem-vocal": "Stem vocal overlay",
+  "domain.transition.stem-vocal.hint":
+    "Vocal über den nächsten Track legen. Braucht Platz im Mix, nicht bei Clash.",
   "domain.transition.loop-filter": "Loop + filter rise",
+  "domain.transition.loop-filter.hint":
+    "Loop plus Filter hoch. Baut Spannung, überbrückt BPM- oder Key-Abstand.",
   "domain.transition.power-reset": "Power-down reset",
+  "domain.transition.power-reset.hint":
+    "Hart raus, Stille, neu rein. Wenn Energie um 3+ fällt oder der Floor dreht.",
 } as const;
 
 const en: Record<keyof typeof de, string> = {
@@ -51,33 +67,49 @@ const en: Record<keyof typeof de, string> = {
   "domain.slot.closing.hint": "Afterglow, land on purpose or add a twist",
 
   "domain.phase.open.label": "Open",
-  "domain.phase.open.hint": "Low–mid · leave headroom",
+  "domain.phase.open.hint": "Warm-up, energy 3–5, leave headroom",
   "domain.phase.lift.label": "Lift",
-  "domain.phase.lift.hint": "Textures · bring in vocals",
+  "domain.phase.lift.hint": "Textures and vocals, energy rises slowly",
   "domain.phase.rise.label": "Rise",
-  "domain.phase.rise.hint": "Raise BPM and mood",
+  "domain.phase.rise.hint": "Up to 7–8, raise BPM and mood",
   "domain.phase.peak.label": "Peak",
-  "domain.phase.peak.hint": "Alternate impact and groove",
+  "domain.phase.peak.hint": "8–10, alternate impact and groove",
   "domain.phase.release.label": "Release",
-  "domain.phase.release.hint": "Land softly, don't max out",
+  "domain.phase.release.hint": "Land it, drop 2–3 levels, don't max out",
 
   "domain.role.anchor.label": "Anchor",
-  "domain.role.anchor.hint": "Crowd connector / signature",
+  "domain.role.anchor.hint": "Signature moment, crowd connector",
   "domain.role.bridge.label": "Bridge",
-  "domain.role.bridge.hint": "Pivot: key, BPM, energy",
+  "domain.role.bridge.hint": "Needs care: key clash, BPM or energy jump",
   "domain.role.groove.label": "Groove",
-  "domain.role.groove.hint": "Room to breathe between peaks",
+  "domain.role.groove.hint": "Breath between peaks, a smooth mix",
   "domain.role.safety.label": "Alternatives",
   "domain.role.safety.hint": "Plan B when the floor turns",
 
   "domain.transition.unset": "Choose transition…",
+  "domain.transition.unset.hint":
+    "No transition chosen yet. This is how you go into the next track.",
   "domain.transition.long-blend": "Long blend",
+  "domain.transition.long-blend.hint":
+    "Long blend, 16–32 bars. For the same or a nearby key, energy ±1.",
   "domain.transition.eq-swap": "EQ swap",
+  "domain.transition.eq-swap.hint":
+    "Bass out, bass in. Good on a clash or when melodies fight.",
   "domain.transition.echo-out": "Echo-out",
+  "domain.transition.echo-out.hint":
+    "Let the track ring out, then start fresh. A reset when energy or key jumps.",
   "domain.transition.break-to-drop": "Break → drop",
+  "domain.transition.break-to-drop.hint":
+    "Switch in the break, onto the next drop. For an Energy Boost or the peak.",
   "domain.transition.stem-vocal": "Stem vocal overlay",
+  "domain.transition.stem-vocal.hint":
+    "Lay a vocal over the next track. Needs space in the mix, not on a clash.",
   "domain.transition.loop-filter": "Loop + filter rise",
+  "domain.transition.loop-filter.hint":
+    "Loop plus a rising filter. Builds tension, bridges a BPM or key gap.",
   "domain.transition.power-reset": "Power-down reset",
+  "domain.transition.power-reset.hint":
+    "Hard out, silence, back in. When energy drops 3+ or the floor turns.",
 };
 
 export const domain = { de, en };

@@ -1,6 +1,6 @@
 import { distributeRoles } from "@/lib/extract-set";
 import { stickAudioUrl } from "@/lib/stick-audio";
-import { parseEnergyLevel } from "@/lib/energy";
+import { energyFromRekordboxTags } from "@/lib/energy";
 import { tDe, type Translate } from "@/lib/i18n/core";
 import { LocalizedError } from "@/lib/i18n/error";
 import { parseKeyValue } from "@/lib/key-import";
@@ -134,7 +134,10 @@ function toStickTrack(track: PdbTrack): StickTrack {
     keyCamelot: keyCamelot || "",
     durationMs: track.durationMs,
     comment: track.comment,
-    energyLevel: parseEnergyLevel(track.comment),
+    energyLevel: energyFromRekordboxTags({
+      comment: track.comment,
+      grouping: track.mixName,
+    }),
     filePath: track.filePath,
     artworkPath: track.artworkPath,
   };
@@ -181,11 +184,30 @@ export function rehydrateStickCovers(draft: SetDraft, library: StickTrack[]): Se
     }
     if (!hit) return track;
     const imageUrl = coverUrl(hit.artworkPath) ?? track.imageUrl;
-    if (imageUrl === track.imageUrl && (hit.filePath || "") === (track.filePath || "")) {
+    const energyLevel = track.energyLevel ?? hit.energyLevel;
+    const comment = track.comment || hit.comment;
+    const bpm = track.bpm || hit.bpm;
+    const keyCamelot = track.keyCamelot || hit.keyCamelot;
+    if (
+      imageUrl === track.imageUrl &&
+      (hit.filePath || "") === (track.filePath || "") &&
+      energyLevel === track.energyLevel &&
+      comment === (track.comment || "") &&
+      bpm === track.bpm &&
+      keyCamelot === track.keyCamelot
+    ) {
       return track;
     }
     changed = true;
-    return { ...track, imageUrl, filePath: hit.filePath || track.filePath };
+    return {
+      ...track,
+      imageUrl,
+      filePath: hit.filePath || track.filePath,
+      energyLevel,
+      comment,
+      bpm,
+      keyCamelot,
+    };
   });
   return changed ? { ...draft, tracks } : draft;
 }
@@ -349,7 +371,12 @@ function setsFromXml(xml: string): RekordboxStickSet[] {
       keyCamelot: parseKeyValue(keyRaw) || "",
       durationMs: Number.isFinite(seconds) ? seconds * 1000 : 0,
       comment: node.getAttribute("Comments") || "",
-      energyLevel: parseEnergyLevel(node.getAttribute("Comments")),
+      energyLevel: energyFromRekordboxTags({
+        comment: node.getAttribute("Comments"),
+        grouping: node.getAttribute("Grouping"),
+        label: node.getAttribute("Label"),
+        remixer: node.getAttribute("Remixer"),
+      }),
       filePath: decodeXmlLocation(node.getAttribute("Location") || ""),
     });
   }

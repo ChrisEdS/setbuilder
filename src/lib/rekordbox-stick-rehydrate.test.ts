@@ -56,6 +56,7 @@ test("rehydrateStickCovers puts the file path back without changing order or rol
   assert.equal(next.tracks[1].role, "safety");
   assert.equal(next.tracks[1].filePath, "/Ada/Spare.mp3");
   assert.equal(next.tracks[0].id, "a");
+  assert.equal(next.tracks[0].energyLevel, 6);
 });
 
 test("rehydrateStickCovers leaves unmatched tracks alone", () => {

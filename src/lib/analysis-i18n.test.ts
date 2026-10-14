@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { energyText } from "./energy.ts";
 import { distributeRoles, extractSetFromPlaylist, fitToSlot } from "./extract-set.ts";
-import { mixJoin, relationLabel } from "./harmonic.ts";
+import { mixJoin, relationHint, relationLabel } from "./harmonic.ts";
 import { tDe, tEn } from "./i18n/core.ts";
 import { localizeWhy } from "./i18n/stored.ts";
 import { rankReplacements, sidePhrase, swapIntoSlot } from "./replace-track.ts";
@@ -42,6 +42,16 @@ const track = (
   ...over,
 });
 
+test("Bogen aria copy stays German in de, English in en", () => {
+  assert.equal(tDe("analysis.harmonic.ariaLabel"), "Key-Verlauf");
+  assert.equal(tDe("analysis.harmonic.title"), "Key-Verlauf");
+  assert.equal(tDe("builder.curve.aria"), "Phasen im Slot");
+  assert.equal(tEn("analysis.harmonic.ariaLabel"), "Harmonic path");
+  assert.equal(tEn("builder.curve.aria"), "Energy curve");
+  assert.match(tDe("analysis.energyPath.statKnownHint"), / /);
+  assert.match(tDe("analysis.energyPath.noLevels"), /Energy Levels/);
+});
+
 test("energy text and relation labels in both languages", () => {
   assert.equal(energyText(5, 5), "Energie gleich");
   assert.equal(energyText(5, 5, tEn), "Energy same");
@@ -50,6 +60,15 @@ test("energy text and relation labels in both languages", () => {
   assert.equal(relationLabel("adjacent"), "Nachbar-Key (±1)");
   assert.equal(relationLabel("adjacent", tEn), "Adjacent key (±1)");
   assert.equal(relationLabel("clash", tEn), "Harmonic clash");
+});
+
+test("relationHint explains the jargon in DE and EN", () => {
+  assert.match(relationHint("clash"), /weit auseinander|beißen|Sortieren/);
+  assert.match(relationHint("clash", tEn), /far apart|fight|Sorting/i);
+  assert.match(relationHint("adjacent"), /Wheel|Zahl|Standard-Mix/);
+  assert.match(relationHint("adjacent", tEn), /wheel|number|standard mix/i);
+  assert.match(relationHint("relative"), /8A → 8B|Dur\/Moll/);
+  assert.match(relationHint("relative", tEn), /8A → 8B|major\/minor/);
 });
 
 test("mixJoin names an energy jump in the active language", () => {
@@ -62,7 +81,7 @@ test("mixJoin names an energy jump in the active language", () => {
 test("sidePhrase and rankReplacements speak English on request", () => {
   const from = { keyCamelot: "8A", bpm: "124", energyLevel: 9 };
   const to = { keyCamelot: "8A", bpm: "124", energyLevel: 4 };
-  assert.equal(sidePhrase(from, to, "danach")?.text, "danach: gleiche Key, 0 BPM, Energie -5 (Sprung)");
+  assert.equal(sidePhrase(from, to, "danach")?.text, "danach: Gleicher Key, 0 BPM, Energie -5 (Sprung)");
   assert.equal(
     sidePhrase(from, to, tEn("analysis.side.after"), tEn)?.text,
     "after: same key, 0 BPM, Energy -5 (jump)",

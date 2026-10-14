@@ -209,6 +209,10 @@ export function relationLabel(relation: HarmonicRelation, t: Translate = tDe): s
   }
 }
 
+export function relationHint(relation: HarmonicRelation, t: Translate = tDe): string {
+  return t(`analysis.relation.${relation}.hint`);
+}
+
 type MixSide = { keyCamelot: string; bpm: string; energyLevel?: number };
 
 export function mixJoin(
