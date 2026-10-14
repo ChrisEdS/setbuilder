@@ -2,6 +2,8 @@
 
 **Deutsch** · [English](README.md)
 
+[![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
+
 **Version 3.1.2** · Dramaturgie statt Playlist.
 
 SETBUILDER bereitet DJ-Sets für rekordbox vor. Du lädst Playlist oder History vom Export-Stick (oder eine Collection-XML), legst den Bogen nach Slot und Dauer, prüfst Energie, Key und BPM und nimmst das Set als rekordbox-XML, PDF, M3U oder Text mit. Die Logik folgt Mixed In Key: erst Energie, dann Key, dann BPM. Der Ablauf folgt dem [DJ.Studio Prep-Workflow](https://dj.studio/blog/dj-set-preparation#crafting-a-dj-set-that-feels-right-advanced-tips): Brief → Set bauen → Transitions → Export.
@@ -181,9 +183,13 @@ Windows zeigt einen SmartScreen-Hinweis. Über „Trotzdem ausführen“ startet
 
 Sobald die Apple- und Windows-Zertifikate als GitHub-Secrets liegen, signiert der nächste Release. Auf dem Mac entfällt der Quarantäne-Schritt dann. Die Schritte stehen in [`desktop/README.md`](desktop/README.md).
 
-## Unterstützen
+## Spenden
 
-SETBUILDER bleibt kostenlos und offen — inklusive **Energie aus Dateien**, Key-Verlauf und Stick-Schreiben. Wenn es bei der Set-Vorbereitung hilft, kannst du das Projekt [auf GitHub sponsern](https://github.com/sponsors/ChrisEdS).
+SETBUILDER bleibt kostenlos und offen — inklusive **Energie aus Dateien**, Key-Verlauf und Stick-Schreiben. Wenn es bei der Set-Vorbereitung hilft, kannst du die Entwicklung über **GitHub Sponsors** unterstützen:
+
+**[♥ Sponsor @ChrisEdS](https://github.com/sponsors/ChrisEdS)**
+
+Im Repo erscheint außerdem der eingebaute **Sponsor**-Button (über [`.github/FUNDING.yml`](.github/FUNDING.yml)).
 
 ## Lizenz
 
