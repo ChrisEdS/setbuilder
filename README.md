@@ -17,7 +17,7 @@ SETFORM prepares DJ sets for rekordbox. You load a playlist or history from the 
 
 ## 1. Load from rekordbox
 
-![Load a set: rekordbox stick and collection](docs/screenshots/en/01-rekordbox-load.png)
+![Load a set: rekordbox stick and collection](docs/screenshots/en/01-rekordbox-load-v302.png)
 
 **Rekordbox stick.** Prefer **Choose stick** (Chrome / Edge / desktop) for the volume root, or pick `PIONEER` / `PIONEER/rekordbox`. If the folder dialog fails or hangs, use **export.pdb** (`PIONEER/rekordbox/export.pdb` or `.PIONEER/…`) — the most reliable path. Avoid selecting the whole USB with every music file; that can stall. SETFORM finds the database itself, even in the hidden `PIONEER` or `.PIONEER` folder. It reads playlists and the played history. Order, key and BPM are kept; Energy Level is read from the rekordbox comment when Mixed In Key wrote it there. Files from the stick can be previewed directly. Status text shows while the dialog is open, while files are listed, and while the database is read.
 
@@ -33,7 +33,7 @@ SETFORM prepares DJ sets for rekordbox. You load a playlist or history from the 
 
 ## 2. Setlist
 
-![Setlist with key, BPM, energy and transition](docs/screenshots/en/02-setlist.png)
+![Setlist with key, BPM, energy and transition](docs/screenshots/en/02-setlist-v302.png)
 
 Each track shows its source (rekordbox), phase and role. Below are key, BPM and energy, the transition from the previous track (“Adjacent key (±1) · +1 BPM · Energy +1”) and the reasoning (“Why here”). Change the order by dragging or with the arrows; “Replace” swaps a title.
 
@@ -58,7 +58,7 @@ Each track shows its source (rekordbox), phase and role. Below are key, BPM and 
 
 ## 3. Roles and Plan B
 
-![Roles: Anchor, Bridge, Groove and Alternatives](docs/screenshots/en/03-roles.png)
+![Roles: Anchor, Bridge, Groove and Alternatives](docs/screenshots/en/03-roles-v302.png)
 
 Every track has a phase (Open → Lift → Rise → Peak → Release) and a role:
 
@@ -73,7 +73,7 @@ Drag titles between the columns. **Plan B** asks for at least two fitting altern
 
 ## 4. Arc
 
-![Arc: Key path with mix score, badges and drag reorder](docs/screenshots/en/04-arc.png)
+![Arc: Key path with mix score, badges and drag reorder](docs/screenshots/en/04-key-path-v302.png)
 
 The arc shows how the phases fill the slot (active phase is highlighted; yellow means over the window) and how each track's energy sits against the phase's target band. Jumps of three levels or more are marked.
 
@@ -94,7 +94,7 @@ Sort, drag, or change key/energy in the setlist to move the numbers. A clash can
 
 ## 5. Back to rekordbox
 
-![Take with you: PDF, rekordbox XML, write to stick, M3U, copy text](docs/screenshots/en/05-export-rekordbox.png)
+![Take with you: PDF, rekordbox XML, write to stick, M3U, copy text](docs/screenshots/en/05-export-v302.png)
 
 The **Take with you** menu exports:
 

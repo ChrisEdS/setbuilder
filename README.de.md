@@ -17,7 +17,7 @@ SETFORM bereitet DJ-Sets für rekordbox vor. Du lädst Playlist oder History vom
 
 ## 1. Aus rekordbox laden
 
-![Set laden: Rekordbox-Stick und Collection](docs/screenshots/de/01-rekordbox-laden.png)
+![Set laden: Rekordbox-Stick und Collection](docs/screenshots/de/01-rekordbox-laden-v302.png)
 
 **Rekordbox-Stick.** Am besten **Stick wählen** (Chrome / Edge / Desktop) für die Volume-Wurzel, oder `PIONEER` / `PIONEER/rekordbox`. Wenn der Ordner-Dialog fehlschlägt oder hängt: **export.pdb** (`PIONEER/rekordbox/export.pdb` oder `.PIONEER/…`) — der zuverlässigste Weg. Nicht den ganzen USB mit allen Musikdateien wählen, das kann ewig dauern. SETFORM findet die Datenbank selbst, auch im versteckten Ordner `PIONEER` oder `.PIONEER`. Gelesen werden Playlists und die gespielte History. Reihenfolge, Key und BPM bleiben erhalten; der Energy Level wird aus dem rekordbox-Kommentar gelesen, wenn Mixed In Key ihn dort geschrieben hat. Dateien vom Stick lassen sich direkt vorhören. Während Dialog, Dateiliste und Datenbank-Lesen steht ein Status.
 
@@ -33,7 +33,7 @@ SETFORM bereitet DJ-Sets für rekordbox vor. Du lädst Playlist oder History vom
 
 ## 2. Setliste
 
-![Setliste mit Key, BPM, Energie und Übergang](docs/screenshots/de/02-setliste.png)
+![Setliste mit Key, BPM, Energie und Übergang](docs/screenshots/de/02-setliste-v302.png)
 
 Jeder Track zeigt die Quelle (rekordbox), Phase und Rolle. Darunter stehen Key, BPM und Energie, der Übergang zum Vorgänger („Nachbar-Key (±1) · +1 BPM · Energie +1“) und die Begründung („Warum hier“). Die Reihenfolge änderst du per Ziehen oder mit den Pfeilen, „Ersatz“ tauscht einen Titel aus.
 
@@ -58,7 +58,7 @@ Jeder Track zeigt die Quelle (rekordbox), Phase und Rolle. Darunter stehen Key, 
 
 ## 3. Rollen und Plan B
 
-![Rollen: Anchor, Bridge, Groove und Alternativen](docs/screenshots/de/03-rollen.png)
+![Rollen: Anchor, Bridge, Groove und Alternativen](docs/screenshots/de/03-rollen-v302.png)
 
 Jeder Track hat eine Phase (Open → Lift → Rise → Peak → Release) und eine Rolle:
 
@@ -73,7 +73,7 @@ Titel lassen sich zwischen den Spalten ziehen. **Plan B** verlangt pro Phase min
 
 ## 4. Bogen
 
-![Bogen: Key-Verlauf mit Mix-Score, Badges und Drag](docs/screenshots/de/04-bogen.png)
+![Bogen: Key-Verlauf mit Mix-Score, Badges und Drag](docs/screenshots/de/04-key-verlauf-v302.png)
 
 Der Bogen zeigt, wie die Phasen den Slot füllen (aktive Phase hervorgehoben; gelb heißt über dem Fenster) und wie die Energie jedes Tracks zum Zielband der Phase steht. Sprünge ab drei Stufen werden markiert.
 
@@ -94,7 +94,7 @@ Sortieren, Ziehen oder Key/Energie in der Setliste ändern die Zahlen. Ein Key-C
 
 ## 5. Zurück nach rekordbox
 
-![Mitnehmen: PDF, rekordbox-XML, auf Stick schreiben, M3U, Text kopieren](docs/screenshots/de/05-export-rekordbox.png)
+![Mitnehmen: PDF, rekordbox-XML, auf Stick schreiben, M3U, Text kopieren](docs/screenshots/de/05-export-v302.png)
 
 Das Menü **Mitnehmen** exportiert:
 
