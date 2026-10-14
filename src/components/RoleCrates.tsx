@@ -26,6 +26,7 @@ import {
   transitionLabel,
 } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n/react";
+import { Tip } from "@/components/Hint";
 import { TrackArt } from "@/components/TrackArt";
 import type { LibraryRow } from "@/components/LibraryPanel";
 import {
@@ -327,22 +328,28 @@ export function RoleCrates({
           <p className="section-note">{t("crates.intro")}</p>
         </div>
         <div className="crate-toolbar">
-          <button type="button" className="btn ghost" onClick={expandAll}>
-            {t("crates.expandAll")}
-          </button>
-          <button type="button" className="btn ghost" onClick={collapseAll}>
-            {t("crates.collapseAll")}
-          </button>
-          <button
-            type="button"
-            className={prefs.wide === "safety" ? "btn" : "btn ghost"}
-            onClick={() => {
-              setWide("safety");
-              setOpen("safety", true);
-            }}
-          >
-            {t("crates.wideAlternatives")}
-          </button>
+          <Tip text={t("crates.expandAllTip")}>
+            <button type="button" className="btn ghost" onClick={expandAll}>
+              {t("crates.expandAll")}
+            </button>
+          </Tip>
+          <Tip text={t("crates.collapseAllTip")}>
+            <button type="button" className="btn ghost" onClick={collapseAll}>
+              {t("crates.collapseAll")}
+            </button>
+          </Tip>
+          <Tip text={t("crates.wideAlternativesTip")} end>
+            <button
+              type="button"
+              className={prefs.wide === "safety" ? "btn" : "btn ghost"}
+              onClick={() => {
+                setWide("safety");
+                setOpen("safety", true);
+              }}
+            >
+              {t("crates.wideAlternatives")}
+            </button>
+          </Tip>
         </div>
       </div>
 
@@ -715,17 +722,18 @@ export function RoleCrates({
                               )
                             ) : null}
                             {onRemove ? (
-                              <button
-                                type="button"
-                                className="crate-remove"
-                                aria-label={t("crates.card.removeAria", {
-                                  name: track.name,
-                                })}
-                                title={t("crates.card.removeTitle")}
-                                onClick={() => onRemove(track.id)}
-                              >
-                                ✕
-                              </button>
+                              <Tip text={t("crates.card.removeTitle")} end>
+                                <button
+                                  type="button"
+                                  className="crate-remove"
+                                  aria-label={t("crates.card.removeAria", {
+                                    name: track.name,
+                                  })}
+                                  onClick={() => onRemove(track.id)}
+                                >
+                                  ✕
+                                </button>
+                              </Tip>
                             ) : null}
                           </li>
                         );

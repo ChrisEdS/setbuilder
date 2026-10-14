@@ -114,7 +114,7 @@ const de = {
     "Anchor sind die Signature-Momente, im Peak mit Abstand gesetzt. Bridge markiert, was Sorgfalt braucht: Phasenwechsel, Key-Clash, Energy Boost, BPM-Sprung oder zwei Energiestufen und mehr. Gleicher Key, ±1 und A↔B bleiben Groove, das ist der Atem dazwischen. Alternativen sind Plan B aus dem Rest der Playlist.",
   "analysis.extractStep.harmonic.title": "4. Harmonik nachziehen",
   "analysis.extractStep.harmonic.body":
-    "„Harmonisch sortieren“ ordnet innerhalb einer Phase nach Camelot, Energie und kleinen BPM-Schritten. Ein bewusster Kontrast vor dem Peak-Anchor bleibt erlaubt. Die Live-Zeile unter jedem Track zeigt den tatsächlichen Übergang, auch nachdem du selbst gezogen oder einen Key geändert hast.",
+    "„Harmonisch sortieren“ ordnet innerhalb einer Phase nach Camelot, Energie und kleinen BPM-Schritten. Opener und Closer, die du festlegst, bleiben Anfang und Ende. Ein bewusster Kontrast vor dem Peak-Anchor bleibt erlaubt. Die Live-Zeile unter jedem Track zeigt den tatsächlichen Übergang, auch nachdem du selbst gezogen oder einen Key geändert hast.",
 
   // EnergyPath component
   "analysis.energyPath.title": "Energie-Verlauf",
@@ -160,7 +160,7 @@ const de = {
   "analysis.harmonic.title": "Key-Verlauf",
   "analysis.harmonic.titleEmbedded": "Key-Verlauf",
   "analysis.harmonic.note":
-    "Camelot entlang der gespielten Reihenfolge. Karten ziehen zum Umsortieren; unter Sortieren: Harmonisch, Ein-Schritt, Energie, Doppel-Peak, Tempo, BPM-Kette, Camelot-Reise oder Wellen. Ein Clash vor dem Peak bleibt erlaubt.",
+    "Camelot entlang der gespielten Reihenfolge. Karten ziehen zum Umsortieren; unter Sortieren: Harmonisch, Ein-Schritt, Energie, Doppel-Peak, Tempo, BPM-Kette, Camelot-Reise oder Wellen. Opener und Closer bleiben gepinnt. Ein Clash vor dem Peak bleibt erlaubt.",
   "analysis.harmonic.harmonize": "Sortieren",
   "analysis.harmonic.statKeys": "Keys gesetzt",
   "analysis.harmonic.statKeysHint":
@@ -307,7 +307,7 @@ const en: Record<keyof typeof de, string> = {
     "Anchors are the signature moments, spaced out in the peak. A Bridge marks what needs care: phase change, key clash, Energy Boost, BPM jump or two energy levels and more. Same key, ±1 and A↔B stay Groove, the breath in between. Alternatives are Plan B from the rest of the playlist.",
   "analysis.extractStep.harmonic.title": "4. Refine the harmonics",
   "analysis.extractStep.harmonic.body":
-    "“Sort harmonically” orders within a phase by Camelot, energy and small BPM steps. A deliberate contrast before the peak anchor stays allowed. The live line under each track shows the actual transition, even after you have dragged a track or changed a key yourself.",
+    "“Sort harmonically” orders within a phase by Camelot, energy and small BPM steps. Opener and closer you pin stay at the start and end. A deliberate contrast before the peak anchor stays allowed. The live line under each track shows the actual transition, even after you have dragged a track or changed a key yourself.",
 
   "analysis.energyPath.title": "Energy path",
   "analysis.energyPath.note":
@@ -351,7 +351,7 @@ const en: Record<keyof typeof de, string> = {
   "analysis.harmonic.title": "Harmonic Path",
   "analysis.harmonic.titleEmbedded": "Key path",
   "analysis.harmonic.note":
-    "Camelot along the played order. Drag cards to reorder; under Sort: Harmonic, One-step, Energy, Twin peak, Tempo, BPM chain, Camelot journey or Waves. A clash before the peak stays allowed.",
+    "Camelot along the played order. Drag cards to reorder; under Sort: Harmonic, One-step, Energy, Twin peak, Tempo, BPM chain, Camelot journey or Waves. Pinned opener and closer stay. A clash before the peak stays allowed.",
   "analysis.harmonic.harmonize": "Sort",
   "analysis.harmonic.statKeys": "Keys set",
   "analysis.harmonic.statKeysHint":

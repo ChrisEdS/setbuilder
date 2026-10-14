@@ -2,6 +2,34 @@
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
+type TipProps = {
+  text: string;
+  disabled?: boolean;
+  children: ReactNode;
+  className?: string;
+  /** Bubble aligns to the right edge (default is left). Use on trailing controls. */
+  end?: boolean;
+};
+
+/**
+ * Hover/focus tooltip for controls. Prefer this over native `title` —
+ * title tooltips are easy to miss and slow to appear.
+ */
+export function Tip({ text, disabled, children, className, end }: TipProps) {
+  if (!text.trim()) return <>{children}</>;
+  return (
+    <span
+      className={["tip", end ? "tip-end" : "", className].filter(Boolean).join(" ")}
+      tabIndex={disabled ? 0 : undefined}
+    >
+      {children}
+      <span className="tip-bubble" role="tooltip">
+        {text}
+      </span>
+    </span>
+  );
+}
+
 type Props = {
   text: string;
   children?: ReactNode;

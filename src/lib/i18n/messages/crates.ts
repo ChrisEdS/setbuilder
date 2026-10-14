@@ -6,8 +6,12 @@ const de = {
   "crates.intro":
     "Titel in eine andere Rolle ziehen. Die Höhe aller Spalten lässt sich am unteren Rand ändern, „Alternativen groß“ verbreitert die Alternativen.",
   "crates.expandAll": "Alle auf",
+  "crates.expandAllTip": "Alle Rollen-Spalten aufklappen.",
   "crates.collapseAll": "Alle zu",
+  "crates.collapseAllTip": "Alle Rollen-Spalten zuklappen — mehr Übersicht.",
   "crates.wideAlternatives": "Alternativen groß",
+  "crates.wideAlternativesTip":
+    "Alternativen-Spalte verbreitern und öffnen — Plan B im Blick.",
   "crates.explain": "Rollen kurz erklärt",
 
   // RoleCrates: columns
@@ -93,8 +97,11 @@ const de = {
   // PreviewPlayer
   "crates.player.ariaLabel": "Player",
   "crates.player.prev": "Vorheriger Track",
+  "crates.player.prevTip": "Zum vorherigen Track in der Performance-Reihenfolge.",
   "crates.player.next": "Nächster Track",
+  "crates.player.nextTip": "Zum nächsten Track in der Performance-Reihenfolge.",
   "crates.player.close": "Player schließen",
+  "crates.player.closeTip": "Player-Leiste schließen.",
   "crates.player.then": "danach {join}",
   "crates.player.iframeTitle": "{label} Player",
   "crates.player.noEmbed": "Kein Embed für diesen Eintrag.",
@@ -108,8 +115,12 @@ const en: Record<keyof typeof de, string> = {
   "crates.intro":
     "Drag a track into another role. Change the height of all columns at the bottom edge, “Wide alternatives” widens the Alternatives.",
   "crates.expandAll": "Expand all",
+  "crates.expandAllTip": "Expand all role columns.",
   "crates.collapseAll": "Collapse all",
+  "crates.collapseAllTip": "Collapse all role columns — more overview.",
   "crates.wideAlternatives": "Wide alternatives",
+  "crates.wideAlternativesTip":
+    "Widen and open the Alternatives column — Plan B in view.",
   "crates.explain": "Roles at a glance",
 
   "crates.col.collapse": "Collapse {role}",
@@ -188,8 +199,11 @@ const en: Record<keyof typeof de, string> = {
 
   "crates.player.ariaLabel": "Player",
   "crates.player.prev": "Previous track",
+  "crates.player.prevTip": "Go to the previous track in the performance order.",
   "crates.player.next": "Next track",
+  "crates.player.nextTip": "Go to the next track in the performance order.",
   "crates.player.close": "Close player",
+  "crates.player.closeTip": "Close the player bar.",
   "crates.player.then": "then {join}",
   "crates.player.iframeTitle": "{label} player",
   "crates.player.noEmbed": "No embed for this entry.",

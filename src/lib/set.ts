@@ -91,6 +91,10 @@ export type SetDraft = {
   gear: string;
   /** Free-form brief notes (promoter, doors, curfew, …). */
   notes?: string;
+  /** Performance track that must stay first (Open). */
+  openerId?: string | null;
+  /** Performance track that must stay last (Release). */
+  closerId?: string | null;
   durationMinutes: number;
   tracks: SetTrack[];
 };
@@ -321,7 +325,7 @@ export const EXTRACT_STEPS: { title: string; body: string }[] = [
   },
   {
     title: "4. Harmonik nachziehen",
-    body: "„Harmonisch sortieren“ ordnet innerhalb einer Phase nach Camelot, Energie und kleinen BPM-Schritten. Ein bewusster Kontrast vor dem Peak-Anchor bleibt erlaubt. Die Live-Zeile unter jedem Track zeigt den tatsächlichen Übergang, auch nachdem du selbst gezogen oder einen Key geändert hast.",
+    body: "„Harmonisch sortieren“ ordnet innerhalb einer Phase nach Camelot, Energie und kleinen BPM-Schritten. Opener und Closer, die du festlegst, bleiben Anfang und Ende. Ein bewusster Kontrast vor dem Peak-Anchor bleibt erlaubt. Die Live-Zeile unter jedem Track zeigt den tatsächlichen Übergang, auch nachdem du selbst gezogen oder einen Key geändert hast.",
   },
 ];
 

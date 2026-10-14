@@ -4,7 +4,7 @@
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
 
-**Version 3.1.2** · Dramaturgy, not a playlist.
+**Version 3.2.0** · Dramaturgy, not a playlist.
 
 SETBUILDER prepares DJ sets for rekordbox. You load a playlist or history from the export stick (or a collection XML), lay out the arc by slot and duration, check energy, key and BPM, and take the set with you as rekordbox XML, PDF, M3U or text. The logic follows Mixed In Key: energy first, then key, then BPM. The workflow follows the [DJ.Studio prep workflow](https://dj.studio/blog/dj-set-preparation#crafting-a-dj-set-that-feels-right-advanced-tips): brief → build the set → transitions → export.
 
@@ -12,6 +12,7 @@ SETBUILDER prepares DJ sets for rekordbox. You load a playlist or history from t
 - ⚡ **Energy from files** — Missing Mixed In Key levels? Analyze stick MP3s in the browser, write Energy into ID3 (audio untouched), reload tags in rekordbox
 - 🔑 **Key path** — Camelot along the set with mix score, clash badges, drag reorder and Mixed In Key–style sorts
 - 🎚️ **Arc & energy** — Phases Open→Release against target bands; jumps and outliers called out
+- 📌 **Opener & closer** — Pin the first and last performance track; sorts keep them at the ends
 - 💾 **Stick round-trip** — Load from `export.pdb`, write the set back as playlist, player check before the gig
 - 🛟 **Plan B** — Roles and alternatives per phase when the floor turns
 
@@ -34,7 +35,7 @@ SETBUILDER prepares DJ sets for rekordbox. You load a playlist or history from t
 
 **Player check.** After a stick is chosen, a short strip shows one verdict and one primary action (prepare for player, eject, or open rekordbox). Details (folder, database, OneLibrary, SETBUILDER playlists) sit behind a toggle. Green means Device Library players can use the stick; amber means a step is still needed.
 
-**Collection without a stick.** In rekordbox, export via *File → Export Collection in XML…* and load the file. Key and BPM are matched onto the tracks in the set by artist and title. An unencrypted `master.db` and CSV work too. After the import, the library searches across all tracks and matching again fills in missing keys.
+**Collection without a stick.** In rekordbox, export via *File → Export Collection in XML…* and load the file. Key and BPM are matched onto the tracks in the set by artist and title. An unencrypted `master.db` and CSV work too. After the import, the **Library** searches by artist, title, key or stick **playlist** (picker + autocomplete). **Fits after** ranks tracks that can follow a chosen set track; **5 others** pages through more matches.
 
 **Energy.** The Energy Level (1–10) comes from Mixed In Key. SETBUILDER reads it from the rekordbox comment (for example `7A - Energy 6`, `Energie 6`), from Grouping / Label / Remixer in the collection XML or CSV (`Energy` / `Energie`), from a lone `6` or `E8` in those fields, or you set it by hand in the setlist. USB `export.pdb` has comments but not Grouping — reload tags in rekordbox and load the collection XML if energy stays empty.
 
@@ -46,10 +47,12 @@ SETBUILDER prepares DJ sets for rekordbox. You load a playlist or history from t
 
 ![Setlist with key, BPM, energy and transition](docs/screenshots/en/02-setlist-v302.png)
 
-Each track shows its source (rekordbox), phase and role. Below are key, BPM and energy, the transition from the previous track (“Adjacent key (±1) · +1 BPM · Energy +1”) and the reasoning (“Why here”). Change the order by dragging or with the arrows; “Replace” swaps a title.
+Each track shows its source (rekordbox), phase and role. Controls sit under the title: phase and role on one row, play / move / Replace / **Opener** / **Closer** / remove on the next. Hover any control for a short tip. Below are key, BPM and energy, the transition from the previous track (“Adjacent key (±1) · +1 BPM · Energy +1”) and the reasoning (“Why here”). Change the order by dragging or with the arrows; “Replace” swaps a title.
+
+**Opener & closer.** Pin a performance track as **Opener** (stays first, phase Open) or **Closer** (stays last, phase Release). Extract suggests warm open / release pins; you can change or clear them anytime. Sorting re-applies the pins so they stay at the ends.
 
 **Edit set**
-- **Sort:** reorders only inside each phase (Alternatives stay at the end). Same menu on the setlist and on the Key path. If nothing moves, SETBUILDER says so — often key/energy/BPM are missing, or a phase has only one or two tracks.
+- **Sort:** reorders only inside each phase (Alternatives stay at the end; pinned opener/closer stay first/last overall). Same menu on the setlist and on the Key path. If nothing moves, SETBUILDER says so — often key/energy/BPM are missing, or a phase has only one or two tracks.
 
   | Technique | What it does |
   |---|---|
@@ -159,7 +162,7 @@ The interface, the API answers and the exports (PDF, text, rekordbox XML comment
 npm test
 ```
 
-Runs with the built-in Node test runner. The hooks in [`scripts/test-hooks.mjs`](scripts/test-hooks.mjs) resolve the `@/` alias and imports without an extension. Covered: energy parsing, Openkey energy formula and ID3 write (EnergyLevel + comment, audio unchanged, Serato GEOB preserved), Camelot / mix-score rules, set sorts, trim to slot, replacement ranking, Plan B, export (BPM, notes), stick import / write / health / session, and the language files.
+Runs with the built-in Node test runner. The hooks in [`scripts/test-hooks.mjs`](scripts/test-hooks.mjs) resolve the `@/` alias and imports without an extension. Covered: energy parsing, Openkey energy formula and ID3 write (EnergyLevel + comment, audio unchanged, Serato GEOB preserved), Camelot / mix-score rules, set sorts, opener/closer pins, trim to slot, replacement ranking, Plan B, export (BPM, notes), stick import / write / health / session, and the language files.
 
 ## Desktop (Mac, Windows, Linux)
 

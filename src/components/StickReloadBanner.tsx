@@ -53,7 +53,7 @@ export function StickReloadBanner({
       if (!handle) return;
       const stick = await readStickFromHandle(handle);
       await hydrateStickMedia(handle, mediaPathsForDraft(draft, stick.library));
-      await finish(stickLibraryRows(stick.library));
+      await finish(stickLibraryRows(stick.library, stick.sets));
     } catch (caught) {
       setError(errorText(caught, t));
     } finally {
@@ -95,7 +95,7 @@ export function StickReloadBanner({
                 void readRekordboxStick(files)
                   .then((stick) => {
                     rememberStickFiles(files);
-                    return finish(stickLibraryRows(stick.library));
+                    return finish(stickLibraryRows(stick.library, stick.sets));
                   })
                   .catch((caught) => setError(errorText(caught, t)))
                   .finally(() => setBusy(false));

@@ -239,13 +239,31 @@ export function mediaPathsForDraft(draft: SetDraft, library: StickTrack[]): stri
 }
 
 /** Library panel rows from a stick that was just chosen again. */
-export function stickLibraryRows(library: StickTrack[]) {
+export function stickLibraryRows(
+  library: StickTrack[],
+  sets: RekordboxStickSet[] = [],
+) {
+  const playlistsByTrackId = new Map<string, string[]>();
+  for (const set of sets) {
+    // Name + folder path so “Sets / Freitag” and “Freitag” both match.
+    const labels = [set.name, set.path]
+      .map((value) => value.trim())
+      .filter(Boolean);
+    for (const track of set.tracks) {
+      const list = playlistsByTrackId.get(track.id) ?? [];
+      for (const label of labels) {
+        if (!list.includes(label)) list.push(label);
+      }
+      playlistsByTrackId.set(track.id, list);
+    }
+  }
   return library.map((track) => ({
     artist: track.artist,
     title: track.title,
     key: track.keyCamelot || track.keyRaw,
     bpm: track.bpm,
     energy: track.energyLevel,
+    playlists: playlistsByTrackId.get(track.id) ?? [],
     stick: track,
   }));
 }

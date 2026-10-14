@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { FieldNoticeView, type FieldNotice } from "@/components/FieldNotice";
+import { Tip } from "@/components/Hint";
 import { type MessageKey } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n/react";
 
@@ -167,13 +168,15 @@ export function ConnectionSetup({
           <span>Redirect URI</span>
           <div className="setup-copy">
             <input readOnly value={status?.spotifyRedirectUri ?? ""} aria-label="Spotify Redirect URI" />
-            <button
-              type="button"
-              className="btn ghost"
-              onClick={() => void copy(status?.spotifyRedirectUri ?? "")}
-            >
-              {t("common.copy")}
-            </button>
+            <Tip text={t("library.connection.copyUriTip")} end>
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={() => void copy(status?.spotifyRedirectUri ?? "")}
+              >
+                {t("common.copy")}
+              </button>
+            </Tip>
           </div>
         </div>
         <div className="setup-fields">
@@ -223,13 +226,15 @@ export function ConnectionSetup({
           <span>Redirect URI</span>
           <div className="setup-copy">
             <input readOnly value={status?.tidalRedirectUri ?? ""} aria-label="Tidal Redirect URI" />
-            <button
-              type="button"
-              className="btn ghost"
-              onClick={() => void copy(status?.tidalRedirectUri ?? "")}
-            >
-              {t("common.copy")}
-            </button>
+            <Tip text={t("library.connection.copyUriTip")} end>
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={() => void copy(status?.tidalRedirectUri ?? "")}
+              >
+                {t("common.copy")}
+              </button>
+            </Tip>
           </div>
         </div>
         <div className="setup-fields">
@@ -256,9 +261,11 @@ export function ConnectionSetup({
       </section>
 
       <div className="setup-connect-save">
-        <button type="button" className="btn" disabled={saving} onClick={() => void save()}>
-          {saving ? t("library.connection.saving") : t("library.connection.save")}
-        </button>
+        <Tip text={t("library.connection.saveTip")} disabled={saving}>
+          <button type="button" className="btn" disabled={saving} onClick={() => void save()}>
+            {saving ? t("library.connection.saving") : t("library.connection.save")}
+          </button>
+        </Tip>
         {status?.spotifyConfigured ? (
           <a className="button-link" href="/api/auth/login">
             {t("library.connection.connectSpotify")}

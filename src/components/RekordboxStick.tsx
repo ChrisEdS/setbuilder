@@ -137,7 +137,7 @@ export function RekordboxStick({
     const read = await readStickFromHandle(handle);
     setLabel(read.label);
     setSets(read.sets);
-    onIndexed(stickLibraryRows(read.library));
+    onIndexed(stickLibraryRows(read.library, read.sets));
     if (!read.sets.length) setError({ kind: "noSets" });
     void inspectStick(handle)
       .then((next) => setHealth(next))
@@ -163,7 +163,7 @@ export function RekordboxStick({
       rememberStickFiles(files);
       setLabel(read.label);
       setSets(read.sets);
-      onIndexed(stickLibraryRows(read.library));
+      onIndexed(stickLibraryRows(read.library, read.sets));
       if (!read.sets.length) setError({ kind: "noSets" });
       void inspectStickFiles(files)
         .then((next) => {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Tip } from "@/components/Hint";
 import { StickHealthCard } from "@/components/StickHealthCard";
 import { errorText } from "@/lib/i18n/error";
 import { useI18n } from "@/lib/i18n/react";
@@ -197,12 +198,16 @@ export function StickWriteDialog({
             </p>
           ) : null}
           <div className="stick-actions">
-            <button type="button" className="btn ghost" onClick={onClose}>
-              {t("library.stickWrite.close")}
-            </button>
-            <button type="button" className="btn" onClick={() => void choose()} disabled={!canPick}>
-              {t("library.stickWrite.choose")}
-            </button>
+            <Tip text={t("common.closeTip")}>
+              <button type="button" className="btn ghost" onClick={onClose}>
+                {t("library.stickWrite.close")}
+              </button>
+            </Tip>
+            <Tip text={t("library.stickWrite.chooseHint")} disabled={!canPick} end>
+              <button type="button" className="btn" onClick={() => void choose()} disabled={!canPick}>
+                {t("library.stickWrite.choose")}
+              </button>
+            </Tip>
           </div>
           <p className="stick-hint">{t("library.stickWrite.chooseHint")}</p>
         </>

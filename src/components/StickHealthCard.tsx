@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
+import { Tip } from "@/components/Hint";
 import { useI18n } from "@/lib/i18n/react";
 import type { MessageKey, Translate } from "@/lib/i18n/core";
 import {
@@ -223,6 +224,19 @@ export function StickHealthCard({
     }
   }
 
+  function tip(kind: StickAction | "restore"): string {
+    switch (kind) {
+      case "prepare":
+        return t("library.stickHealth.tip.prepare");
+      case "eject":
+        return t("library.stickHealth.tip.eject");
+      case "openRekordbox":
+        return t("library.stickHealth.tip.openRekordbox");
+      case "restore":
+        return t("library.stickHealth.tip.restore");
+    }
+  }
+
   return (
     <section
       className={`stick-strip is-${tone}`}
@@ -234,24 +248,35 @@ export function StickHealthCard({
         <span className="stick-strip-verdict">{t(verdictKey(health, caps.canPrepare))}</span>
         <div className="stick-strip-actions">
           {primary ? (
+            <Tip text={tip(primary)} disabled={busy !== null}>
+              <button
+                type="button"
+                className={"btn" + (busy === primary ? " is-busy" : "")}
+                disabled={busy !== null}
+                onClick={() => void run(primary)}
+              >
+                {label(primary)}
+              </button>
+            </Tip>
+          ) : null}
+          <Tip
+            text={t(
+              open
+                ? "library.stickHealth.lessTip"
+                : "library.stickHealth.detailsTip",
+            )}
+            end
+          >
             <button
               type="button"
-              className={"btn" + (busy === primary ? " is-busy" : "")}
-              disabled={busy !== null}
-              onClick={() => void run(primary)}
+              className="btn ghost stick-strip-toggle"
+              aria-expanded={open}
+              aria-controls={detailsId}
+              onClick={() => setOpen((value) => !value)}
             >
-              {label(primary)}
+              {t(open ? "library.stickHealth.less" : "library.stickHealth.details")}
             </button>
-          ) : null}
-          <button
-            type="button"
-            className="btn ghost stick-strip-toggle"
-            aria-expanded={open}
-            aria-controls={detailsId}
-            onClick={() => setOpen((value) => !value)}
-          >
-            {t(open ? "library.stickHealth.less" : "library.stickHealth.details")}
-          </button>
+          </Tip>
         </div>
       </div>
       {note ? <p className="stick-strip-note">{t(note)}</p> : null}
@@ -268,25 +293,31 @@ export function StickHealthCard({
           <p className="stick-strip-why">{t("library.stickHealth.why")}</p>
           <div className="stick-strip-more">
             {onRecheck ? (
-              <button
-                type="button"
-                className="btn ghost"
+              <Tip
+                text={t("library.stickHealth.recheckTip")}
                 disabled={checking || busy !== null}
-                onClick={() => void onRecheck()}
               >
-                {checking ? t("library.loading") : t("library.stickHealth.recheck")}
-              </button>
+                <button
+                  type="button"
+                  className="btn ghost"
+                  disabled={checking || busy !== null}
+                  onClick={() => void onRecheck()}
+                >
+                  {checking ? t("library.loading") : t("library.stickHealth.recheck")}
+                </button>
+              </Tip>
             ) : null}
             {secondary.map((kind) => (
-              <button
-                key={kind}
-                type="button"
-                className="btn ghost"
-                disabled={busy !== null}
-                onClick={() => void run(kind)}
-              >
-                {label(kind)}
-              </button>
+              <Tip key={kind} text={tip(kind)} disabled={busy !== null} end>
+                <button
+                  type="button"
+                  className="btn ghost"
+                  disabled={busy !== null}
+                  onClick={() => void run(kind)}
+                >
+                  {label(kind)}
+                </button>
+              </Tip>
             ))}
           </div>
         </div>

@@ -214,9 +214,32 @@ const de = {
   "builder.row.phaseAria": "Phase für {name}",
   "builder.row.roleAria": "Rolle für {name}",
   "builder.row.playAria": "{name} abspielen",
+  "builder.row.playTip": "Im Player unten anhören — Fokus auf diesen Track.",
+  "builder.row.moveUpTip": "Einen Platz nach oben in der gespielten Reihenfolge.",
+  "builder.row.moveDownTip": "Einen Platz nach unten in der gespielten Reihenfolge.",
+  "builder.row.removeTip": "Aus dem Set entfernen. Opener-/Closer-Pin fällt mit weg.",
+  "builder.row.removeAria": "{name} entfernen",
+  "builder.row.sourceTip":
+    "Quelle des Tracks: Stick/rekordbox, Spotify, Tidal oder manuell hinzugefügt.",
   "builder.row.replace": "Ersatz",
   "builder.row.replaceTitle":
     "Ersatz aus deinen Alternativen oder aus der Bibliothek, passend zu Vorgänger und Nachfolger",
+  "builder.row.setOpener": "Opener",
+  "builder.row.setOpenerTitle":
+    "Als ersten Track des Sets festlegen (Open). Bleibt beim Sortieren vorne.",
+  "builder.row.clearOpener": "Opener lösen",
+  "builder.row.clearOpenerTip":
+    "Pin lösen — der Track bleibt im Set, Sortieren wählt wieder frei den Anfang.",
+  "builder.row.setCloser": "Closer",
+  "builder.row.setCloserTitle":
+    "Als letzten Track des Sets festlegen (Release). Bleibt beim Sortieren hinten.",
+  "builder.row.clearCloser": "Closer lösen",
+  "builder.row.clearCloserTip":
+    "Pin lösen — der Track bleibt im Set, Sortieren wählt wieder frei das Ende.",
+  "builder.row.openerBadge": "Opener",
+  "builder.row.openerBadgeTip": "Gepinnter Opener — erster Performance-Track, auch nach Sortieren.",
+  "builder.row.closerBadge": "Closer",
+  "builder.row.closerBadgeTip": "Gepinnter Closer — letzter Performance-Track, auch nach Sortieren.",
   "builder.row.why": "Warum hier:",
   "builder.row.details": "Details",
   "builder.row.keyOpen": "Key offen",
@@ -611,9 +634,32 @@ const en: Record<keyof typeof de, string> = {
   "builder.row.phaseAria": "Phase for {name}",
   "builder.row.roleAria": "Role for {name}",
   "builder.row.playAria": "Play {name}",
+  "builder.row.playTip": "Listen in the player below — focus this track.",
+  "builder.row.moveUpTip": "Move one slot up in the played order.",
+  "builder.row.moveDownTip": "Move one slot down in the played order.",
+  "builder.row.removeTip": "Remove from the set. Opener/closer pin goes with it.",
+  "builder.row.removeAria": "Remove {name}",
+  "builder.row.sourceTip":
+    "Where the track came from: stick/rekordbox, Spotify, Tidal, or added by hand.",
   "builder.row.replace": "Replace",
   "builder.row.replaceTitle":
     "Replacement from your Alternatives or the library, matched to the previous and next track",
+  "builder.row.setOpener": "Opener",
+  "builder.row.setOpenerTitle":
+    "Pin as the first track of the set (Open). Stays first when you sort.",
+  "builder.row.clearOpener": "Unpin opener",
+  "builder.row.clearOpenerTip":
+    "Unpin — the track stays in the set; sorting picks the start freely again.",
+  "builder.row.setCloser": "Closer",
+  "builder.row.setCloserTitle":
+    "Pin as the last track of the set (Release). Stays last when you sort.",
+  "builder.row.clearCloser": "Unpin closer",
+  "builder.row.clearCloserTip":
+    "Unpin — the track stays in the set; sorting picks the end freely again.",
+  "builder.row.openerBadge": "Opener",
+  "builder.row.openerBadgeTip": "Pinned opener — first performance track, even after sorting.",
+  "builder.row.closerBadge": "Closer",
+  "builder.row.closerBadgeTip": "Pinned closer — last performance track, even after sorting.",
   "builder.row.why": "Why here:",
   "builder.row.details": "Details",
   "builder.row.keyOpen": "Key open",

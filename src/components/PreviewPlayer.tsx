@@ -6,6 +6,7 @@ import { trackFilePath } from "@/lib/export-booth";
 import { mixJoin } from "@/lib/harmonic";
 import { playerEmbed, type PlayableTrack } from "@/lib/player";
 import { useI18n } from "@/lib/i18n/react";
+import { Tip } from "@/components/Hint";
 import { TrackArt } from "@/components/TrackArt";
 import { stickAudioUrl } from "@/lib/stick-audio";
 import { performanceTracks, type SetTrack } from "@/lib/set";
@@ -61,15 +62,17 @@ export function PreviewPlayer({ tracks, currentId, onChange, onClose }: Props) {
     <aside className="preview-player" aria-label={t("crates.player.ariaLabel")}>
       <div className="preview-dock">
         <div className="preview-now">
-          <button
-            type="button"
-            className="player-skip"
-            disabled={!prev}
-            onClick={() => prev && onChange(prev.id)}
-            aria-label={t("crates.player.prev")}
-          >
-            ‹
-          </button>
+          <Tip text={t("crates.player.prevTip")} disabled={!prev}>
+            <button
+              type="button"
+              className="player-skip"
+              disabled={!prev}
+              onClick={() => prev && onChange(prev.id)}
+              aria-label={t("crates.player.prev")}
+            >
+              ‹
+            </button>
+          </Tip>
           <TrackArt
             url={track.imageUrl}
             className="preview-art"
@@ -89,23 +92,27 @@ export function PreviewPlayer({ tracks, currentId, onChange, onClose }: Props) {
               </em>
             ) : null}
           </div>
-          <button
-            type="button"
-            className="player-skip"
-            disabled={!next}
-            onClick={() => next && onChange(next.id)}
-            aria-label={t("crates.player.next")}
-          >
-            ›
-          </button>
-          <button
-            type="button"
-            className="preview-close"
-            onClick={onClose}
-            aria-label={t("crates.player.close")}
-          >
-            ✕
-          </button>
+          <Tip text={t("crates.player.nextTip")} disabled={!next}>
+            <button
+              type="button"
+              className="player-skip"
+              disabled={!next}
+              onClick={() => next && onChange(next.id)}
+              aria-label={t("crates.player.next")}
+            >
+              ›
+            </button>
+          </Tip>
+          <Tip text={t("crates.player.closeTip")} end>
+            <button
+              type="button"
+              className="preview-close"
+              onClick={onClose}
+              aria-label={t("crates.player.close")}
+            >
+              ✕
+            </button>
+          </Tip>
         </div>
         {localAudio ? (
           <audio className="preview-audio" src={localAudio} controls autoPlay />

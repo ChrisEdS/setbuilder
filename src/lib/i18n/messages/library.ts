@@ -63,13 +63,20 @@ const de = {
 
   // Library panel: browser
   "library.browser.title": "Bibliothek",
-  "library.browser.searchPlaceholder": "Artist, Titel oder Key…",
-  "library.browser.searchAria": "rekordbox suchen",
+  "library.browser.searchPlaceholder": "Artist, Titel, Key oder Playlist…",
+  "library.browser.searchAria": "rekordbox nach Artist, Titel, Key oder Playlist suchen",
+  "library.browser.searchTip":
+    "Frei tippen: Artist, Titel, Key oder Playlistname. Rechts eine Playlist wählen filtert die Liste darauf.",
+  "library.browser.playlistPick": "Playlist",
+  "library.browser.playlistPickAll": "Alle Playlists",
+  "library.browser.playlistPickAria": "Nach Playlist filtern",
+  "library.browser.playlistPickTip":
+    "Playlist vom Stick wählen — zeigt nur Tracks aus dieser Playlist. „Alle Playlists“ setzt die Suche zurück.",
   "library.browser.rewrite": "Keys & BPM neu schreiben",
   "library.browser.rewriteTip":
     "Schreibt Key und BPM aus dieser Liste in die Tracks deiner Setliste. Gefunden wird über Artist und Titel. Vorhandene Werte werden überschrieben. Tracks ohne Treffer und leere Felder in der Liste lassen den alten Wert stehen.",
   "library.browser.note":
-    "Alle Tracks aus der geladenen Rekordbox-Datenbank. Mit ▶ hörst du rein, mit „{add}“ legst du einen Track in Phase und Rolle deiner Wahl. „{rewrite}“ gleicht die Setliste mit dieser Liste ab.",
+    "Alle Tracks aus der geladenen Rekordbox-Datenbank. Suche nach Artist, Titel, Key oder Playlist — rechts eine Playlist wählen filtert genau darauf. Mit ▶ hörst du rein, mit „{add}“ legst du einen Track in Phase und Rolle. „{rewrite}“ gleicht die Setliste ab.",
   "library.browser.empty":
     "Noch kein Index. Nach dem Collection-Import kannst du hier suchen und erneut matchen.",
   "library.add.title": "Beim Hinzufügen",
@@ -77,6 +84,12 @@ const de = {
   "library.add.role": "Rolle",
   "library.add.fits": "Passt zu",
   "library.add.allTracks": "Alle Tracks",
+  "library.add.moreMatches": "5 andere",
+  "library.add.moreMatchesTip":
+    "Nächste 5 passende Tracks — Key und BPM passen hinter den gewählten Track. Nochmal tippen zeigt die nächsten.",
+  "library.add.moreMatchesAria":
+    "Fünf andere passende Tracks anzeigen ({page} von {pages})",
+  "library.add.matchCount": "{shown} von {total} passenden Tracks",
   "library.row.play": "Abspielen",
   "library.row.playAria": "{title} abspielen",
   "library.row.playDisabled": "Nur mit gewähltem Stick-Ordner abspielbar",
@@ -152,6 +165,10 @@ const de = {
   "library.connection.stored": "Gespeichert",
   "library.connection.saving": "Speichere…",
   "library.connection.save": "Zugangsdaten speichern",
+  "library.connection.saveTip":
+    "Client ID und Secret lokal speichern — nur auf diesem Rechner, nicht in der Cloud.",
+  "library.connection.copyUriTip":
+    "Redirect-URI kopieren und exakt so in die Developer-App eintragen.",
   "library.connection.connectSpotify": "Mit Spotify verbinden",
   "library.connection.connectTidal": "Mit Tidal verbinden",
 
@@ -217,8 +234,19 @@ const de = {
   "library.stickHealth.verdict.broken": "Keine lesbare rekordbox-Datenbank auf diesem Stick.",
   "library.stickHealth.verdict.incomplete": "Nur eine Datei gewählt — für den Player-Check den ganzen Stick wählen.",
   "library.stickHealth.details": "Details",
+  "library.stickHealth.detailsTip": "Fakten zur Stick-Datenbank und Player-Bibliothek einblenden.",
   "library.stickHealth.less": "Weniger",
+  "library.stickHealth.lessTip": "Detailzeile wieder einklappen.",
   "library.stickHealth.recheck": "Erneut prüfen",
+  "library.stickHealth.recheckTip": "Stick erneut lesen — nach rekordbox oder Dateiänderungen.",
+  "library.stickHealth.tip.prepare":
+    "exportLibrary.db zur Seite legen, damit ältere Player export.pdb lesen. Danach auswerfen.",
+  "library.stickHealth.tip.eject":
+    "Stick sicher auswerfen, bevor du ihn abziehst und in den Player steckst.",
+  "library.stickHealth.tip.openRekordbox":
+    "rekordbox öffnen, dort den Stick auswerfen und die Player-Bibliothek schreiben lassen.",
+  "library.stickHealth.tip.restore":
+    "OneLibrary aus dem SETBUILDER-Backup zurück auf den Stick legen.",
   "library.stickHealth.fact.folder": "Ordner",
   "library.stickHealth.fact.folderNone": "kein PIONEER-Ordner",
   "library.stickHealth.fact.folderBoth": "PIONEER und .PIONEER",
@@ -323,13 +351,20 @@ const en: Record<keyof typeof de, string> = {
 
   // Library panel: browser
   "library.browser.title": "Library",
-  "library.browser.searchPlaceholder": "Artist, title or key…",
-  "library.browser.searchAria": "Search rekordbox",
+  "library.browser.searchPlaceholder": "Artist, title, key or playlist…",
+  "library.browser.searchAria": "Search rekordbox by artist, title, key or playlist",
+  "library.browser.searchTip":
+    "Type freely: artist, title, key or playlist name. Pick a playlist on the right to filter the list to it.",
+  "library.browser.playlistPick": "Playlist",
+  "library.browser.playlistPickAll": "All playlists",
+  "library.browser.playlistPickAria": "Filter by playlist",
+  "library.browser.playlistPickTip":
+    "Pick a stick playlist — shows only tracks from that playlist. “All playlists” resets the search.",
   "library.browser.rewrite": "Rewrite keys & BPM",
   "library.browser.rewriteTip":
     "Writes key and BPM from this list into the tracks of your setlist. Tracks are found by artist and title. Existing values are overwritten. Tracks without a match and empty fields in the list keep their old value.",
   "library.browser.note":
-    "All tracks from the loaded rekordbox database. Use ▶ to preview, use “{add}” to put a track into the phase and role of your choice. “{rewrite}” syncs the setlist with this list.",
+    "All tracks from the loaded rekordbox database. Search by artist, title, key or playlist — pick a playlist on the right to filter to it exactly. Use ▶ to preview, “{add}” to put a track into phase and role. “{rewrite}” syncs the setlist.",
   "library.browser.empty":
     "No index yet. After importing the collection you can search here and match again.",
   "library.add.title": "When adding",
@@ -337,6 +372,12 @@ const en: Record<keyof typeof de, string> = {
   "library.add.role": "Role",
   "library.add.fits": "Fits after",
   "library.add.allTracks": "All tracks",
+  "library.add.moreMatches": "5 others",
+  "library.add.moreMatchesTip":
+    "Next 5 matching tracks — key and BPM fit after the chosen track. Tap again for the next batch.",
+  "library.add.moreMatchesAria":
+    "Show five other matching tracks (page {page} of {pages})",
+  "library.add.matchCount": "{shown} of {total} matching tracks",
   "library.row.play": "Play",
   "library.row.playAria": "Play {title}",
   "library.row.playDisabled": "Only playable with a chosen stick folder",
@@ -412,6 +453,10 @@ const en: Record<keyof typeof de, string> = {
   "library.connection.stored": "Saved",
   "library.connection.saving": "Saving…",
   "library.connection.save": "Save credentials",
+  "library.connection.saveTip":
+    "Save client ID and secret locally — on this computer only, not in the cloud.",
+  "library.connection.copyUriTip":
+    "Copy the redirect URI and paste it exactly into the developer app.",
   "library.connection.connectSpotify": "Connect with Spotify",
   "library.connection.connectTidal": "Connect with Tidal",
 
@@ -477,8 +522,19 @@ const en: Record<keyof typeof de, string> = {
   "library.stickHealth.verdict.broken": "No readable rekordbox database on this stick.",
   "library.stickHealth.verdict.incomplete": "Only one file picked — choose the whole stick for the player check.",
   "library.stickHealth.details": "Details",
+  "library.stickHealth.detailsTip": "Show facts about the stick database and player library.",
   "library.stickHealth.less": "Less",
+  "library.stickHealth.lessTip": "Collapse the detail row again.",
   "library.stickHealth.recheck": "Check again",
+  "library.stickHealth.recheckTip": "Re-read the stick — after rekordbox or file changes.",
+  "library.stickHealth.tip.prepare":
+    "Move exportLibrary.db aside so older players read export.pdb. Then eject.",
+  "library.stickHealth.tip.eject":
+    "Eject the stick safely before you unplug it and put it in the player.",
+  "library.stickHealth.tip.openRekordbox":
+    "Open rekordbox, eject the stick there, and let it write the player library.",
+  "library.stickHealth.tip.restore":
+    "Put OneLibrary from the SETBUILDER backup back onto the stick.",
   "library.stickHealth.fact.folder": "Folder",
   "library.stickHealth.fact.folderNone": "no PIONEER folder",
   "library.stickHealth.fact.folderBoth": "PIONEER and .PIONEER",

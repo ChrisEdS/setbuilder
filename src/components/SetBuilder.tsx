@@ -28,6 +28,7 @@ import {
 } from "react";
 import { ConnectionSetup } from "@/components/ConnectionSetup";
 import { FieldNoticeView, type FieldNotice } from "@/components/FieldNotice";
+import { Tip } from "@/components/Hint";
 import { EnergyPath } from "@/components/EnergyPath";
 import { HarmonicPath } from "@/components/HarmonicPath";
 import { LibraryPanel } from "@/components/LibraryPanel";
@@ -74,6 +75,13 @@ import { pickStreamingMatch } from "@/lib/match-link";
 import { swapIntoSlot } from "@/lib/replace-track";
 import { CAMELOT_CODES, mixJoin, relationHint } from "@/lib/harmonic";
 import { distributeRoles, fitToSlot, reorderDraft } from "@/lib/extract-set";
+import {
+  applySetAnchors,
+  clearCloser,
+  clearOpener,
+  pinCloser,
+  pinOpener,
+} from "@/lib/set-anchors";
 import { isMetadataComment, parseEnergyLevel } from "@/lib/energy";
 import type { SetSortTechnique } from "@/lib/sort-set";
 import { looksLikeMusicLink, sourceLabel } from "@/lib/music-link";
@@ -523,7 +531,7 @@ export function SetBuilder() {
         if (cancelled) return;
         await hydrateStickMedia(handle, mediaPathsForDraft(readStoredDraft(), stick.library));
         if (cancelled) return;
-        setLibraryRows(stickLibraryRows(stick.library));
+        setLibraryRows(stickLibraryRows(stick.library, stick.sets));
         const covered = rehydrateStickCovers(readStoredDraft(), stick.library);
         const withEnergy = await enrichDraftEnergyFromFiles(covered, handle);
         if (cancelled) return;
@@ -1153,18 +1161,26 @@ export function SetBuilder() {
   }
 
   function patchTrack(id: string, patch: Partial<SetTrack>) {
-    setDraft((current) => ({
-      ...current,
-      tracks: current.tracks.map((track) =>
+    setDraft((current) => {
+      const tracks = current.tracks.map((track) =>
         track.id === id ? { ...track, ...patch } : track,
-      ),
-    }));
+      );
+      const demoted = patch.role === "safety";
+      return {
+        ...current,
+        openerId: demoted && current.openerId === id ? null : current.openerId,
+        closerId: demoted && current.closerId === id ? null : current.closerId,
+        tracks,
+      };
+    });
   }
 
   function removeTrack(id: string) {
     setFocusTrackId((current) => (current === id ? null : current));
     setDraft((current) => ({
       ...current,
+      openerId: current.openerId === id ? null : current.openerId,
+      closerId: current.closerId === id ? null : current.closerId,
       tracks: current.tracks.filter((track) => track.id !== id),
     }));
   }
@@ -1186,7 +1202,8 @@ export function SetBuilder() {
       const tracks = [...current.tracks];
       const [item] = tracks.splice(from, 1);
       tracks.splice(to, 0, item);
-      return { ...current, tracks };
+      // Pins stay at the ends after a manual drag / arrow move.
+      return applySetAnchors({ ...current, tracks });
     });
   }
 
@@ -1235,10 +1252,15 @@ export function SetBuilder() {
   }
 
   function replaceTrack(targetId: string, replacementId: string) {
-    setDraft((current) => ({
-      ...current,
-      tracks: swapIntoSlot(current.tracks, targetId, replacementId, t),
-    }));
+    setDraft((current) => {
+      const tracks = swapIntoSlot(current.tracks, targetId, replacementId, t);
+      return {
+        ...current,
+        openerId: current.openerId === targetId ? replacementId : current.openerId,
+        closerId: current.closerId === targetId ? replacementId : current.closerId,
+        tracks,
+      };
+    });
     setReplaceFor(null);
     setStatus(t("builder.status.replaced"));
   }
@@ -1247,10 +1269,20 @@ export function SetBuilder() {
     const target = draft.tracks.find((track) => track.id === targetId);
     if (!target) return;
     const incoming = libraryTrackToSetTrack(row, target.phase, target.role, t);
-    setDraft((current) => ({
-      ...current,
-      tracks: swapIntoSlot([...current.tracks, incoming], targetId, incoming.id, t),
-    }));
+    setDraft((current) => {
+      const tracks = swapIntoSlot(
+        [...current.tracks, incoming],
+        targetId,
+        incoming.id,
+        t,
+      );
+      return {
+        ...current,
+        openerId: current.openerId === targetId ? incoming.id : current.openerId,
+        closerId: current.closerId === targetId ? incoming.id : current.closerId,
+        tracks,
+      };
+    });
     setReplaceFor(null);
     setStatus(
       t("builder.status.replacedFromLibrary", { name: incoming.name, target: target.name }),
@@ -2051,21 +2083,25 @@ export function SetBuilder() {
               )}
 
               <div className="seg crate-add-tabs" role="tablist" aria-label={t("builder.add.tabsAria")}>
-                {(["link", "search", "manual", "auto"] as const).map((id) => (
-                  <button
+                {(["link", "search", "manual", "auto"] as const).map((id, index, all) => (
+                  <Tip
                     key={id}
-                    type="button"
-                    role="tab"
-                    aria-selected={addTab === id}
-                    className={addTab === id ? "seg-item active" : "seg-item"}
-                    title={t(`builder.add.tab.${id}.hint`)}
-                    onClick={() => {
-                      setAddTab(id);
-                      clearNotice();
-                    }}
+                    text={t(`builder.add.tab.${id}.hint`)}
+                    end={index === all.length - 1}
                   >
-                    {t(`builder.add.tab.${id}.label`)}
-                  </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={addTab === id}
+                      className={addTab === id ? "seg-item active" : "seg-item"}
+                      onClick={() => {
+                        setAddTab(id);
+                        clearNotice();
+                      }}
+                    >
+                      {t(`builder.add.tab.${id}.label`)}
+                    </button>
+                  </Tip>
                 ))}
               </div>
 
@@ -2349,18 +2385,22 @@ export function SetBuilder() {
 
           <div className="set-bar">
             <div className="seg crate-view-tabs" role="tablist" aria-label={t("builder.view.aria")}>
-              {(["list", "roles", "keys"] as const).map((id) => (
-                <button
+              {(["list", "roles", "keys"] as const).map((id, index, all) => (
+                <Tip
                   key={id}
-                  type="button"
-                  role="tab"
-                  aria-selected={crateView === id}
-                  className={crateView === id ? "seg-item active" : "seg-item"}
-                  title={t(`builder.view.${id}.hint`)}
-                  onClick={() => setCrateView(id)}
+                  text={t(`builder.view.${id}.hint`)}
+                  end={index === all.length - 1}
                 >
-                  {t(`builder.view.${id}.label`)}
-                </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={crateView === id}
+                    className={crateView === id ? "seg-item active" : "seg-item"}
+                    onClick={() => setCrateView(id)}
+                  >
+                    {t(`builder.view.${id}.label`)}
+                  </button>
+                </Tip>
               ))}
             </div>
             <SetMenus
@@ -2476,52 +2516,64 @@ export function SetBuilder() {
                           ),
                         })}
                   </p>
-                  <button
-                    type="button"
-                    className="list-setting"
-                    title={t("builder.list.detailsTitle")}
-                    aria-pressed={
-                      visibleTimeline.length > 0 &&
-                      visibleTimeline.every((track) => openDetails.has(track.id))
-                    }
+                  <Tip
+                    text={t("builder.list.detailsTitle")}
                     disabled={visibleTimeline.length === 0}
-                    onClick={() =>
-                      setOpenDetails((current) =>
-                        visibleTimeline.every((track) => current.has(track.id))
-                          ? new Set()
-                          : new Set(visibleTimeline.map((track) => track.id)),
-                      )
-                    }
+                    end
                   >
-                    {visibleTimeline.length > 0 &&
-                    visibleTimeline.every((track) => openDetails.has(track.id))
-                      ? t("builder.list.detailsClose")
-                      : t("builder.list.detailsOpen")}
-                  </button>
+                    <button
+                      type="button"
+                      className="list-setting"
+                      aria-pressed={
+                        visibleTimeline.length > 0 &&
+                        visibleTimeline.every((track) => openDetails.has(track.id))
+                      }
+                      disabled={visibleTimeline.length === 0}
+                      onClick={() =>
+                        setOpenDetails((current) =>
+                          visibleTimeline.every((track) => current.has(track.id))
+                            ? new Set()
+                            : new Set(visibleTimeline.map((track) => track.id)),
+                        )
+                      }
+                    >
+                      {visibleTimeline.length > 0 &&
+                      visibleTimeline.every((track) => openDetails.has(track.id))
+                        ? t("builder.list.detailsClose")
+                        : t("builder.list.detailsOpen")}
+                    </button>
+                  </Tip>
                 </div>
                 <div
                   className="seg crate-list-filter"
                   role="group"
                   aria-label={t("builder.list.filterAria")}
                 >
-                  <button
-                    type="button"
-                    className={roleFilter === "all" ? "seg-item active" : "seg-item"}
-                    title={t("builder.list.filterSetTitle")}
-                    onClick={() => setRoleFilter("all")}
-                  >
-                    {t("builder.list.filterSet")}
-                  </button>
-                  {TRACK_ROLES.map((role) => (
+                  <Tip text={t("builder.list.filterSetTitle")}>
                     <button
-                      key={role.id}
                       type="button"
-                      className={roleFilter === role.id ? "seg-item active" : "seg-item"}
-                      title={roleHint(t, role.id)}
-                      onClick={() => setRoleFilter(role.id)}
+                      className={roleFilter === "all" ? "seg-item active" : "seg-item"}
+                      onClick={() => setRoleFilter("all")}
                     >
-                      {roleLabel(t, role.id)}
+                      {t("builder.list.filterSet")}
                     </button>
+                  </Tip>
+                  {TRACK_ROLES.map((role, index, all) => (
+                    <Tip
+                      key={role.id}
+                      text={roleHint(t, role.id)}
+                      end={index === all.length - 1}
+                    >
+                      <button
+                        type="button"
+                        className={
+                          roleFilter === role.id ? "seg-item active" : "seg-item"
+                        }
+                        onClick={() => setRoleFilter(role.id)}
+                      >
+                        {roleLabel(t, role.id)}
+                      </button>
+                    </Tip>
                   ))}
                 </div>
               </div>
@@ -2562,153 +2614,260 @@ export function SetBuilder() {
                   }}
                 >
                   <span className="manual-index">
-                    <button
-                      type="button"
-                      className="drag-handle"
-                      draggable
-                      aria-label={t("builder.row.dragAria", { name: track.name })}
-                      title={t("builder.row.dragTitle")}
-                      onDragStart={(event) => {
-                        event.dataTransfer.setData("text/plain", track.id);
-                        event.dataTransfer.effectAllowed = "move";
-                        dragIdRef.current = track.id;
-                        const id = track.id;
-                        requestAnimationFrame(() => setDragId(id));
-                      }}
-                      onDragEnd={() => {
-                        dragIdRef.current = null;
-                        setDragId(null);
-                        setOverId(null);
-                      }}
-                    >
-                      <i />
-                      <i />
-                      <i />
-                      <i />
-                      <i />
-                      <i />
-                    </button>
+                    <Tip text={t("builder.row.dragTitle")}>
+                      <button
+                        type="button"
+                        className="drag-handle"
+                        draggable
+                        aria-label={t("builder.row.dragAria", {
+                          name: track.name,
+                        })}
+                        onDragStart={(event) => {
+                          event.dataTransfer.setData("text/plain", track.id);
+                          event.dataTransfer.effectAllowed = "move";
+                          dragIdRef.current = track.id;
+                          const id = track.id;
+                          requestAnimationFrame(() => setDragId(id));
+                        }}
+                        onDragEnd={() => {
+                          dragIdRef.current = null;
+                          setDragId(null);
+                          setOverId(null);
+                        }}
+                      >
+                        <i />
+                        <i />
+                        <i />
+                        <i />
+                        <i />
+                        <i />
+                      </button>
+                    </Tip>
                     <em>{positions.get(track.id) ?? "—"}</em>
                   </span>
                   <div className="manual-body">
                     <div className="manual-row-main">
-                      <button
-                        type="button"
-                        className="manual-select"
-                        onClick={() => setFocusTrackId(track.id)}
-                      >
-                        <TrackArt url={track.imageUrl} size={44} />
-                        <span className="manual-copy">
-                          <strong>{track.name}</strong>
-                          <span>
-                            {artistLine(track.artists, t)}
-                            {track.durationMs
-                              ? ` · ${formatDuration(track.durationMs)}`
-                              : ""}
-                          </span>
-                        </span>
-                      </button>
-                      <div className="manual-meta">
-                        <em
-                          className={`source-pill source-${track.source || "manual"}`}
-                        >
-                          {sourceLabel(track.source)}
-                        </em>
-                        <select
-                          value={track.phase}
-                          onChange={(e) =>
-                            patchTrack(track.id, {
-                              phase: e.target.value as SetPhaseId,
-                            })
-                          }
-                          aria-label={t("builder.row.phaseAria", { name: track.name })}
-                          title={t("builder.row.phaseHint")}
-                        >
-                          {PHASES.map((phase) => (
-                            <option
-                              key={phase.id}
-                              value={phase.id}
-                              title={phaseHint(t, phase.id)}
-                            >
-                              {phaseLabel(t, phase.id)}
-                            </option>
-                          ))}
-                        </select>
-                        <select
-                          value={track.role}
-                          onChange={(e) => {
-                            const role = e.target.value as TrackRole;
-                            patchTrack(track.id, {
-                              role,
-                              why: t("analysis.why.manual"),
-                              // Same rule as in the Rollen view: an Alternative sits in the phase its energy fits.
-                              ...(role === "safety"
-                                ? {
-                                    phase: bestPhaseFor(
-                                      track,
-                                      draft.tracks.filter((item) => item.id !== track.id),
-                                    ),
-                                  }
-                                : {}),
-                            });
-                          }}
-                          aria-label={t("builder.row.roleAria", { name: track.name })}
-                          title={t("builder.row.roleHint")}
-                        >
-                          {TRACK_ROLES.map((role) => (
-                            <option
-                              key={role.id}
-                              value={role.id}
-                              title={roleHint(t, role.id)}
-                            >
-                              {roleLabel(t, role.id)}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="timeline-tools">
+                      <div className="manual-select-wrap">
                         <button
                           type="button"
-                          className={
-                            focusTrackId === track.id ? "is-playing" : undefined
-                          }
+                          className="manual-select"
                           onClick={() => setFocusTrackId(track.id)}
-                          aria-label={t("builder.row.playAria", { name: track.name })}
                         >
-                          ▶
+                          <TrackArt url={track.imageUrl} size={44} />
+                          <span className="manual-copy">
+                            <strong>{track.name}</strong>
+                            <span>
+                              {artistLine(track.artists, t)}
+                              {track.durationMs
+                                ? ` · ${formatDuration(track.durationMs)}`
+                                : ""}
+                            </span>
+                          </span>
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => moveTrack(track.id, -1)}
-                        >
-                          ↑
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => moveTrack(track.id, 1)}
-                        >
-                          ↓
-                        </button>
-                        {track.role !== "safety" ? (
-                          <button
-                            type="button"
-                            title={t("builder.row.replaceTitle")}
-                            onClick={() =>
-                              setReplaceFor((current) =>
-                                current === track.id ? null : track.id,
-                              )
-                            }
-                          >
-                            {t("builder.row.replace")}
-                          </button>
+                        {draft.openerId === track.id ||
+                        draft.closerId === track.id ? (
+                          <span className="anchor-pills">
+                            {draft.openerId === track.id ? (
+                              <Tip text={t("builder.row.openerBadgeTip")}>
+                                <em className="anchor-pill is-opener">
+                                  {t("builder.row.openerBadge")}
+                                </em>
+                              </Tip>
+                            ) : null}
+                            {draft.closerId === track.id ? (
+                              <Tip text={t("builder.row.closerBadgeTip")} end>
+                                <em className="anchor-pill is-closer">
+                                  {t("builder.row.closerBadge")}
+                                </em>
+                              </Tip>
+                            ) : null}
+                          </span>
                         ) : null}
-                        <button
-                          type="button"
-                          className="danger"
-                          onClick={() => removeTrack(track.id)}
-                        >
-                          ✕
-                        </button>
+                      </div>
+                      <div className="manual-controls">
+                        <div className="manual-meta">
+                          <Tip text={t("builder.row.sourceTip")}>
+                            <em
+                              className={`source-pill source-${track.source || "manual"}`}
+                            >
+                              {sourceLabel(track.source)}
+                            </em>
+                          </Tip>
+                          <Tip text={t("builder.row.phaseHint")}>
+                            <select
+                              value={track.phase}
+                              onChange={(e) =>
+                                patchTrack(track.id, {
+                                  phase: e.target.value as SetPhaseId,
+                                })
+                              }
+                              aria-label={t("builder.row.phaseAria", {
+                                name: track.name,
+                              })}
+                            >
+                              {PHASES.map((phase) => (
+                                <option key={phase.id} value={phase.id}>
+                                  {phaseLabel(t, phase.id)}
+                                </option>
+                              ))}
+                            </select>
+                          </Tip>
+                          <Tip text={t("builder.row.roleHint")}>
+                            <select
+                              value={track.role}
+                              onChange={(e) => {
+                                const role = e.target.value as TrackRole;
+                                patchTrack(track.id, {
+                                  role,
+                                  why: t("analysis.why.manual"),
+                                  // Same rule as in the Rollen view: an Alternative sits in the phase its energy fits.
+                                  ...(role === "safety"
+                                    ? {
+                                        phase: bestPhaseFor(
+                                          track,
+                                          draft.tracks.filter(
+                                            (item) => item.id !== track.id,
+                                          ),
+                                        ),
+                                      }
+                                    : {}),
+                                });
+                              }}
+                              aria-label={t("builder.row.roleAria", {
+                                name: track.name,
+                              })}
+                            >
+                              {TRACK_ROLES.map((role) => (
+                                <option key={role.id} value={role.id}>
+                                  {roleLabel(t, role.id)}
+                                </option>
+                              ))}
+                            </select>
+                          </Tip>
+                        </div>
+                        <div className="timeline-tools">
+                          <Tip text={t("builder.row.playTip")}>
+                            <button
+                              type="button"
+                              className={
+                                focusTrackId === track.id
+                                  ? "is-playing"
+                                  : undefined
+                              }
+                              onClick={() => setFocusTrackId(track.id)}
+                              aria-label={t("builder.row.playAria", {
+                                name: track.name,
+                              })}
+                            >
+                              ▶
+                            </button>
+                          </Tip>
+                          <Tip text={t("builder.row.moveUpTip")}>
+                            <button
+                              type="button"
+                              onClick={() => moveTrack(track.id, -1)}
+                              aria-label={t("builder.row.moveUpTip")}
+                            >
+                              ↑
+                            </button>
+                          </Tip>
+                          <Tip text={t("builder.row.moveDownTip")}>
+                            <button
+                              type="button"
+                              onClick={() => moveTrack(track.id, 1)}
+                              aria-label={t("builder.row.moveDownTip")}
+                            >
+                              ↓
+                            </button>
+                          </Tip>
+                          {track.role !== "safety" ? (
+                            <Tip text={t("builder.row.replaceTitle")}>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setReplaceFor((current) =>
+                                    current === track.id ? null : track.id,
+                                  )
+                                }
+                              >
+                                {t("builder.row.replace")}
+                              </button>
+                            </Tip>
+                          ) : null}
+                          {track.role !== "safety" ? (
+                            <Tip
+                              text={
+                                draft.openerId === track.id
+                                  ? t("builder.row.clearOpenerTip")
+                                  : t("builder.row.setOpenerTitle")
+                              }
+                            >
+                              <button
+                                type="button"
+                                className={
+                                  draft.openerId === track.id
+                                    ? "is-anchor"
+                                    : undefined
+                                }
+                                aria-pressed={draft.openerId === track.id}
+                                onClick={() =>
+                                  setDraft((current) =>
+                                    current.openerId === track.id
+                                      ? clearOpener(current)
+                                      : pinOpener(current, track.id),
+                                  )
+                                }
+                              >
+                                {draft.openerId === track.id
+                                  ? t("builder.row.clearOpener")
+                                  : t("builder.row.setOpener")}
+                              </button>
+                            </Tip>
+                          ) : null}
+                          {track.role !== "safety" ? (
+                            <Tip
+                              text={
+                                draft.closerId === track.id
+                                  ? t("builder.row.clearCloserTip")
+                                  : t("builder.row.setCloserTitle")
+                              }
+                              end
+                            >
+                              <button
+                                type="button"
+                                className={
+                                  draft.closerId === track.id
+                                    ? "is-anchor"
+                                    : undefined
+                                }
+                                aria-pressed={draft.closerId === track.id}
+                                onClick={() =>
+                                  setDraft((current) =>
+                                    current.closerId === track.id
+                                      ? clearCloser(current)
+                                      : pinCloser(current, track.id),
+                                  )
+                                }
+                              >
+                                {draft.closerId === track.id
+                                  ? t("builder.row.clearCloser")
+                                  : t("builder.row.setCloser")}
+                              </button>
+                            </Tip>
+                          ) : null}
+                          <Tip text={t("builder.row.removeTip")} end>
+                            <button
+                              type="button"
+                              className="danger"
+                              onClick={() => removeTrack(track.id)}
+                              aria-label={t("builder.row.removeAria", {
+                                name: track.name,
+                              })}
+                            >
+                              ✕
+                            </button>
+                          </Tip>
+                        </div>
                       </div>
                     </div>
                     {track.role !== "safety" ? (

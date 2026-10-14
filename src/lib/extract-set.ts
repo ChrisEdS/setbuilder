@@ -12,6 +12,7 @@ import { LocalizedError } from "@/lib/i18n/error";
 import { isGeneratedNote } from "@/lib/i18n/stored";
 import { tDe, type Translate } from "@/lib/i18n/core";
 import { bestPhaseFor } from "@/lib/plan-b";
+import { applySetAnchors, withSuggestedAnchors } from "@/lib/set-anchors";
 import type { SpotifyTrack } from "@/lib/spotify";
 import {
   DEFAULT_SET,
@@ -124,7 +125,7 @@ export function extractSetFromPlaylist(
   const withRoles = assignRolesAndTransitions(sequenced, t);
   const withSafety = appendSafetyCrates(withRoles, pool, selected, t);
 
-  return {
+  return withSuggestedAnchors({
     title: options.title?.trim() || playlistName,
     vibe: options.vibe?.trim() || t("analysis.extract.vibe", { name: playlistName }),
     venue: options.venue ?? DEFAULT_SET.venue,
@@ -135,7 +136,7 @@ export function extractSetFromPlaylist(
     notes: options.notes ?? DEFAULT_SET.notes ?? "",
     durationMinutes,
     tracks: withSafety,
-  };
+  });
 }
 
 function catalogEnergy(
@@ -472,7 +473,7 @@ export function reorderDraft(draft: SetDraft, technique: SetSortTechnique): SetD
     };
   });
 
-  return { ...draft, tracks: [...withRelations, ...safeties] };
+  return applySetAnchors({ ...draft, tracks: [...withRelations, ...safeties] });
 }
 
 /**

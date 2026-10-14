@@ -1,6 +1,13 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  Fragment,
+  useEffect,
+  useId,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   applyKeyImport,
   applyKeyImportRows,
@@ -11,6 +18,7 @@ import { parseRekordboxFile } from "@/lib/rekordbox";
 import { energyStep } from "@/lib/energy";
 import { bpmDelta } from "@/lib/harmonic";
 import { sidePhrase } from "@/lib/replace-track";
+import { Tip } from "@/components/Hint";
 import { RekordboxStick } from "@/components/RekordboxStick";
 import { libraryTrackToSetTrack, type StickTrack } from "@/lib/rekordbox-stick";
 import { stickFileCount } from "@/lib/stick-audio";
@@ -46,10 +54,17 @@ export type LibraryRow = {
   bpm: string;
   /** Energy Level 1–10 when the source has it */
   energy?: number;
+  /** Stick playlist / history names this track belongs to */
+  playlists?: string[];
   stick?: StickTrack;
 };
 
 type SourceTab = "rekordbox" | "tidal" | "csv";
+
+/** How many “Fits after” matches to show at once before “5 others”. */
+const FIT_PAGE_SIZE = 5;
+/** Cap when browsing the whole library without a fit filter. */
+const LIBRARY_BROWSE_CAP = 48;
 
 const EXAMPLE = `Artist,Title,Key,BPM
 Floating Points,Ratio - Edit,8A,122
@@ -75,6 +90,24 @@ function toImportRows(rows: LibraryRow[]): KeyImportRow[] {
   }));
 }
 
+/** Playlist labels for the picker — prefer short names over “Folder / Name”. */
+function playlistPickerLabels(rows: LibraryRow[]): string[] {
+  const all = new Set<string>();
+  for (const row of rows) {
+    for (const name of row.playlists ?? []) {
+      const trimmed = name.trim();
+      if (trimmed) all.add(trimmed);
+    }
+  }
+  return [...all]
+    .filter((label) => {
+      const sep = label.lastIndexOf(" / ");
+      if (sep < 0) return true;
+      return !all.has(label.slice(sep + 3));
+    })
+    .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+}
+
 export function LibraryPanel({
   draft,
   onApply,
@@ -85,6 +118,7 @@ export function LibraryPanel({
 }: Props) {
   const { t } = useI18n();
   const [fitTo, setFitTo] = useState("");
+  const [fitPage, setFitPage] = useState(0);
   const [addPhase, setAddPhase] = useState<SetPhaseId>("open");
   const [addRole, setAddRole] = useState<TrackRole>("groove");
   const [text, setText] = useState("");
@@ -111,21 +145,43 @@ export function LibraryPanel({
     [draft.tracks],
   );
 
+  const playlistOptions = useMemo(
+    () => playlistPickerLabels(libraryRows),
+    [libraryRows],
+  );
+  const playlistFilter =
+    playlistOptions.find((name) => name === query) ?? "";
+  const searchHintsId = useId();
+
   const fitReference = useMemo(
     () => draft.tracks.find((track) => track.id === fitTo) ?? null,
     [draft.tracks, fitTo],
   );
 
-  const filteredLibrary = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    let rows = q
-      ? libraryRows.filter(
-          (row) =>
-            row.title.toLowerCase().includes(q) ||
-            row.artist.toLowerCase().includes(q) ||
-            row.key.toLowerCase().includes(q),
-        )
-      : libraryRows;
+  const rankedLibrary = useMemo(() => {
+    const trimmed = query.trim();
+    const q = trimmed.toLowerCase();
+    const exactPlaylist = playlistOptions.find((name) => name === trimmed);
+    let rows = libraryRows;
+    if (exactPlaylist) {
+      // Picker: only tracks that belong to that playlist (name or “… / name”).
+      rows = rows.filter((row) =>
+        (row.playlists ?? []).some(
+          (name) =>
+            name === exactPlaylist || name.endsWith(` / ${exactPlaylist}`),
+        ),
+      );
+    } else if (q) {
+      rows = rows.filter(
+        (row) =>
+          row.title.toLowerCase().includes(q) ||
+          row.artist.toLowerCase().includes(q) ||
+          row.key.toLowerCase().includes(q) ||
+          (row.playlists ?? []).some((name) =>
+            name.toLowerCase().includes(q),
+          ),
+      );
+    }
     if (fitReference) {
       // Only tracks that can follow the chosen one: no clash, BPM within 6.
       const ref = {
@@ -158,9 +214,29 @@ export function LibraryPanel({
         })
         .sort((a, b) => b.score - a.score)
         .map(({ row }) => row);
+      return rows;
     }
-    return rows.slice(0, 48);
-  }, [libraryRows, query, fitReference, t]);
+    return rows.slice(0, LIBRARY_BROWSE_CAP);
+  }, [libraryRows, query, fitReference, t, playlistOptions]);
+
+  const fitPageCount = fitReference
+    ? Math.max(1, Math.ceil(rankedLibrary.length / FIT_PAGE_SIZE))
+    : 1;
+  const safeFitPage = fitReference
+    ? Math.min(fitPage, fitPageCount - 1)
+    : 0;
+  const filteredLibrary = fitReference
+    ? rankedLibrary.slice(
+        safeFitPage * FIT_PAGE_SIZE,
+        safeFitPage * FIT_PAGE_SIZE + FIT_PAGE_SIZE,
+      )
+    : rankedLibrary;
+  const canShowMoreMatches =
+    Boolean(fitReference) && rankedLibrary.length > FIT_PAGE_SIZE;
+
+  useEffect(() => {
+    setFitPage(0);
+  }, [fitTo, query, libraryRows]);
 
   useEffect(() => {
     let cancelled = false;
@@ -347,18 +423,22 @@ export function LibraryPanel({
       </div>
 
       <div className="seg crate-service-seg" role="tablist" aria-label={t("library.sources.aria")}>
-        {sources.map((item) => (
-          <button
+        {sources.map((item, index) => (
+          <Tip
             key={item.id}
-            type="button"
-            role="tab"
-            title={item.note}
-            aria-selected={source === item.id}
-            className={source === item.id ? "seg-item active" : "seg-item"}
-            onClick={() => setSource(item.id)}
+            text={item.note}
+            end={index === sources.length - 1}
           >
-            {item.label}
-          </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={source === item.id}
+              className={source === item.id ? "seg-item active" : "seg-item"}
+              onClick={() => setSource(item.id)}
+            >
+              {item.label}
+            </button>
+          </Tip>
         ))}
       </div>
       <p className="section-note library-source-note">{sourceNote}</p>
@@ -490,17 +570,58 @@ export function LibraryPanel({
       {libraryRows.length > 0 ? (
         <div className="library-browser">
           <div className="library-browser-head">
-            <h3>
-              {t("library.browser.title")}
-              <span>{trackCount(libraryRows.length, t)}</span>
+            <h3 className="library-browser-title">
+              <span className="library-browser-heading">
+                {t("library.browser.title")}
+              </span>
+              <span className="library-browser-meta">
+                {trackCount(libraryRows.length, t)}
+              </span>
             </h3>
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder={t("library.browser.searchPlaceholder")}
-              aria-label={t("library.browser.searchAria")}
-            />
-            <span className="tip tip-end">
+            <div className="library-search">
+              <Tip text={t("library.browser.searchTip")}>
+                <input
+                  value={query}
+                  list={
+                    playlistOptions.length > 0 ? searchHintsId : undefined
+                  }
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder={t("library.browser.searchPlaceholder")}
+                  aria-label={t("library.browser.searchAria")}
+                />
+              </Tip>
+              {playlistOptions.length > 0 ? (
+                <>
+                  <datalist id={searchHintsId}>
+                    {playlistOptions.map((name) => (
+                      <option key={name} value={name} />
+                    ))}
+                  </datalist>
+                  <Tip text={t("library.browser.playlistPickTip")} end>
+                    <label className="library-playlist-pick">
+                      <span className="sr-only">
+                        {t("library.browser.playlistPick")}
+                      </span>
+                      <select
+                        value={playlistFilter}
+                        aria-label={t("library.browser.playlistPickAria")}
+                        onChange={(event) => setQuery(event.target.value)}
+                      >
+                        <option value="">
+                          {t("library.browser.playlistPickAll")}
+                        </option>
+                        {playlistOptions.map((name) => (
+                          <option key={name} value={name}>
+                            {name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </Tip>
+                </>
+              ) : null}
+            </div>
+            <Tip text={t("library.browser.rewriteTip")} end>
               <button
                 type="button"
                 className="btn ghost"
@@ -509,10 +630,7 @@ export function LibraryPanel({
               >
                 {t("library.browser.rewrite")}
               </button>
-              <span className="tip-bubble" role="tooltip">
-                {t("library.browser.rewriteTip")}
-              </span>
-            </span>
+            </Tip>
           </div>
           <p className="section-note">
             {t("library.browser.note", {
@@ -569,7 +687,7 @@ export function LibraryPanel({
               const canPlay =
                 Boolean(onPlayTrack) && Boolean(row.stick?.filePath) && stickFileCount() > 0;
               return (
-                <li key={`${row.artist}-${row.title}-${index}`}>
+                <li key={`${row.artist}-${row.title}-${safeFitPage}-${index}`}>
                   {onPlayTrack ? (
                     <button
                       type="button"
@@ -613,6 +731,36 @@ export function LibraryPanel({
               );
             })}
           </ul>
+          {fitReference && rankedLibrary.length > 0 ? (
+            <div className="library-more">
+              {canShowMoreMatches ? (
+                <Tip text={t("library.add.moreMatchesTip")}>
+                  <button
+                    type="button"
+                    className="btn ghost library-more-btn"
+                    aria-label={t("library.add.moreMatchesAria", {
+                      page: safeFitPage + 1,
+                      pages: fitPageCount,
+                    })}
+                    onClick={() =>
+                      setFitPage((page) => (page + 1) % fitPageCount)
+                    }
+                  >
+                    <span className="library-more-icon" aria-hidden="true">
+                      ↻
+                    </span>
+                    {t("library.add.moreMatches")}
+                  </button>
+                </Tip>
+              ) : null}
+              <span className="library-more-count">
+                {t("library.add.matchCount", {
+                  shown: filteredLibrary.length,
+                  total: rankedLibrary.length,
+                })}
+              </span>
+            </div>
+          ) : null}
         </div>
       ) : source === "rekordbox" ? (
         <p className="section-note library-source-note">

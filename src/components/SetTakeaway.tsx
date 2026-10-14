@@ -1,28 +1,10 @@
 "use client";
 
 import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
+import { Tip } from "@/components/Hint";
 import { useI18n } from "@/lib/i18n/react";
 import { SET_SORTS } from "@/lib/sort-set";
 import type { SetSortTechnique } from "@/lib/sort-set";
-
-function Tip({
-  text,
-  disabled,
-  children,
-}: {
-  text: string;
-  disabled?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <span className="tip" tabIndex={disabled ? 0 : undefined}>
-      {children}
-      <span className="tip-bubble" role="tooltip">
-        {text}
-      </span>
-    </span>
-  );
-}
 
 /** A small dropdown on top of <details>: closes on outside click, Escape and after a choice. */
 function Menu({

@@ -4,7 +4,7 @@
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
 
-**Version 3.1.2** · Dramaturgie statt Playlist.
+**Version 3.2.0** · Dramaturgie statt Playlist.
 
 SETBUILDER bereitet DJ-Sets für rekordbox vor. Du lädst Playlist oder History vom Export-Stick (oder eine Collection-XML), legst den Bogen nach Slot und Dauer, prüfst Energie, Key und BPM und nimmst das Set als rekordbox-XML, PDF, M3U oder Text mit. Die Logik folgt Mixed In Key: erst Energie, dann Key, dann BPM. Der Ablauf folgt dem [DJ.Studio Prep-Workflow](https://dj.studio/blog/dj-set-preparation#crafting-a-dj-set-that-feels-right-advanced-tips): Brief → Set bauen → Transitions → Export.
 
@@ -12,6 +12,7 @@ SETBUILDER bereitet DJ-Sets für rekordbox vor. Du lädst Playlist oder History 
 - ⚡ **Energie aus Dateien** — Kein Mixed In Key Level? Stick-MP3s im Browser analysieren, Energy in ID3 schreiben (Audio unangetastet), Tags in rekordbox neu laden
 - 🔑 **Key-Verlauf** — Camelot entlang des Sets mit Mix-Score, Clash-Badges, Drag und Mixed-In-Key-Sortierungen
 - 🎚️ **Bogen & Energie** — Phasen Open→Release gegen Zielbänder; Sprünge und Ausreißer sichtbar
+- 📌 **Opener & Closer** — Ersten und letzten Performance-Track pinnen; Sortieren hält sie an den Enden
 - 💾 **Stick-Rundreise** — Aus `export.pdb` laden, Set als Playlist zurückschreiben, Player-Check vor dem Gig
 - 🛟 **Plan B** — Rollen und Alternativen pro Phase, wenn der Floor dreht
 
@@ -34,7 +35,7 @@ SETBUILDER bereitet DJ-Sets für rekordbox vor. Du lädst Playlist oder History 
 
 **Player-Check.** Nach dem Wählen zeigt ein kurzer Strip ein Urteil und eine Primäraktion (Für Player vorbereiten, Auswerfen oder rekordbox öffnen). Details (Ordner, Datenbank, OneLibrary, SETBUILDER-Playlists) liegen hinter einem Toggle. Grün heißt: Device-Library-Player können den Stick nutzen; Amber heißt: es fehlt noch ein Schritt.
 
-**Collection ohne Stick.** In rekordbox unter *File → Export Collection in XML…* exportieren und laden. Key und BPM werden per Artist und Titel auf die Tracks im Set gelegt. Unverschlüsselte `master.db` und CSV gehen ebenfalls. Nach dem Import sucht die **Bibliothek** durch alle Tracks, und „Erneut matchen“ füllt fehlende Keys nach.
+**Collection ohne Stick.** In rekordbox unter *File → Export Collection in XML…* exportieren und laden. Key und BPM werden per Artist und Titel auf die Tracks im Set gelegt. Unverschlüsselte `master.db` und CSV gehen ebenfalls. Nach dem Import sucht die **Bibliothek** nach Artist, Titel, Key oder Stick-**Playlist** (Picker + Autocomplete). **Passt zu** rankt Tracks hinter einem gewählten Set-Track; **5 andere** blättert weitere Treffer.
 
 **Energie.** Der Energy Level (1–10) kommt aus Mixed In Key. SETBUILDER liest ihn aus dem rekordbox-Kommentar (zum Beispiel `7A - Energy 6`, `Energie 6`), aus Grouping / Label / Remixer in der Collection-XML oder CSV (`Energy` / `Energie`), aus einer nackten `6` oder `E8` in diesen Feldern, oder von Hand in der Setliste. Der USB-`export.pdb` hat Kommentare, aber kein Grouping — in rekordbox Tags neu laden und die Collection-XML laden, wenn die Energie leer bleibt.
 
@@ -46,10 +47,12 @@ SETBUILDER bereitet DJ-Sets für rekordbox vor. Du lädst Playlist oder History 
 
 ![Setliste mit Key, BPM, Energie und Übergang](docs/screenshots/de/02-setliste-v302.png)
 
-Jeder Track zeigt die Quelle (rekordbox), Phase und Rolle. Darunter stehen Key, BPM und Energie, der Übergang zum Vorgänger („Nachbar-Key (±1) · +1 BPM · Energie +1“) und die Begründung („Warum hier“). Die Reihenfolge änderst du per Ziehen oder mit den Pfeilen, „Ersatz“ tauscht einen Titel aus.
+Jeder Track zeigt die Quelle (rekordbox), Phase und Rolle. Die Steuerung sitzt unter dem Titel: Phase und Rolle in einer Zeile, Play / Verschieben / Ersatz / **Opener** / **Closer** / Entfernen darunter. Hover zeigt kurze Tipps. Darunter stehen Key, BPM und Energie, der Übergang zum Vorgänger („Nachbar-Key (±1) · +1 BPM · Energie +1“) und die Begründung („Warum hier“). Die Reihenfolge änderst du per Ziehen oder mit den Pfeilen, „Ersatz“ tauscht einen Titel aus.
+
+**Opener & Closer.** Einen Performance-Track als **Opener** pinnen (bleibt vorne, Phase Open) oder als **Closer** (bleibt hinten, Phase Release). Beim Extrahieren schlägt SETBUILDER warme Open-/Release-Pins vor; du kannst sie jederzeit ändern oder lösen. Sortieren setzt die Pins wieder an die Enden.
 
 **Set bearbeiten**
-- **Sortieren:** nur innerhalb einer Phase (Alternativen bleiben am Ende). Dasselbe Menü in der Setliste und im Key-Verlauf. Ändert sich nichts, sagt SETBUILDER das — oft fehlen Key/Energie/BPM, oder eine Phase hat nur ein bis zwei Tracks.
+- **Sortieren:** nur innerhalb einer Phase (Alternativen bleiben am Ende; gepinnter Opener/Closer bleiben insgesamt vorne/hinten). Dasselbe Menü in der Setliste und im Key-Verlauf. Ändert sich nichts, sagt SETBUILDER das — oft fehlen Key/Energie/BPM, oder eine Phase hat nur ein bis zwei Tracks.
 
   | Technik | Was sie macht |
   |---|---|
@@ -159,7 +162,7 @@ Oberfläche, API-Antworten und Exporte (PDF, Text, Kommentare in der rekordbox-X
 npm test
 ```
 
-Läuft mit dem eingebauten Node-Testrunner. Die Hooks in [`scripts/test-hooks.mjs`](scripts/test-hooks.mjs) lösen den `@/`-Alias und Imports ohne Endung auf. Getestet sind Energie-Parsing, Openkey-Energieformel und ID3-Schreiben (EnergyLevel + Kommentar, Audio unverändert, Serato-GEOB bleibt), Camelot / Mix-Score, Set-Sortierungen, Slot-Kürzen, Ersatz-Ranking, Plan B, Export (BPM, Notizen), Stick-Import / Schreiben / Health / Session und die Sprachdateien.
+Läuft mit dem eingebauten Node-Testrunner. Die Hooks in [`scripts/test-hooks.mjs`](scripts/test-hooks.mjs) lösen den `@/`-Alias und Imports ohne Endung auf. Getestet sind Energie-Parsing, Openkey-Energieformel und ID3-Schreiben (EnergyLevel + Kommentar, Audio unverändert, Serato-GEOB bleibt), Camelot / Mix-Score, Set-Sortierungen, Opener/Closer-Pins, Slot-Kürzen, Ersatz-Ranking, Plan B, Export (BPM, Notizen), Stick-Import / Schreiben / Health / Session und die Sprachdateien.
 
 ## Desktop (Mac, Windows, Linux)
 

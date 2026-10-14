@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, type CSSProperties } from "react";
-import { Hint } from "@/components/Hint";
+import { Hint, Tip } from "@/components/Hint";
 import { SetSortMenu } from "@/components/SetTakeaway";
 import {
   camelotColor,
@@ -211,29 +211,30 @@ export function HarmonicPath({ tracks, onSort, onReorder, embedded }: Props) {
                       ? t("analysis.harmonic.start.short")
                       : relationShortLabel(relation, t)}
                   </span>
-                  <button
-                    type="button"
-                    className="drag-handle"
-                    draggable
-                    aria-label={t("builder.row.dragAria", { name: track.name })}
-                    title={t("builder.row.dragTitle")}
-                    onDragStart={(event) => {
-                      event.dataTransfer.setData("text/plain", track.id);
-                      event.dataTransfer.effectAllowed = "move";
-                      dragIdRef.current = track.id;
-                      const id = track.id;
-                      requestAnimationFrame(() => setDragId(id));
-                    }}
-                    onDragEnd={() => {
-                      dragIdRef.current = null;
-                      setDragId(null);
-                      setOverId(null);
-                    }}
-                  >
-                    <i />
-                    <i />
-                    <i />
-                  </button>
+                  <Tip text={t("builder.row.dragTitle")}>
+                    <button
+                      type="button"
+                      className="drag-handle"
+                      draggable
+                      aria-label={t("builder.row.dragAria", { name: track.name })}
+                      onDragStart={(event) => {
+                        event.dataTransfer.setData("text/plain", track.id);
+                        event.dataTransfer.effectAllowed = "move";
+                        dragIdRef.current = track.id;
+                        const id = track.id;
+                        requestAnimationFrame(() => setDragId(id));
+                      }}
+                      onDragEnd={() => {
+                        dragIdRef.current = null;
+                        setDragId(null);
+                        setOverId(null);
+                      }}
+                    >
+                      <i />
+                      <i />
+                      <i />
+                    </button>
+                  </Tip>
                   <div className="harm-node-head">
                     <strong
                       title={
