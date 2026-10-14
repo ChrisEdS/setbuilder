@@ -172,6 +172,10 @@ Windows zeigt einen SmartScreen-Hinweis. Über „Trotzdem ausführen“ startet
 
 Sobald die Apple- und Windows-Zertifikate als GitHub-Secrets liegen, signiert der nächste Release. Auf dem Mac entfällt der Quarantäne-Schritt dann. Die Schritte stehen in [`desktop/README.md`](desktop/README.md).
 
+## Unterstützen
+
+SETFORM bleibt kostenlos und offen. Wenn es bei der Set-Vorbereitung hilft, kannst du das Projekt [auf GitHub sponsern](https://github.com/sponsors/ChrisEdS).
+
 ## Lizenz
 
 MIT, siehe [LICENSE](LICENSE). Die clientseitige Energie-Analyse nutzt essentia.js (AGPL-3.0); siehe [THIRD_PARTY.md](THIRD_PARTY.md).

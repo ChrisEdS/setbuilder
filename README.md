@@ -172,6 +172,10 @@ Windows shows a SmartScreen notice; “Run anyway” starts the installation. Li
 
 Once the Apple and Windows certificates are in as GitHub secrets, the next release will be signed and the quarantine step on the Mac goes away. The steps are in [`desktop/README.md`](desktop/README.md).
 
+## Support
+
+SETFORM stays free and open. If it helps your gig prep, you can [sponsor the project on GitHub](https://github.com/sponsors/ChrisEdS).
+
 ## License
 
 MIT, see [LICENSE](LICENSE). Client-side energy analysis uses essentia.js (AGPL-3.0); see [THIRD_PARTY.md](THIRD_PARTY.md).
