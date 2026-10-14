@@ -14,6 +14,7 @@ const KEY = "root";
 type Picker = (options: { mode: "readwrite" }) => Promise<PersistableDir>;
 
 export function stickPicker(): Picker | null {
+  if (typeof window === "undefined") return null;
   const fn = (window as unknown as { showDirectoryPicker?: Picker }).showDirectoryPicker;
   return typeof fn === "function" ? fn.bind(window) : null;
 }
