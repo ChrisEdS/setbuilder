@@ -73,7 +73,7 @@ Drag titles between the columns. **Plan B** asks for at least two fitting altern
 
 ## 4. Arc
 
-![Arc: phases in the slot and energy path](docs/screenshots/en/04-arc.png)
+![Arc: Key path with mix score, badges and drag reorder](docs/screenshots/en/04-arc.png)
 
 The arc shows how the phases fill the slot (active phase is highlighted; yellow means over the window) and how each track's energy sits against the phase's target band. Jumps of three levels or more are marked.
 
@@ -94,7 +94,7 @@ Sort, drag, or change key/energy in the setlist to move the numbers. A clash can
 
 ## 5. Back to rekordbox
 
-![Take with you: rekordbox XML, PDF, M3U, text](docs/screenshots/en/05-export-rekordbox.png)
+![Take with you: PDF, rekordbox XML, write to stick, M3U, copy text](docs/screenshots/en/05-export-rekordbox.png)
 
 The **Take with you** menu exports:
 

@@ -73,7 +73,7 @@ Titel lassen sich zwischen den Spalten ziehen. **Plan B** verlangt pro Phase min
 
 ## 4. Bogen
 
-![Bogen: Phasen im Slot und Energie-Verlauf](docs/screenshots/de/04-bogen.png)
+![Bogen: Key-Verlauf mit Mix-Score, Badges und Drag](docs/screenshots/de/04-bogen.png)
 
 Der Bogen zeigt, wie die Phasen den Slot füllen (aktive Phase hervorgehoben; gelb heißt über dem Fenster) und wie die Energie jedes Tracks zum Zielband der Phase steht. Sprünge ab drei Stufen werden markiert.
 
@@ -94,7 +94,7 @@ Sortieren, Ziehen oder Key/Energie in der Setliste ändern die Zahlen. Ein Key-C
 
 ## 5. Zurück nach rekordbox
 
-![Mitnehmen: rekordbox-XML, PDF, M3U, Text](docs/screenshots/de/05-export-rekordbox.png)
+![Mitnehmen: PDF, rekordbox-XML, auf Stick schreiben, M3U, Text kopieren](docs/screenshots/de/05-export-rekordbox.png)
 
 Das Menü **Mitnehmen** exportiert:
 
