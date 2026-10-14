@@ -6,6 +6,13 @@
 
 SETFORM bereitet DJ-Sets für rekordbox vor. Du lädst Playlist oder History vom Export-Stick (oder eine Collection-XML), legst den Bogen nach Slot und Dauer, prüfst Energie, Key und BPM und nimmst das Set als rekordbox-XML, PDF, M3U oder Text mit. Die Logik folgt Mixed In Key: erst Energie, dann Key, dann BPM. Der Ablauf folgt dem [DJ.Studio Prep-Workflow](https://dj.studio/blog/dj-set-preparation#crafting-a-dj-set-that-feels-right-advanced-tips): Brief → Set bauen → Transitions → Export.
 
+**Highlights**
+- ⚡ **Energie aus Dateien** — Kein Mixed In Key Level? Stick-MP3s im Browser analysieren, Energy in ID3 schreiben (Audio unangetastet), Tags in rekordbox neu laden
+- 🔑 **Key-Verlauf** — Camelot entlang des Sets mit Mix-Score, Clash-Badges, Drag und Mixed-In-Key-Sortierungen
+- 🎚️ **Bogen & Energie** — Phasen Open→Release gegen Zielbänder; Sprünge und Ausreißer sichtbar
+- 💾 **Stick-Rundreise** — Aus `export.pdb` laden, Set als Playlist zurückschreiben, Player-Check vor dem Gig
+- 🛟 **Plan B** — Rollen und Alternativen pro Phase, wenn der Floor dreht
+
 > Die Screenshots zeigen ein Beispielset mit erfundenen Titeln. Die App gibt es auf Deutsch und Englisch, oben rechts schaltest du mit **DE / EN** um. Beim ersten Start richtet sie sich nach der Sprache des Browsers.
 
 ## So läuft ein Set mit rekordbox
@@ -174,7 +181,7 @@ Sobald die Apple- und Windows-Zertifikate als GitHub-Secrets liegen, signiert de
 
 ## Unterstützen
 
-SETFORM bleibt kostenlos und offen. Wenn es bei der Set-Vorbereitung hilft, kannst du das Projekt [auf GitHub sponsern](https://github.com/sponsors/ChrisEdS).
+SETFORM bleibt kostenlos und offen — inklusive **Energie aus Dateien**, Key-Verlauf und Stick-Schreiben. Wenn es bei der Set-Vorbereitung hilft, kannst du das Projekt [auf GitHub sponsern](https://github.com/sponsors/ChrisEdS).
 
 ## Lizenz
 

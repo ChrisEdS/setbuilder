@@ -6,6 +6,13 @@
 
 SETFORM prepares DJ sets for rekordbox. You load a playlist or history from the export stick (or a collection XML), lay out the arc by slot and duration, check energy, key and BPM, and take the set with you as rekordbox XML, PDF, M3U or text. The logic follows Mixed In Key: energy first, then key, then BPM. The workflow follows the [DJ.Studio prep workflow](https://dj.studio/blog/dj-set-preparation#crafting-a-dj-set-that-feels-right-advanced-tips): brief → build the set → transitions → export.
 
+**Highlights**
+- ⚡ **Energy from files** — Missing Mixed In Key levels? Analyze stick MP3s in the browser, write Energy into ID3 (audio untouched), reload tags in rekordbox
+- 🔑 **Key path** — Camelot along the set with mix score, clash badges, drag reorder and Mixed In Key–style sorts
+- 🎚️ **Arc & energy** — Phases Open→Release against target bands; jumps and outliers called out
+- 💾 **Stick round-trip** — Load from `export.pdb`, write the set back as playlist, player check before the gig
+- 🛟 **Plan B** — Roles and alternatives per phase when the floor turns
+
 > The screenshots show a sample set with made-up titles. The app comes in English and German. Switch with **DE / EN** at the top right; on first launch it follows your browser language.
 
 ## How a set works with rekordbox
@@ -174,7 +181,7 @@ Once the Apple and Windows certificates are in as GitHub secrets, the next relea
 
 ## Support
 
-SETFORM stays free and open. If it helps your gig prep, you can [sponsor the project on GitHub](https://github.com/sponsors/ChrisEdS).
+SETFORM stays free and open — including **Energy from files**, Key path and stick write. If it helps your gig prep, you can [sponsor the project on GitHub](https://github.com/sponsors/ChrisEdS).
 
 ## License
 
