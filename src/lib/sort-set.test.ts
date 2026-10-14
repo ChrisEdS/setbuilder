@@ -2,7 +2,15 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { DEFAULT_SET } from "./set.ts";
 import { reorderDraft } from "./extract-set.ts";
-import { orderByCamelotJourney, orderByEnergy, orderByTempo, orderByWaves } from "./sort-set.ts";
+import {
+  orderByCamelotJourney,
+  orderByEnergy,
+  orderByEnergyRoller,
+  orderByGentleEnergy,
+  orderByTempo,
+  orderByTempoPulse,
+  orderByWaves,
+} from "./sort-set.ts";
 
 const t = (id: string, extra: Record<string, unknown> = {}) =>
   ({ id, keyCamelot: "8A", bpm: "124", energyLevel: 5, ...extra }) as {
@@ -46,6 +54,49 @@ test("peak waves interleave low and high energy", () => {
   assert.deepEqual(
     orderByWaves(group, "peak").map((x) => x.energyLevel),
     [5, 10, 6, 9],
+  );
+});
+
+test("gentle energy prefers one-step moves from the opener", () => {
+  const group = [
+    t("start", { energyLevel: 5 }),
+    t("jump", { energyLevel: 9 }),
+    t("next", { energyLevel: 6 }),
+    t("flat", { energyLevel: 5 }),
+  ];
+  assert.deepEqual(
+    orderByGentleEnergy(group, true).map((x) => x.id),
+    ["start", "next", "flat", "jump"],
+  );
+});
+
+test("tempo pulse keeps the opener and stays near BPM", () => {
+  const group = [
+    t("start", { bpm: "124" }),
+    t("far", { bpm: "132" }),
+    t("near", { bpm: "125" }),
+    t("mid", { bpm: "128" }),
+  ];
+  assert.deepEqual(
+    orderByTempoPulse(group, true).map((x) => x.id),
+    ["start", "near", "mid", "far"],
+  );
+});
+
+test("energy roller climbs, dips, then climbs again in peak", () => {
+  const group = [
+    t("a", { energyLevel: 3 }),
+    t("b", { energyLevel: 5 }),
+    t("c", { energyLevel: 7 }),
+    t("d", { energyLevel: 9 }),
+  ];
+  assert.deepEqual(
+    orderByEnergyRoller(group, "peak").map((x) => x.energyLevel),
+    [3, 7, 5, 9],
+  );
+  assert.deepEqual(
+    orderByEnergyRoller(group, "open").map((x) => x.energyLevel),
+    [3, 5, 7, 9],
   );
 });
 

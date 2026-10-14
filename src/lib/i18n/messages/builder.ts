@@ -164,12 +164,21 @@ const de = {
   "builder.sort.harmonic": "Harmonisch",
   "builder.sort.harmonicHint":
     "Nächster Track: verwandter Camelot-Key, weiche Energie, kleine BPM-Schritte. Hebt den Mix-Score, senkt Clashes.",
+  "builder.sort.gentle": "Ein-Schritt",
+  "builder.sort.gentleHint":
+    "Mixed In Key: Energie nur ±1 pro Übergang, in Phasenrichtung. Weniger Sprünge, weicher Floor.",
   "builder.sort.energy": "Energie-Welle",
   "builder.sort.energyHint":
     "Open bis Peak steigt die Energie, Release fällt. Key ist nur der Tiebreaker.",
+  "builder.sort.roller": "Doppel-Peak",
+  "builder.sort.rollerHint":
+    "Mixed In Key Arc: erst aufbauen, kurz absacken (−2), dann zum Peak. Open/Lift nur steigen, Release nur fallen.",
   "builder.sort.tempo": "Tempo aufbauen",
   "builder.sort.tempoHint":
     "BPM steigt in der Phase (Release fällt). Klassische House/Techno-Rampe.",
+  "builder.sort.pulse": "BPM-Kette",
+  "builder.sort.pulseHint":
+    "Nächster Track möglichst nah am aktuellen BPM (±2–4), leicht mit der Phase. Bleibt im Pocket.",
   "builder.sort.journey": "Camelot-Reise",
   "builder.sort.journeyHint":
     "Läuft im Uhrzeigersinn ums Wheel, statt denselben Key zu stapeln.",
@@ -298,10 +307,16 @@ const de = {
   "builder.status.reset": "Brief zurückgesetzt — das Set ist leer.",
   "builder.status.sorted.harmonic":
     "Harmonisch sortiert: verwandte Keys beieinander. Mix-Score und Clashes im Bogen prüfen.",
+  "builder.status.sorted.gentle":
+    "Ein-Schritt: Energie läuft in kleinen Stufen. Sprünge im Bogen prüfen.",
   "builder.status.sorted.energy":
     "Nach Energie sortiert: die Welle folgt den Phasen. Mix-Score im Bogen prüfen.",
+  "builder.status.sorted.roller":
+    "Doppel-Peak: aufbauen, kurz atmen, dann zum Peak. Mix-Score im Bogen prüfen.",
   "builder.status.sorted.tempo":
     "Nach Tempo sortiert: BPM baut auf, im Release wieder runter.",
+  "builder.status.sorted.pulse":
+    "BPM-Kette: Tempo bleibt nah beieinander, leicht mit der Phase.",
   "builder.status.sorted.journey":
     "Camelot-Reise: das Set läuft im Uhrzeigersinn ums Wheel.",
   "builder.status.sorted.waves":
@@ -544,12 +559,21 @@ const en: Record<keyof typeof de, string> = {
   "builder.sort.harmonic": "Harmonic",
   "builder.sort.harmonicHint":
     "Next track: related Camelot key, smooth energy, small BPM steps. Raises the mix score, cuts clashes.",
+  "builder.sort.gentle": "One-step",
+  "builder.sort.gentleHint":
+    "Mixed In Key: energy moves ±1 per transition, with the phase. Fewer jumps, smoother floor.",
   "builder.sort.energy": "Energy wave",
   "builder.sort.energyHint":
     "Energy rises from Open to Peak, falls in Release. Key is only the tie-breaker.",
+  "builder.sort.roller": "Twin peak",
+  "builder.sort.rollerHint":
+    "Mixed In Key arc: build, dip about −2, climb to the peak. Open/Lift only climb, Release only fall.",
   "builder.sort.tempo": "Build tempo",
   "builder.sort.tempoHint":
     "BPM rises in the phase (falls in Release). Classic house/techno ramp.",
+  "builder.sort.pulse": "BPM chain",
+  "builder.sort.pulseHint":
+    "Next track stays close to the current BPM (±2–4), lightly with the phase. Stays in the pocket.",
   "builder.sort.journey": "Camelot journey",
   "builder.sort.journeyHint":
     "Walks clockwise around the wheel instead of stacking the same key.",
@@ -673,10 +697,16 @@ const en: Record<keyof typeof de, string> = {
   "builder.status.reset": "Brief reset — the set is empty.",
   "builder.status.sorted.harmonic":
     "Sorted harmonically: related keys together. Check mix score and clashes on the Arc.",
+  "builder.status.sorted.gentle":
+    "One-step: energy moves in small steps. Check jumps on the Arc.",
   "builder.status.sorted.energy":
     "Sorted by energy: the wave follows the phases. Check the mix score on the Arc.",
+  "builder.status.sorted.roller":
+    "Twin peak: build, breathe, then climb to the peak. Check the mix score on the Arc.",
   "builder.status.sorted.tempo":
     "Sorted by tempo: BPM builds, then drops in the release.",
+  "builder.status.sorted.pulse":
+    "BPM chain: tempo stays close, lightly with the phase.",
   "builder.status.sorted.journey":
     "Camelot journey: the set walks clockwise around the wheel.",
   "builder.status.sorted.waves":

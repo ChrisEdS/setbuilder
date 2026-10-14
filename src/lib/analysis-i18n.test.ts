@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { energyText } from "./energy.ts";
 import { distributeRoles, extractSetFromPlaylist, fitToSlot } from "./extract-set.ts";
-import { mixJoin, relationHint, relationLabel } from "./harmonic.ts";
+import {
+  mixJoin,
+  relationHint,
+  relationLabel,
+  relationShortLabel,
+} from "./harmonic.ts";
 import { tDe, tEn } from "./i18n/core.ts";
 import { localizeWhy } from "./i18n/stored.ts";
 import { rankReplacements, sidePhrase, swapIntoSlot } from "./replace-track.ts";
@@ -60,6 +65,9 @@ test("energy text and relation labels in both languages", () => {
   assert.equal(relationLabel("adjacent"), "Nachbar-Key (±1)");
   assert.equal(relationLabel("adjacent", tEn), "Adjacent key (±1)");
   assert.equal(relationLabel("clash", tEn), "Harmonic clash");
+  assert.equal(relationShortLabel("relative"), "Relativ");
+  assert.equal(relationShortLabel("adjacent", tEn), "±1");
+  assert.equal(relationShortLabel("clash"), "Clash");
 });
 
 test("relationHint explains the jargon in DE and EN", () => {

@@ -6,26 +6,34 @@ const de = {
 
   // Harmonic relations and mix joins
   "analysis.relation.same": "Gleicher Key",
+  "analysis.relation.same.short": "Gleich",
   "analysis.relation.same.hint":
     "Gleicher Camelot-Key. Melodien dürfen überlappen — weich mischen.",
   "analysis.relation.relative": "Relative Dur/Moll",
+  "analysis.relation.relative.short": "Relativ",
   "analysis.relation.relative.hint":
     "A↔B auf derselben Zahl, z. B. 8A → 8B. Relatives Dur/Moll, fast so weich wie derselbe Key.",
   "analysis.relation.energyBoost": "Energy Boost (+2)",
+  "analysis.relation.energyBoost.short": "+2",
   "analysis.relation.energyBoost.hint":
     "Zwei Schritte vorwärts, gleicher Buchstabe (8A → 10A). Hebt die Energie — sparsam einsetzen.",
   "analysis.relation.adjacent": "Nachbar-Key (±1)",
+  "analysis.relation.adjacent.short": "±1",
   "analysis.relation.adjacent.hint":
     "Nächste Zahl auf dem Wheel, gleicher Buchstabe (8A → 9A oder 7A). Sicherer Standard-Mix.",
   "analysis.relation.contrast": "Key-Kontrast",
+  "analysis.relation.contrast.short": "Kontrast",
   "analysis.relation.contrast.hint":
     "Weiter als ±1, aber kein Clash. Klingt spannend — mit EQ oder kurzem Break mischen.",
   "analysis.relation.clash": "Key-Clash",
+  "analysis.relation.clash.short": "Clash",
   "analysis.relation.clash.hint":
     "Keys liegen weit auseinander. Melodien beißen sich, außer du brichst, filterst oder EQst. Sortieren, tauschen oder den Key ändern senkt die Zahl.",
   "analysis.relation.unknown": "Key offen",
+  "analysis.relation.unknown.short": "Offen",
   "analysis.relation.unknown.hint":
     "Mindestens ein Track hat keinen Camelot-Key. In der Setliste setzen, dann zählt der Übergang im Mix-Score.",
+  "analysis.harmonic.start.short": "Start",
   "analysis.mix.energyJump": "{energy} (Sprung)",
   "analysis.side.before": "davor",
   "analysis.side.after": "danach",
@@ -152,8 +160,8 @@ const de = {
   "analysis.harmonic.title": "Key-Verlauf",
   "analysis.harmonic.titleEmbedded": "Key-Verlauf",
   "analysis.harmonic.note":
-    "Camelot entlang der gespielten Reihenfolge. „Harmonisch sortieren“ rückt verwandte Keys zusammen und folgt dabei der Energie, soweit Energy Levels da sind. Ein Clash vor dem Peak bleibt erlaubt.",
-  "analysis.harmonic.harmonize": "Harmonisch sortieren",
+    "Camelot entlang der gespielten Reihenfolge. Karten ziehen zum Umsortieren; unter Sortieren: Harmonisch, Ein-Schritt, Energie, Doppel-Peak, Tempo, BPM-Kette, Camelot-Reise oder Wellen. Ein Clash vor dem Peak bleibt erlaubt.",
+  "analysis.harmonic.harmonize": "Sortieren",
   "analysis.harmonic.statKeys": "Keys gesetzt",
   "analysis.harmonic.statKeysHint":
     "Anteil der Performance-Tracks mit Camelot-Key. Ohne Key zählt der Übergang nicht im Mix-Score. In der Setliste setzen.",
@@ -195,26 +203,34 @@ const en: Record<keyof typeof de, string> = {
   "analysis.energy.delta": "Energy {delta}",
 
   "analysis.relation.same": "same key",
+  "analysis.relation.same.short": "Same",
   "analysis.relation.same.hint":
     "Same Camelot key. Melodies can overlap — mix smoothly.",
   "analysis.relation.relative": "Relative major/minor",
+  "analysis.relation.relative.short": "Relative",
   "analysis.relation.relative.hint":
     "A↔B on the same number, e.g. 8A → 8B. Relative major/minor, almost as smooth as the same key.",
   "analysis.relation.energyBoost": "Energy Boost (+2)",
+  "analysis.relation.energyBoost.short": "+2",
   "analysis.relation.energyBoost.hint":
     "Two steps forward, same letter (8A → 10A). Lifts the energy — use sparingly.",
   "analysis.relation.adjacent": "Adjacent key (±1)",
+  "analysis.relation.adjacent.short": "±1",
   "analysis.relation.adjacent.hint":
     "Next number on the wheel, same letter (8A → 9A or 7A). The safe standard mix.",
   "analysis.relation.contrast": "Key contrast",
+  "analysis.relation.contrast.short": "Contrast",
   "analysis.relation.contrast.hint":
     "Farther than ±1, but not a clash. Sounds tense — mix with EQ or a short break.",
   "analysis.relation.clash": "Harmonic clash",
+  "analysis.relation.clash.short": "Clash",
   "analysis.relation.clash.hint":
     "Keys sit far apart. Melodies fight unless you break, filter or EQ. Sorting, swapping or changing the key lowers the number.",
   "analysis.relation.unknown": "Key unknown",
+  "analysis.relation.unknown.short": "Open",
   "analysis.relation.unknown.hint":
     "At least one track has no Camelot key. Set it in the setlist so the transition counts in the mix score.",
+  "analysis.harmonic.start.short": "Start",
   "analysis.mix.energyJump": "{energy} (jump)",
   "analysis.side.before": "before",
   "analysis.side.after": "after",
@@ -335,8 +351,8 @@ const en: Record<keyof typeof de, string> = {
   "analysis.harmonic.title": "Harmonic Path",
   "analysis.harmonic.titleEmbedded": "Key path",
   "analysis.harmonic.note":
-    "Camelot along the played order. “Sort harmonically” moves related keys together and follows the energy as far as Energy Levels exist. A clash before the peak stays allowed.",
-  "analysis.harmonic.harmonize": "Sort harmonically",
+    "Camelot along the played order. Drag cards to reorder; under Sort: Harmonic, One-step, Energy, Twin peak, Tempo, BPM chain, Camelot journey or Waves. A clash before the peak stays allowed.",
+  "analysis.harmonic.harmonize": "Sort",
   "analysis.harmonic.statKeys": "Keys set",
   "analysis.harmonic.statKeysHint":
     "Share of performance tracks that have a Camelot key. Without a key the transition does not count in the mix score. Set it in the setlist.",

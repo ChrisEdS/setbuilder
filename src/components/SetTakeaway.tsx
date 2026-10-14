@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import { useI18n } from "@/lib/i18n/react";
+import { SET_SORTS } from "@/lib/sort-set";
 import type { SetSortTechnique } from "@/lib/sort-set";
 
 function Tip({
@@ -137,14 +138,6 @@ function MenuItem({
   );
 }
 
-const SORTS: SetSortTechnique[] = [
-  "harmonic",
-  "energy",
-  "tempo",
-  "journey",
-  "waves",
-];
-
 export function SetSortMenu({
   disabled,
   onSort,
@@ -162,7 +155,7 @@ export function SetSortMenu({
       }
       disabled={disabled}
     >
-      {SORTS.map((id) => (
+      {SET_SORTS.map((id) => (
         <MenuItem
           key={id}
           title={t(`builder.sort.${id}`)}

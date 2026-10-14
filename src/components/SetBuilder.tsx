@@ -1481,10 +1481,6 @@ export function SetBuilder() {
     );
   }
 
-  function harmonizeSet() {
-    sortSet("harmonic");
-  }
-
   async function energyFromFiles() {
     const current = readStoredDraft();
     const withPath = current.tracks.filter((track) => track.filePath?.trim());
@@ -2940,7 +2936,12 @@ export function SetBuilder() {
         ) : null}
       </section>
               <EnergyPath tracks={draft.tracks} />
-              <HarmonicPath tracks={draft.tracks} onHarmonize={harmonizeSet} embedded />
+              <HarmonicPath
+                tracks={draft.tracks}
+                onSort={sortSet}
+                onReorder={reorderTrack}
+                embedded
+              />
             </div>
           ) : null}
         </section>

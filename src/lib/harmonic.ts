@@ -209,6 +209,29 @@ export function relationLabel(relation: HarmonicRelation, t: Translate = tDe): s
   }
 }
 
+/** Compact badge on the Key path — full wording stays in the tooltip. */
+export function relationShortLabel(
+  relation: HarmonicRelation,
+  t: Translate = tDe,
+): string {
+  switch (relation) {
+    case "same":
+      return t("analysis.relation.same.short");
+    case "relative":
+      return t("analysis.relation.relative.short");
+    case "energyBoost":
+      return t("analysis.relation.energyBoost.short");
+    case "adjacent":
+      return t("analysis.relation.adjacent.short");
+    case "contrast":
+      return t("analysis.relation.contrast.short");
+    case "clash":
+      return t("analysis.relation.clash.short");
+    case "unknown":
+      return t("analysis.relation.unknown.short");
+  }
+}
+
 export function relationHint(relation: HarmonicRelation, t: Translate = tDe): string {
   return t(`analysis.relation.${relation}.hint`);
 }
