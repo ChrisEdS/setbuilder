@@ -2,7 +2,7 @@
 
 **Deutsch** · [English](README.md)
 
-**Version 3.0.1** · Dramaturgie statt Playlist.
+**Version 3.0.2** · Dramaturgie statt Playlist.
 
 SETFORM bereitet DJ-Sets für rekordbox vor. Du lädst Playlist oder History vom Export-Stick (oder eine Collection-XML), legst den Bogen nach Slot und Dauer, prüfst Energie, Key und BPM und nimmst das Set als rekordbox-XML, PDF, M3U oder Text mit. Die Logik folgt Mixed In Key: erst Energie, dann Key, dann BPM. Der Ablauf folgt dem [DJ.Studio Prep-Workflow](https://dj.studio/blog/dj-set-preparation#crafting-a-dj-set-that-feels-right-advanced-tips): Brief → Set bauen → Transitions → Export.
 
@@ -38,7 +38,19 @@ SETFORM bereitet DJ-Sets für rekordbox vor. Du lädst Playlist oder History vom
 Jeder Track zeigt die Quelle (rekordbox), Phase und Rolle. Darunter stehen Key, BPM und Energie, der Übergang zum Vorgänger („Nachbar-Key (±1) · +1 BPM · Energie +1“) und die Begründung („Warum hier“). Die Reihenfolge änderst du per Ziehen oder mit den Pfeilen, „Ersatz“ tauscht einen Titel aus.
 
 **Set bearbeiten**
-- **Sortieren:** acht Techniken, jeweils nur innerhalb einer Phase (Alternativen bleiben am Ende). **Harmonisch** (verwandte Camelot-Keys, weiche Energie, kleine BPM-Schritte), **Ein-Schritt** (Mixed In Key: Energie ±1), **Energie-Welle** (steigt Open→Peak, fällt im Release), **Doppel-Peak** (aufbauen, kurz −2, wieder hoch), **Tempo aufbauen** (BPM-Rampe), **BPM-Kette** (im ±2–4-Pocket bleiben), **Camelot-Reise** (im Uhrzeigersinn ums Wheel), **Wellen** (im Peak wechseln Groove und Impact). Ändert sich die Reihenfolge nicht, sagt SETFORM das — oft fehlen Key/Energie/BPM, oder pro Phase liegen nur ein bis zwei Tracks.
+- **Sortieren:** nur innerhalb einer Phase (Alternativen bleiben am Ende). Dasselbe Menü in der Setliste und im Key-Verlauf. Ändert sich nichts, sagt SETFORM das — oft fehlen Key/Energie/BPM, oder eine Phase hat nur ein bis zwei Tracks.
+
+  | Technik | Was sie macht |
+  |---|---|
+  | **Harmonisch** | Verwandte Camelot-Keys, weiche Energie, kleine BPM-Schritte |
+  | **Ein-Schritt** | Mixed In Key: Energie ±1 pro Übergang |
+  | **Energie-Welle** | Steigt Open→Peak, fällt im Release |
+  | **Doppel-Peak** | Aufbauen, kurz −2, wieder hoch (Rise/Peak) |
+  | **Tempo aufbauen** | BPM-Rampe mit der Phase |
+  | **BPM-Kette** | Im ±2–4-Pocket bleiben |
+  | **Camelot-Reise** | Im Uhrzeigersinn ums Wheel |
+  | **Wellen** | Im Peak wechseln Groove und Impact |
+
 - **Energie aus Dateien:** berechnet den Energy Level aus Stick-Audio (Essentia), setzt ihn im Draft und schreibt Energy-Tags in die MP3 auf dem Stick (Chrome / Edge / Desktop). Die Set-Notiz bleibt unangetastet. Danach Tags in rekordbox neu laden.
 - **Auf Slot kürzen:** behält pro Phase die Tracks, deren Energie ins Band passt; der Rest wandert unter Alternativen
 - **Rollen verteilen:** Anchor auf den stärksten Peak-Tracks und den Schluss, Bridge bei Phasenwechsel, Key-Clash, BPM- oder Energie-Sprung, sonst Groove
@@ -65,7 +77,7 @@ Titel lassen sich zwischen den Spalten ziehen. **Plan B** verlangt pro Phase min
 
 Der Bogen zeigt, wie die Phasen den Slot füllen (aktive Phase hervorgehoben; gelb heißt über dem Fenster) und wie die Energie jedes Tracks zum Zielband der Phase steht. Sprünge ab drei Stufen werden markiert.
 
-**Key-Verlauf** hat drei Kacheln mit **?**-Erklärung:
+**Key-Verlauf** zeigt Camelot entlang der gespielten Reihenfolge. Jede Karte hat ein kurzes Relationen-Badge (Gleich, ±1, Clash, …), den Key, Energie wenn bekannt und BPM. Karten ziehen zum Umsortieren; **Sortieren** für die Techniken oben. Drei Kacheln mit **?** erklären die Zahlen:
 - **Keys gesetzt** — Anteil der Performance-Tracks mit Camelot-Key
 - **Mix-Score** — Mittel aller Übergänge (Key und Energie zu gleichen Teilen, kleine BPM-Korrektur). Über ~75 % ist weich, unter ~50 % knallt es oft
 - **Clashes** — Übergänge, deren Keys auf dem Camelot-Wheel weit auseinanderliegen
