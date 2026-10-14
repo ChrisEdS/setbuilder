@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   applyEnergyToken,
+  energyLevelFromId3,
   readEnergyFields,
   readId3,
   writeEnergy,
@@ -119,6 +120,12 @@ function libraryTag(extra: Partial<Parameters<typeof buildTag>[0]> = {}): Uint8A
     ...extra,
   });
 }
+
+test("energyLevelFromId3 reads TXXX and comment tokens", () => {
+  assert.equal(energyLevelFromId3(writeEnergy(libraryTag(), 7)), 7);
+  assert.equal(energyLevelFromId3(writeEnergy(Uint8Array.from(audio), 4)), 4);
+  assert.equal(energyLevelFromId3(Uint8Array.from(audio)), undefined);
+});
 
 test("writeEnergy updates energy and keeps every other frame and the audio", () => {
   const input = libraryTag();

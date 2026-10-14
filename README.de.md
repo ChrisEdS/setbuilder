@@ -2,7 +2,7 @@
 
 **Deutsch** · [English](README.md)
 
-**Version 3.0.0** · Dramaturgie statt Playlist.
+**Version 3.0.1** · Dramaturgie statt Playlist.
 
 SETFORM bereitet DJ-Sets für rekordbox vor. Du lädst Playlist oder History vom Export-Stick (oder eine Collection-XML), legst den Bogen nach Slot und Dauer, prüfst Energie, Key und BPM und nimmst das Set als rekordbox-XML, PDF, M3U oder Text mit. Die Logik folgt Mixed In Key: erst Energie, dann Key, dann BPM. Der Ablauf folgt dem [DJ.Studio Prep-Workflow](https://dj.studio/blog/dj-set-preparation#crafting-a-dj-set-that-feels-right-advanced-tips): Brief → Set bauen → Transitions → Export.
 
@@ -29,7 +29,7 @@ SETFORM bereitet DJ-Sets für rekordbox vor. Du lädst Playlist oder History vom
 
 **Set-Notiz.** In den Track-Details ist die **Set-Notiz** nur für dieses Set in SETFORM (Cue, Floor). Sie ist nicht der MP3-/rekordbox-Kommentar und wird nicht zurück in ID3-Tags geschrieben.
 
-**Energie aus Stick-Dateien.** Unter **Set bearbeiten** analysiert **Energie aus Dateien** Tracks mit Stick-Pfad (Chrome / Edge / Desktop). SETFORM setzt `energyLevel` im Draft und schreibt bei MP3 ID3 `TXXX EnergyLevel` plus `Energy N` in den Dateikommentar — die Audiodaten bleiben unverändert; Key, BPM und die Set-Notiz bleiben unangetastet. Danach in rekordbox die Tags neu laden, damit Player und Bibliothek die Werte sehen. Die `master.db` auf dem Rechner bleibt unangetastet. Die Analyse nutzt [essentia.js](https://github.com/MTG/essentia.js) (AGPL-3.0) nur im Browser; siehe [THIRD_PARTY.md](THIRD_PARTY.md).
+**Energie aus Stick-Dateien.** Unter **Set bearbeiten** analysiert **Energie aus Dateien** Tracks mit Stick-Pfad (Chrome / Edge / Desktop). SETFORM setzt `energyLevel` im Draft und schreibt bei MP3 ID3 `TXXX EnergyLevel` plus `Energy N` in den Dateikommentar — die Audiodaten bleiben unverändert; Key, BPM und die Set-Notiz bleiben unangetastet. Beim erneuten Laden mit verbundenem Stick liest SETFORM fehlende Energie wieder aus diesen MP3-Tags (`export.pdb` kennt sie erst, wenn rekordbox die Tags neu geladen hat). Danach in rekordbox die Tags neu laden, damit Player und Bibliothek die Werte sehen. Die `master.db` auf dem Rechner bleibt unangetastet. Die Analyse nutzt [essentia.js](https://github.com/MTG/essentia.js) (AGPL-3.0) nur im Browser; siehe [THIRD_PARTY.md](THIRD_PARTY.md).
 
 ## 2. Setliste
 

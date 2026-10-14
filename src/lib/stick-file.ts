@@ -3,6 +3,8 @@
  * on the remembered stick directory.
  */
 
+import { energyLevelFromId3 } from "@/lib/openkey/writeEnergy";
+import type { SetDraft } from "@/lib/set";
 import { lookupRememberedStickFile } from "@/lib/stick-audio";
 import type { DirLike, FileLike } from "@/lib/rekordbox-stick-write";
 import {
@@ -160,4 +162,41 @@ export async function writeStickFileBytes(
     await writable.abort?.().catch(() => undefined);
     throw error;
   }
+}
+
+/**
+ * Fill missing energyLevel from MP3 ID3 tags on the stick.
+ * SETFORM writes Energy into the files, not into export.pdb — so a stick reload
+ * would otherwise lose energy until rekordbox refreshes tags.
+ */
+export async function enrichDraftEnergyFromFiles(
+  draft: SetDraft,
+  root?: DirLike | null,
+): Promise<SetDraft> {
+  let changed = false;
+  const tracks = [];
+  for (const track of draft.tracks) {
+    if (track.energyLevel != null || !track.filePath?.trim()) {
+      tracks.push(track);
+      continue;
+    }
+    try {
+      const resolved = await resolveTrackAudio(track.filePath, root);
+      if (!resolved || !isWritableMp3(resolved.file, track.filePath)) {
+        tracks.push(track);
+        continue;
+      }
+      const bytes = new Uint8Array(await resolved.file.arrayBuffer());
+      const energy = energyLevelFromId3(bytes);
+      if (energy == null) {
+        tracks.push(track);
+        continue;
+      }
+      changed = true;
+      tracks.push({ ...track, energyLevel: energy });
+    } catch {
+      tracks.push(track);
+    }
+  }
+  return changed ? { ...draft, tracks } : draft;
 }

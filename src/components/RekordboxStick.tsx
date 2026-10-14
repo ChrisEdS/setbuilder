@@ -15,6 +15,7 @@ import {
 import { errorText } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n/react";
 import { rememberStickFiles } from "@/lib/stick-audio";
+import { enrichDraftEnergyFromFiles } from "@/lib/stick-file";
 import { formatDuration, trackCount, type SetDraft } from "@/lib/set";
 import {
   hydrateStickMedia,
@@ -228,10 +229,10 @@ export function RekordboxStick({
       : loadPersistedStickHandle();
     void rootPromise.then(async (handle) => {
       if (!handle) return;
-      const hydrated = await hydrateStickMedia(handle, mediaPathsForDraft(next, set.tracks));
-      if (hydrated > 0) {
-        onApply(rehydrateStickCovers(next, set.tracks), message);
-      }
+      await hydrateStickMedia(handle, mediaPathsForDraft(next, set.tracks));
+      const covered = rehydrateStickCovers(next, set.tracks);
+      // Energy written by SETFORM lives in MP3 tags, not yet in export.pdb.
+      onApply(await enrichDraftEnergyFromFiles(covered, handle), message);
     });
   }
 

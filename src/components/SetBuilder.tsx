@@ -48,6 +48,7 @@ import {
 } from "@/lib/stick-session";
 import { stickFileCount } from "@/lib/stick-audio";
 import {
+  enrichDraftEnergyFromFiles,
   ensureStickWriteAccess,
   isWritableMp3,
   resolveTrackAudio,
@@ -515,7 +516,10 @@ export function SetBuilder() {
         await hydrateStickMedia(handle, mediaPathsForDraft(readStoredDraft(), stick.library));
         if (cancelled) return;
         setLibraryRows(stickLibraryRows(stick.library));
-        setDraft((current) => rehydrateStickCovers(current, stick.library));
+        const covered = rehydrateStickCovers(readStoredDraft(), stick.library);
+        const withEnergy = await enrichDraftEnergyFromFiles(covered, handle);
+        if (cancelled) return;
+        setDraft(withEnergy);
         setStickReady(true);
       } catch {
         /* Banner still offers a manual reconnect. */
@@ -1906,7 +1910,13 @@ export function SetBuilder() {
           onLoaded={(rows) => {
             setLibraryRows(rows);
             const library = rows.flatMap((row) => (row.stick ? [row.stick] : []));
-            if (library.length) setDraft((current) => rehydrateStickCovers(current, library));
+            void (async () => {
+              const handle = await loadPersistedStickHandle().catch(() => null);
+              const covered = library.length
+                ? rehydrateStickCovers(readStoredDraft(), library)
+                : readStoredDraft();
+              setDraft(await enrichDraftEnergyFromFiles(covered, handle));
+            })();
           }}
         />
       ) : null}
@@ -1931,12 +1941,23 @@ export function SetBuilder() {
           onRows={(rows) => {
             setLibraryRows(rows);
             const library = rows.flatMap((row) => (row.stick ? [row.stick] : []));
-            if (library.length) setDraft((current) => rehydrateStickCovers(current, library));
+            void (async () => {
+              const handle = await loadPersistedStickHandle().catch(() => null);
+              const covered = library.length
+                ? rehydrateStickCovers(readStoredDraft(), library)
+                : readStoredDraft();
+              setDraft(await enrichDraftEnergyFromFiles(covered, handle));
+            })();
           }}
           onApply={(next, message) => {
             setDraft(next);
             clearNotice();
             setStatus(message);
+            void (async () => {
+              const handle = await loadPersistedStickHandle().catch(() => null);
+              const enriched = await enrichDraftEnergyFromFiles(next, handle);
+              setDraft(enriched);
+            })();
           }}
         />
       </details>

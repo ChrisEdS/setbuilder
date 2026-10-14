@@ -1,3 +1,5 @@
+import { parseEnergyLevel } from "@/lib/energy";
+
 const ENERGY_DESCRIPTION = "EnergyLevel";
 const GROW_PADDING = 512;
 
@@ -54,6 +56,19 @@ export function readEnergyFields(data: Uint8Array): {
     }
   }
   return { energyLevel, comment };
+}
+
+/**
+ * Energy Level written by SETFORM / Mixed In Key into ID3 (TXXX EnergyLevel or
+ * `Energy N` in the comment). Used when export.pdb has not been refreshed yet.
+ */
+export function energyLevelFromId3(data: Uint8Array): number | undefined {
+  const fields = readEnergyFields(data);
+  if (fields.energyLevel != null) {
+    const value = Number(fields.energyLevel);
+    if (Number.isInteger(value) && value >= 1 && value <= 10) return value;
+  }
+  return parseEnergyLevel(fields.comment);
 }
 
 export type TagSelection = {
