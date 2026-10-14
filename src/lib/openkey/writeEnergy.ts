@@ -1,7 +1,28 @@
-import { parseEnergyLevel } from "@/lib/energy";
+import {
+  energyFromRekordboxTags,
+  parseEnergyField,
+  parseEnergyLevel,
+} from "@/lib/energy";
 
 const ENERGY_DESCRIPTION = "EnergyLevel";
 const GROW_PADDING = 512;
+
+/** TXXX descriptions Mixed In Key / SETFORM / similar tools use for Energy. */
+function isEnergyUserText(description: string): boolean {
+  const folded = description
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_\-./]+/g, "");
+  return (
+    folded === "energylevel" ||
+    folded === "energy" ||
+    folded === "energie" ||
+    folded === "mikenergy" ||
+    folded === "mixedinkeyenergy" ||
+    folded === "energylevel1to10" ||
+    folded === "energylevel110"
+  );
+}
 
 export type Id3Frame = {
   id: string;
@@ -59,16 +80,70 @@ export function readEnergyFields(data: Uint8Array): {
 }
 
 /**
- * Energy Level written by SETFORM / Mixed In Key into ID3 (TXXX EnergyLevel or
- * `Energy N` in the comment). Used when export.pdb has not been refreshed yet.
+ * Energy Level from ID3 wherever Mixed In Key / SETFORM / rekordbox often put it:
+ * TXXX EnergyLevel/Energy, any COMM with `Energy N`, Grouping (TIT1), Remixer (TPE4),
+ * Publisher/Label (TPUB). Used when export.pdb has not been refreshed yet.
  */
 export function energyLevelFromId3(data: Uint8Array): number | undefined {
-  const fields = readEnergyFields(data);
-  if (fields.energyLevel != null) {
-    const value = Number(fields.energyLevel);
-    if (Number.isInteger(value) && value >= 1 && value <= 10) return value;
+  let parsed: ParsedTag;
+  try {
+    parsed = readTag(data);
+  } catch {
+    return undefined;
   }
-  return parseEnergyLevel(fields.comment);
+
+  const txxxEnergyValues: string[] = [];
+  const comments: string[] = [];
+  let grouping: string | null = null;
+  let remixer: string | null = null;
+  let label: string | null = null;
+
+  for (const frame of parsed.frames) {
+    let body: Uint8Array;
+    try {
+      body = logicalBody(parsed.version, frame);
+    } catch {
+      continue;
+    }
+    if (frame.id === "TXXX") {
+      const field = readTxxx(body);
+      if (field && isEnergyUserText(field.description)) {
+        txxxEnergyValues.push(field.value);
+      }
+      continue;
+    }
+    if (frame.id === "COMM") {
+      const field = readComm(body);
+      if (field?.text) comments.push(field.text);
+      continue;
+    }
+    if (frame.id === "TIT1" && grouping == null) {
+      grouping = readTextFrame(body);
+      continue;
+    }
+    if (frame.id === "TPE4" && remixer == null) {
+      remixer = readTextFrame(body);
+      continue;
+    }
+    if (frame.id === "TPUB" && label == null) {
+      label = readTextFrame(body);
+    }
+  }
+
+  for (const value of txxxEnergyValues) {
+    const level = parseEnergyField(value) ?? parseEnergyLevel(value);
+    if (level != null) return level;
+  }
+  for (const text of comments) {
+    const level = parseEnergyLevel(text);
+    if (level != null) return level;
+  }
+  return energyFromRekordboxTags({
+    comment: comments[0] ?? null,
+    grouping,
+    label,
+    remixer,
+  });
 }
 
 export type TagSelection = {
@@ -396,6 +471,15 @@ function deunsync(data: Uint8Array): Uint8Array<ArrayBuffer> {
     if (data[i] === 0xff && data[i + 1] === 0x00) i += 1;
   }
   return new Uint8Array(buffer, 0, length);
+}
+
+function readTextFrame(body: Uint8Array): string | null {
+  if (body.length < 1 || body[0] > 3) return null;
+  try {
+    return readEncoded(body, 1, body[0]).text;
+  } catch {
+    return null;
+  }
 }
 
 function readTxxx(

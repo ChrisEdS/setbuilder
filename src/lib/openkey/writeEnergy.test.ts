@@ -127,6 +127,77 @@ test("energyLevelFromId3 reads TXXX and comment tokens", () => {
   assert.equal(energyLevelFromId3(Uint8Array.from(audio)), undefined);
 });
 
+test("energyLevelFromId3 also checks Grouping, Remixer, Label and Energy TXXX", () => {
+  assert.equal(
+    energyLevelFromId3(
+      buildTag({
+        padding: 64,
+        frames: [textFrame(3, "TIT1", "7"), frame(3, "GEOB", geob)],
+      }),
+    ),
+    7,
+  );
+  assert.equal(
+    energyLevelFromId3(
+      buildTag({
+        padding: 64,
+        frames: [textFrame(3, "TPE4", "E8"), frame(3, "GEOB", geob)],
+      }),
+    ),
+    8,
+  );
+  assert.equal(
+    energyLevelFromId3(
+      buildTag({
+        padding: 64,
+        frames: [textFrame(3, "TPUB", "6"), frame(3, "GEOB", geob)],
+      }),
+    ),
+    6,
+  );
+  assert.equal(
+    energyLevelFromId3(
+      buildTag({
+        padding: 64,
+        frames: [
+          frame(3, "TXXX", [0, ...chars("Energy"), 0, ...chars("9"), 0]),
+          frame(3, "GEOB", geob),
+        ],
+      }),
+    ),
+    9,
+  );
+  // ReplayGain must not be read as Energy.
+  assert.equal(
+    energyLevelFromId3(
+      buildTag({
+        padding: 64,
+        frames: [replay, frame(3, "GEOB", geob)],
+      }),
+    ),
+    undefined,
+  );
+  // Energy in a non-default comment description still counts.
+  assert.equal(
+    energyLevelFromId3(
+      buildTag({
+        padding: 64,
+        frames: [
+          frame(3, "COMM", [
+            0,
+            ...chars("eng"),
+            ...chars("Mixed In Key"),
+            0,
+            ...chars("7A - Energy 5"),
+          ]),
+          frame(3, "GEOB", geob),
+        ],
+      }),
+    ),
+    5,
+  );
+});
+
 test("writeEnergy updates energy and keeps every other frame and the audio", () => {
   const input = libraryTag();
   const output = writeEnergy(input, 7);
