@@ -1,7 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="SETBUILDER">
-  <rect width="64" height="64" rx="14" fill="#0B0F14"/>
-  <path d="M14 40V24h8.2c4.6 0 7.4 2.2 7.4 5.8 0 2.4-1.2 4.2-3.4 5.1L32 40h-5.2l-4.8-4.6H19.2V40H14zm5.2-8.8h2.8c2.2 0 3.4-1 3.4-2.6s-1.2-2.6-3.4-2.6h-2.8v5.2z" fill="#E8F0F7"/>
-  <path d="M34 24h5.2l6.4 16H40l-1.1-3H31.7L30.6 40H25.2L34 24zm1.7 9.2h4.2l-2.1-5.8-2.1 5.8z" fill="#7EB8D8"/>
-  <rect x="14" y="44" width="36" height="3" rx="1.5" fill="#3D5A6C"/>
-  <rect x="14" y="44" width="18" height="3" rx="1.5" fill="#7EB8D8"/>
+  <rect width="64" height="64" rx="14" fill="#181818"/>
+  <!-- Set arc: Open → Lift → Rise → Peak → Release (log climb, soft drop) -->
+  <rect x="8"  y="40" width="8" height="12" rx="2" fill="#4A4A4A"/>
+  <rect x="18" y="32" width="8" height="20" rx="2" fill="#6A6A6A"/>
+  <rect x="28" y="22" width="8" height="30" rx="2" fill="#9A9A9A"/>
+  <rect x="38" y="12" width="8" height="40" rx="2" fill="#1ED760"/>
+  <rect x="48" y="30" width="8" height="22" rx="2" fill="#5A5A5A"/>
+  <!-- Soft log curve through the phases -->
+  <path
+    d="M12 46 C18 42, 22 36, 28 28 C32 22, 36 14, 42 14 C46 14, 50 26, 52 36"
+    stroke="#1ED760"
+    stroke-width="2"
+    stroke-linecap="round"
+    opacity="0.55"
+    fill="none"
+  />
 </svg>

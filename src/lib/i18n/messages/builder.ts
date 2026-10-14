@@ -30,6 +30,8 @@ const de = {
   "builder.brief.audience": "Audience",
   "builder.brief.gear": "Gear",
   "builder.brief.duration": "Dauer (Min)",
+  "builder.brief.notes": "Notes",
+  "builder.brief.notesPlaceholder": "Doors, Curfew, Promoter, Specials…",
 
   // Folds
   "builder.library.title": "Set laden & Keys",
@@ -431,6 +433,8 @@ const en: Record<keyof typeof de, string> = {
   "builder.brief.audience": "Audience",
   "builder.brief.gear": "Gear",
   "builder.brief.duration": "Duration (min)",
+  "builder.brief.notes": "Notes",
+  "builder.brief.notesPlaceholder": "Doors, curfew, promoter, specials…",
 
   "builder.library.title": "Load set & keys",
   "builder.library.keys": "{done}/{total} keys",

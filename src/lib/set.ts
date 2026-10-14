@@ -89,6 +89,8 @@ export type SetDraft = {
   slotKind: SetSlotKind;
   audience: string;
   gear: string;
+  /** Free-form brief notes (promoter, doors, curfew, …). */
+  notes: string;
   durationMinutes: number;
   tracks: SetTrack[];
 };
@@ -189,6 +191,7 @@ export const DEFAULT_SET: SetDraft = {
   slotKind: "peaktime",
   audience: "Locals, dancefloor schon warm",
   gear: "CDJs / USB",
+  notes: "",
   durationMinutes: 60,
   tracks: [],
 };
@@ -382,7 +385,7 @@ export function exportSetText(draft: SetDraft, t: Translate = tDe): string {
       target: draft.durationMinutes,
       actual: formatDuration(totalDurationMs(draft.tracks)),
     }),
-    "",
+    ...(draft.notes?.trim() ? [draft.notes.trim(), ""] : [""]),
   ];
 
   const line = (track: SetTrack) => {

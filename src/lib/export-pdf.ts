@@ -29,6 +29,13 @@ function escapeHtml(value: string): string {
     .replaceAll('"', "&quot;");
 }
 
+/** Inline set-arc mark for print popups (no network). */
+const BRAND_MARK_DATA_URI =
+  "data:image/svg+xml," +
+  encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none"><rect width="64" height="64" rx="14" fill="#181818"/><rect x="8" y="40" width="8" height="12" rx="2" fill="#4A4A4A"/><rect x="18" y="32" width="8" height="20" rx="2" fill="#6A6A6A"/><rect x="28" y="22" width="8" height="30" rx="2" fill="#9A9A9A"/><rect x="38" y="12" width="8" height="40" rx="2" fill="#1ED760"/><rect x="48" y="30" width="8" height="22" rx="2" fill="#5A5A5A"/><path d="M12 46 C18 42, 22 36, 28 28 C32 22, 36 14, 42 14 C46 14, 50 26, 52 36" stroke="#1ED760" stroke-width="2" stroke-linecap="round" opacity="0.55" fill="none"/></svg>`,
+  );
+
 function transitionLabel(track: SetTrack, t: Translate): string {
   if (track.transition === "unset") return "";
   return TRANSITIONS.some((item) => item.id === track.transition)
@@ -156,6 +163,7 @@ export function buildSetPrintHtml(draft: SetDraft, t: Translate = tDe): string {
     draft.venue,
     draft.audience,
     draft.gear,
+    draft.notes?.trim() || "",
   ].filter((part) => part && String(part).trim());
 
   return `<!doctype html>
@@ -216,11 +224,19 @@ export function buildSetPrintHtml(draft: SetDraft, t: Translate = tDe): string {
       box-shadow: 0 12px 40px rgba(0,0,0,0.08);
     }
     .brand {
+      display: flex;
+      align-items: center;
+      gap: 6px;
       margin: 0 0 4px;
       font-size: 9px;
       letter-spacing: 0.16em;
       text-transform: uppercase;
       color: var(--muted);
+    }
+    .brand img {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
     }
     h1 {
       margin: 0;
@@ -304,7 +320,7 @@ export function buildSetPrintHtml(draft: SetDraft, t: Translate = tDe): string {
     </div>
   </div>
   <main class="sheet">
-    <p class="brand">${escapeHtml(t("exports.pdf.brand"))}</p>
+    <p class="brand"><img src="${BRAND_MARK_DATA_URI}" alt="" />${escapeHtml(t("exports.pdf.brand"))}</p>
     <h1>${escapeHtml(draft.title || t("exports.pdf.untitled"))}</h1>
     <p class="meta">${meta.map((part) => escapeHtml(String(part))).join(" · ")}</p>
     ${performanceTable}

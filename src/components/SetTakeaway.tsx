@@ -174,10 +174,18 @@ type ToolsProps = {
   onMatchLinks?: () => void;
   /** The set-wide edit actions that come before the link search. */
   children?: ReactNode;
+  /** Far-right actions (e.g. reset). */
+  trailing?: ReactNode;
 };
 
 /** "Set bearbeiten": the actions that change the whole set, in the order you use them. */
-export function SetTools({ canMatch, matchingLinks, onMatchLinks, children }: ToolsProps) {
+export function SetTools({
+  canMatch,
+  matchingLinks,
+  onMatchLinks,
+  children,
+  trailing,
+}: ToolsProps) {
   const { t } = useI18n();
   return (
     <div className="set-tools" role="group" aria-label={t("library.tools.label")}>
@@ -193,6 +201,7 @@ export function SetTools({ canMatch, matchingLinks, onMatchLinks, children }: To
           {matchingLinks ? t("library.tools.searching") : t("library.tools.matchLinks")}
         </button>
       </Tip>
+      {trailing}
     </div>
   );
 }
@@ -204,10 +213,9 @@ type MenusProps = {
   onExportRekordbox?: () => void;
   onWriteStick?: () => void;
   onCopyText?: () => void;
-  onReset?: () => void;
 };
 
-/** Output and the rare, destructive action, both tucked into menus at the top right. */
+/** Export actions tucked into a menu at the top right. */
 export function SetMenus({
   canExport,
   onExportPdf,
@@ -215,7 +223,6 @@ export function SetMenus({
   onExportRekordbox,
   onWriteStick,
   onCopyText,
-  onReset,
 }: MenusProps) {
   const { t } = useI18n();
   return (
@@ -252,16 +259,6 @@ export function SetMenus({
           onClick={onCopyText}
         />
       </Menu>
-      {onReset ? (
-        <Menu label={<span aria-hidden="true">…</span>} ariaLabel={t("library.menu.more")}>
-          <MenuItem
-            title={t("library.menu.reset")}
-            hint={t("library.menu.resetHint")}
-            danger
-            onClick={onReset}
-          />
-        </Menu>
-      ) : null}
     </div>
   );
 }

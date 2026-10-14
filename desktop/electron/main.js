@@ -1,8 +1,21 @@
-const { app, BrowserWindow, Menu, dialog, shell } = require("electron");
+const { app, BrowserWindow, Menu, dialog, shell, nativeImage } = require("electron");
 const { spawn } = require("child_process");
 const fs = require("fs");
 const http = require("http");
 const path = require("path");
+
+function appIcon() {
+  const candidates = [
+    path.join(__dirname, "..", "build", "icon.png"),
+    path.join(process.resourcesPath || "", "icon.png"),
+  ];
+  for (const file of candidates) {
+    if (!fs.existsSync(file)) continue;
+    const image = nativeImage.createFromPath(file);
+    if (!image.isEmpty()) return image;
+  }
+  return undefined;
+}
 
 const PORT = Number(
   process.env.SETBUILDER_PORT || process.env.SETFORM_PORT || 4317,
@@ -287,6 +300,10 @@ function isLoginUrl(url) {
 }
 
 function createWindow() {
+  const icon = appIcon();
+  if (process.platform === "darwin" && icon && app.dock) {
+    app.dock.setIcon(icon);
+  }
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 860,
@@ -296,6 +313,7 @@ function createWindow() {
     backgroundColor: "#121212",
     titleBarStyle: "hiddenInset",
     trafficLightPosition: { x: 16, y: 16 },
+    ...(icon ? { icon } : {}),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,

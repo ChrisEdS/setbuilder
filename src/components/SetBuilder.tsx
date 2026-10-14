@@ -1463,7 +1463,6 @@ export function SetBuilder() {
   }
 
   function resetSet() {
-    // Destructive and not undoable: ask once, naming what goes.
     if (
       draft.tracks.length > 0 &&
       !window.confirm(t("builder.reset.confirm", { tracks: trackCount(draft.tracks.length, t) }))
@@ -1709,6 +1708,14 @@ export function SetBuilder() {
                   }}
                 />
               </label>
+              <button
+                type="button"
+                className="btn ghost danger"
+                title={t("library.menu.resetHint")}
+                onClick={resetSet}
+              >
+                {t("library.menu.reset")}
+              </button>
             </div>
             <FieldNoticeView notice={localNotice("settings")} />
           </div>
@@ -1808,8 +1815,8 @@ export function SetBuilder() {
               className="brand-mark"
               src="/logo.svg"
               alt=""
-              width={52}
-              height={52}
+              width={60}
+              height={60}
             />
             SETBUILDER
           </p>
@@ -1905,6 +1912,17 @@ export function SetBuilder() {
                 }
                 setDurationText(null);
               }}
+            />
+          </label>
+          <label className="hero-meta-notes">
+            <span>{t("builder.brief.notes")}</span>
+            <textarea
+              rows={2}
+              value={draft.notes ?? ""}
+              placeholder={t("builder.brief.notesPlaceholder")}
+              onChange={(e) =>
+                setDraft((c) => ({ ...c, notes: e.target.value }))
+              }
             />
           </label>
         </div>
@@ -2352,7 +2370,6 @@ export function SetBuilder() {
               onExportRekordbox={exportRekordbox}
               onWriteStick={() => setStickOpen(true)}
               onCopyText={() => void copyExport()}
-              onReset={resetSet}
             />
             <StickWriteDialog
               open={stickOpen}
@@ -2364,6 +2381,21 @@ export function SetBuilder() {
             canMatch={draft.tracks.length > 0}
             matchingLinks={matchingLinks}
             onMatchLinks={() => void matchStreamingLinks()}
+            trailing={
+              <span className="tip set-tools-reset">
+                <button
+                  type="button"
+                  className="btn ghost danger"
+                  onClick={resetSet}
+                  title={t("library.menu.resetHint")}
+                >
+                  {t("library.menu.reset")}
+                </button>
+                <span className="tip-bubble" role="tooltip">
+                  {t("library.menu.resetHint")}
+                </span>
+              </span>
+            }
           >
             <SetSortMenu
               disabled={mainTracks.length < 2}

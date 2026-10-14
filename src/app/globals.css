@@ -94,10 +94,14 @@ textarea {
 
 .hero {
   display: grid;
-  grid-template-columns: 1.2fr 1fr;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
   gap: 1.5rem;
   align-items: end;
   margin-bottom: 1.75rem;
+}
+
+.hero-copy {
+  min-width: 0;
 }
 
 .brand {
@@ -105,16 +109,19 @@ textarea {
   align-items: center;
   gap: 0.55rem;
   margin: 0 0 0.75rem;
+  max-width: 100%;
+  min-width: 0;
   font-family: var(--font-display), "Space Grotesk", sans-serif;
-  font-size: clamp(2.8rem, 7vw, 5.2rem);
-  line-height: 0.9;
-  letter-spacing: -0.06em;
+  font-size: clamp(2rem, 4.8vw, 3.6rem);
+  line-height: 0.95;
+  letter-spacing: -0.05em;
   font-weight: 800;
+  overflow-wrap: anywhere;
 }
 
 .brand-mark {
-  width: clamp(2.2rem, 5vw, 3.25rem);
-  height: clamp(2.2rem, 5vw, 3.25rem);
+  width: clamp(2.6rem, 5.5vw, 3.75rem);
+  height: clamp(2.6rem, 5.5vw, 3.75rem);
   border-radius: 0.55rem;
   flex-shrink: 0;
 }
@@ -147,6 +154,29 @@ textarea {
   backdrop-filter: blur(10px);
   box-shadow: var(--shadow);
   animation: fade-in 900ms ease-out both;
+}
+
+.hero-meta-notes {
+  grid-column: 1 / -1;
+}
+
+.hero-meta-notes textarea {
+  width: 100%;
+  min-height: 4.5rem;
+  resize: vertical;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  padding: 0.65rem 0.75rem;
+  outline: none;
+  font: inherit;
+  line-height: 1.4;
+  border-radius: var(--radius-sm, 8px);
+}
+
+.hero-meta-notes textarea:focus {
+  border-color: var(--slate);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--mint) 70%, transparent);
 }
 
 .principles,
@@ -1804,8 +1834,8 @@ button {
 
 .brand {
   font-weight: 700;
-  letter-spacing: -0.08em;
-  font-size: clamp(3rem, 8vw, 5.6rem);
+  letter-spacing: -0.05em;
+  font-size: clamp(2rem, 4.8vw, 3.6rem);
 }
 
 .hero h1 {
@@ -2079,7 +2109,7 @@ button {
 .brand {
   color: var(--ink);
   font-weight: 700;
-  letter-spacing: -0.08em;
+  letter-spacing: -0.05em;
 }
 
 .hero {
@@ -2770,6 +2800,7 @@ label.btn:hover {
 
 .hero-meta input,
 .hero-meta select,
+.hero-meta-notes textarea,
 .search-row input,
 .playlist-picker select,
 .key-import textarea,
@@ -2780,6 +2811,11 @@ label.btn:hover {
   color: #fff !important;
   border-radius: 999px !important;
   box-shadow: none !important;
+}
+
+.hero-meta-notes textarea {
+  border-radius: 10px !important;
+  min-height: 4.5rem !important;
 }
 
 .library-csv-pane textarea,
@@ -3326,6 +3362,7 @@ h3,
 /* Forms: high contrast on dark */
 .hero-meta input,
 .hero-meta select,
+.hero-meta-notes textarea,
 .search-row input,
 .playlist-picker select,
 .key-import textarea,
@@ -5491,6 +5528,22 @@ body {
 .set-tools .btn,
 .set-menus .btn {
   white-space: nowrap;
+}
+
+.set-tools-reset {
+  margin-left: auto;
+}
+
+.set-tools .btn.ghost.danger {
+  color: #f87171 !important;
+  border: 1px solid rgba(248, 113, 113, 0.75) !important;
+  background: transparent !important;
+}
+
+.set-tools .btn.ghost.danger:hover:not(:disabled) {
+  color: #fecaca !important;
+  border-color: #f87171 !important;
+  background: rgba(248, 113, 113, 0.1) !important;
 }
 
 .set-tools .menu-panel {

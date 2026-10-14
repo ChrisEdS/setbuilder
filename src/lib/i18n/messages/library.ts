@@ -255,7 +255,8 @@ const de = {
   "library.stickHealth.prepare.failed": "rekordbox ließ sich nicht öffnen.",
   "library.menu.more": "Weitere Aktionen",
   "library.menu.reset": "Zurücksetzen",
-  "library.menu.resetHint": "Set leeren und zum leeren Brief zurück. Gespeicherte Setups bleiben.",
+  "library.menu.resetHint":
+    "Set leeren und zum Beispiel-Brief zurück. Gespeicherte Setups bleiben.",
 } as const;
 
 const en: Record<keyof typeof de, string> = {
@@ -514,7 +515,8 @@ const en: Record<keyof typeof de, string> = {
   "library.stickHealth.prepare.failed": "rekordbox could not be opened.",
   "library.menu.more": "More actions",
   "library.menu.reset": "Reset",
-  "library.menu.resetHint": "Clear the set and return to the empty brief. Saved setups stay.",
+  "library.menu.resetHint":
+    "Clear the set and return to the sample brief. Saved setups stay.",
 };
 
 export const library = { de, en };
