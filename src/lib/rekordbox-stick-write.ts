@@ -35,6 +35,7 @@ import {
 export const BACKUP_DIR = "SETFORM-Backup";
 export const SIDECAR_DIR = "SETFORM";
 export const BACKUP_KEEP = 3;
+export const LIBRARY_ASIDE_RE = /^exportLibrary-aside-\d{8}-\d{6}\.db$/;
 
 type Writable = {
   write(data: ArrayBuffer | Uint8Array): Promise<void>;
@@ -44,7 +45,7 @@ type Writable = {
 
 export type FileLike = {
   name: string;
-  getFile(): Promise<{ arrayBuffer(): Promise<ArrayBuffer>; size: number }>;
+  getFile(): Promise<{ arrayBuffer(): Promise<ArrayBuffer>; size: number; lastModified?: number }>;
   createWritable(): Promise<Writable>;
 };
 
@@ -569,6 +570,79 @@ export async function restoreLatestBackup(root: DirLike): Promise<string> {
     throw stickError(
       "exports.stickWrite.restoreFailed",
       "Die Stick-Datenbank konnte nicht zurückgesetzt werden. Bitte den Stick in rekordbox neu exportieren oder die Sicherung in SETFORM-Backup kopieren.",
+    );
+  }
+  return name;
+}
+
+export async function listLibraryAsides(root: DirLike): Promise<string[]> {
+  const dir = await child(root, BACKUP_DIR);
+  if (!dir?.keys) return [];
+  const names: string[] = [];
+  for await (const name of dir.keys()) if (LIBRARY_ASIDE_RE.test(name)) names.push(name);
+  names.sort();
+  return names;
+}
+
+/**
+ * Newer players that prefer OneLibrary (exportLibrary.db) ignore SETFORM’s export.pdb.
+ * We cannot write that encrypted file. Setting it aside (with a backup) makes
+ * Device Library players — CDJ-3000, XDJ-XZ and older — read export.pdb instead.
+ * CDJ-3000X, XDJ-AZ and OPUS-QUAD still need rekordbox.
+ */
+export async function prepareStickForPlayers(root: DirLike, now = new Date()): Promise<{
+  aside: boolean;
+  backupName: string | null;
+}> {
+  const location = await findStickDatabase(root);
+  const lib = await file(location.dir, "exportLibrary.db");
+  if (!lib) return { aside: false, backupName: null };
+  if (!location.dir.removeEntry) {
+    throw stickError(
+      "exports.stickWrite.removeDenied",
+      "Dieser Stick darf die Player-Library nicht beiseitelegen. Chrome, Edge oder die Desktop-App verwenden.",
+    );
+  }
+  const original = await readBytes(lib);
+  const backupDir = await root.getDirectoryHandle(BACKUP_DIR, { create: true });
+  const backupName = `exportLibrary-aside-${stamp(now)}.db`;
+  const backup = await backupDir.getFileHandle(backupName, { create: true });
+  await replaceFile(backup, original);
+  if (!sameBytes(await readBytes(backup), original)) {
+    throw stickError(
+      "exports.stickWrite.backupFailed",
+      "Die Sicherung konnte nicht geschrieben werden. Es wurde nichts verändert.",
+    );
+  }
+  await location.dir.removeEntry("exportLibrary.db");
+  if (await file(location.dir, "exportLibrary.db")) {
+    throw stickError(
+      "exports.stickWrite.asideFailed",
+      "exportLibrary.db konnte nicht beiseitegelegt werden. Die Sicherung liegt in SETFORM-Backup.",
+    );
+  }
+  return { aside: true, backupName };
+}
+
+/** Puts the newest set-aside OneLibrary back as exportLibrary.db. */
+export async function restorePlayerLibrary(root: DirLike): Promise<string> {
+  const location = await findStickDatabase(root);
+  const names = await listLibraryAsides(root);
+  const dir = await child(root, BACKUP_DIR);
+  const name = names.at(-1);
+  if (!name || !dir) {
+    throw stickError(
+      "exports.stickWrite.noAside",
+      "Auf diesem Stick liegt keine beiseitegelegte Player-Library.",
+    );
+  }
+  const backup = await readBytes(await dir.getFileHandle(name));
+  const handle = await location.dir.getFileHandle("exportLibrary.db", { create: true });
+  await replaceFile(handle, backup);
+  if (!sameBytes(await readBytes(handle), backup)) {
+    throw stickError(
+      "exports.stickWrite.restoreFailed",
+      "Die Stick-Datenbank konnte nicht zurückgesetzt werden. Bitte den Stick in rekordbox neu exportieren oder die Datei aus SETFORM-Backup zurückkopieren.",
     );
   }
   return name;

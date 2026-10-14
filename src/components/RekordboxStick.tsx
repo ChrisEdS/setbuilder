@@ -1,7 +1,8 @@
 "use client";
 
-import { Fragment, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { FieldNoticeView, type FieldNotice } from "@/components/FieldNotice";
+import { StickHealthCard } from "@/components/StickHealthCard";
 import {
   applyStickSet,
   mediaPathsForDraft,
@@ -19,8 +20,12 @@ import {
   loadPersistedStickHandle,
   pickAndRememberStick,
   readStickFromHandle,
+  requestStickEject,
+  stickPermission,
   stickPicker,
 } from "@/lib/stick-session";
+import { inspectStick, inspectStickFiles, type StickHealth } from "@/lib/stick-health";
+import { prepareStickForPlayers, restorePlayerLibrary, type DirLike } from "@/lib/rekordbox-stick-write";
 
 type Props = {
   draft: SetDraft;
@@ -60,21 +65,68 @@ export function RekordboxStick({
   const [label, setLabel] = useState<string | null>(null);
   const [sets, setSets] = useState<RekordboxStickSet[]>([]);
   const [error, setError] = useState<StickError | null>(null);
+  const [health, setHealth] = useState<StickHealth | null>(null);
+  const [checkingHealth, setCheckingHealth] = useState(false);
+  const [healthRoot, setHealthRoot] = useState<DirLike | null>(null);
+  const [healthFiles, setHealthFiles] = useState<File[] | null>(null);
+
+  async function refreshHealth(source: { handle?: DirLike | null; files?: File[] | null } = {}) {
+    const handle = source.handle !== undefined ? source.handle : healthRoot;
+    const files = source.files !== undefined ? source.files : healthFiles;
+    setCheckingHealth(true);
+    try {
+      if (handle) {
+        setHealth(await inspectStick(handle));
+        return;
+      }
+      if (files?.length) {
+        setHealth(await inspectStickFiles(files));
+        return;
+      }
+      setHealth(null);
+    } catch {
+      setHealth(null);
+    } finally {
+      setCheckingHealth(false);
+    }
+  }
+
+  useEffect(() => {
+    void (async () => {
+      const handle = await loadPersistedStickHandle();
+      if (!handle || !(await stickPermission(handle, "read", false))) return;
+      setHealthRoot(handle);
+      await refreshHealth({ handle, files: null });
+    })();
+    // Once: remembered stick, no prompt.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function load(list: FileList | null) {
     const files = list ? Array.from(list) : [];
     if (!files.length) return;
     setLocalBusy(true);
     setError(null);
+    setHealthRoot(null);
+    setHealthFiles(files);
     try {
-      const stick = await readRekordboxStick(files);
-      rememberStickFiles(files);
-      setLabel(stick.label);
-      setSets(stick.sets);
-      onIndexed(stickLibraryRows(stick.library));
-      if (!stick.sets.length) {
-        setError({ kind: "noSets" });
+      const [read, check] = await Promise.allSettled([
+        readRekordboxStick(files),
+        inspectStickFiles(files),
+      ]);
+      if (check.status === "fulfilled") setHealth(check.value);
+      else setHealth(null);
+      if (read.status === "rejected") {
+        setSets([]);
+        setLabel(null);
+        setError({ kind: "read", error: read.reason });
+        return;
       }
+      rememberStickFiles(files);
+      setLabel(read.value.label);
+      setSets(read.value.sets);
+      onIndexed(stickLibraryRows(read.value.library));
+      if (!read.value.sets.length) setError({ kind: "noSets" });
     } catch (caught) {
       setSets([]);
       setLabel(null);
@@ -90,11 +142,24 @@ export function RekordboxStick({
     try {
       const handle = await pickAndRememberStick();
       if (!handle) return;
-      const stick = await readStickFromHandle(handle);
-      setLabel(stick.label);
-      setSets(stick.sets);
-      onIndexed(stickLibraryRows(stick.library));
-      if (!stick.sets.length) setError({ kind: "noSets" });
+      setHealthRoot(handle);
+      setHealthFiles(null);
+      const [read, check] = await Promise.allSettled([
+        readStickFromHandle(handle),
+        inspectStick(handle),
+      ]);
+      if (check.status === "fulfilled") setHealth(check.value);
+      else setHealth(null);
+      if (read.status === "rejected") {
+        setSets([]);
+        setLabel(null);
+        setError({ kind: "read", error: read.reason });
+        return;
+      }
+      setLabel(read.value.label);
+      setSets(read.value.sets);
+      onIndexed(stickLibraryRows(read.value.library));
+      if (!read.value.sets.length) setError({ kind: "noSets" });
     } catch (caught) {
       setSets([]);
       setLabel(null);
@@ -204,6 +269,33 @@ export function RekordboxStick({
         </div>
       </div>
       <FieldNoticeView notice={notice} />
+      {health ? (
+        <StickHealthCard
+          health={health}
+          checking={checkingHealth}
+          canFix={Boolean(healthRoot)}
+          onRecheck={() => void refreshHealth()}
+          onPrepare={
+            healthRoot
+              ? async () => {
+                  if (!(await stickPermission(healthRoot, "readwrite", true))) throw new Error("perm");
+                  await prepareStickForPlayers(healthRoot);
+                  await refreshHealth({ handle: healthRoot });
+                }
+              : undefined
+          }
+          onRestoreLibrary={
+            healthRoot
+              ? async () => {
+                  if (!(await stickPermission(healthRoot, "readwrite", true))) throw new Error("perm");
+                  await restorePlayerLibrary(healthRoot);
+                  await refreshHealth({ handle: healthRoot });
+                }
+              : undefined
+          }
+          onEject={healthRoot ? () => requestStickEject(healthRoot.name) : undefined}
+        />
+      ) : null}
       {sets.length ? (
         <ul className="stick-list">
           {sets.map((set) => {

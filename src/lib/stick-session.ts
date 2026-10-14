@@ -161,3 +161,13 @@ export async function pickAndRememberStick(): Promise<PersistableDir | null> {
     throw error;
   }
 }
+
+export async function requestStickEject(name: string): Promise<void> {
+  const response = await fetch("/api/desktop/eject", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+  const body = (await response.json().catch(() => ({}))) as { ejected?: boolean };
+  if (!response.ok || !body.ejected) throw new Error("eject");
+}

@@ -5885,3 +5885,129 @@ body {
 .stick-reload-actions .btn {
   cursor: pointer;
 }
+.stick-health {
+  margin: 0.85rem 0 0;
+  padding: 0.75rem 0.85rem 0.7rem;
+  border: 1px solid var(--line-strong);
+  border-left-width: 3px;
+  border-radius: var(--radius-sm);
+  background: #161616;
+}
+.stick-health.is-ready {
+  border-left-color: var(--ok);
+}
+.stick-health.is-needsRekordbox,
+.stick-health.is-hiddenFolder,
+.stick-health.is-incomplete {
+  border-left-color: #fbbf24;
+}
+.stick-health.is-empty {
+  border-left-color: var(--slate);
+}
+.stick-health.is-broken {
+  border-left-color: var(--danger);
+}
+.stick-health-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.55rem 0.8rem;
+}
+.stick-health-kicker {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.stick-health-head strong {
+  display: block;
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+.stick-health-head .btn {
+  flex: 0 0 auto;
+  font-size: 0.82rem;
+}
+.stick-health-advice {
+  margin: 0.5rem 0 0.55rem;
+  color: var(--ink);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+.stick-health-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+.stick-health-list li {
+  position: relative;
+  padding: 0.12rem 0 0.12rem 0.85rem;
+}
+.stick-health-list li::before {
+  content: "";
+  position: absolute;
+  top: 0.55em;
+  left: 0;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--line-strong);
+}
+.stick-health-list li.is-ok::before {
+  background: var(--ok);
+}
+.stick-health-list li.is-warn::before {
+  background: #fbbf24;
+}
+.stick-health-list li.is-bad::before {
+  background: var(--danger);
+}
+.stick-dialog .stick-health {
+  margin-top: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+.stick-health-prepare {
+  margin: 0 0 0.7rem;
+  padding: 0.6rem 0.7rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  background: #121212;
+}
+.stick-health-prepare strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.82rem;
+}
+.stick-health-prepare ol {
+  margin: 0 0 0.55rem;
+  padding-left: 1.2rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+.stick-health-prepare li.is-ok {
+  color: var(--ok);
+}
+.stick-health-prepare li.is-warn {
+  color: #fbbf24;
+}
+.stick-health-prepare-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+.stick-health-prepare-actions .btn {
+  font-size: 0.82rem;
+}
+.stick-health-prepare-note {
+  margin: 0.45rem 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}

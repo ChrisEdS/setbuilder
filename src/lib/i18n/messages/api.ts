@@ -51,6 +51,12 @@ const de = {
   "api.setup.localOnly": "Nur lokal.",
   "api.setup.saveFailed": "Speichern fehlgeschlagen.",
   "api.setup.noLineBreaks": "Zugangsdaten dürfen keine Zeilenumbrüche enthalten.",
+  "api.rekordbox.notFound": "rekordbox wurde auf diesem Rechner nicht gefunden.",
+  "api.rekordbox.openFailed": "rekordbox ließ sich nicht öffnen.",
+  "api.eject.badVolume": "Der Stick-Name ist unsicher oder kein Laufwerk.",
+  "api.eject.notPioneer": "Unter diesem Namen liegt kein rekordbox-Stick.",
+  "api.eject.unsupported": "Auswerfen kann SETFORM nur auf dem Mac.",
+  "api.eject.failed": "Der Stick ließ sich nicht auswerfen.",
 } as const;
 
 const en: Record<keyof typeof de, string> = {
@@ -96,6 +102,12 @@ const en: Record<keyof typeof de, string> = {
   "api.setup.localOnly": "Local only.",
   "api.setup.saveFailed": "Saving failed.",
   "api.setup.noLineBreaks": "Credentials must not contain line breaks.",
+  "api.rekordbox.notFound": "rekordbox was not found on this computer.",
+  "api.rekordbox.openFailed": "rekordbox could not be opened.",
+  "api.eject.badVolume": "The stick name is unsafe or not a volume.",
+  "api.eject.notPioneer": "There is no rekordbox stick under that name.",
+  "api.eject.unsupported": "SETFORM can only eject on a Mac.",
+  "api.eject.failed": "The stick could not be ejected.",
 };
 
 export const api = { de, en };

@@ -1,11 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { StickHealthCard } from "@/components/StickHealthCard";
 import { errorText } from "@/lib/i18n/error";
 import { useI18n } from "@/lib/i18n/react";
+import { inspectStick, type StickHealth } from "@/lib/stick-health";
 import {
   planStickWrite,
+  prepareStickForPlayers,
   restoreLatestBackup,
+  restorePlayerLibrary,
   rewriteSetToStick,
   writeSetToStick,
   writeStickSidecars,
@@ -17,6 +21,7 @@ import type { SetDraft, SetTrack } from "@/lib/set";
 import {
   loadPersistedStickHandle,
   pickAndRememberStick,
+  requestStickEject,
   stickPermission,
   stickPicker,
 } from "@/lib/stick-session";
@@ -49,6 +54,20 @@ export function StickWriteDialog({
   const [step, setStep] = useState<Step>({ kind: "idle" });
   const [canPick, setCanPick] = useState(true);
   const [hints, setHints] = useState<Record<string, number>>({});
+  const [health, setHealth] = useState<StickHealth | null>(null);
+  const [checkingHealth, setCheckingHealth] = useState(false);
+
+  async function refreshHealth(handle = root.current) {
+    if (!handle) return;
+    setCheckingHealth(true);
+    try {
+      setHealth(await inspectStick(handle));
+    } catch {
+      setHealth(null);
+    } finally {
+      setCheckingHealth(false);
+    }
+  }
 
   const tracks = draft.tracks;
   const title = draft.title;
@@ -60,6 +79,7 @@ export function StickWriteDialog({
     if (open && !node.open) {
       setStep({ kind: "idle" });
       setHints({});
+      setHealth(null);
       root.current = null;
       setCanPick(stickPicker() !== null);
       node.showModal();
@@ -69,12 +89,15 @@ export function StickWriteDialog({
         root.current = handle;
         setStep({ kind: "busy", label: "reading" });
         try {
+          const checked = inspectStick(handle).catch(() => null);
           setStep({
             kind: "planned",
             plan: await planStickWrite(handle, withHints(tracks, {}), title, altLabel),
           });
+          setHealth(await checked);
         } catch (error) {
           setStep({ kind: "error", text: errorText(error, t) });
+          await refreshHealth(handle);
         }
       })();
     }
@@ -87,12 +110,15 @@ export function StickWriteDialog({
     root.current = handle;
     setStep({ kind: "busy", label: "reading" });
     try {
+      const checked = inspectStick(handle).catch(() => null);
       setStep({
         kind: "planned",
         plan: await planStickWrite(handle, withHints(tracks, nextHints), title, altLabel),
       });
+      setHealth(await checked);
     } catch (error) {
       setStep({ kind: "error", text: errorText(error, t) });
+      await refreshHealth(handle);
     }
   }
 
@@ -119,6 +145,7 @@ export function StickWriteDialog({
       );
       const sidecars = await writeStickSidecars(root.current, draft, t).catch(() => []);
       setStep({ kind: "done", result, sidecars });
+      await refreshHealth(root.current);
     } catch (error) {
       setStep({ kind: "error", text: errorText(error, t) });
     }
@@ -130,6 +157,7 @@ export function StickWriteDialog({
     setStep({ kind: "busy", label: "restoring" });
     try {
       setStep({ kind: "restored", backup: await restoreLatestBackup(root.current) });
+      await refreshHealth(root.current);
     } catch (error) {
       setStep({ kind: "error", text: errorText(error, t) });
     }
@@ -282,7 +310,30 @@ export function StickWriteDialog({
           ) : (
             <p className="stick-warn">{t("library.stickWrite.noneFound")}</p>
           )}
-          {plan.hasLibraryDb ? <p className="stick-warn">{t("library.stickWrite.oneLibrary")}</p> : null}
+          {health ? (
+            <StickHealthCard
+              health={health}
+              checking={checkingHealth}
+              canFix
+              onRecheck={() => void refreshHealth()}
+              onPrepare={async () => {
+                if (!root.current) throw new Error("folder");
+                await prepareStickForPlayers(root.current);
+                await refreshHealth(root.current);
+              }}
+              onRestoreLibrary={async () => {
+                if (!root.current) throw new Error("folder");
+                await restorePlayerLibrary(root.current);
+                await refreshHealth(root.current);
+              }}
+              onEject={async () => {
+                if (!root.current) throw new Error("folder");
+                await requestStickEject(root.current.name);
+              }}
+            />
+          ) : plan.hasLibraryDb ? (
+            <p className="stick-warn">{t("library.stickWrite.oneLibrary")}</p>
+          ) : null}
           <p className="stick-safety">{t("library.stickWrite.safety")}</p>
           <div className="stick-actions">
             <button type="button" className="btn ghost" onClick={() => void restore()}>
@@ -324,6 +375,28 @@ export function StickWriteDialog({
             <p className="stick-hint">
               {t("library.stickWrite.sidecar", { files: step.sidecars.join(", ") })}
             </p>
+          ) : null}
+          {health ? (
+            <StickHealthCard
+              health={health}
+              checking={checkingHealth}
+              canFix
+              onRecheck={() => void refreshHealth()}
+              onPrepare={async () => {
+                if (!root.current) throw new Error("folder");
+                await prepareStickForPlayers(root.current);
+                await refreshHealth(root.current);
+              }}
+              onRestoreLibrary={async () => {
+                if (!root.current) throw new Error("folder");
+                await restorePlayerLibrary(root.current);
+                await refreshHealth(root.current);
+              }}
+              onEject={async () => {
+                if (!root.current) throw new Error("folder");
+                await requestStickEject(root.current.name);
+              }}
+            />
           ) : null}
           <div className="stick-actions">
             <button type="button" className="btn ghost" onClick={() => void restore()}>

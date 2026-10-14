@@ -10,8 +10,10 @@ import {
   latestBackupName,
   matchSetToStick,
   planStickWrite,
+  prepareStickForPlayers,
   pruneBackups,
   restoreLatestBackup,
+  restorePlayerLibrary,
   rewriteSetToStick,
   writeSetToStick,
   writeStickSidecars,
@@ -352,4 +354,24 @@ test("restores the newest backup", async () => {
 
   const empty = stick();
   await assert.rejects(restoreLatestBackup(empty.root), /Sicherung/);
+});
+
+test("prepareStickForPlayers moves exportLibrary.db aside and can put it back", async () => {
+  const { root, rekordbox } = stick();
+  const lib = new MemFile("exportLibrary.db", {});
+  lib.data = new Uint8Array([9, 8, 7, 6]);
+  rekordbox.files.set("exportLibrary.db", lib);
+  const done = await prepareStickForPlayers(root, new Date(2026, 9, 14, 3, 0, 0));
+  assert.equal(done.aside, true);
+  assert.equal(done.backupName, "exportLibrary-aside-20261014-030000.db");
+  assert.equal(rekordbox.files.has("exportLibrary.db"), false);
+  const stored = root.dirs.get(BACKUP_DIR)?.files.get(done.backupName ?? "");
+  assert.deepEqual(stored && [...stored.data], [9, 8, 7, 6]);
+  await restorePlayerLibrary(root);
+  assert.deepEqual([...(rekordbox.files.get("exportLibrary.db")?.data ?? [])], [9, 8, 7, 6]);
+});
+
+test("prepareStickForPlayers does nothing when there is no OneLibrary", async () => {
+  const { root } = stick();
+  assert.deepEqual(await prepareStickForPlayers(root), { aside: false, backupName: null });
 });

@@ -2,7 +2,7 @@
 
 [Deutsch](README.de.md) · **English**
 
-**Version 2.4.0** · Dramaturgy, not a playlist.
+**Version 2.5.0** · Dramaturgy, not a playlist.
 
 SETFORM prepares DJ sets for rekordbox. You load a playlist or history from the export stick (or a collection XML), lay out the arc by slot and duration, check energy, key and BPM, and take the set with you as rekordbox XML, PDF, M3U or text. The logic follows Mixed In Key: energy first, then key, then BPM. The workflow follows the [DJ.Studio prep workflow](https://dj.studio/blog/dj-set-preparation#crafting-a-dj-set-that-feels-right-advanced-tips): brief → build the set → transitions → export.
 
@@ -72,7 +72,7 @@ The arc shows how the phases fill the slot (green fits, yellow runs over the win
 
 The **Take with you** menu exports:
 
-- **Write to stick:** adds the set as playlist `SETFORM - <title>` and the alternatives next to it as `SETFORM - <title> Alternatives` in `export.pdb`. Chrome, Edge or the desktop app. The same stick is remembered: after a restart, “Reconnect stick” is enough, and writing does not ask again. Only tracks already on the stick are written; similar titles (remix, original mix) are offered before they go in. If the set is already there, *Update* restores the last backup and writes the current set. Before every write SETFORM copies the original to `SETFORM-Backup/` (the three newest backups stay) and checks the copy. After writing, the database is read and verified; if that fails the old state is put back. XML and M3U are also written to the `SETFORM` folder on the stick — newer players that read the encrypted `exportLibrary.db` often ignore `export.pdb`. The rekordbox library on the computer is never touched. Try it on a spare or copied stick first, and check that the player shows the playlist.
+- **Write to stick:** adds the set as playlist `SETFORM - <title>` and the alternatives next to it as `SETFORM - <title> Alternatives` in `export.pdb`. Chrome, Edge or the desktop app. The same stick is remembered: after a restart, “Reconnect stick” is enough, and writing does not ask again. Only tracks already on the stick are written; similar titles (remix, original mix) are offered before they go in. If the set is already there, *Update* restores the last backup and writes the current set. Before every write SETFORM copies the original to `SETFORM-Backup/` (the three newest backups stay) and checks the copy. After writing, the database is read and verified; if that fails the old state is put back. XML and M3U are also written to the `SETFORM` folder on the stick. After loading and writing, SETFORM checks whether a player can find the library: if a stale `exportLibrary.db` (OneLibrary) sits next to it, *Prepare for player* moves it to `SETFORM-Backup` so CDJ-3000, XDJ-XZ and older units read `export.pdb`; *Eject stick* flushes the cache with `diskutil`. CDJ-3000X, XDJ-AZ and OPUS-QUAD still need rekordbox — SETFORM cannot write the encrypted OneLibrary. The rekordbox library on the computer is never touched. Try it on a spare or copied stick first, and check that the player shows the playlist.
 - **rekordbox XML:** saved as `SETFORM-rekordbox.xml`. In rekordbox set *Preferences → Advanced → Database → rekordbox xml* to this file once; the playlist then appears under *rekordbox xml* in the left tree, right-click → *Import Playlist*. The performance and the alternatives come as two playlists.
 - **PDF:** print view with brief, order, key, BPM, transition and alternatives
 - **M3U:** playlist in performance order, naming the alternatives playlist on the stick
