@@ -4,7 +4,9 @@ import { Fragment, useState, type ReactNode } from "react";
 import { FieldNoticeView, type FieldNotice } from "@/components/FieldNotice";
 import {
   applyStickSet,
+  mediaPathsForDraft,
   readRekordboxStick,
+  stickLibraryRows,
   type RekordboxStickSet,
   type StickTrack,
 } from "@/lib/rekordbox-stick";
@@ -12,6 +14,13 @@ import { errorText } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n/react";
 import { rememberStickFiles } from "@/lib/stick-audio";
 import { formatDuration, trackCount, type SetDraft } from "@/lib/set";
+import {
+  hydrateStickMedia,
+  loadPersistedStickHandle,
+  pickAndRememberStick,
+  readStickFromHandle,
+  stickPicker,
+} from "@/lib/stick-session";
 
 type Props = {
   draft: SetDraft;
@@ -62,19 +71,30 @@ export function RekordboxStick({
       rememberStickFiles(files);
       setLabel(stick.label);
       setSets(stick.sets);
-      onIndexed(
-        stick.library.map((track) => ({
-          artist: track.artist,
-          title: track.title,
-          key: track.keyCamelot || track.keyRaw,
-          bpm: track.bpm,
-          energy: track.energyLevel,
-          stick: track,
-        })),
-      );
+      onIndexed(stickLibraryRows(stick.library));
       if (!stick.sets.length) {
         setError({ kind: "noSets" });
       }
+    } catch (caught) {
+      setSets([]);
+      setLabel(null);
+      setError({ kind: "read", error: caught });
+    } finally {
+      setLocalBusy(false);
+    }
+  }
+
+  async function chooseFolder() {
+    setLocalBusy(true);
+    setError(null);
+    try {
+      const handle = await pickAndRememberStick();
+      if (!handle) return;
+      const stick = await readStickFromHandle(handle);
+      setLabel(stick.label);
+      setSets(stick.sets);
+      onIndexed(stickLibraryRows(stick.library));
+      if (!stick.sets.length) setError({ kind: "noSets" });
     } catch (caught) {
       setSets([]);
       setLabel(null);
@@ -100,6 +120,10 @@ export function RekordboxStick({
         (minutes ? ` · ${formatDuration(minutes)}` : "") +
         (set.missing ? ` · ${t("library.stick.unmatched", { count: set.missing })}` : ""),
     );
+    void loadPersistedStickHandle().then((handle) => {
+      if (!handle) return;
+      return hydrateStickMedia(handle, mediaPathsForDraft(next, set.tracks));
+    });
   }
 
   const pending = busy || localBusy;
@@ -137,6 +161,16 @@ export function RekordboxStick({
           </p>
         </div>
         <div className="stick-actions">
+          {stickPicker() ? (
+            <button
+              type="button"
+              className={"btn" + (pending ? " is-busy" : "")}
+              disabled={pending}
+              onClick={() => void chooseFolder()}
+            >
+              {pending ? t("library.loading") : t("library.stick.choose")}
+            </button>
+          ) : (
           <label className={"btn library-file" + (pending ? " is-busy" : "")}>
             {pending ? t("library.loading") : t("library.stick.choose")}
             <input
@@ -153,6 +187,7 @@ export function RekordboxStick({
               }}
             />
           </label>
+          )}
           <label className={"btn ghost library-file" + (pending ? " is-busy" : "")}>
             export.pdb
             <input

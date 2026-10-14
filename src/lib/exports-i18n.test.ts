@@ -79,10 +79,19 @@ test("text export is English with tEn and unchanged in German", () => {
   const de = exportSetText(draft);
   assert.match(de, /Ziel: 60 min · Ist: /);
   assert.doesNotMatch(de, /Prep-Prinzipien/);
+  assert.match(de, /Auf dem Stick: Playlist „SETFORM - Friday Alternativen“/);
   const en = exportSetText(draft, tEn);
   assert.match(en, /Target: 60 min · Actual: /);
   assert.doesNotMatch(en, /Prep principles/);
   assert.doesNotMatch(en, /Ziel:|Prep-Prinzipien|Dramaturgie/);
+  assert.match(en, /On the stick: playlist “SETFORM - Friday Alternatives”/);
+});
+
+test("PDF names the stick playlist where the alternatives live", () => {
+  const de = buildSetPrintHtml(draft);
+  assert.match(de, /Auf dem Stick: Playlist „SETFORM - Friday Alternativen“/);
+  const en = buildSetPrintHtml(draft, tEn);
+  assert.match(en, /On the stick: playlist “SETFORM - Friday Alternatives”/);
 });
 
 test("rekordbox XML names the alternatives playlist per language", () => {

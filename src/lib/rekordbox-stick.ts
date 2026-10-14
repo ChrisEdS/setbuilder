@@ -140,12 +140,95 @@ function toStickTrack(track: PdbTrack): StickTrack {
   };
 }
 
+function foldName(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function pathKey(path: string): string {
+  return path.replaceAll("\\", "/").toLowerCase();
+}
+
+/**
+ * After the stick folder is chosen again, put covers and file paths back onto
+ * the tracks that are already in the set. Does not change order or roles.
+ */
+export function rehydrateStickCovers(draft: SetDraft, library: StickTrack[]): SetDraft {
+  if (!library.length) return draft;
+  const byPath = new Map<string, StickTrack>();
+  const byName = new Map<string, StickTrack[]>();
+  for (const stick of library) {
+    if (stick.filePath) byPath.set(pathKey(stick.filePath), stick);
+    const key = `${foldName(stick.title)}|${foldName(stick.artist)}`;
+    byName.set(key, [...(byName.get(key) ?? []), stick]);
+  }
+  let changed = false;
+  const tracks = draft.tracks.map((track) => {
+    let hit = track.filePath ? byPath.get(pathKey(track.filePath)) : undefined;
+    if (!hit) {
+      const artists = track.artists.filter((name) => name && name !== "Unknown");
+      const found = new Set<StickTrack>();
+      for (const artist of artists.length ? artists : [""]) {
+        for (const item of byName.get(`${foldName(track.name)}|${foldName(artist)}`) ?? []) {
+          found.add(item);
+        }
+      }
+      if (found.size === 1) hit = [...found][0];
+    }
+    if (!hit) return track;
+    const imageUrl = coverUrl(hit.artworkPath) ?? track.imageUrl;
+    if (imageUrl === track.imageUrl && (hit.filePath || "") === (track.filePath || "")) {
+      return track;
+    }
+    changed = true;
+    return { ...track, imageUrl, filePath: hit.filePath || track.filePath };
+  });
+  return changed ? { ...draft, tracks } : draft;
+}
+
 /** Blob URL for the cover file the browser still holds from the stick folder. */
 function coverUrl(artworkPath: string | undefined): string | null {
   if (!artworkPath) return null;
   // Prefer the larger _m variant (a1_m.jpg), fall back to the 80px original.
   const large = artworkPath.replace(/(\.[a-z]+)$/i, "_m$1");
   return stickAudioUrl(large) || stickAudioUrl(artworkPath);
+}
+
+/** Audio and artwork paths the current set still needs from the stick. */
+export function mediaPathsForDraft(draft: SetDraft, library: StickTrack[]): string[] {
+  const paths = new Set<string>();
+  for (const track of draft.tracks) {
+    if (track.filePath) paths.add(track.filePath);
+  }
+  for (const stick of library) {
+    const inSet = draft.tracks.some((track) => {
+      if (track.filePath && pathKey(track.filePath) === pathKey(stick.filePath)) return true;
+      return foldName(track.name) === foldName(stick.title);
+    });
+    if (!inSet) continue;
+    if (stick.filePath) paths.add(stick.filePath);
+    if (stick.artworkPath) {
+      paths.add(stick.artworkPath);
+      paths.add(stick.artworkPath.replace(/(\.[a-z]+)$/i, "_m$1"));
+    }
+  }
+  return [...paths];
+}
+
+/** Library panel rows from a stick that was just chosen again. */
+export function stickLibraryRows(library: StickTrack[]) {
+  return library.map((track) => ({
+    artist: track.artist,
+    title: track.title,
+    key: track.keyCamelot || track.keyRaw,
+    bpm: track.bpm,
+    energy: track.energyLevel,
+    stick: track,
+  }));
 }
 
 /** A track picked from the stick library, placed into a chosen phase and role. */

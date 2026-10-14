@@ -1,4 +1,5 @@
 import { tDe, type Translate } from "@/lib/i18n/core";
+import { stickAlternativesPlaylistName } from "@/lib/stick-names";
 
 export type SetPhaseId =
   | "open"
@@ -415,6 +416,11 @@ export function exportSetText(draft: SetDraft, t: Translate = tDe): string {
   const safeties = draft.tracks.filter((track) => track.role === "safety");
   if (safeties.length) {
     lines.push(t("exports.pdf.alternatives"));
+    lines.push(
+      t("exports.pdf.alternativesWhere", {
+        name: stickAlternativesPlaylistName(draft.title, t("exports.pdf.alternatives")),
+      }),
+    );
     safeties.forEach((track, index) => {
       lines.push(`S${index + 1}. ${line(track)}`);
     });

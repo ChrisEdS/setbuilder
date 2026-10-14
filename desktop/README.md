@@ -37,7 +37,8 @@ Ohne Apple- und Windows-Zertifikat sind die Pakete unsigniert. Linux startet die
 macOS hängt an Browser-Downloads das Attribut `com.apple.quarantine`. Die Meldung lautet dann „SETFORM.app is damaged and can’t be opened“. Die App ist nicht beschädigt. Nach dem Entpacken:
 
 ```bash
-xattr -dr com.apple.quarantine /Applications/SETFORM.app
+sh scripts/unquarantine.sh /Applications/SETFORM.app
+# or: xattr -dr com.apple.quarantine /Applications/SETFORM.app
 ```
 
 Danach öffnet sie per Doppelklick. Mit Notarisierung entfällt das.

@@ -1,5 +1,6 @@
 import { mixJoin } from "@/lib/harmonic";
 import { trackFilePath } from "@/lib/export-booth";
+import { stickAlternativesPlaylistName } from "@/lib/stick-names";
 import { tDe, type Translate } from "@/lib/i18n/core";
 import {
   phaseLabel as domainPhaseLabel,
@@ -133,6 +134,11 @@ export function buildSetPrintHtml(draft: SetDraft, t: Translate = tDe): string {
   const alternativeTable = alternatives.length
     ? `<section>
         <h2>${escapeHtml(t("exports.pdf.alternatives"))}</h2>
+        <p class="where">${escapeHtml(
+          t("exports.pdf.alternativesWhere", {
+            name: stickAlternativesPlaylistName(draft.title, t("exports.pdf.alternatives")),
+          }),
+        )}</p>
         <table>
           <tbody>${alternativeBody}</tbody>
         </table>
@@ -235,6 +241,7 @@ export function buildSetPrintHtml(draft: SetDraft, t: Translate = tDe): string {
       font-size: 12px;
       letter-spacing: -0.01em;
     }
+    .where { margin: 0 0 6px; color: var(--muted); font-size: 10.5px; }
     table { width: 100%; border-collapse: collapse; }
     thead { display: table-header-group; }
     th, td {

@@ -66,7 +66,7 @@ export function EnergyPath({ tracks }: Props) {
         <p className="energy-hint">{t("analysis.energyPath.noLevels")}</p>
       ) : null}
 
-      {performance.length > 0 ? (
+      {known > 0 && performance.length > 0 ? (
         <div className="energy-phases">
           {PHASES.map((phase) => {
             const group = performance.filter((track) => track.phase === phase.id);

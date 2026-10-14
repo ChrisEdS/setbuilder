@@ -2,7 +2,7 @@
 
 [Deutsch](README.de.md) · **English**
 
-**Version 2.3.0** · Dramaturgy, not a playlist.
+**Version 2.4.0** · Dramaturgy, not a playlist.
 
 SETFORM prepares DJ sets for rekordbox. You load a playlist or history from the export stick (or a collection XML), lay out the arc by slot and duration, check energy, key and BPM, and take the set with you as rekordbox XML, PDF, M3U or text. The logic follows Mixed In Key: energy first, then key, then BPM. The workflow follows the [DJ.Studio prep workflow](https://dj.studio/blog/dj-set-preparation#crafting-a-dj-set-that-feels-right-advanced-tips): brief → build the set → transitions → export.
 
@@ -72,11 +72,11 @@ The arc shows how the phases fill the slot (green fits, yellow runs over the win
 
 The **Take with you** menu exports:
 
-- **Write to stick:** adds the set as a playlist `SETFORM - <title>` straight into the `export.pdb` of your rekordbox stick, so the stick can go into the player. Chrome, Edge or the desktop app. Only tracks that are already on the stick are written; the rest is listed and left out. Before every write, the original is copied to `SETFORM-Backup/` on the stick and checked. After writing, the database is read again and verified (old content untouched, exactly one new playlist, same track order); if that fails the original is put back. *Restore last backup* is in the same dialog. Your rekordbox library on the computer is never touched. Newer players that read the encrypted `exportLibrary.db` are not covered, and the feature is not yet tested on every player model, so try it on a spare or copied stick first.
+- **Write to stick:** adds the set as playlist `SETFORM - <title>` and the alternatives next to it as `SETFORM - <title> Alternatives` in `export.pdb`. Chrome, Edge or the desktop app. The same stick is remembered: after a restart, “Reconnect stick” is enough, and writing does not ask again. Only tracks already on the stick are written; similar titles (remix, original mix) are offered before they go in. If the set is already there, *Update* restores the last backup and writes the current set. Before every write SETFORM copies the original to `SETFORM-Backup/` (the three newest backups stay) and checks the copy. After writing, the database is read and verified; if that fails the old state is put back. XML and M3U are also written to the `SETFORM` folder on the stick — newer players that read the encrypted `exportLibrary.db` often ignore `export.pdb`. The rekordbox library on the computer is never touched. Try it on a spare or copied stick first, and check that the player shows the playlist.
 - **rekordbox XML:** saved as `SETFORM-rekordbox.xml`. In rekordbox set *Preferences → Advanced → Database → rekordbox xml* to this file once; the playlist then appears under *rekordbox xml* in the left tree, right-click → *Import Playlist*. The performance and the alternatives come as two playlists.
 - **PDF:** print view with brief, order, key, BPM, transition and alternatives
-- **M3U:** playlist in performance order
-- **Copy text:** the set with brief and comments
+- **M3U:** playlist in performance order, naming the alternatives playlist on the stick
+- **Copy text:** the set with brief, comments and alternatives
 
 Under **Connections & setups** you can save the brief and the set as a setup, load it again, or back it up as JSON.
 
@@ -134,7 +134,7 @@ Every installation needs its own developer app for Spotify and Tidal; rekordbox 
 
 The current packages aren't signed yet. macOS puts a browser download in quarantine and then says “SETFORM.app is damaged and can't be opened”. The file isn't damaged.
 
-After unpacking, in the terminal:
+After unpacking, in the terminal, or `desktop/scripts/unquarantine.sh`:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/SETFORM.app

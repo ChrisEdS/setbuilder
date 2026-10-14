@@ -6,6 +6,7 @@ import { trackFilePath } from "@/lib/export-booth";
 import { mixJoin } from "@/lib/harmonic";
 import { playerEmbed, type PlayableTrack } from "@/lib/player";
 import { useI18n } from "@/lib/i18n/react";
+import { TrackArt } from "@/components/TrackArt";
 import { stickAudioUrl } from "@/lib/stick-audio";
 import { performanceTracks, type SetTrack } from "@/lib/set";
 
@@ -69,12 +70,11 @@ export function PreviewPlayer({ tracks, currentId, onChange, onClose }: Props) {
           >
             ‹
           </button>
-          {track.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={track.imageUrl} alt="" className="preview-art" />
-          ) : (
-            <div className="preview-art fallback" aria-hidden />
-          )}
+          <TrackArt
+            url={track.imageUrl}
+            className="preview-art"
+            fallbackClassName="preview-art fallback"
+          />
           <div className="preview-meta">
             <strong title={track.name}>{track.name}</strong>
             <span>

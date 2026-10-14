@@ -1,5 +1,6 @@
 import { tDe, type Translate } from "./i18n/core";
 import type { SetDraft, SetTrack } from "./set";
+import { stickAlternativesPlaylistName } from "./stick-names";
 
 function escapeXml(value: string): string {
   return value
@@ -94,16 +95,35 @@ ${collection}
 `;
 }
 
-export function buildM3u(draft: SetDraft): string {
-  const lines = ["#EXTM3U"];
-  for (const track of performance(draft.tracks)) {
+function m3uBody(tracks: SetTrack[]): string[] {
+  const lines: string[] = [];
+  for (const track of tracks) {
     const seconds = track.durationMs ? Math.max(0, Math.round(track.durationMs / 1000)) : -1;
     const artist = track.artists.filter((name) => name && name !== "Unknown").join(", ");
     const label = artist ? `${artist} - ${track.name}` : track.name;
     lines.push(`#EXTINF:${seconds},${label}`);
     lines.push(locationFor(track) || `# ${track.name}`);
   }
+  return lines;
+}
+
+export function buildM3u(draft: SetDraft, t: Translate = tDe): string {
+  const alternatives = draft.tracks.filter((track) => track.role === "safety");
+  const lines = ["#EXTM3U"];
+  if (alternatives.length) {
+    lines.push(
+      `# ${t("exports.pdf.alternativesWhere", {
+        name: stickAlternativesPlaylistName(draft.title, t("exports.pdf.alternatives")),
+      })}`,
+    );
+  }
+  lines.push(...m3uBody(performance(draft.tracks)));
   return `${lines.join("\n")}\n`;
+}
+
+export function buildM3uAlternatives(draft: SetDraft, t: Translate = tDe): string {
+  const alternatives = draft.tracks.filter((track) => track.role === "safety");
+  return `#EXTM3U\n# ${t("exports.pdf.alternatives")}\n${m3uBody(alternatives).join("\n")}\n`;
 }
 
 export function boothFileName(title: string, extension: "m3u" | "xml"): string {

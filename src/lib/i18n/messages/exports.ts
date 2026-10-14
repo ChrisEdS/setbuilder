@@ -14,6 +14,8 @@ const de = {
   "exports.pdf.backupNote": "Ersatz-Notiz: {text}",
   "exports.pdf.durationOpen": "Dauer einzelner Tracks offen: Startzeiten ab dort ungenau.",
   "exports.pdf.alternatives": "Alternativen",
+  "exports.pdf.alternativesWhere":
+    "Auf dem Stick: Playlist „{name}“, direkt neben dem Set.",
   "exports.pdf.colStart": "Start",
   "exports.pdf.colTrack": "Track",
   "exports.pdf.colKey": "Key",
@@ -60,6 +62,7 @@ const de = {
   "exports.pdbWrite.verifyFailed": "Die Prüfung der neuen Stick-Datenbank ist fehlgeschlagen ({detail}).",
   "exports.stickWrite.notFound": "Auf diesem Laufwerk wurde keine PIONEER/rekordbox/export.pdb gefunden. Den ganzen Stick wählen.",
   "exports.stickWrite.noneOnStick": "Keiner der Titel liegt auf diesem Stick. Es wurde nichts verändert.",
+  "exports.stickWrite.alreadyThere": "Das Set liegt schon auf diesem Stick. Es wurde nichts verändert.",
   "exports.stickWrite.backupFailed": "Die Sicherung konnte nicht geschrieben werden. Es wurde nichts verändert.",
   "exports.stickWrite.readBack": "Die geschriebene Datei weicht von der geplanten ab.",
   "exports.stickWrite.rolledBack": "Die Stick-Datenbank hat die Prüfung nach dem Schreiben nicht bestanden. Der vorherige Stand ist wiederhergestellt. ({detail})",
@@ -79,6 +82,8 @@ const en: Record<keyof typeof de, string> = {
   "exports.pdf.backupNote": "Backup note: {text}",
   "exports.pdf.durationOpen": "Some track lengths unknown: start times after them are approximate.",
   "exports.pdf.alternatives": "Alternatives",
+  "exports.pdf.alternativesWhere":
+    "On the stick: playlist “{name}”, next to the set.",
   "exports.pdf.colStart": "Start",
   "exports.pdf.colTrack": "Track",
   "exports.pdf.colKey": "Key",
@@ -120,6 +125,7 @@ const en: Record<keyof typeof de, string> = {
   "exports.pdbWrite.verifyFailed": "Checking the new stick database failed ({detail}).",
   "exports.stickWrite.notFound": "No PIONEER/rekordbox/export.pdb found on this drive. Choose the whole stick.",
   "exports.stickWrite.noneOnStick": "None of the tracks are on this stick. Nothing was changed.",
+  "exports.stickWrite.alreadyThere": "The set is already on this stick. Nothing was changed.",
   "exports.stickWrite.backupFailed": "The backup could not be written. Nothing was changed.",
   "exports.stickWrite.readBack": "The written file differs from the planned one.",
   "exports.stickWrite.rolledBack": "The stick database failed the check after writing. The previous state has been restored. ({detail})",

@@ -4504,7 +4504,7 @@ html[lang="en"] details[open] > summary > .fold-toggle::after {
 }
 
 html[lang="en"] .energy-bars li.jump::before {
-  content: "Jump";
+  content: "";
 }
 
 /* Brief card gets the wider column so its values are not cut off. */
@@ -4991,6 +4991,8 @@ html[lang="en"] .energy-bars li.jump::before {
   gap: 4px;
   flex: 0 0 64px;
   min-width: 64px;
+  max-width: 64px;
+  padding-top: 10px;
   height: var(--bars-h, 128px);
   text-align: center;
 }
@@ -5009,16 +5011,16 @@ html[lang="en"] .energy-bars li.jump::before {
   border: 1px dashed var(--line-strong);
 }
 .energy-bars li.jump::before {
-  content: "Sprung";
+  content: "";
   position: absolute;
-  top: -2px;
-  left: -8px;
-  padding: 0 6px;
-  border-radius: 999px;
+  top: 0;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  padding: 0;
+  border-radius: 50%;
   background: var(--danger);
-  color: #121212;
-  font-size: 0.6875rem;
-  font-weight: 600;
 }
 .energy-value {
   font-size: 0.875rem;
@@ -5026,6 +5028,7 @@ html[lang="en"] .energy-bars li.jump::before {
 }
 .energy-name {
   overflow: hidden;
+  max-width: 100%;
   height: 18px;
   color: var(--muted);
   font-size: 0.75rem;
@@ -5829,10 +5832,56 @@ body {
   padding-left: 1.1rem;
   color: var(--muted);
 }
+.stick-missing li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  margin: 0.45rem 0;
+}
+.stick-missing .btn {
+  font-size: 0.82rem;
+}
 .stick-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 0.5rem;
   margin-top: 0.9rem;
+}
+
+.stick-reload {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.9rem 1.2rem;
+  margin: 0 0 1rem;
+  padding: 0.95rem 1.1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  background: #1a1a1a;
+}
+.stick-reload strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.98rem;
+}
+.stick-reload p {
+  margin: 0;
+  max-width: 42rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+.stick-reload .stick-warn {
+  margin-top: 0.5rem;
+}
+.stick-reload-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.stick-reload-actions .btn {
+  cursor: pointer;
 }

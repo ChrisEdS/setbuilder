@@ -21,9 +21,20 @@ import {
   verifyPdbUpdate,
   type AddPlaylistResult,
 } from "@/lib/rekordbox-pdb-write";
-import type { SetTrack } from "@/lib/set";
+import { buildM3u, buildM3uAlternatives, buildRekordboxXml } from "@/lib/export-booth";
+import type { Translate } from "@/lib/i18n/core";
+import { tDe } from "@/lib/i18n/core";
+import type { SetDraft, SetTrack, TrackRole } from "@/lib/set";
+import { suggestStickMatches, type StickSuggestion } from "@/lib/stick-match";
+import {
+  existingAlternativesPlaylistName,
+  stickAlternativesPlaylistName,
+  stickPlaylistName,
+} from "@/lib/stick-names";
 
 export const BACKUP_DIR = "SETFORM-Backup";
+export const SIDECAR_DIR = "SETFORM";
+export const BACKUP_KEEP = 3;
 
 type Writable = {
   write(data: ArrayBuffer | Uint8Array): Promise<void>;
@@ -43,6 +54,7 @@ export type DirLike = {
   getFileHandle(name: string, options?: { create?: boolean }): Promise<FileLike>;
   /** Names of the entries, to find backups. */
   keys?(): AsyncIterable<string>;
+  removeEntry?(name: string): Promise<void>;
 };
 
 export type StickLocation = {
@@ -104,7 +116,19 @@ export async function findStickDatabase(root: DirLike): Promise<StickLocation> {
 // ---------------------------------------------------------------------------------------------
 // Which tracks of the set are on the stick
 
-type Wanted = Pick<SetTrack, "name" | "artists" | "filePath">;
+type Wanted = Pick<SetTrack, "name" | "artists" | "filePath"> & {
+  role?: TrackRole;
+  /** Accepted near-match from the write dialog. */
+  stickId?: number;
+};
+
+function splitForStick(tracks: Wanted[]) {
+  const alternatives = tracks.filter((track) => track.role === "safety");
+  const performance = alternatives.length
+    ? tracks.filter((track) => track.role !== "safety")
+    : tracks;
+  return { performance, alternatives };
+}
 
 function fold(value: string): string {
   return value
@@ -138,8 +162,14 @@ export function matchSetToStick<T extends Wanted>(tracks: T[], library: PdbLibra
     byName.set(nameKey, [...(byName.get(nameKey) ?? []), stick.id]);
   }
 
+  const known = new Set(library.tracks.map((item) => item.id));
   const result: StickMatch<T> = { trackIds: [], matched: [], missing: [] };
   for (const track of tracks) {
+    if (track.stickId && known.has(track.stickId)) {
+      result.trackIds.push(track.stickId);
+      result.matched.push(track);
+      continue;
+    }
     let ids = track.filePath ? byPath.get(pathKey(track.filePath)) : undefined;
     if (!ids || ids.length !== 1) {
       const artists = track.artists.filter((name) => name && name !== "Unknown");
@@ -166,18 +196,27 @@ export function matchSetToStick<T extends Wanted>(tracks: T[], library: PdbLibra
 export type StickPlan = {
   location: StickLocation;
   library: PdbLibrary;
+  /** Performance and alternatives together, for the “found / missing” list. */
   match: StickMatch;
+  performanceCount: number;
+  alternativesCount: number;
   /** Name the playlist will get (a number is added when it exists). */
   playlistName: string;
+  /** Alternatives playlist, when the set has Plan B tracks that are on the stick. */
+  alternativesName: string | null;
+  /** Performance playlist is already there; only alternatives still need writing. */
+  skippedPerformance: boolean;
+  /** Both playlists are already on the stick. */
+  alreadyOnStick: boolean;
+  /** Missing tracks that look like a title on this stick. */
+  suggestions: StickSuggestion[];
   /** Set when the database cannot take the playlist; nothing is written then. */
   refusal: PdbWriteError | null;
   hasLibraryDb: boolean;
   newPages: number;
 };
 
-export function stickPlaylistName(title: string): string {
-  return `SETFORM - ${title.trim() || "Set"}`;
-}
+export { stickAlternativesPlaylistName, stickPlaylistName };
 
 async function readBytes(handle: FileLike): Promise<ArrayBuffer> {
   const buffer = await (await handle.getFile()).arrayBuffer();
@@ -192,46 +231,128 @@ function sameBytes(a: ArrayBuffer, b: ArrayBuffer): boolean {
   return true;
 }
 
+function playlistExists(library: PdbLibrary, name: string): boolean {
+  return library.playlists.some((item) => item.name === name);
+}
+
+type StagedWrite = {
+  perfMatch: StickMatch;
+  altMatch: StickMatch;
+  match: StickMatch;
+  playlistName: string;
+  alternativesName: string | null;
+  writePerf: boolean;
+  writeAlt: boolean;
+  skippedPerformance: boolean;
+  alreadyOnStick: boolean;
+  result: AddPlaylistResult | null;
+  altResult: AddPlaylistResult | null;
+  final: ArrayBuffer;
+  newPages: number;
+  refusal: PdbWriteError | null;
+};
+
+/** Builds both playlists in memory. Writes nothing. Skips a name that is already there. */
+function stageStickWrite(
+  original: ArrayBuffer,
+  library: PdbLibrary,
+  tracks: Wanted[],
+  title: string,
+  alternativesLabel: string,
+): StagedWrite {
+  const { performance, alternatives } = splitForStick(tracks);
+  const perfMatch = matchSetToStick(performance, library);
+  const altMatch = matchSetToStick(alternatives, library);
+  const match: StickMatch = {
+    trackIds: [...perfMatch.trackIds, ...altMatch.trackIds],
+    matched: [...perfMatch.matched, ...altMatch.matched],
+    missing: [...perfMatch.missing, ...altMatch.missing],
+  };
+  const wanted = stickPlaylistName(title);
+  const altWanted = stickAlternativesPlaylistName(title, alternativesLabel);
+  const havePerf = playlistExists(library, wanted);
+  const haveAltName = existingAlternativesPlaylistName(library.playlists, title);
+  const haveAlt = Boolean(haveAltName);
+  const writePerf = perfMatch.trackIds.length > 0 && !havePerf;
+  const writeAlt = altMatch.trackIds.length > 0 && !haveAlt;
+
+  const empty: StagedWrite = {
+    perfMatch,
+    altMatch,
+    match,
+    playlistName: wanted,
+    alternativesName: altMatch.trackIds.length ? haveAltName ?? null : null,
+    writePerf,
+    writeAlt,
+    skippedPerformance: havePerf && perfMatch.trackIds.length > 0,
+    alreadyOnStick: !writePerf && !writeAlt && (havePerf || haveAlt),
+    result: null,
+    altResult: null,
+    final: original,
+    newPages: 0,
+    refusal: null,
+  };
+
+  if (!writePerf && !writeAlt) return empty;
+
+  try {
+    let current = original;
+    let result: AddPlaylistResult | null = null;
+    let altResult: AddPlaylistResult | null = null;
+    let newPages = 0;
+    if (writePerf) {
+      result = addPlaylistToPdb(current, { name: wanted, trackIds: perfMatch.trackIds });
+      current = result.buffer;
+      newPages += result.allocated.length;
+    }
+    if (writeAlt) {
+      altResult = addPlaylistToPdb(current, {
+        name: altWanted,
+        trackIds: altMatch.trackIds,
+      });
+      current = altResult.buffer;
+      newPages += altResult.allocated.length;
+    }
+    return {
+      ...empty,
+      playlistName: result?.name ?? wanted,
+      alternativesName: altResult?.name ?? empty.alternativesName,
+      result,
+      altResult,
+      final: current,
+      newPages,
+    };
+  } catch (error) {
+    if (!(error instanceof PdbWriteError)) throw error;
+    return { ...empty, refusal: error };
+  }
+}
+
 /** Reads the stick and does the whole job in memory. Writes nothing. */
 export async function planStickWrite(
   root: DirLike,
   tracks: Wanted[],
   title: string,
+  alternativesLabel = "Alternativen",
 ): Promise<StickPlan> {
   const location = await findStickDatabase(root);
   const original = await readBytes(location.file);
   const library = parseRekordboxPdb(original.slice(0));
-  const match = matchSetToStick(tracks, library);
-  const playlistName = stickPlaylistName(title);
-
-  let refusal: PdbWriteError | null = null;
-  let newPages = 0;
-  if (match.trackIds.length) {
-    try {
-      const trial = addPlaylistToPdb(original, { name: playlistName, trackIds: match.trackIds });
-      newPages = trial.allocated.length;
-      return {
-        location,
-        library,
-        match,
-        playlistName: trial.name,
-        refusal,
-        hasLibraryDb: location.hasLibraryDb,
-        newPages,
-      };
-    } catch (error) {
-      if (!(error instanceof PdbWriteError)) throw error;
-      refusal = error;
-    }
-  }
+  const staged = stageStickWrite(original, library, tracks, title, alternativesLabel);
   return {
     location,
     library,
-    match,
-    playlistName,
-    refusal,
+    match: staged.match,
+    performanceCount: staged.perfMatch.trackIds.length,
+    alternativesCount: staged.altMatch.trackIds.length,
+    playlistName: staged.playlistName,
+    alternativesName: staged.alternativesName,
+    skippedPerformance: staged.skippedPerformance,
+    alreadyOnStick: staged.alreadyOnStick,
+    suggestions: suggestStickMatches(staged.match.missing, library),
+    refusal: staged.refusal,
     hasLibraryDb: location.hasLibraryDb,
-    newPages,
+    newPages: staged.newPages,
   };
 }
 
@@ -242,7 +363,7 @@ function stamp(date = new Date()): string {
   )}${p(date.getSeconds())}`;
 }
 
-async function replaceFile(handle: FileLike, data: ArrayBuffer) {
+async function replaceFile(handle: FileLike, data: ArrayBuffer | Uint8Array) {
   const writable = await handle.createWritable();
   try {
     await writable.write(data);
@@ -255,6 +376,7 @@ async function replaceFile(handle: FileLike, data: ArrayBuffer) {
 
 export type StickWriteDone = {
   playlistName: string;
+  alternativesName: string | null;
   trackCount: number;
   backupName: string;
   newPages: number;
@@ -265,23 +387,28 @@ export async function writeSetToStick(
   tracks: Wanted[],
   title: string,
   now: Date = new Date(),
+  alternativesLabel = "Alternativen",
 ): Promise<StickWriteDone> {
   const location = await findStickDatabase(root);
   const original = await readBytes(location.file);
   const library = parseRekordboxPdb(original.slice(0));
-  const match = matchSetToStick(tracks, library);
-  if (!match.trackIds.length) {
+  const staged = stageStickWrite(original, library, tracks, title, alternativesLabel);
+  if (!staged.match.trackIds.length) {
     throw stickError(
       "exports.stickWrite.noneOnStick",
       "Keiner der Titel liegt auf diesem Stick. Es wurde nichts verändert.",
     );
   }
+  if (staged.alreadyOnStick || (!staged.writePerf && !staged.writeAlt)) {
+    throw stickError(
+      "exports.stickWrite.alreadyThere",
+      "Das Set liegt schon auf diesem Stick. Es wurde nichts verändert.",
+    );
+  }
+  if (staged.refusal) throw staged.refusal;
 
   // 1. Everything is computed and checked before the first byte is written.
-  const result: AddPlaylistResult = addPlaylistToPdb(original, {
-    name: stickPlaylistName(title),
-    trackIds: match.trackIds,
-  });
+  const { result, altResult, final, perfMatch, altMatch } = staged;
 
   // 2. A copy of the original, checked by reading it back.
   const backupDir = await root.getDirectoryHandle(BACKUP_DIR, { create: true });
@@ -297,7 +424,7 @@ export async function writeSetToStick(
 
   // 3. Replace the database. The browser swaps the file in one step on close.
   try {
-    await replaceFile(location.file, result.buffer);
+    await replaceFile(location.file, final);
   } catch (error) {
     // The swap did not happen, or the stick failed halfway: make sure the original is back.
     await restoreOriginal(location.file, original);
@@ -307,14 +434,24 @@ export async function writeSetToStick(
   // 4. Read it back from the stick and check it once more.
   try {
     const written = await readBytes(location.file);
-    if (!sameBytes(written, result.buffer)) throw stickError("exports.stickWrite.readBack", "Die geschriebene Datei weicht ab.");
-    verifyPdbUpdate(original, written, {
-      playlistId: result.playlistId,
-      name: result.name,
-      trackIds: match.trackIds,
-      changedPages: result.changedPages,
-      allocated: result.allocated,
-    });
+    if (!sameBytes(written, final)) throw stickError("exports.stickWrite.readBack", "Die geschriebene Datei weicht ab.");
+    if (altResult) {
+      verifyPdbUpdate(result?.buffer ?? original, written, {
+        playlistId: altResult.playlistId,
+        name: altResult.name,
+        trackIds: altMatch.trackIds,
+        changedPages: altResult.changedPages,
+        allocated: altResult.allocated,
+      });
+    } else if (result) {
+      verifyPdbUpdate(original, written, {
+        playlistId: result.playlistId,
+        name: result.name,
+        trackIds: perfMatch.trackIds,
+        changedPages: result.changedPages,
+        allocated: result.allocated,
+      });
+    }
   } catch (error) {
     // 5. Not what we meant to write: put the original back.
     await restoreOriginal(location.file, original);
@@ -325,12 +462,66 @@ export async function writeSetToStick(
     );
   }
 
+  await pruneBackups(root, BACKUP_KEEP);
+
   return {
-    playlistName: result.name,
-    trackCount: match.trackIds.length,
+    playlistName: result?.name ?? staged.playlistName,
+    alternativesName: altResult?.name ?? staged.alternativesName,
+    trackCount: perfMatch.trackIds.length + altMatch.trackIds.length,
     backupName,
-    newPages: result.allocated.length,
+    newPages: staged.newPages,
   };
+}
+
+/** Puts the last backup back, then writes the current set. That is how a set is updated. */
+export async function rewriteSetToStick(
+  root: DirLike,
+  tracks: Wanted[],
+  title: string,
+  now: Date = new Date(),
+  alternativesLabel = "Alternativen",
+): Promise<StickWriteDone> {
+  await restoreLatestBackup(root);
+  return writeSetToStick(root, tracks, title, now, alternativesLabel);
+}
+
+async function writeTextFile(dir: DirLike, name: string, text: string) {
+  const handle = await dir.getFileHandle(name, { create: true });
+  await replaceFile(handle, new TextEncoder().encode(text));
+}
+
+/** XML and M3U next to the database, for players that ignore export.pdb. */
+export async function writeStickSidecars(
+  root: DirLike,
+  draft: SetDraft,
+  t: Translate = tDe,
+): Promise<string[]> {
+  const dir = await root.getDirectoryHandle(SIDECAR_DIR, { create: true });
+  const slug = (draft.title || "setform")
+    .replace(/[^\p{L}\p{N}]+/gu, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 40) || "setform";
+  const written = ["SETFORM-rekordbox.xml", `${slug}.m3u`];
+  await writeTextFile(dir, "SETFORM-rekordbox.xml", buildRekordboxXml(draft, t));
+  await writeTextFile(dir, `${slug}.m3u`, buildM3u(draft, t));
+  if (draft.tracks.some((track) => track.role === "safety")) {
+    const altName = `${slug}-alternatives.m3u`;
+    await writeTextFile(dir, altName, buildM3uAlternatives(draft, t));
+    written.push(altName);
+  }
+  return written;
+}
+
+/** Keeps the newest backups, deletes the rest. */
+export async function pruneBackups(root: DirLike, keep = BACKUP_KEEP): Promise<string[]> {
+  const dir = await child(root, BACKUP_DIR);
+  if (!dir?.keys || !dir.removeEntry) return [];
+  const names: string[] = [];
+  for await (const name of dir.keys()) if (/^export-\d{8}-\d{6}\.pdb$/.test(name)) names.push(name);
+  names.sort();
+  const drop = names.slice(0, Math.max(0, names.length - keep));
+  for (const name of drop) await dir.removeEntry(name);
+  return drop;
 }
 
 async function restoreOriginal(handle: FileLike, original: ArrayBuffer) {

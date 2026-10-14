@@ -41,6 +41,13 @@ const de = {
   "builder.library.title": "Set laden & Keys",
   "builder.library.keys": "{done}/{total} Keys",
   "builder.library.firstStep": "Erster Schritt",
+  "builder.stickReload.title": "Stick wieder wählen",
+  "builder.stickReload.body":
+    "Das Set ist noch da. Cover und Vorhören vom Stick braucht denselben Ordner noch einmal — rekordbox bleibt unangetastet, das Set wird nicht ersetzt.",
+  "builder.stickReload.choose": "Stick wählen",
+  "builder.stickReload.reconnect": "Stick verbinden",
+  "builder.stickReload.busy": "Lese den Stick…",
+  "builder.stickReload.later": "Später",
   "builder.build.title": "Set bauen",
   "builder.build.summary": "{performance} Performance · {safety} Alternativen",
   "builder.build.note":
@@ -352,6 +359,13 @@ const en: Record<keyof typeof de, string> = {
   "builder.library.title": "Load set & keys",
   "builder.library.keys": "{done}/{total} keys",
   "builder.library.firstStep": "First step",
+  "builder.stickReload.title": "Choose the stick again",
+  "builder.stickReload.body":
+    "The set is still here. Covers and stick preview need the same folder once more — rekordbox is left alone, the set is not replaced.",
+  "builder.stickReload.choose": "Choose stick",
+  "builder.stickReload.reconnect": "Reconnect stick",
+  "builder.stickReload.busy": "Reading the stick…",
+  "builder.stickReload.later": "Later",
   "builder.build.title": "Build set",
   "builder.build.summary": "{performance} performance · {safety} alternatives",
   "builder.build.note":

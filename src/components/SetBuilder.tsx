@@ -33,7 +33,21 @@ import { LibraryPanel } from "@/components/LibraryPanel";
 import { PreviewPlayer } from "@/components/PreviewPlayer";
 import { ReplaceMenu } from "@/components/ReplaceMenu";
 import type { LibraryRow } from "@/components/LibraryPanel";
-import { libraryTrackToSetTrack } from "@/lib/rekordbox-stick";
+import {
+  libraryTrackToSetTrack,
+  mediaPathsForDraft,
+  rehydrateStickCovers,
+  stickLibraryRows,
+} from "@/lib/rekordbox-stick";
+import {
+  hydrateStickMedia,
+  loadPersistedStickHandle,
+  readStickFromHandle,
+  stickPermission,
+} from "@/lib/stick-session";
+import { sanitizeDraftImages } from "@/lib/media";
+import { TrackArt } from "@/components/TrackArt";
+import { StickReloadBanner } from "@/components/StickReloadBanner";
 import { bestPhaseFor } from "@/lib/plan-b";
 import { SetMenus, SetTools } from "@/components/SetTakeaway";
 import { StickWriteDialog } from "@/components/StickWriteDialog";
@@ -174,12 +188,17 @@ function readStoredDraft(): SetDraft {
       cachedDraft = DEFAULT_SET;
       return cachedDraft;
     }
-    cachedDraft = {
+    cachedDraft = sanitizeDraftImages({
       ...DEFAULT_SET,
       ...parsed,
       slotKind: parsed.slotKind ?? "peaktime",
       tracks: (parsed.tracks ?? []).map(normalizeTrack),
-    };
+    });
+    const cleanRaw = JSON.stringify(cachedDraft);
+    if (cleanRaw !== raw) {
+      localStorage.setItem(STORAGE_KEY, cleanRaw);
+      cachedRaw = cleanRaw;
+    }
     return cachedDraft;
   } catch {
     cachedDraft = DEFAULT_SET;
@@ -259,7 +278,7 @@ function writeSetups(setups: SavedSetup[]) {
 }
 
 function persistDraft(draft: SetDraft) {
-  const raw = JSON.stringify(draft);
+  const raw = JSON.stringify(sanitizeDraftImages(draft));
   localStorage.setItem(STORAGE_KEY, raw);
   cachedRaw = raw;
   cachedDraft = draft;
@@ -405,6 +424,30 @@ export function SetBuilder() {
     url.searchParams.delete("auth");
     url.searchParams.delete("message");
     window.history.replaceState({}, "", `${url.pathname}${url.search}`);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const handle = await loadPersistedStickHandle();
+      if (!handle || cancelled) return;
+      if (!(await stickPermission(handle, "readwrite", false))) return;
+      try {
+        const stick = await readStickFromHandle(handle);
+        if (cancelled) return;
+        await hydrateStickMedia(handle, mediaPathsForDraft(readStoredDraft(), stick.library));
+        if (cancelled) return;
+        setLibraryRows(stickLibraryRows(stick.library));
+        setDraft((current) => rehydrateStickCovers(current, stick.library));
+      } catch {
+        /* Banner still offers a manual reconnect. */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // Once on launch: reconnect a stick this browser already allowed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function setDraft(updater: SetDraft | ((current: SetDraft) => SetDraft)) {
@@ -1671,6 +1714,15 @@ export function SetBuilder() {
 
       {status ? <p className="banner status">{status}</p> : null}
 
+      <StickReloadBanner
+        draft={draft}
+        onLoaded={(rows) => {
+          setLibraryRows(rows);
+          const library = rows.flatMap((row) => (row.stick ? [row.stick] : []));
+          if (library.length) setDraft((current) => rehydrateStickCovers(current, library));
+        }}
+      />
+
       <details id="library-section" className="explain-fold section-fold" open>
         <summary>
           <span>{t("builder.library.title")}</span>
@@ -1688,7 +1740,11 @@ export function SetBuilder() {
           onAddTrack={addLibraryTrack}
           onPlayTrack={playLibraryTrack}
           rows={libraryRows}
-          onRows={setLibraryRows}
+          onRows={(rows) => {
+            setLibraryRows(rows);
+            const library = rows.flatMap((row) => (row.stick ? [row.stick] : []));
+            if (library.length) setDraft((current) => rehydrateStickCovers(current, library));
+          }}
           onApply={(next, message) => {
             setDraft(next);
             clearNotice();
@@ -1903,12 +1959,7 @@ export function SetBuilder() {
                       {results.map((track) => (
                         <li key={track.id}>
                           <div className="track-main">
-                            {track.imageUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={track.imageUrl} alt="" width={48} height={48} />
-                            ) : (
-                              <div className="art-fallback" />
-                            )}
+                            <TrackArt url={track.imageUrl} />
                             <div>
                               <strong>{track.name}</strong>
                               <span>
@@ -2080,8 +2131,7 @@ export function SetBuilder() {
             <StickWriteDialog
               open={stickOpen}
               onClose={() => setStickOpen(false)}
-              tracks={mainTracks}
-              title={draft.title}
+              draft={draft}
             />
           </div>
           <SetTools
@@ -2268,18 +2318,7 @@ export function SetBuilder() {
                         className="manual-select"
                         onClick={() => setFocusTrackId(track.id)}
                       >
-                        {track.imageUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={track.imageUrl}
-                            alt=""
-                            width={48}
-                            height={48}
-                            draggable={false}
-                          />
-                        ) : (
-                          <div className="art-fallback sm" />
-                        )}
+                        <TrackArt url={track.imageUrl} size={44} />
                         <span className="manual-copy">
                           <strong>{track.name}</strong>
                           <span>

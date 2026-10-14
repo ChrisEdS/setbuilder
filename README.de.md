@@ -2,7 +2,7 @@
 
 **Deutsch** · [English](README.md)
 
-**Version 2.3.0** · Dramaturgie statt Playlist.
+**Version 2.4.0** · Dramaturgie statt Playlist.
 
 SETFORM bereitet DJ-Sets für rekordbox vor. Du lädst Playlist oder History vom Export-Stick (oder eine Collection-XML), legst den Bogen nach Slot und Dauer, prüfst Energie, Key und BPM und nimmst das Set als rekordbox-XML, PDF, M3U oder Text mit. Die Logik folgt Mixed In Key: erst Energie, dann Key, dann BPM. Der Ablauf folgt dem [DJ.Studio Prep-Workflow](https://dj.studio/blog/dj-set-preparation#crafting-a-dj-set-that-feels-right-advanced-tips): Brief → Set bauen → Transitions → Export.
 
@@ -72,11 +72,11 @@ Der Bogen zeigt, wie die Phasen den Slot füllen (grün passt, gelb liegt über 
 
 Das Menü **Mitnehmen** exportiert:
 
-- **Auf Stick schreiben:** legt das Set als Playlist `SETFORM - <Titel>` direkt in die `export.pdb` deines rekordbox-Sticks, der Stick kann dann in den Player. Chrome, Edge oder die Desktop-App. Geschrieben werden nur Tracks, die schon auf dem Stick liegen; der Rest wird aufgelistet und ausgelassen. Vor jedem Schreiben wird das Original nach `SETFORM-Backup/` auf dem Stick kopiert und geprüft. Danach wird die Datenbank neu gelesen und verifiziert (Altbestand unverändert, genau eine neue Playlist, gleiche Reihenfolge); schlägt das fehl, wird das Original zurückgelegt. „Letztes Backup wiederherstellen“ steht im selben Dialog. Deine rekordbox-Bibliothek auf dem Rechner wird nie angefasst. Neuere Player, die die verschlüsselte `exportLibrary.db` lesen, sind nicht abgedeckt, und die Funktion ist noch nicht an allen Player-Modellen getestet: erst an einem Ersatz- oder kopierten Stick ausprobieren.
+- **Auf Stick schreiben:** legt das Set als Playlist `SETFORM - <Titel>` und die Alternativen daneben als `SETFORM - <Titel> Alternativen` in die `export.pdb`. Chrome, Edge oder die Desktop-App. Derselbe Stick wird gemerkt: nach einem Neustart reicht „Stick verbinden“, Schreiben braucht ihn nicht noch einmal. Nur Tracks, die schon auf dem Stick liegen, werden geschrieben; ähnliche Titel (Remix, Original Mix) fragt SETFORM nach, bevor sie mitkommen. Liegt das Set schon da, aktualisiert „Aktualisieren“ es über das letzte Backup und schreibt neu. Vor jedem Schreiben kopiert SETFORM das Original nach `SETFORM-Backup/` (die drei neuesten Sicherungen bleiben) und prüft die Kopie. Danach wird die Datenbank gelesen und verifiziert; schlägt das fehl, kommt der alte Stand zurück. Zusätzlich liegen XML und M3U im Ordner `SETFORM` auf dem Stick — neuere Player, die die verschlüsselte `exportLibrary.db` lesen, ignorieren `export.pdb` oft. Die rekordbox-Bibliothek auf dem Rechner wird nie angefasst. Erst an einem Ersatz- oder kopierten Stick ausprobieren, und prüfen, ob der Player die Playlist zeigt.
 - **rekordbox-XML:** gespeichert als `SETFORM-rekordbox.xml`. In rekordbox einmal *Einstellungen → Erweitert → Datenbank → rekordbox xml* auf diese Datei setzen; die Playlist erscheint dann links unter *rekordbox xml*, Rechtsklick → *Playlist importieren*. Performance und Alternativen kommen als zwei Playlists.
 - **PDF:** Druckansicht mit Brief, Reihenfolge, Key, BPM, Übergang und Alternativen
-- **M3U:** Playlist der Performance-Reihenfolge
-- **Text kopieren:** Set mit Brief und Kommentaren
+- **M3U:** Playlist der Performance-Reihenfolge, mit dem Namen der Alternativen-Playlist auf dem Stick
+- **Text kopieren:** Set mit Brief, Kommentaren und Alternativen
 
 Der Brief und das Set lassen sich unter **Verbindungen & Setups** als Setup speichern, wieder laden oder als JSON sichern.
 
@@ -134,7 +134,7 @@ Jede Installation braucht für Spotify und Tidal eine eigene Developer-App, reko
 
 Die aktuellen Pakete sind noch nicht signiert. macOS markiert einen Browser-Download mit Quarantäne und meldet dann „SETFORM.app is damaged and can’t be opened“. Die Datei ist nicht beschädigt.
 
-Nach dem Entpacken im Terminal:
+Nach dem Entpacken im Terminal, oder `desktop/scripts/unquarantine.sh`:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/SETFORM.app

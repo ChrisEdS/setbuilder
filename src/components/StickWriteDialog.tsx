@@ -6,83 +6,119 @@ import { useI18n } from "@/lib/i18n/react";
 import {
   planStickWrite,
   restoreLatestBackup,
+  rewriteSetToStick,
   writeSetToStick,
+  writeStickSidecars,
   type DirLike,
   type StickPlan,
   type StickWriteDone,
 } from "@/lib/rekordbox-stick-write";
-import type { SetTrack } from "@/lib/set";
+import type { SetDraft, SetTrack } from "@/lib/set";
+import {
+  loadPersistedStickHandle,
+  pickAndRememberStick,
+  stickPermission,
+  stickPicker,
+} from "@/lib/stick-session";
 
 type Step =
   | { kind: "idle" }
   | { kind: "busy"; label: "reading" | "writing" | "restoring" }
   | { kind: "planned"; plan: StickPlan }
-  | { kind: "done"; result: StickWriteDone }
+  | { kind: "done"; result: StickWriteDone; sidecars: string[] }
   | { kind: "restored"; backup: string }
   | { kind: "error"; text: string };
 
-type Picker = (options: { mode: "readwrite" }) => Promise<DirLike>;
-
-function pickerFn(): Picker | null {
-  const fn = (window as unknown as { showDirectoryPicker?: Picker }).showDirectoryPicker;
-  return typeof fn === "function" ? fn.bind(window) : null;
+function withHints(tracks: SetTrack[], hints: Record<string, number>) {
+  return tracks.map((track) => ({ ...track, stickId: hints[track.id] }));
 }
 
 /** Writes the set into the database of a rekordbox stick. Asks, shows what will happen, then does it. */
 export function StickWriteDialog({
   open,
   onClose,
-  tracks,
-  title,
+  draft,
 }: {
   open: boolean;
   onClose: () => void;
-  tracks: SetTrack[];
-  title: string;
+  draft: SetDraft;
 }) {
   const { t } = useI18n();
   const dialog = useRef<HTMLDialogElement>(null);
   const root = useRef<DirLike | null>(null);
   const [step, setStep] = useState<Step>({ kind: "idle" });
   const [canPick, setCanPick] = useState(true);
+  const [hints, setHints] = useState<Record<string, number>>({});
+
+  const tracks = draft.tracks;
+  const title = draft.title;
+  const altLabel = t("exports.pdf.alternatives");
 
   useEffect(() => {
     const node = dialog.current;
     if (!node) return;
     if (open && !node.open) {
       setStep({ kind: "idle" });
+      setHints({});
       root.current = null;
-      setCanPick(pickerFn() !== null);
+      setCanPick(stickPicker() !== null);
       node.showModal();
+      void (async () => {
+        const handle = await loadPersistedStickHandle();
+        if (!handle || !(await stickPermission(handle, "readwrite", false))) return;
+        root.current = handle;
+        setStep({ kind: "busy", label: "reading" });
+        try {
+          setStep({
+            kind: "planned",
+            plan: await planStickWrite(handle, withHints(tracks, {}), title, altLabel),
+          });
+        } catch (error) {
+          setStep({ kind: "error", text: errorText(error, t) });
+        }
+      })();
     }
     if (!open && node.open) node.close();
+    // Only when the dialog opens. tracks/title are read from this render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  async function choose() {
-    const pick = pickerFn();
-    if (!pick) return;
-    let handle: DirLike;
-    try {
-      handle = await pick({ mode: "readwrite" });
-    } catch (error) {
-      if ((error as { name?: string }).name === "AbortError") return;
-      setStep({ kind: "error", text: errorText(error, t) });
-      return;
-    }
+  async function planFrom(handle: DirLike, nextHints = hints) {
     root.current = handle;
     setStep({ kind: "busy", label: "reading" });
     try {
-      setStep({ kind: "planned", plan: await planStickWrite(handle, tracks, title) });
+      setStep({
+        kind: "planned",
+        plan: await planStickWrite(handle, withHints(tracks, nextHints), title, altLabel),
+      });
     } catch (error) {
       setStep({ kind: "error", text: errorText(error, t) });
     }
   }
 
-  async function write() {
+  async function choose() {
+    try {
+      const handle = await pickAndRememberStick();
+      if (!handle) return;
+      await planFrom(handle);
+    } catch (error) {
+      setStep({ kind: "error", text: errorText(error, t) });
+    }
+  }
+
+  async function finishWrite(writer: typeof writeSetToStick) {
     if (!root.current) return;
     setStep({ kind: "busy", label: "writing" });
     try {
-      setStep({ kind: "done", result: await writeSetToStick(root.current, tracks, title) });
+      const result = await writer(
+        root.current,
+        withHints(tracks, hints),
+        title,
+        new Date(),
+        altLabel,
+      );
+      const sidecars = await writeStickSidecars(root.current, draft, t).catch(() => []);
+      setStep({ kind: "done", result, sidecars });
     } catch (error) {
       setStep({ kind: "error", text: errorText(error, t) });
     }
@@ -99,9 +135,15 @@ export function StickWriteDialog({
     }
   }
 
+  async function rewrite() {
+    if (!window.confirm(t("library.stickWrite.rewriteConfirm"))) return;
+    await finishWrite(rewriteSetToStick);
+  }
+
   const busy = step.kind === "busy";
   const plan = step.kind === "planned" ? step.plan : null;
   const missing = plan?.match.missing ?? [];
+  const suggestions = plan?.suggestions ?? [];
 
   return (
     <dialog
@@ -138,9 +180,7 @@ export function StickWriteDialog({
         </>
       ) : null}
 
-      {busy ? (
-        <p role="status">{t(`library.stickWrite.busy.${step.label}`)}</p>
-      ) : null}
+      {busy ? <p role="status">{t(`library.stickWrite.busy.${step.label}`)}</p> : null}
 
       {plan ? (
         <>
@@ -152,17 +192,59 @@ export function StickWriteDialog({
                 })
               : t("library.stickWrite.allFound", { total: plan.match.matched.length })}
           </p>
+          {suggestions.length ? (
+            <div className="stick-missing">
+              <strong>{t("library.stickWrite.suggestTitle")}</strong>
+              <ul>
+                {suggestions.map((item) => (
+                  <li key={(item.track as SetTrack).id ?? item.track.name}>
+                    <span>
+                      {item.track.artists.filter((name) => name && name !== "Unknown").join(", ")}
+                      {item.track.artists.length ? " – " : ""}
+                      {item.track.name}
+                    </span>
+                    {item.candidates.map((candidate) => (
+                      <button
+                        key={candidate.id}
+                        type="button"
+                        className="btn ghost"
+                        onClick={() => {
+                          const id = (item.track as SetTrack).id;
+                          if (!id || !root.current) return;
+                          const next = { ...hints, [id]: candidate.id };
+                          setHints(next);
+                          void planFrom(root.current, next);
+                        }}
+                      >
+                        {t("library.stickWrite.suggestUse")}: {candidate.artist} – {candidate.title}
+                      </button>
+                    ))}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           {missing.length ? (
             <div className="stick-missing">
               <strong>{t("library.stickWrite.missingTitle")}</strong>
               <ul>
-                {missing.slice(0, 6).map((track, index) => (
-                  <li key={`${track.name}-${index}`}>
-                    {track.artists.filter((name) => name && name !== "Unknown").join(", ")}
-                    {track.artists.length ? " – " : ""}
-                    {track.name}
-                  </li>
-                ))}
+                {missing
+                  .filter(
+                    (track) =>
+                      !suggestions.some(
+                        (item) =>
+                          item.track.name === track.name &&
+                          item.track.artists.join() === track.artists.join(),
+                      ),
+                  )
+                  .slice(0, 6)
+                  .map((track, index) => (
+                    <li key={`${track.name}-${index}`}>
+                      {track.artists.filter((name) => name && name !== "Unknown").join(", ")}
+                      {track.artists.length ? " – " : ""}
+                      {track.name}
+                    </li>
+                  ))}
               </ul>
               {missing.length > 6 ? (
                 <span>{t("library.stickWrite.missingMore", { count: missing.length - 6 })}</span>
@@ -173,12 +255,29 @@ export function StickWriteDialog({
             <p className="stick-warn" role="alert">
               {t("library.stickWrite.refused", { reason: errorText(plan.refusal, t) })}
             </p>
-          ) : plan.match.matched.length ? (
+          ) : plan.alreadyOnStick ? (
+            <>
+              <p>{t("library.stickWrite.alreadyThere", { name: plan.playlistName })}</p>
+              <p className="stick-hint">{t("library.stickWrite.rewriteHint")}</p>
+            </>
+          ) : plan.skippedPerformance && plan.alternativesName ? (
             <p>
-              {t("library.stickWrite.willWrite", {
+              {t("library.stickWrite.willAddAltsOnly", {
                 name: plan.playlistName,
-                count: plan.match.matched.length,
+                alts: plan.alternativesName,
               })}
+            </p>
+          ) : plan.performanceCount || plan.alternativesCount ? (
+            <p>
+              {plan.performanceCount
+                ? t("library.stickWrite.willWrite", {
+                    name: plan.playlistName,
+                    count: plan.performanceCount,
+                  })
+                : ""}
+              {plan.alternativesName
+                ? ` ${t("library.stickWrite.willWriteAlts", { name: plan.alternativesName })}`
+                : ""}
             </p>
           ) : (
             <p className="stick-warn">{t("library.stickWrite.noneFound")}</p>
@@ -192,14 +291,22 @@ export function StickWriteDialog({
             <button type="button" className="btn ghost" onClick={onClose}>
               {t("library.stickWrite.cancel")}
             </button>
-            <button
-              type="button"
-              className="btn"
-              onClick={() => void write()}
-              disabled={Boolean(plan.refusal) || !plan.match.matched.length}
-            >
-              {t("library.stickWrite.write")}
-            </button>
+            {plan.alreadyOnStick ? (
+              <button type="button" className="btn" onClick={() => void rewrite()}>
+                {t("library.stickWrite.rewrite")}
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="btn"
+                onClick={() => void finishWrite(writeSetToStick)}
+                disabled={
+                  Boolean(plan.refusal) || (!plan.performanceCount && !plan.alternativesCount)
+                }
+              >
+                {t("library.stickWrite.write")}
+              </button>
+            )}
           </div>
         </>
       ) : null}
@@ -208,8 +315,16 @@ export function StickWriteDialog({
         <>
           <p role="status">
             {t("library.stickWrite.done", { name: step.result.playlistName, count: step.result.trackCount })}
+            {step.result.alternativesName
+              ? ` ${t("library.stickWrite.doneAlts", { name: step.result.alternativesName })}`
+              : ""}
           </p>
           <p className="stick-hint">{t("library.stickWrite.doneBackup", { backup: step.result.backupName })}</p>
+          {step.sidecars.length ? (
+            <p className="stick-hint">
+              {t("library.stickWrite.sidecar", { files: step.sidecars.join(", ") })}
+            </p>
+          ) : null}
           <div className="stick-actions">
             <button type="button" className="btn ghost" onClick={() => void restore()}>
               {t("library.stickWrite.restore")}

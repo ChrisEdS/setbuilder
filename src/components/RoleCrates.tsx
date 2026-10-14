@@ -23,6 +23,7 @@ import {
   roleLabel,
 } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n/react";
+import { TrackArt } from "@/components/TrackArt";
 import type { LibraryRow } from "@/components/LibraryPanel";
 import { PHASE_ENERGY, PLAN_B_MIN, planBCount, planBState } from "@/lib/energy";
 import {
@@ -530,17 +531,7 @@ export function RoleCrates({
                                 onFocusTrack?.(track.id);
                               }}
                             >
-                              {track.imageUrl ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                  src={track.imageUrl}
-                                  alt=""
-                                  width={44}
-                                  height={44}
-                                />
-                              ) : (
-                                <div className="art-fallback sm" />
-                              )}
+                              <TrackArt url={track.imageUrl} size={44} />
                               <div className="crate-card-body">
                                 <div className="crate-title-row">
                                   <em className="crate-set-num">
