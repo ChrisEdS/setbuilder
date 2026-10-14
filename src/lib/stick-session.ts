@@ -2,13 +2,15 @@ import { LocalizedError } from "@/lib/i18n/error";
 import { readRekordboxStick, type RekordboxStickRead } from "@/lib/rekordbox-stick";
 import { rememberStickFiles } from "@/lib/stick-audio";
 import { findStickDatabase, type DirLike, type FileLike } from "@/lib/rekordbox-stick-write";
+import { STICK_IDB_NAME, STICK_IDB_NAME_LEGACY } from "@/lib/storage-keys";
 
 export type PersistableDir = DirLike & {
   queryPermission?(options: { mode: "read" | "readwrite" }): Promise<PermissionState>;
   requestPermission?(options: { mode: "read" | "readwrite" }): Promise<PermissionState>;
 };
 
-const DB_NAME = "setform-stick";
+const DB_NAME = STICK_IDB_NAME;
+const DB_NAME_LEGACY = STICK_IDB_NAME_LEGACY;
 const STORE = "handles";
 const KEY = "root";
 
@@ -39,10 +41,14 @@ export function pickerFailureKind(error: unknown): "cancel" | "blocked" | "error
 
 let sessionHandle: PersistableDir | null = null;
 
-function openDb(): Promise<IDBDatabase> {
+function openDb(name = DB_NAME): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
-    request.onupgradeneeded = () => request.result.createObjectStore(STORE);
+    const request = indexedDB.open(name, 1);
+    request.onupgradeneeded = () => {
+      if (!request.result.objectStoreNames.contains(STORE)) {
+        request.result.createObjectStore(STORE);
+      }
+    };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
@@ -61,18 +67,29 @@ export async function rememberStickHandle(handle: PersistableDir): Promise<void>
   db.close();
 }
 
-export async function loadPersistedStickHandle(): Promise<PersistableDir | null> {
-  if (sessionHandle) return sessionHandle;
-  if (typeof indexedDB === "undefined") return null;
+async function readHandleFromDb(name: string): Promise<PersistableDir | null> {
+  const db = await openDb(name);
   try {
-    const db = await openDb();
-    const handle = await new Promise<PersistableDir | null>((resolve, reject) => {
+    return await new Promise<PersistableDir | null>((resolve, reject) => {
       const tx = db.transaction(STORE, "readonly");
       const request = tx.objectStore(STORE).get(KEY);
       request.onsuccess = () => resolve((request.result as PersistableDir) ?? null);
       request.onerror = () => reject(request.error);
     });
+  } finally {
     db.close();
+  }
+}
+
+export async function loadPersistedStickHandle(): Promise<PersistableDir | null> {
+  if (sessionHandle) return sessionHandle;
+  if (typeof indexedDB === "undefined") return null;
+  try {
+    let handle = await readHandleFromDb(DB_NAME);
+    if (!handle) {
+      handle = await readHandleFromDb(DB_NAME_LEGACY);
+      if (handle) await rememberStickHandle(handle);
+    }
     if (handle) sessionHandle = handle;
     return handle;
   } catch {

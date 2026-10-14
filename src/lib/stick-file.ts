@@ -166,7 +166,7 @@ export async function writeStickFileBytes(
 
 /**
  * Fill missing energyLevel from MP3 ID3 tags on the stick.
- * SETFORM writes Energy into the files, not into export.pdb — so a stick reload
+ * SETBUILDER writes Energy into the files, not into export.pdb — so a stick reload
  * would otherwise lose energy until rekordbox refreshes tags.
  */
 export async function enrichDraftEnergyFromFiles(

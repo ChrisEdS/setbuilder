@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
-const desktopBuild = process.env.SETFORM_STANDALONE === "1";
+const desktopBuild =
+  process.env.SETBUILDER_STANDALONE === "1" ||
+  process.env.SETFORM_STANDALONE === "1";
 
 const nextConfig: NextConfig = {
   /* config options here */

@@ -61,6 +61,8 @@ test("language detection", () => {
   assert.equal(detectLang("de,en;q=0.8"), "de");
   assert.equal(detectLang("fr-FR"), "en");
   assert.equal(detectLang(undefined), "en");
+  assert.equal(langFromHeaders("a=1; setbuilder-lang=de", "en-US"), "de");
+  assert.equal(langFromHeaders("setbuilder-lang=en", "de"), "en");
   assert.equal(langFromHeaders("a=1; setform-lang=de", "en-US"), "de");
   assert.equal(langFromHeaders("setform-lang=en", "de"), "en");
   assert.equal(langFromHeaders(null, "de-DE,de;q=0.9"), "de");

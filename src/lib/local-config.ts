@@ -13,7 +13,7 @@ const SECRET_KEYS = [
 export type SecretKey = (typeof SECRET_KEYS)[number];
 
 export function configFilePath(): string {
-  if (process.env.SETFORM_DATA_DIR?.trim()) {
+  if (process.env.SETBUILDER_DATA_DIR?.trim() || process.env.SETFORM_DATA_DIR?.trim()) {
     return path.join(path.dirname(dataDir()), ".env");
   }
   return path.join(process.cwd(), ".env.local");
@@ -48,7 +48,7 @@ function readMap(file: string): Map<string, string> {
 function render(values: Map<string, string>): string {
   const spotify = spotifyRedirectUri();
   const tidal = tidalRedirectUri();
-  return `# SETFORM, nur auf diesem Mac. Nicht ins Repo legen.
+  return `# SETBUILDER, nur auf diesem Mac. Nicht ins Repo legen.
 # Spotify: https://developer.spotify.com/dashboard
 # Redirect URI dort exakt so eintragen wie hier:
 #   ${spotify}

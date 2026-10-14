@@ -1,6 +1,6 @@
-# SETFORM Desktop
+# SETBUILDER Desktop
 
-Electron-Hülle für Mac, Windows und Linux. Sie startet den SETFORM-Server lokal und öffnet ihn im eigenen Fenster. Spotify und Tidal sind optional und brauchen keine Zugangsdaten zum Start. Ihre Redirects bleiben `http://127.0.0.1:4317/...`.
+Electron-Hülle für Mac, Windows und Linux. Sie startet den SETBUILDER-Server lokal und öffnet ihn im eigenen Fenster. Spotify und Tidal sind optional und brauchen keine Zugangsdaten zum Start. Ihre Redirects bleiben `http://127.0.0.1:4317/...`.
 
 Der Next-Server wird auf dem Rechner gebaut, auf dem die App entstehen soll. Die Bildbibliothek ist an das Betriebssystem gebunden.
 
@@ -34,14 +34,16 @@ Für eine andere Architektur als die des Build-Rechners die Flags von electron-b
 
 Ohne Apple- und Windows-Zertifikat sind die Pakete unsigniert. Linux startet die AppImage direkt. Windows zeigt SmartScreen, „Trotzdem ausführen“ setzt die Installation fort.
 
-macOS hängt an Browser-Downloads das Attribut `com.apple.quarantine`. Die Meldung lautet dann „SETFORM.app is damaged and can’t be opened“. Die App ist nicht beschädigt. Nach dem Entpacken:
+macOS hängt an Browser-Downloads das Attribut `com.apple.quarantine`. Die Meldung lautet dann „SETBUILDER.app is damaged and can’t be opened“. Die App ist nicht beschädigt. Nach dem Entpacken:
 
 ```bash
-sh scripts/unquarantine.sh /Applications/SETFORM.app
-# or: xattr -dr com.apple.quarantine /Applications/SETFORM.app
+sh scripts/unquarantine.sh /Applications/SETBUILDER.app
+# or: xattr -dr com.apple.quarantine /Applications/SETBUILDER.app
 ```
 
 Danach öffnet sie per Doppelklick. Mit Notarisierung entfällt das.
+
+Ab 3.1.0 heißt das Paket **SETBUILDER.app** (früher SETFORM.app). Beim ersten Start kopiert die App vorhandene Daten aus dem alten Application-Support-Ordner, falls nötig.
 
 ## Signierung
 

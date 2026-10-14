@@ -5,7 +5,7 @@
  *
  * Order of events, each step only starts when the one before succeeded:
  *   1. read export.pdb and work out the new file in memory (nothing is written yet)
- *   2. copy the original into SETFORM-Backup/ and read the copy back byte for byte
+ *   2. copy the original into SETBUILDER-Backup/ and read the copy back byte for byte
  *   3. replace export.pdb (the browser swaps the file atomically when the write is closed)
  *   4. read export.pdb back and check it is the old file plus exactly the new playlist
  *   5. if that check fails: put the original back and say so
@@ -26,14 +26,15 @@ import type { Translate } from "@/lib/i18n/core";
 import { tDe } from "@/lib/i18n/core";
 import type { SetDraft, SetTrack, TrackRole } from "@/lib/set";
 import { suggestStickMatches, type StickSuggestion } from "@/lib/stick-match";
+import { BACKUP_DIR, BACKUP_DIR_LEGACY, REKORDBOX_XML_NAME, SIDECAR_DIR } from "@/lib/brand";
 import {
   existingAlternativesPlaylistName,
+  existingStickPlaylistName,
   stickAlternativesPlaylistName,
   stickPlaylistName,
 } from "@/lib/stick-names";
 
-export const BACKUP_DIR = "SETFORM-Backup";
-export const SIDECAR_DIR = "SETFORM";
+export { BACKUP_DIR, SIDECAR_DIR };
 export const BACKUP_KEEP = 3;
 export const LIBRARY_ASIDE_RE = /^exportLibrary-aside-\d{8}-\d{6}\.db$/;
 
@@ -271,7 +272,8 @@ function stageStickWrite(
   };
   const wanted = stickPlaylistName(title);
   const altWanted = stickAlternativesPlaylistName(title, alternativesLabel);
-  const havePerf = playlistExists(library, wanted);
+  const havePerfName = existingStickPlaylistName(library.playlists, title);
+  const havePerf = Boolean(havePerfName);
   const haveAltName = existingAlternativesPlaylistName(library.playlists, title);
   const haveAlt = Boolean(haveAltName);
   const writePerf = perfMatch.trackIds.length > 0 && !havePerf;
@@ -491,6 +493,11 @@ async function writeTextFile(dir: DirLike, name: string, text: string) {
   await replaceFile(handle, new TextEncoder().encode(text));
 }
 
+/** Prefer SETBUILDER-Backup; fall back to legacy SETFORM-Backup for reads. */
+async function resolveBackupDir(root: DirLike): Promise<DirLike | null> {
+  return (await child(root, BACKUP_DIR)) ?? (await child(root, BACKUP_DIR_LEGACY));
+}
+
 /** XML and M3U next to the database, for players that ignore export.pdb. */
 export async function writeStickSidecars(
   root: DirLike,
@@ -498,12 +505,12 @@ export async function writeStickSidecars(
   t: Translate = tDe,
 ): Promise<string[]> {
   const dir = await root.getDirectoryHandle(SIDECAR_DIR, { create: true });
-  const slug = (draft.title || "setform")
+  const slug = (draft.title || "setbuilder")
     .replace(/[^\p{L}\p{N}]+/gu, "-")
     .replace(/^-|-$/g, "")
-    .slice(0, 40) || "setform";
-  const written = ["SETFORM-rekordbox.xml", `${slug}.m3u`];
-  await writeTextFile(dir, "SETFORM-rekordbox.xml", buildRekordboxXml(draft, t));
+    .slice(0, 40) || "setbuilder";
+  const written = [REKORDBOX_XML_NAME, `${slug}.m3u`];
+  await writeTextFile(dir, REKORDBOX_XML_NAME, buildRekordboxXml(draft, t));
   await writeTextFile(dir, `${slug}.m3u`, buildM3u(draft, t));
   if (draft.tracks.some((track) => track.role === "safety")) {
     const altName = `${slug}-alternatives.m3u`;
@@ -515,7 +522,7 @@ export async function writeStickSidecars(
 
 /** Keeps the newest backups, deletes the rest. */
 export async function pruneBackups(root: DirLike, keep = BACKUP_KEEP): Promise<string[]> {
-  const dir = await child(root, BACKUP_DIR);
+  const dir = await resolveBackupDir(root);
   if (!dir?.keys || !dir.removeEntry) return [];
   const names: string[] = [];
   for await (const name of dir.keys()) if (/^export-\d{8}-\d{6}\.pdb$/.test(name)) names.push(name);
@@ -532,7 +539,7 @@ async function restoreOriginal(handle: FileLike, original: ArrayBuffer) {
   if (!sameBytes(await readBytes(handle), original)) {
     throw stickError(
       "exports.stickWrite.restoreFailed",
-      "Die Stick-Datenbank konnte nicht zurückgesetzt werden. Bitte den Stick in rekordbox neu exportieren oder die Sicherung in SETFORM-Backup kopieren.",
+      "Die Stick-Datenbank konnte nicht zurückgesetzt werden. Bitte den Stick in rekordbox neu exportieren oder die Sicherung in SETBUILDER-Backup kopieren.",
     );
   }
 }
@@ -541,7 +548,7 @@ async function restoreOriginal(handle: FileLike, original: ArrayBuffer) {
 // Restore
 
 export async function latestBackupName(root: DirLike): Promise<string | null> {
-  const dir = await child(root, BACKUP_DIR);
+  const dir = await resolveBackupDir(root);
   if (!dir?.keys) return null;
   const names: string[] = [];
   for await (const name of dir.keys()) if (/^export-\d{8}-\d{6}\.pdb$/.test(name)) names.push(name);
@@ -553,11 +560,11 @@ export async function latestBackupName(root: DirLike): Promise<string | null> {
 export async function restoreLatestBackup(root: DirLike): Promise<string> {
   const location = await findStickDatabase(root);
   const name = await latestBackupName(root);
-  const dir = await child(root, BACKUP_DIR);
+  const dir = await resolveBackupDir(root);
   if (!name || !dir) {
     throw stickError(
       "exports.stickWrite.noBackup",
-      "Auf diesem Stick gibt es noch keine SETFORM-Sicherung.",
+      "Auf diesem Stick gibt es noch keine SETBUILDER-Sicherung.",
     );
   }
   const backup = await readBytes(await dir.getFileHandle(name));
@@ -569,14 +576,14 @@ export async function restoreLatestBackup(root: DirLike): Promise<string> {
     await replaceFile(location.file, current);
     throw stickError(
       "exports.stickWrite.restoreFailed",
-      "Die Stick-Datenbank konnte nicht zurückgesetzt werden. Bitte den Stick in rekordbox neu exportieren oder die Sicherung in SETFORM-Backup kopieren.",
+      "Die Stick-Datenbank konnte nicht zurückgesetzt werden. Bitte den Stick in rekordbox neu exportieren oder die Sicherung in SETBUILDER-Backup kopieren.",
     );
   }
   return name;
 }
 
 export async function listLibraryAsides(root: DirLike): Promise<string[]> {
-  const dir = await child(root, BACKUP_DIR);
+  const dir = await resolveBackupDir(root);
   if (!dir?.keys) return [];
   const names: string[] = [];
   for await (const name of dir.keys()) if (LIBRARY_ASIDE_RE.test(name)) names.push(name);
@@ -585,7 +592,7 @@ export async function listLibraryAsides(root: DirLike): Promise<string[]> {
 }
 
 /**
- * Newer players that prefer OneLibrary (exportLibrary.db) ignore SETFORM’s export.pdb.
+ * Newer players that prefer OneLibrary (exportLibrary.db) ignore SETBUILDER’s export.pdb.
  * We cannot write that encrypted file. Setting it aside (with a backup) makes
  * Device Library players — CDJ-3000, XDJ-XZ and older — read export.pdb instead.
  * CDJ-3000X, XDJ-AZ and OPUS-QUAD still need rekordbox.
@@ -618,7 +625,7 @@ export async function prepareStickForPlayers(root: DirLike, now = new Date()): P
   if (await file(location.dir, "exportLibrary.db")) {
     throw stickError(
       "exports.stickWrite.asideFailed",
-      "exportLibrary.db konnte nicht beiseitegelegt werden. Die Sicherung liegt in SETFORM-Backup.",
+      "exportLibrary.db konnte nicht beiseitegelegt werden. Die Sicherung liegt in SETBUILDER-Backup.",
     );
   }
   return { aside: true, backupName };
@@ -628,7 +635,7 @@ export async function prepareStickForPlayers(root: DirLike, now = new Date()): P
 export async function restorePlayerLibrary(root: DirLike): Promise<string> {
   const location = await findStickDatabase(root);
   const names = await listLibraryAsides(root);
-  const dir = await child(root, BACKUP_DIR);
+  const dir = await resolveBackupDir(root);
   const name = names.at(-1);
   if (!name || !dir) {
     throw stickError(
@@ -642,7 +649,7 @@ export async function restorePlayerLibrary(root: DirLike): Promise<string> {
   if (!sameBytes(await readBytes(handle), backup)) {
     throw stickError(
       "exports.stickWrite.restoreFailed",
-      "Die Stick-Datenbank konnte nicht zurückgesetzt werden. Bitte den Stick in rekordbox neu exportieren oder die Datei aus SETFORM-Backup zurückkopieren.",
+      "Die Stick-Datenbank konnte nicht zurückgesetzt werden. Bitte den Stick in rekordbox neu exportieren oder die Datei aus SETBUILDER-Backup zurückkopieren.",
     );
   }
   return name;

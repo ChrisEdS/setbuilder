@@ -231,7 +231,7 @@ export function RekordboxStick({
       if (!handle) return;
       await hydrateStickMedia(handle, mediaPathsForDraft(next, set.tracks));
       const covered = rehydrateStickCovers(next, set.tracks);
-      // Energy written by SETFORM lives in MP3 tags, not yet in export.pdb.
+      // Energy written by SETBUILDER lives in MP3 tags, not yet in export.pdb.
       onApply(await enrichDraftEnergyFromFiles(covered, handle), message);
     });
   }

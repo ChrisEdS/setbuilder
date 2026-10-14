@@ -21,7 +21,7 @@ const de = {
   // Hero and brief form
   "builder.hero.title": "Dramaturgie statt Playlist.",
   "builder.hero.lede":
-    "SETFORM formt aus dem Rekordbox-Stick ein Set. Playlist oder History laden, den Bogen nach Slot und Dauer legen, und an Key und BPM sehen, ob der Übergang zum nächsten Track trägt. Spotify, Tidal und Beatport sind die Ergänzung, wenn ein Track noch nicht auf dem Stick liegt.",
+    "SETBUILDER formt aus dem Rekordbox-Stick ein Set. Playlist oder History laden, den Bogen nach Slot und Dauer legen, und an Key und BPM sehen, ob der Übergang zum nächsten Track trägt. Spotify, Tidal und Beatport sind die Ergänzung, wenn ein Track noch nicht auf dem Stick liegt.",
   "builder.brief.aria": "Set brief",
   "builder.brief.title": "Titel",
   "builder.brief.vibe": "Vibe / Genre-Arc",
@@ -103,7 +103,7 @@ const de = {
   "builder.manual.add": "Hinzufügen",
 
   "builder.auto.note":
-    "SETFORM nimmt eine Playlist und verteilt die Tracks nach Dauer, Phasen und Rollen auf das Set.",
+    "SETBUILDER nimmt eine Playlist und verteilt die Tracks nach Dauer, Phasen und Rollen auf das Set.",
   "builder.auto.replaces": "Das aktuelle Set mit {tracks} wird dabei ersetzt.",
   "builder.auto.ownPlaylists": "Eigene Playlists",
   "builder.auto.pickAria": "Eigene Playlist wählen",
@@ -197,10 +197,11 @@ const de = {
   "builder.list.headAllLong":
     "Performance-Set · {tracks} · {duration} / {minutes}:00 Slot · zu lang",
   "builder.list.headRole": "{role} · {tracks} · {duration}",
-  "builder.list.detailsClose": "Details zu",
-  "builder.list.detailsOpen": "Details auf",
+  "builder.list.detailsClose": "Details aus",
+  "builder.list.detailsOpen": "Details ein",
+  "builder.list.detailsTitle": "Key, BPM, Energie und Set-Notiz in jeder Zeile ein- oder ausblenden.",
   "builder.list.filterAria": "Setliste filtern",
-  "builder.list.filterSet": "Set",
+  "builder.list.filterSet": "Alle Tracks (Set)",
   "builder.list.filterSetTitle": "Performance-Reihenfolge, ohne die Alternativen.",
   "builder.list.empty": "Noch kein Set.",
   "builder.list.emptyHint":
@@ -223,7 +224,7 @@ const de = {
   "builder.row.setNote": "Set-Notiz",
   "builder.row.setNotePlaceholder": "Cue, Vocal rein, Floor-Notiz…",
   "builder.row.setNoteTip":
-    "Nur für dieses Set in SETFORM. Wird nicht in die MP3-Tags geschrieben — anders als der Kommentar in rekordbox.",
+    "Nur für dieses Set in SETBUILDER. Wird nicht in die MP3-Tags geschrieben — anders als der Kommentar in rekordbox.",
   "builder.row.bpmPlaceholder": "BPM",
   "builder.row.bpmAria": "BPM für {name}",
   "builder.row.keyOption": "Key",
@@ -253,7 +254,7 @@ const de = {
     "{duration} / {minutes}:00 · über dem Brief · {performance} Performance · {safety} Alternativen",
   "builder.curve.principles": "Dramaturgie-Prinzipien",
   "builder.curve.principlesIntro":
-    "Diese Prinzipien bestimmen, wie SETFORM den Bogen legt und worauf du in der Setliste achten solltest.",
+    "Diese Prinzipien bestimmen, wie SETBUILDER den Bogen legt und worauf du in der Setliste achten solltest.",
   "builder.curve.phaseLabel": "{phase}: {actual} von etwa {minutes} min",
   "builder.curve.phaseClick": "{label}. Klick legt neue Tracks in diese Phase.",
   "builder.curve.phaseTime": "{actual} / ~{minutes} min",
@@ -289,7 +290,7 @@ const de = {
     "Druckansicht geöffnet. Dort drucken oder „Als PDF speichern“ wählen.",
   "builder.status.m3u": "M3U der Performance-Reihenfolge gespeichert.",
   "builder.status.rekordbox":
-    "SETFORM-rekordbox.xml gespeichert (Ordner Downloads). In rekordbox: Einstellungen → Erweitert → Datenbank → „rekordbox xml“ → diese Datei wählen. Dann links unter „rekordbox xml“ die Playlist per Rechtsklick „Playlist importieren“. Alternativen liegen in der zweiten Playlist.",
+    "SETBUILDER-rekordbox.xml gespeichert (Ordner Downloads). In rekordbox: Einstellungen → Erweitert → Datenbank → „rekordbox xml“ → diese Datei wählen. Dann links unter „rekordbox xml“ die Playlist per Rechtsklick „Playlist importieren“. Alternativen liegen in der zweiten Playlist.",
   "builder.status.replaced":
     "Alternative eingesetzt. Der ersetzte Track liegt bei den Alternativen.",
   "builder.status.replacedFromLibrary":
@@ -384,7 +385,7 @@ const de = {
   "builder.fail.spotifySearch": "Spotify-Suche fehlgeschlagen.",
   "builder.fail.spotifySearchHint":
     "Spotify unter „Verbindungen & Setups“ einrichten (Client ID und Secret), danach „Spotify-Links suchen“ erneut starten. Der rekordbox-Export braucht das nicht.",
-  "builder.fail.notSetup": "Datei enthält kein SETFORM-Setup.",
+  "builder.fail.notSetup": "Datei enthält kein SETBUILDER-Setup.",
   "builder.fail.file": "Datei ungültig.",
   "builder.fail.fileHint":
     "Eine Datei verwenden, die hier über Herunterladen gespeichert wurde.",
@@ -421,7 +422,7 @@ const en: Record<keyof typeof de, string> = {
 
   "builder.hero.title": "Dramaturgy, not a playlist.",
   "builder.hero.lede":
-    "SETFORM shapes a set from your rekordbox stick. Load a playlist or history, lay out the arc by slot and duration, and see from key and BPM whether the transition to the next track holds. Spotify, Tidal and Beatport fill the gaps when a track isn't on the stick yet.",
+    "SETBUILDER shapes a set from your rekordbox stick. Load a playlist or history, lay out the arc by slot and duration, and see from key and BPM whether the transition to the next track holds. Spotify, Tidal and Beatport fill the gaps when a track isn't on the stick yet.",
   "builder.brief.aria": "Set brief",
   "builder.brief.title": "Title",
   "builder.brief.vibe": "Vibe / genre arc",
@@ -500,7 +501,7 @@ const en: Record<keyof typeof de, string> = {
   "builder.manual.add": "Add",
 
   "builder.auto.note":
-    "SETFORM takes a playlist and spreads the tracks across the set by duration, phases and roles.",
+    "SETBUILDER takes a playlist and spreads the tracks across the set by duration, phases and roles.",
   "builder.auto.replaces": "This replaces the current set with {tracks}.",
   "builder.auto.ownPlaylists": "Your playlists",
   "builder.auto.pickAria": "Choose your playlist",
@@ -591,10 +592,11 @@ const en: Record<keyof typeof de, string> = {
   "builder.list.headAllLong":
     "Performance set · {tracks} · {duration} / {minutes}:00 slot · too long",
   "builder.list.headRole": "{role} · {tracks} · {duration}",
-  "builder.list.detailsClose": "Hide details",
-  "builder.list.detailsOpen": "Show details",
+  "builder.list.detailsClose": "Details off",
+  "builder.list.detailsOpen": "Details on",
+  "builder.list.detailsTitle": "Show or hide key, BPM, energy and set note on every row.",
   "builder.list.filterAria": "Filter setlist",
-  "builder.list.filterSet": "Set",
+  "builder.list.filterSet": "All tracks (Set)",
   "builder.list.filterSetTitle": "Performance order, without the alternatives.",
   "builder.list.empty": "No set yet.",
   "builder.list.emptyHint":
@@ -617,7 +619,7 @@ const en: Record<keyof typeof de, string> = {
   "builder.row.setNote": "Set note",
   "builder.row.setNotePlaceholder": "Cue, vocal in, floor note…",
   "builder.row.setNoteTip":
-    "Only for this set in SETFORM. Not written to MP3 tags — unlike the comment in rekordbox.",
+    "Only for this set in SETBUILDER. Not written to MP3 tags — unlike the comment in rekordbox.",
   "builder.row.bpmPlaceholder": "BPM",
   "builder.row.bpmAria": "BPM for {name}",
   "builder.row.keyOption": "Key",
@@ -646,7 +648,7 @@ const en: Record<keyof typeof de, string> = {
     "{duration} / {minutes}:00 · over the brief · {performance} performance · {safety} alternatives",
   "builder.curve.principles": "Dramaturgy principles",
   "builder.curve.principlesIntro":
-    "These principles decide how SETFORM lays out the arc and what to watch for in the setlist.",
+    "These principles decide how SETBUILDER lays out the arc and what to watch for in the setlist.",
   "builder.curve.phaseLabel": "{phase}: {actual} of about {minutes} min",
   "builder.curve.phaseClick": "{label}. Click to put new tracks in this phase.",
   "builder.curve.phaseTime": "{actual} / ~{minutes} min",
@@ -679,7 +681,7 @@ const en: Record<keyof typeof de, string> = {
   "builder.status.pdf": "Print view opened. Print there or choose “Save as PDF”.",
   "builder.status.m3u": "M3U of the performance order saved.",
   "builder.status.rekordbox":
-    "SETFORM-rekordbox.xml saved (Downloads folder). In rekordbox: Preferences → Advanced → Database → “rekordbox xml” → choose this file. Then, under “rekordbox xml” in the left tree, right-click the playlist → “Import Playlist”. Alternatives are in the second playlist.",
+    "SETBUILDER-rekordbox.xml saved (Downloads folder). In rekordbox: Preferences → Advanced → Database → “rekordbox xml” → choose this file. Then, under “rekordbox xml” in the left tree, right-click the playlist → “Import Playlist”. Alternatives are in the second playlist.",
   "builder.status.replaced":
     "Alternative swapped in. The replaced track is now in Alternatives.",
   "builder.status.replacedFromLibrary":
@@ -770,7 +772,7 @@ const en: Record<keyof typeof de, string> = {
   "builder.fail.spotifySearch": "Spotify search failed.",
   "builder.fail.spotifySearchHint":
     "Set up Spotify under “Connections & setups” (client ID and secret), then run “Find Spotify links” again. The rekordbox export does not need it.",
-  "builder.fail.notSetup": "The file doesn't contain a SETFORM setup.",
+  "builder.fail.notSetup": "The file doesn't contain a SETBUILDER setup.",
   "builder.fail.file": "Invalid file.",
   "builder.fail.fileHint": "Use a file that was saved here via Download.",
   "builder.fail.copy": "Clipboard not available.",

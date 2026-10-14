@@ -1,6 +1,6 @@
 import { createTranslate, langFromHeaders, type Lang, type Translate } from "./core";
 
-/** Language of an API request: the "setform-lang" cookie, then Accept-Language. */
+/** Language of an API request: the "setbuilder-lang" cookie (or legacy setform-lang), then Accept-Language. */
 export function requestLang(request: Request): Lang {
   return langFromHeaders(
     request.headers.get("cookie"),

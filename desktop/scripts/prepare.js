@@ -16,7 +16,7 @@ for (let attempt = 1; attempt <= attempts; attempt += 1) {
   try {
     execFileSync(npx, ["next", "build", "--webpack"], {
       cwd: repoRoot,
-      env: { ...process.env, SETFORM_STANDALONE: "1" },
+      env: { ...process.env, SETBUILDER_STANDALONE: "1" },
       stdio: "inherit",
       shell: process.platform === "win32",
     });
@@ -61,4 +61,4 @@ fs.copyFileSync(
   path.join(appDir, "bundle", "env.example"),
 );
 
-console.log(`SETFORM Server bereit: ${target}`);
+console.log(`SETBUILDER Server bereit: ${target}`);

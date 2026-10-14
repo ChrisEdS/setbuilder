@@ -1,6 +1,22 @@
-/** Playlist SETFORM writes onto a rekordbox stick. */
+import {
+  BRAND,
+  BRAND_LEGACY,
+  BRAND_PLAYLIST_PREFIX,
+  BRAND_PLAYLIST_PREFIX_LEGACY,
+} from "@/lib/brand";
+
+/** Playlist SETBUILDER writes onto a rekordbox stick. */
 export function stickPlaylistName(title: string): string {
-  return `SETFORM - ${title.trim() || "Set"}`;
+  return `${BRAND_PLAYLIST_PREFIX}${title.trim() || "Set"}`;
+}
+
+/** Current and legacy names for the same set title (update finds either). */
+export function stickPlaylistNames(title: string): string[] {
+  const base = title.trim() || "Set";
+  return [
+    `${BRAND_PLAYLIST_PREFIX}${base}`,
+    `${BRAND_PLAYLIST_PREFIX_LEGACY}${base}`,
+  ];
 }
 
 /** Labels we have used for the alternatives playlist. Older writes stay valid. */
@@ -11,9 +27,16 @@ export function stickAlternativesPlaylistName(title: string, label = "Alternativ
   return `${stickPlaylistName(title)} ${label}`;
 }
 
-/** Every name this set's alternatives playlist may already have. */
+/** Every name this set's alternatives playlist may already have (new + legacy brand). */
 export function stickAlternativesPlaylistNames(title: string): string[] {
-  return STICK_ALT_LABELS.map((label) => stickAlternativesPlaylistName(title, label));
+  const names: string[] = [];
+  for (const prefix of [BRAND_PLAYLIST_PREFIX, BRAND_PLAYLIST_PREFIX_LEGACY]) {
+    const base = `${prefix}${title.trim() || "Set"}`;
+    for (const label of STICK_ALT_LABELS) {
+      names.push(`${base} ${label}`);
+    }
+  }
+  return names;
 }
 
 export function existingAlternativesPlaylistName(
@@ -26,3 +49,18 @@ export function existingAlternativesPlaylistName(
   }
   return null;
 }
+
+export function existingStickPlaylistName(
+  playlists: Array<{ name: string }>,
+  title: string,
+): string | null {
+  const names = new Set(playlists.map((item) => item.name));
+  for (const name of stickPlaylistNames(title)) {
+    if (names.has(name)) return name;
+  }
+  return null;
+}
+
+/** @deprecated use BRAND from brand.ts — kept for greps in comments */
+export const STICK_BRAND = BRAND;
+export const STICK_BRAND_LEGACY = BRAND_LEGACY;

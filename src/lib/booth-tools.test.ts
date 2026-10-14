@@ -84,7 +84,7 @@ test("m3u lists only the performance order", () => {
   const m3u = buildM3u(draft);
   assert.match(m3u, /#EXTM3U/);
   assert.match(m3u, /Ada - Night Drive/);
-  assert.match(m3u, /SETFORM - Freitag Alternativen/);
+  assert.match(m3u, /SETBUILDER - Freitag Alternativen/);
   assert.equal(m3u.includes("Plan B"), false);
 });
 

@@ -105,7 +105,7 @@ const de = {
     "Ein sauberer Übergang sitzt auf 16, 32 oder 64 Takten. Ein passender Camelot-Key rettet keinen Chorus, der mitten in eine Strophe fällt.",
   "analysis.extractStep.pack.title": "1. Auf die Brief-Dauer packen",
   "analysis.extractStep.pack.body":
-    "SETFORM nimmt Tracks aus der Playlist, bis die Ziel-Dauer des Briefs ungefähr erreicht ist. Was nicht in die Performance passt, bleibt als Alternative liegen.",
+    "SETBUILDER nimmt Tracks aus der Playlist, bis die Ziel-Dauer des Briefs ungefähr erreicht ist. Was nicht in die Performance passt, bleibt als Alternative liegen.",
   "analysis.extractStep.arc.title": "2. Einen Bogen legen",
   "analysis.extractStep.arc.body":
     "Spotify gibt im Dev Mode keine Audio-Features frei. Der Bogen entsteht deshalb aus der BPM, wo sie vorhanden ist, und aus der Katalog-Popularität (oft von Tidal per ISRC). Langsamer und unbekannter öffnet, präsenter peakt, im Release wird es wieder ruhiger. Key und BPM liefert die Tidal-Schnittstelle oft nicht. Verlässlich kommen sie aus rekordbox oder vom Stick.",
@@ -298,7 +298,7 @@ const en: Record<keyof typeof de, string> = {
     "A clean transition sits on 16, 32 or 64 bars. A matching Camelot key won't save a chorus that lands in the middle of a verse.",
   "analysis.extractStep.pack.title": "1. Pack to the brief duration",
   "analysis.extractStep.pack.body":
-    "SETFORM takes tracks from the playlist until the target duration of the brief is roughly reached. Whatever doesn't fit into the performance stays as an alternative.",
+    "SETBUILDER takes tracks from the playlist until the target duration of the brief is roughly reached. Whatever doesn't fit into the performance stays as an alternative.",
   "analysis.extractStep.arc.title": "2. Lay out an arc",
   "analysis.extractStep.arc.body":
     "In dev mode Spotify doesn't release audio features. So the arc is built from the BPM where it exists and from catalog popularity (often from Tidal via ISRC). Slower and lesser known opens, more present peaks, the release calms down again. The Tidal interface often provides no key or BPM. They reliably come from rekordbox or the stick.",

@@ -7,7 +7,7 @@ import {
 const ENERGY_DESCRIPTION = "EnergyLevel";
 const GROW_PADDING = 512;
 
-/** TXXX descriptions Mixed In Key / SETFORM / similar tools use for Energy. */
+/** TXXX descriptions Mixed In Key / SETBUILDER / similar tools use for Energy. */
 function isEnergyUserText(description: string): boolean {
   const folded = description
     .trim()
@@ -80,7 +80,7 @@ export function readEnergyFields(data: Uint8Array): {
 }
 
 /**
- * Energy Level from ID3 wherever Mixed In Key / SETFORM / rekordbox often put it:
+ * Energy Level from ID3 wherever Mixed In Key / SETBUILDER / rekordbox often put it:
  * TXXX EnergyLevel/Energy, any COMM with `Energy N`, Grouping (TIT1), Remixer (TPE4),
  * Publisher/Label (TPUB). Used when export.pdb has not been refreshed yet.
  */

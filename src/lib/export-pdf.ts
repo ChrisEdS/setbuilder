@@ -162,7 +162,7 @@ export function buildSetPrintHtml(draft: SetDraft, t: Translate = tDe): string {
 <html lang="${locale.slice(0, 2)}">
 <head>
   <meta charset="utf-8" />
-  <title>${escapeHtml(t("exports.pdf.title", { title: draft.title || "SETFORM" }))}</title>
+  <title>${escapeHtml(t("exports.pdf.title", { title: draft.title || "SETBUILDER" }))}</title>
   <style>
     :root {
       --ink: #161616;
@@ -329,7 +329,7 @@ export function openSetPdfExport(draft: SetDraft, t: Translate = tDe): void {
     throw new LocalizedError(
       "exports.pdf.popupBlocked",
       undefined,
-      "Popup blockiert — bitte Popups für SETFORM erlauben und erneut exportieren.",
+      "Popup blockiert — bitte Popups für SETBUILDER erlauben und erneut exportieren.",
     );
   }
   popup.document.open();

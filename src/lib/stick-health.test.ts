@@ -240,7 +240,7 @@ test("inspectStick reads PIONEER/rekordbox and flags a player library", async ()
   pioneer.putDir("USBANLZ", new MemoryDir("USBANLZ"));
   const root = new MemoryDir("STICK");
   root.putDir("PIONEER", pioneer);
-  root.putDir("SETFORM", new MemoryDir("SETFORM"));
+  root.putDir("SETBUILDER", new MemoryDir("SETBUILDER"));
 
   const health = await inspectStick(root);
   assert.equal(health.verdict, "needsRekordbox");

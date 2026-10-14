@@ -102,6 +102,17 @@ import {
   totalDurationMs,
   trackCount,
 } from "@/lib/set";
+import {
+  DRAFT_EVENT,
+  DRAFT_STORAGE_KEY as STORAGE_KEY,
+  DRAFT_STORAGE_KEY_LEGACY,
+  DRAFT_STORAGE_KEY_V3_LEGACY,
+  readLocal,
+  SETUPS_EVENT,
+  SETUPS_STORAGE_KEY as SETUPS_KEY,
+  SETUPS_STORAGE_KEY_LEGACY,
+  writeLocal,
+} from "@/lib/storage-keys";
 
 function MixJoinLine({ tracks, track }: { tracks: SetTrack[]; track: SetTrack }) {
   const { t } = useI18n();
@@ -130,8 +141,6 @@ type SearchTrack = {
   source?: "spotify" | "tidal" | "soundcloud" | "beatport" | "manual";
 };
 
-const STORAGE_KEY = "setform-draft-v4";
-const SETUPS_KEY = "setform-setups-v1";
 /** Brief duration in minutes: a short warm-up up to an all-nighter. */
 const MIN_DURATION = 20;
 const MAX_DURATION = 480;
@@ -142,7 +151,6 @@ type SavedSetup = {
   savedAt: string;
   draft: SetDraft;
 };
-const DRAFT_EVENT = "setform-draft";
 
 let cachedRaw: string | null | undefined;
 let cachedDraft: SetDraft = DEFAULT_SET;
@@ -209,8 +217,8 @@ function readStoredDraft(): SetDraft {
   if (!draftPersisted) return cachedDraft;
   try {
     const raw =
-      localStorage.getItem(STORAGE_KEY) ??
-      localStorage.getItem("setform-draft-v3");
+      readLocal(STORAGE_KEY, DRAFT_STORAGE_KEY_LEGACY) ??
+      localStorage.getItem(DRAFT_STORAGE_KEY_V3_LEGACY);
     if (raw === cachedRaw) return cachedDraft;
     cachedRaw = raw;
     if (!raw) {
@@ -230,7 +238,7 @@ function readStoredDraft(): SetDraft {
     });
     const cleanRaw = JSON.stringify(cachedDraft);
     if (cleanRaw !== raw) {
-      localStorage.setItem(STORAGE_KEY, cleanRaw);
+      writeLocal(STORAGE_KEY, cleanRaw);
       cachedRaw = cleanRaw;
     }
     return cachedDraft;
@@ -290,7 +298,7 @@ let setupsSnap: SavedSetup[] = EMPTY_SETUPS;
 function readSetupsSnapshot(): SavedSetup[] {
   let raw = "[]";
   try {
-    raw = localStorage.getItem(SETUPS_KEY) || "[]";
+    raw = readLocal(SETUPS_KEY, SETUPS_STORAGE_KEY_LEGACY) || "[]";
   } catch {
     // storage blocked: no saved setups
   }
@@ -306,29 +314,29 @@ function readSetupsSnapshot(): SavedSetup[] {
 }
 
 function subscribeSetups(onStoreChange: () => void) {
-  window.addEventListener("setform-setups", onStoreChange);
-  return () => window.removeEventListener("setform-setups", onStoreChange);
+  window.addEventListener(SETUPS_EVENT, onStoreChange);
+  return () => window.removeEventListener(SETUPS_EVENT, onStoreChange);
 }
 
 function writeSetups(setups: SavedSetup[]): boolean {
   const raw = JSON.stringify(setups);
   let stored = true;
   try {
-    localStorage.setItem(SETUPS_KEY, raw);
+    writeLocal(SETUPS_KEY, raw);
   } catch {
     stored = false;
   }
   // The list follows the change either way; the caller says when it did not persist.
   setupsRaw = raw;
   setupsSnap = setups;
-  window.dispatchEvent(new Event("setform-setups"));
+  window.dispatchEvent(new Event(SETUPS_EVENT));
   return stored;
 }
 
 function persistDraft(draft: SetDraft) {
   const raw = JSON.stringify(sanitizeDraftImages(draft));
   try {
-    localStorage.setItem(STORAGE_KEY, raw);
+    writeLocal(STORAGE_KEY, raw);
     draftPersisted = true;
   } catch {
     // The set keeps working for this session; the UI is told below.
@@ -1219,7 +1227,7 @@ export function SetBuilder() {
 
   function exportRekordbox() {
     downloadText(
-      "SETFORM-rekordbox.xml",
+      "SETBUILDER-rekordbox.xml",
       buildRekordboxXml(draft, t),
       "application/xml",
     );
@@ -1411,7 +1419,7 @@ export function SetBuilder() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `${name}.setform.json`;
+    link.download = `${name}.setbuilder.json`;
     link.click();
     URL.revokeObjectURL(url);
     setStatus(t("builder.status.fileDownloaded"));
@@ -1794,7 +1802,17 @@ export function SetBuilder() {
       </div>
       <header className="hero">
         <div className="hero-copy">
-          <p className="brand">SETFORM</p>
+          <p className="brand">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              className="brand-mark"
+              src="/logo.svg"
+              alt=""
+              width={52}
+              height={52}
+            />
+            SETBUILDER
+          </p>
           <h1>{t("builder.hero.title")}</h1>
           <p className="lede">{t("builder.hero.lede")}</p>
         </div>
@@ -2312,7 +2330,7 @@ export function SetBuilder() {
           </details>
 
           <div className="set-bar">
-            <div className="seg" role="tablist" aria-label={t("builder.view.aria")}>
+            <div className="seg crate-view-tabs" role="tablist" aria-label={t("builder.view.aria")}>
               {(["list", "roles", "keys"] as const).map((id) => (
                 <button
                   key={id}
@@ -2403,46 +2421,57 @@ export function SetBuilder() {
           {crateView === "list" ? (
             <div className="crate-view crate-list">
               <div className="crate-list-head">
-                <p className="head-meta">
-                  {roleFilter === "all"
-                    ? t(
-                        filledMs > targetMs * 1.05
-                          ? "builder.list.headAllLong"
-                          : "builder.list.headAll",
-                        {
+                <div className="crate-list-lead">
+                  <p className="head-meta">
+                    {roleFilter === "all"
+                      ? t(
+                          filledMs > targetMs * 1.05
+                            ? "builder.list.headAllLong"
+                            : "builder.list.headAll",
+                          {
+                            tracks: trackCount(visibleTimeline.length, t),
+                            duration: formatDuration(
+                              visibleTimeline.reduce((sum, track) => sum + track.durationMs, 0),
+                            ),
+                            minutes: draft.durationMinutes,
+                          },
+                        )
+                      : t("builder.list.headRole", {
+                          role: roleLabel(t, roleFilter),
                           tracks: trackCount(visibleTimeline.length, t),
                           duration: formatDuration(
                             visibleTimeline.reduce((sum, track) => sum + track.durationMs, 0),
                           ),
-                          minutes: draft.durationMinutes,
-                        },
+                        })}
+                  </p>
+                  <button
+                    type="button"
+                    className="list-setting"
+                    title={t("builder.list.detailsTitle")}
+                    aria-pressed={
+                      visibleTimeline.length > 0 &&
+                      visibleTimeline.every((track) => openDetails.has(track.id))
+                    }
+                    disabled={visibleTimeline.length === 0}
+                    onClick={() =>
+                      setOpenDetails((current) =>
+                        visibleTimeline.every((track) => current.has(track.id))
+                          ? new Set()
+                          : new Set(visibleTimeline.map((track) => track.id)),
                       )
-                    : t("builder.list.headRole", {
-                        role: roleLabel(t, roleFilter),
-                        tracks: trackCount(visibleTimeline.length, t),
-                        duration: formatDuration(
-                          visibleTimeline.reduce((sum, track) => sum + track.durationMs, 0),
-                        ),
-                      })}
-                </p>
-                <button
-                  type="button"
-                  className="btn ghost details-toggle"
-                  disabled={visibleTimeline.length === 0}
-                  onClick={() =>
-                    setOpenDetails((current) =>
-                      visibleTimeline.every((track) => current.has(track.id))
-                        ? new Set()
-                        : new Set(visibleTimeline.map((track) => track.id)),
-                    )
-                  }
+                    }
+                  >
+                    {visibleTimeline.length > 0 &&
+                    visibleTimeline.every((track) => openDetails.has(track.id))
+                      ? t("builder.list.detailsClose")
+                      : t("builder.list.detailsOpen")}
+                  </button>
+                </div>
+                <div
+                  className="seg crate-list-filter"
+                  role="group"
+                  aria-label={t("builder.list.filterAria")}
                 >
-                  {visibleTimeline.length > 0 &&
-                  visibleTimeline.every((track) => openDetails.has(track.id))
-                    ? t("builder.list.detailsClose")
-                    : t("builder.list.detailsOpen")}
-                </button>
-                <div className="seg" role="group" aria-label={t("builder.list.filterAria")}>
                   <button
                     type="button"
                     className={roleFilter === "all" ? "seg-item active" : "seg-item"}

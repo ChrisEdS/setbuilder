@@ -4,10 +4,24 @@ const fs = require("fs");
 const http = require("http");
 const path = require("path");
 
-const PORT = Number(process.env.SETFORM_PORT || 4317);
+const PORT = Number(
+  process.env.SETBUILDER_PORT || process.env.SETFORM_PORT || 4317,
+);
 const APP_HOST = "127.0.0.1";
 
-app.setName("SETFORM");
+app.setName("SETBUILDER");
+
+/** Keep OAuth keys / stick session when upgrading from SETFORM.app. */
+(function migrateUserDataFromSetform() {
+  const next = app.getPath("userData");
+  const legacy = path.join(app.getPath("appData"), "SETFORM");
+  if (fs.existsSync(next) || !fs.existsSync(legacy)) return;
+  try {
+    fs.cpSync(legacy, next, { recursive: true });
+  } catch {
+    app.setPath("userData", legacy);
+  }
+})();
 
 let mainWindow = null;
 let server = null;
@@ -83,7 +97,7 @@ function ensureConfigFile() {
       if (!current.get(key) && repo.get(key)) current.set(key, repo.get(key));
     }
   }
-  const body = `# SETFORM, nur auf diesem Mac. Nicht ins Repo legen.
+  const body = `# SETBUILDER, nur auf diesem Mac. Nicht ins Repo legen.
 # Alles hier ist optional: rekordbox funktioniert ohne Spotify und Tidal.
 # Spotify: https://developer.spotify.com/dashboard
 # Redirect URI dort exakt so eintragen wie hier:
@@ -138,7 +152,7 @@ function waitForServer() {
   return new Promise((resolve, reject) => {
     const tick = () => {
       if (server && server.exitCode !== null) {
-        reject(new Error(serverLog || "Der SETFORM-Server ist sofort beendet."));
+        reject(new Error(serverLog || "Der SETBUILDER-Server ist sofort beendet."));
         return;
       }
       const req = http.get(
@@ -150,7 +164,7 @@ function waitForServer() {
       );
       req.on("error", () => {
         if (Date.now() - started > 25000) {
-          reject(new Error(serverLog || "Der SETFORM-Server antwortet nicht."));
+          reject(new Error(serverLog || "Der SETBUILDER-Server antwortet nicht."));
           return;
         }
         setTimeout(tick, 250);
@@ -177,6 +191,8 @@ function startServer() {
       NODE_ENV: "production",
       HOSTNAME: APP_HOST,
       PORT: String(PORT),
+      SETBUILDER_DATA_DIR: dataDir(),
+      // Legacy env name still read by older server builds / docs.
       SETFORM_DATA_DIR: dataDir(),
     },
     stdio: ["ignore", "pipe", "pipe"],
@@ -192,7 +208,7 @@ function startServer() {
   server.on("exit", (code) => {
     if (code && code !== 0 && mainWindow && !mainWindow.isDestroyed()) {
       dialog.showErrorBox(
-        "SETFORM",
+        "SETBUILDER",
         `Der Server ist beendet (Code ${code}).\n\n${serverLog.slice(-800)}`,
       );
     }
@@ -214,15 +230,15 @@ function installMenu() {
   Menu.setApplicationMenu(
     Menu.buildFromTemplate([
       {
-        label: "SETFORM",
+        label: "SETBUILDER",
         submenu: [
-          { role: "about", label: "Über SETFORM" },
+          { role: "about", label: "Über SETBUILDER" },
           { type: "separator" },
-          { role: "hide", label: "SETFORM ausblenden" },
+          { role: "hide", label: "SETBUILDER ausblenden" },
           { role: "hideOthers", label: "Andere ausblenden" },
           { role: "unhide", label: "Alle einblenden" },
           { type: "separator" },
-          { role: "quit", label: "SETFORM beenden" },
+          { role: "quit", label: "SETBUILDER beenden" },
         ],
       },
       {
@@ -276,7 +292,7 @@ function createWindow() {
     height: 860,
     minWidth: 960,
     minHeight: 640,
-    title: "SETFORM",
+    title: "SETBUILDER",
     backgroundColor: "#121212",
     titleBarStyle: "hiddenInset",
     trafficLightPosition: { x: 16, y: 16 },
@@ -294,7 +310,7 @@ function createWindow() {
         overrideBrowserWindowOptions: {
           width: 960,
           height: 900,
-          title: "SETFORM Ausdruck",
+          title: "SETBUILDER Ausdruck",
           autoHideMenuBar: true,
           webPreferences: {
             contextIsolation: true,
@@ -344,7 +360,7 @@ if (!gotLock) {
     app.userAgentFallback = `Mozilla/5.0 (${platformToken}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${chrome} Safari/537.36`;
     installMenu();
     app.setAboutPanelOptions({
-      applicationName: "SETFORM",
+      applicationName: "SETBUILDER",
       applicationVersion: app.getVersion(),
       version: "Apple Silicon",
       credits: "DJ-Set-Vorbereitung",
@@ -360,9 +376,9 @@ if (!gotLock) {
       const raw = error instanceof Error ? error.message : String(error);
       const busy = raw.includes("EADDRINUSE");
       dialog.showErrorBox(
-        "SETFORM",
+        "SETBUILDER",
         busy
-          ? `Port ${PORT} ist schon belegt. Beende den anderen SETFORM- oder Dev-Server und starte die App erneut.`
+          ? `Port ${PORT} ist schon belegt. Beende den anderen SETBUILDER- oder Dev-Server und starte die App erneut.`
           : raw,
       );
       app.quit();

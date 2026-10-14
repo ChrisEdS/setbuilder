@@ -63,7 +63,7 @@ function unsupported(): PdbWriteError {
   return new PdbWriteError(
     "exports.pdbWrite.unsupported",
     undefined,
-    "Diese Stick-Datenbank hat ein Layout, das SETFORM nicht sicher beschreiben kann. Es wurde nichts verändert.",
+    "Diese Stick-Datenbank hat ein Layout, das SETBUILDER nicht sicher beschreiben kann. Es wurde nichts verändert.",
   );
 }
 
@@ -313,7 +313,7 @@ function readName(view: DataView, pos: number, limit: number): string {
 /** The name as it is stored: no control characters, trimmed, not absurdly long. */
 export function cleanPlaylistName(raw: string): string {
   const name = raw.replace(/[\u0000-\u001f\u007f]+/g, " ").replace(/\s+/g, " ").trim();
-  return (name || "SETFORM").slice(0, 80);
+  return (name || "SETBUILDER").slice(0, 80);
 }
 
 function uniqueName(wanted: string, taken: Set<string>): string {

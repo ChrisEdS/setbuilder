@@ -1,11 +1,11 @@
 {
   "name": "setform",
-  "productName": "SETFORM",
-  "version": "3.0.2",
+  "productName": "SETBUILDER",
+  "version": "3.1.0",
   "description": "DJ set preparation for rekordbox",
   "homepage": "https://github.com/ChrisEdS/setform",
   "author": {
-    "name": "SETFORM contributors",
+    "name": "SETBUILDER contributors",
     "email": "ChrisEdS@users.noreply.github.com"
   },
   "license": "MIT",
@@ -25,7 +25,7 @@
   },
   "build": {
     "appId": "de.setform.desktop",
-    "productName": "SETFORM",
+    "productName": "SETBUILDER",
     "asar": true,
     "directories": {
       "output": "dist"

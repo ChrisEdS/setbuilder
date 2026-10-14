@@ -306,7 +306,7 @@ export function extractStepsFor(t: Translate): { title: string; body: string }[]
 export const EXTRACT_STEPS: { title: string; body: string }[] = [
   {
     title: "1. Auf die Brief-Dauer packen",
-    body: "SETFORM nimmt Tracks aus der Playlist, bis die Ziel-Dauer des Briefs ungefähr erreicht ist. Was nicht in die Performance passt, bleibt als Alternative liegen.",
+    body: "SETBUILDER nimmt Tracks aus der Playlist, bis die Ziel-Dauer des Briefs ungefähr erreicht ist. Was nicht in die Performance passt, bleibt als Alternative liegen.",
   },
   {
     title: "2. Einen Bogen legen",

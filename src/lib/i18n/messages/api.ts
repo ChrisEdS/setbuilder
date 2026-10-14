@@ -59,7 +59,7 @@ const de = {
   "api.rekordbox.openFailed": "rekordbox ließ sich nicht öffnen.",
   "api.eject.badVolume": "Der Stick-Name ist unsicher oder kein Laufwerk.",
   "api.eject.notPioneer": "Unter diesem Namen liegt kein rekordbox-Stick.",
-  "api.eject.unsupported": "Auswerfen kann SETFORM nur auf dem Mac.",
+  "api.eject.unsupported": "Auswerfen kann SETBUILDER nur auf dem Mac.",
   "api.eject.failed": "Der Stick ließ sich nicht auswerfen.",
 } as const;
 
@@ -114,7 +114,7 @@ const en: Record<keyof typeof de, string> = {
   "api.rekordbox.openFailed": "rekordbox could not be opened.",
   "api.eject.badVolume": "The stick name is unsafe or not a volume.",
   "api.eject.notPioneer": "There is no rekordbox stick under that name.",
-  "api.eject.unsupported": "SETFORM can only eject on a Mac.",
+  "api.eject.unsupported": "SETBUILDER can only eject on a Mac.",
   "api.eject.failed": "The stick could not be ejected.",
 };
 

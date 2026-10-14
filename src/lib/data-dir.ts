@@ -2,7 +2,9 @@ import path from "path";
 
 /** Tokens and OAuth state. The Mac app points this at Application Support. */
 export function dataDir(): string {
-  const fromEnv = process.env.SETFORM_DATA_DIR?.trim();
+  const fromEnv =
+    process.env.SETBUILDER_DATA_DIR?.trim() ||
+    process.env.SETFORM_DATA_DIR?.trim();
   if (fromEnv) return fromEnv;
   return path.join(process.cwd(), ".data");
 }

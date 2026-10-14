@@ -1,9 +1,10 @@
 /**
  * Whether a Pioneer player is likely to find a library on this stick.
  * We cannot talk to the CDJ. We can see the files the player looks for,
- * and whether rekordbox's device library is newer than the file SETFORM writes.
+ * and whether rekordbox's device library is newer than the file SETBUILDER writes.
  */
 
+import { isBrandPlaylistName, SIDECAR_DIR, SIDECAR_DIR_LEGACY } from "@/lib/brand";
 import { parseRekordboxPdb } from "@/lib/rekordbox-pdb";
 import {
   listLibraryAsides,
@@ -42,7 +43,7 @@ export type StickHealth = {
   exportExt: boolean;
   analysis: boolean;
   sidecar: boolean;
-  /** OneLibrary was moved to SETFORM-Backup so Device Library players read export.pdb. */
+  /** OneLibrary was moved to SETBUILDER-Backup so Device Library players read export.pdb. */
   libraryAside: boolean;
 };
 
@@ -56,8 +57,8 @@ export type StickHealthInput = {
   libraryAside?: boolean;
 };
 
-function setformNames(names: string[]): string[] {
-  return names.filter((name) => name.startsWith("SETFORM - "));
+function brandPlaylistNames(names: string[]): string[] {
+  return names.filter((name) => isBrandPlaylistName(name));
 }
 
 /** Pure check. Used by the file-list and directory-handle readers. */
@@ -76,7 +77,7 @@ export function assessStick(input: StickHealthInput): StickHealth {
       const library = parseRekordboxPdb(input.pdb.buffer.slice(0));
       pdb.tracks = library.tracks.length;
       pdb.playlists = library.playlists.filter((item) => item.kind === "playlist").length;
-      pdb.setform = setformNames(library.playlists.map((item) => item.name));
+      pdb.setform = brandPlaylistNames(library.playlists.map((item) => item.name));
     } catch (error) {
       pdb.error = error instanceof Error ? error.message : "unreadable";
     }
@@ -278,7 +279,9 @@ export async function inspectStick(root: DirLike): Promise<StickHealth> {
     }
     if (await file(rekordbox, "exportExt.pdb")) exportExt = true;
   }
-  const sidecar = Boolean(await child(root, "SETFORM"));
+  const sidecar = Boolean(
+    (await child(root, SIDECAR_DIR)) ?? (await child(root, SIDECAR_DIR_LEGACY)),
+  );
   const libraryAside = (await listLibraryAsides(root)).length > 0;
 
   return assessStick({ pioneer, pdb, libraryDb, exportExt, analysis, sidecar, libraryAside });

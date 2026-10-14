@@ -80,7 +80,7 @@ function release(vector: VectorFloat | null): void {
 }
 
 /**
- * Energy is the product for SETFORM. Key/BPM are best-effort and must not
+ * Energy is the product for SETBUILDER. Key/BPM are best-effort and must not
  * block energy when Essentia returns an unrecognized key.
  */
 async function analyze(samples: Float32Array, sampleRate: number): Promise<Analysis> {
@@ -142,7 +142,7 @@ async function analyze(samples: Float32Array, sampleRate: number): Promise<Analy
       const value = Number(tempo.bpm);
       bpm = Number.isFinite(value) && value > 0 ? Math.round(value * 10) / 10 : null;
     } catch {
-      // BPM is optional for SETFORM energy writes.
+      // BPM is optional for SETBUILDER energy writes.
     }
   } finally {
     release(keySignal);

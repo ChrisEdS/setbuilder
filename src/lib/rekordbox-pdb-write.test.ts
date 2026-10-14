@@ -16,7 +16,7 @@ import {
 test("adds one playlist and leaves everything else byte for byte alone", () => {
   const source = fixture();
   const before = parseRekordboxPdb(source.slice(0));
-  const result = addPlaylistToPdb(source, { name: "SETFORM - Friday", trackIds: [7, 8, 7] });
+  const result = addPlaylistToPdb(source, { name: "SETBUILDER - Friday", trackIds: [7, 8, 7] });
 
   assert.equal(result.buffer.byteLength, source.byteLength);
   assert.ok(result.changedPages.length <= 2);
@@ -24,8 +24,8 @@ test("adds one playlist and leaves everything else byte for byte alone", () => {
   assert.deepEqual(after.tracks, before.tracks);
   const added = after.playlists.find((playlist) => playlist.id === result.playlistId);
   assert.ok(added);
-  assert.equal(added.name, "SETFORM - Friday");
-  assert.equal(added.path, "SETFORM - Friday");
+  assert.equal(added.name, "SETBUILDER - Friday");
+  assert.equal(added.path, "SETBUILDER - Friday");
   assert.deepEqual(added.trackIds, [7, 8, 7]);
   for (const old of before.playlists) {
     assert.deepEqual(

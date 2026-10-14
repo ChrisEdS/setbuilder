@@ -15,12 +15,12 @@ import {
   isLang,
   LANG_COOKIE,
   LANG_STORAGE_KEY,
+  LANG_STORAGE_KEY_LEGACY,
   localeFor,
   type Lang,
   type Translate,
 } from "./core";
-
-const LANG_EVENT = "setform-lang";
+import { LANG_EVENT, readLocal, writeLocal } from "@/lib/storage-keys";
 
 /** The choice of this session, so the switch still works when storage is blocked. */
 let sessionLang: Lang | null = null;
@@ -28,7 +28,7 @@ let sessionLang: Lang | null = null;
 function readLang(): Lang {
   if (sessionLang) return sessionLang;
   try {
-    const stored = localStorage.getItem(LANG_STORAGE_KEY);
+    const stored = readLocal(LANG_STORAGE_KEY, LANG_STORAGE_KEY_LEGACY);
     if (isLang(stored)) return stored;
   } catch {
     // storage blocked: fall through to the browser language
@@ -39,7 +39,13 @@ function readLang(): Lang {
 function subscribe(onChange: () => void) {
   // Another tab switched: follow storage again.
   const onStorage = (event: StorageEvent) => {
-    if (event.key === null || event.key === LANG_STORAGE_KEY) sessionLang = null;
+    if (
+      event.key === null ||
+      event.key === LANG_STORAGE_KEY ||
+      event.key === LANG_STORAGE_KEY_LEGACY
+    ) {
+      sessionLang = null;
+    }
     onChange();
   };
   window.addEventListener("storage", onStorage);
@@ -67,7 +73,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const setLang = useCallback((next: Lang) => {
     sessionLang = next;
     try {
-      localStorage.setItem(LANG_STORAGE_KEY, next);
+      writeLocal(LANG_STORAGE_KEY, next);
     } catch {
       // not persisted, still applied for this session
     }

@@ -141,7 +141,7 @@ test("the preview writes nothing", async () => {
   const plan = await planStickWrite(root, tracks, "Friday");
   assert.equal(plan.refusal, null);
   assert.equal(plan.match.trackIds.length, 2);
-  assert.equal(plan.playlistName, "SETFORM - Friday");
+  assert.equal(plan.playlistName, "SETBUILDER - Friday");
   assert.deepEqual(db.data, before);
   assert.equal(root.dirs.has(BACKUP_DIR), false);
 });
@@ -158,7 +158,7 @@ test("writes the playlist, keeps a verified backup and leaves the rest alone", a
 
   const after = parseRekordboxPdb(db.data.slice().buffer as ArrayBuffer);
   const before = parseRekordboxPdb(original.slice().buffer as ArrayBuffer);
-  const added = after.playlists.find((item) => item.name === "SETFORM - Friday");
+  const added = after.playlists.find((item) => item.name === "SETBUILDER - Friday");
   assert.deepEqual(added?.trackIds, [7, 8]);
   assert.deepEqual(after.tracks, before.tracks);
   assert.equal(await latestBackupName(root), done.backupName);
@@ -230,16 +230,16 @@ test("writes alternatives as a second playlist next to the set", async () => {
   assert.equal(plan.performanceCount, 1);
   assert.equal(plan.alternativesCount, 1);
   assert.equal(plan.match.trackIds.length, 2);
-  assert.equal(plan.alternativesName, "SETFORM - Friday Alternativen");
+  assert.equal(plan.alternativesName, "SETBUILDER - Friday Alternativen");
   assert.equal(plan.alreadyOnStick, false);
 
   const done = await writeSetToStick(root, mixed, "Friday", new Date(2026, 9, 14, 2, 0, 0));
-  assert.equal(done.playlistName, "SETFORM - Friday");
-  assert.equal(done.alternativesName, "SETFORM - Friday Alternativen");
+  assert.equal(done.playlistName, "SETBUILDER - Friday");
+  assert.equal(done.alternativesName, "SETBUILDER - Friday Alternativen");
   const after = parseRekordboxPdb(db.data.slice().buffer as ArrayBuffer);
-  assert.deepEqual(after.playlists.find((item) => item.name === "SETFORM - Friday")?.trackIds, [7]);
+  assert.deepEqual(after.playlists.find((item) => item.name === "SETBUILDER - Friday")?.trackIds, [7]);
   assert.deepEqual(
-    after.playlists.find((item) => item.name === "SETFORM - Friday Alternativen")?.trackIds,
+    after.playlists.find((item) => item.name === "SETBUILDER - Friday Alternativen")?.trackIds,
     [8],
   );
 });
@@ -250,7 +250,7 @@ test("a second write does not duplicate the set, it only adds missing alternativ
   const namesAfterFirst = parseRekordboxPdb(db.data.slice().buffer as ArrayBuffer).playlists.map(
     (item) => item.name,
   );
-  assert.equal(namesAfterFirst.filter((name) => name.startsWith("SETFORM - Friday")).length, 1);
+  assert.equal(namesAfterFirst.filter((name) => name.startsWith("SETBUILDER - Friday")).length, 1);
 
   const mixed = [
     { name: "Night Drive", artists: ["Ada"], filePath: "/Night Drive.mp3", role: "groove" as const },
@@ -259,14 +259,14 @@ test("a second write does not duplicate the set, it only adds missing alternativ
   const plan = await planStickWrite(root, mixed, "Friday");
   assert.equal(plan.skippedPerformance, true);
   assert.equal(plan.alreadyOnStick, false);
-  assert.equal(plan.alternativesName, "SETFORM - Friday Alternativen");
+  assert.equal(plan.alternativesName, "SETBUILDER - Friday Alternativen");
 
   const done = await writeSetToStick(root, mixed, "Friday", new Date(2026, 9, 14, 2, 11, 0));
-  assert.equal(done.playlistName, "SETFORM - Friday");
-  assert.equal(done.alternativesName, "SETFORM - Friday Alternativen");
+  assert.equal(done.playlistName, "SETBUILDER - Friday");
+  assert.equal(done.alternativesName, "SETBUILDER - Friday Alternativen");
   const names = parseRekordboxPdb(db.data.slice().buffer as ArrayBuffer).playlists.map((item) => item.name);
-  assert.equal(names.filter((name) => name === "SETFORM - Friday").length, 1);
-  assert.ok(names.includes("SETFORM - Friday Alternativen"));
+  assert.equal(names.filter((name) => name === "SETBUILDER - Friday").length, 1);
+  assert.ok(names.includes("SETBUILDER - Friday Alternativen"));
 
   await assert.rejects(writeSetToStick(root, mixed, "Friday"), /liegt schon/);
 });
@@ -280,7 +280,7 @@ test("an English alternatives label does not create a second playlist", async ()
   await writeSetToStick(root, mixed, "Friday", new Date(2026, 9, 14, 3, 0, 0), "Alternativen");
   const plan = await planStickWrite(root, mixed, "Friday", "Alternatives");
   assert.equal(plan.alreadyOnStick, true);
-  assert.equal(plan.alternativesName, "SETFORM - Friday Alternativen");
+  assert.equal(plan.alternativesName, "SETBUILDER - Friday Alternativen");
 });
 
 test("keeps only the newest backups", async () => {
@@ -303,9 +303,9 @@ test("updating a set restores the backup and writes the current tracks", async (
   await writeSetToStick(root, tracks, "Friday", new Date(2026, 9, 14, 3, 10, 0));
   const onlyDrive = [{ name: "Night Drive", artists: ["Ada"], filePath: "/Night Drive.mp3" }];
   const done = await rewriteSetToStick(root, onlyDrive, "Friday", new Date(2026, 9, 14, 3, 11, 0));
-  assert.equal(done.playlistName, "SETFORM - Friday");
+  assert.equal(done.playlistName, "SETBUILDER - Friday");
   const after = parseRekordboxPdb(db.data.slice().buffer as ArrayBuffer);
-  assert.deepEqual(after.playlists.find((item) => item.name === "SETFORM - Friday")?.trackIds, [7]);
+  assert.deepEqual(after.playlists.find((item) => item.name === "SETBUILDER - Friday")?.trackIds, [7]);
 });
 
 test("writes XML and M3U next to the database", async () => {
@@ -336,8 +336,8 @@ test("writes XML and M3U next to the database", async () => {
     ],
   };
   const files = await writeStickSidecars(root, draft);
-  assert.ok(files.includes("SETFORM-rekordbox.xml"));
-  const xml = root.dirs.get(SIDECAR_DIR)?.files.get("SETFORM-rekordbox.xml");
+  assert.ok(files.includes("SETBUILDER-rekordbox.xml"));
+  const xml = root.dirs.get(SIDECAR_DIR)?.files.get("SETBUILDER-rekordbox.xml");
   assert.ok(xml && new TextDecoder().decode(xml.data).includes("Night Drive"));
 });
 
@@ -350,7 +350,7 @@ test("restores the newest backup", async () => {
   const name = await restoreLatestBackup(root);
   assert.equal(name, "export-20261013-110000.pdb");
   const names = parseRekordboxPdb(db.data.slice().buffer as ArrayBuffer).playlists.map((item) => item.name);
-  assert.ok(names.includes("SETFORM - One") && !names.includes("SETFORM - Two"));
+  assert.ok(names.includes("SETBUILDER - One") && !names.includes("SETBUILDER - Two"));
 
   const empty = stick();
   await assert.rejects(restoreLatestBackup(empty.root), /Sicherung/);

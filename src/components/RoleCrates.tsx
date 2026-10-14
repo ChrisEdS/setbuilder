@@ -28,6 +28,12 @@ import {
 import { useI18n } from "@/lib/i18n/react";
 import { TrackArt } from "@/components/TrackArt";
 import type { LibraryRow } from "@/components/LibraryPanel";
+import {
+  CRATE_PREFS_KEY,
+  CRATE_PREFS_KEY_LEGACY,
+  readLocal,
+  writeLocal,
+} from "@/lib/storage-keys";
 import { PHASE_ENERGY, PLAN_B_MIN, planBCount, planBState } from "@/lib/energy";
 import {
   bestPhaseFor,
@@ -77,7 +83,7 @@ type CratePrefs = {
   wide: TrackRole | null;
 };
 
-const STORAGE_KEY = "setform-crate-prefs-v1";
+const STORAGE_KEY = CRATE_PREFS_KEY;
 const MIN_HEIGHT = 140;
 const MAX_HEIGHT = 720;
 const DEFAULT_HEIGHT: Record<TrackRole, number> = {
@@ -138,7 +144,7 @@ function parsePrefs(raw: string | null): CratePrefs {
 
 function readPrefs(): CratePrefs {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = readLocal(STORAGE_KEY, CRATE_PREFS_KEY_LEGACY);
     if (raw === cachedRaw) return cachedPrefs;
     cachedRaw = raw;
     cachedPrefs = parsePrefs(raw);
@@ -152,7 +158,7 @@ function writePrefs(next: CratePrefs) {
   cachedPrefs = next;
   cachedRaw = JSON.stringify(next);
   try {
-    localStorage.setItem(STORAGE_KEY, cachedRaw);
+    writeLocal(STORAGE_KEY, cachedRaw);
   } catch {
     // ignore quota
   }

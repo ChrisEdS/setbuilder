@@ -84,16 +84,16 @@ export function buildRekordboxXml(draft: SetDraft, t: Translate = tDe): string {
     .map((_, index) => `<TRACK Key="${main.length + index + 1}" />`)
     .join("");
   const folders = [
-    `<NODE Name="${escapeXml(draft.title || "SETFORM")}" Type="1" KeyType="0" Entries="${main.length}">${mainKeys}</NODE>`,
+    `<NODE Name="${escapeXml(draft.title || "SETBUILDER")}" Type="1" KeyType="0" Entries="${main.length}">${mainKeys}</NODE>`,
   ];
   if (safety.length) {
     folders.push(
-      `<NODE Name="${escapeXml(t("exports.booth.alternativesPlaylist", { title: draft.title || "SETFORM" }))}" Type="1" KeyType="0" Entries="${safety.length}">${safetyKeys}</NODE>`,
+      `<NODE Name="${escapeXml(t("exports.booth.alternativesPlaylist", { title: draft.title || "SETBUILDER" }))}" Type="1" KeyType="0" Entries="${safety.length}">${safetyKeys}</NODE>`,
     );
   }
   return `<?xml version="1.0" encoding="UTF-8"?>
 <DJ_PLAYLISTS Version="1.0.0">
-  <PRODUCT Name="SETFORM" Version="0.1.0" Company="SETFORM"/>
+  <PRODUCT Name="SETBUILDER" Version="0.1.0" Company="SETBUILDER"/>
   <COLLECTION Entries="${ordered.length}">
 ${collection}
   </COLLECTION>
@@ -138,10 +138,10 @@ export function buildM3uAlternatives(draft: SetDraft, t: Translate = tDe): strin
 }
 
 export function boothFileName(title: string, extension: "m3u" | "xml" | "txt"): string {
-  const slug = (title || "setform-set")
+  const slug = (title || "setbuilder-set")
     .replace(/[^\p{L}\p{N}]+/gu, "-")
     .replace(/^-|-$/g, "");
-  return `${slug || "setform-set"}.${extension}`;
+  return `${slug || "setbuilder-set"}.${extension}`;
 }
 
 export function downloadText(filename: string, content: string, mime: string) {

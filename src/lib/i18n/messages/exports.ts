@@ -7,7 +7,7 @@ const de = {
   // PDF / print view
   "exports.pdf.title": "{title} — Ausdruck",
   "exports.pdf.untitled": "Ohne Titel",
-  "exports.pdf.brand": "SETFORM · Ausdruck",
+  "exports.pdf.brand": "SETBUILDER · Ausdruck",
   "exports.pdf.toolbarHint": "Ausdruck für die Kabine. Im Druckdialog „Als PDF speichern“ wählen.",
   "exports.pdf.print": "Drucken / PDF",
   "exports.pdf.close": "Schließen",
@@ -23,7 +23,7 @@ const de = {
   "exports.pdf.colFromPrevious": "Von davor",
   "exports.pdf.briefOverBrief": " · über dem Brief",
   "exports.pdf.briefTrackCounts": "{performance} Performance · {alternatives} Alternativen",
-  "exports.pdf.popupBlocked": "Popup blockiert — bitte Popups für SETFORM erlauben und erneut exportieren.",
+  "exports.pdf.popupBlocked": "Popup blockiert — bitte Popups für SETBUILDER erlauben und erneut exportieren.",
 
   // Text export
   "exports.text.target": "Ziel: {target} min · Ist: {actual}",
@@ -58,7 +58,7 @@ const de = {
   "exports.pdb.tooSmall": "Die Datei ist zu klein für eine rekordbox export.pdb.",
   "exports.pdb.notPdb": "Das ist keine rekordbox export.pdb. Auf dem Stick liegt sie unter PIONEER/rekordbox/export.pdb.",
   "exports.pdb.empty": "export.pdb gelesen, aber ohne Tracks oder Playlists.",
-  "exports.pdbWrite.unsupported": "Diese Stick-Datenbank hat ein Layout, das SETFORM nicht sicher beschreiben kann. Es wurde nichts verändert.",
+  "exports.pdbWrite.unsupported": "Diese Stick-Datenbank hat ein Layout, das SETBUILDER nicht sicher beschreiben kann. Es wurde nichts verändert.",
   "exports.pdbWrite.noRoom": "In der Stick-Datenbank ist kein Platz mehr für eine weitere Playlist. Es wurde nichts verändert.",
   "exports.pdbWrite.unknownTracks": "Ein Titel des Sets liegt nicht in dieser Stick-Datenbank.",
   "exports.pdbWrite.verifyFailed": "Die Prüfung der neuen Stick-Datenbank ist fehlgeschlagen ({detail}).",
@@ -68,10 +68,10 @@ const de = {
   "exports.stickWrite.backupFailed": "Die Sicherung konnte nicht geschrieben werden. Es wurde nichts verändert.",
   "exports.stickWrite.readBack": "Die geschriebene Datei weicht von der geplanten ab.",
   "exports.stickWrite.rolledBack": "Die Stick-Datenbank hat die Prüfung nach dem Schreiben nicht bestanden. Der vorherige Stand ist wiederhergestellt. ({detail})",
-  "exports.stickWrite.restoreFailed": "Die Stick-Datenbank konnte nicht zurückgesetzt werden. Bitte den Stick in rekordbox neu exportieren oder die Datei aus SETFORM-Backup zurückkopieren.",
-  "exports.stickWrite.noBackup": "Auf diesem Stick gibt es noch keine SETFORM-Sicherung.",
+  "exports.stickWrite.restoreFailed": "Die Stick-Datenbank konnte nicht zurückgesetzt werden. Bitte den Stick in rekordbox neu exportieren oder die Datei aus SETBUILDER-Backup zurückkopieren.",
+  "exports.stickWrite.noBackup": "Auf diesem Stick gibt es noch keine SETBUILDER-Sicherung.",
   "exports.stickWrite.removeDenied": "Dieser Stick darf die Player-Library nicht beiseitelegen. Chrome, Edge oder die Desktop-App verwenden.",
-  "exports.stickWrite.asideFailed": "exportLibrary.db konnte nicht beiseitegelegt werden. Die Sicherung liegt in SETFORM-Backup.",
+  "exports.stickWrite.asideFailed": "exportLibrary.db konnte nicht beiseitegelegt werden. Die Sicherung liegt in SETBUILDER-Backup.",
   "exports.stickWrite.noAside": "Auf diesem Stick liegt keine beiseitegelegte Player-Library.",
 } as const;
 
@@ -80,7 +80,7 @@ const en: Record<keyof typeof de, string> = {
 
   "exports.pdf.title": "{title} — Printout",
   "exports.pdf.untitled": "Untitled",
-  "exports.pdf.brand": "SETFORM · Printout",
+  "exports.pdf.brand": "SETBUILDER · Printout",
   "exports.pdf.toolbarHint": "Printout for the booth. Choose “Save as PDF” in the print dialog.",
   "exports.pdf.print": "Print / PDF",
   "exports.pdf.close": "Close",
@@ -96,7 +96,7 @@ const en: Record<keyof typeof de, string> = {
   "exports.pdf.colFromPrevious": "From previous",
   "exports.pdf.briefOverBrief": " · over the brief",
   "exports.pdf.briefTrackCounts": "{performance} Performance · {alternatives} Alternatives",
-  "exports.pdf.popupBlocked": "Popup blocked — please allow popups for SETFORM and export again.",
+  "exports.pdf.popupBlocked": "Popup blocked — please allow popups for SETBUILDER and export again.",
 
   "exports.text.target": "Target: {target} min · Actual: {actual}",
 
@@ -126,7 +126,7 @@ const en: Record<keyof typeof de, string> = {
   "exports.pdb.tooSmall": "The file is too small to be a rekordbox export.pdb.",
   "exports.pdb.notPdb": "This is not a rekordbox export.pdb. On the stick it is located at PIONEER/rekordbox/export.pdb.",
   "exports.pdb.empty": "export.pdb was read, but it has no tracks or playlists.",
-  "exports.pdbWrite.unsupported": "This stick database has a layout SETFORM can't safely write to. Nothing was changed.",
+  "exports.pdbWrite.unsupported": "This stick database has a layout SETBUILDER can't safely write to. Nothing was changed.",
   "exports.pdbWrite.noRoom": "The stick database has no room left for another playlist. Nothing was changed.",
   "exports.pdbWrite.unknownTracks": "A track of the set is not in this stick database.",
   "exports.pdbWrite.verifyFailed": "Checking the new stick database failed ({detail}).",
@@ -136,10 +136,10 @@ const en: Record<keyof typeof de, string> = {
   "exports.stickWrite.backupFailed": "The backup could not be written. Nothing was changed.",
   "exports.stickWrite.readBack": "The written file differs from the planned one.",
   "exports.stickWrite.rolledBack": "The stick database failed the check after writing. The previous state has been restored. ({detail})",
-  "exports.stickWrite.restoreFailed": "The stick database could not be reset. Please export the stick again in rekordbox, or copy the file from SETFORM-Backup back.",
-  "exports.stickWrite.noBackup": "There is no SETFORM backup on this stick yet.",
+  "exports.stickWrite.restoreFailed": "The stick database could not be reset. Please export the stick again in rekordbox, or copy the file from SETBUILDER-Backup back.",
+  "exports.stickWrite.noBackup": "There is no SETBUILDER backup on this stick yet.",
   "exports.stickWrite.removeDenied": "This stick cannot set the player library aside. Use Chrome, Edge or the desktop app.",
-  "exports.stickWrite.asideFailed": "exportLibrary.db could not be set aside. The backup is in SETFORM-Backup.",
+  "exports.stickWrite.asideFailed": "exportLibrary.db could not be set aside. The backup is in SETBUILDER-Backup.",
   "exports.stickWrite.noAside": "There is no set-aside player library on this stick.",
 };
 

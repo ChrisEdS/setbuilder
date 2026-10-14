@@ -1,3 +1,9 @@
+import {
+  LANG_COOKIE,
+  LANG_COOKIE_LEGACY,
+  LANG_STORAGE_KEY,
+  LANG_STORAGE_KEY_LEGACY,
+} from "@/lib/storage-keys";
 import { messages, type MessageKey } from "./messages";
 
 export type Lang = "de" | "en";
@@ -6,8 +12,12 @@ export type Translate = (key: MessageKey, vars?: Vars) => string;
 export type { MessageKey };
 
 export const LANGS: readonly Lang[] = ["de", "en"];
-export const LANG_STORAGE_KEY = "setform-lang";
-export const LANG_COOKIE = "setform-lang";
+export {
+  LANG_COOKIE,
+  LANG_COOKIE_LEGACY,
+  LANG_STORAGE_KEY,
+  LANG_STORAGE_KEY_LEGACY,
+};
 
 export function isLang(value: unknown): value is Lang {
   return value === "de" || value === "en";
@@ -19,15 +29,23 @@ export function detectLang(source: string | null | undefined): Lang {
   return first.startsWith("de") ? "de" : "en";
 }
 
+function langFromCookie(cookie: string | null | undefined): Lang | null {
+  for (const name of [LANG_COOKIE, LANG_COOKIE_LEGACY]) {
+    const match = (cookie ?? "").match(
+      new RegExp(`(?:^|;\\s*)${name}=([a-z]{2})`),
+    );
+    if (match && isLang(match[1])) return match[1];
+  }
+  return null;
+}
+
 /** Pick the language from a Cookie header, then from Accept-Language. */
 export function langFromHeaders(
   cookie: string | null | undefined,
   acceptLanguage: string | null | undefined,
 ): Lang {
-  const match = (cookie ?? "").match(
-    new RegExp(`(?:^|;\\s*)${LANG_COOKIE}=([a-z]{2})`),
-  );
-  if (match && isLang(match[1])) return match[1];
+  const fromCookie = langFromCookie(cookie);
+  if (fromCookie) return fromCookie;
   return detectLang(acceptLanguage);
 }
 

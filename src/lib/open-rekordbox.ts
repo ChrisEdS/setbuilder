@@ -1,6 +1,6 @@
 /**
  * Find and launch rekordbox on this machine. Used so the stick can be
- * opened as a device and ejected from rekordbox after SETFORM writes.
+ * opened as a device and ejected from rekordbox after SETBUILDER writes.
  */
 
 import { spawn } from "node:child_process";
