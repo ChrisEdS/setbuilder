@@ -4,12 +4,22 @@ import {
   PLAN_B_MIN,
   energyFromRekordboxTags,
   energyStep,
+  isMetadataComment,
   parseEnergyField,
   parseEnergyLevel,
   planBCount,
   planBState,
 } from "./energy.ts";
 import { parseKeyImportText } from "./key-import.ts";
+
+test("tag-only comments are metadata, real set notes are not", () => {
+  assert.equal(isMetadataComment("Energy 6"), true);
+  assert.equal(isMetadataComment("7A - Energy 6"), true);
+  assert.equal(isMetadataComment("Energie 4"), true);
+  assert.equal(isMetadataComment(""), true);
+  assert.equal(isMetadataComment("Vocal rein bei 2:10"), false);
+  assert.equal(isMetadataComment("Intro | Energy 6"), false);
+});
 
 test("reads the Mixed In Key comment format", () => {
   assert.equal(parseEnergyLevel("7A - Energy 6"), 6);

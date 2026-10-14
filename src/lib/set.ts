@@ -56,7 +56,10 @@ export type SetTrack = {
   /** Energy Level 1–10 as Mixed In Key rates it (from the comment tag or set by hand) */
   energyLevel?: number;
   note: string;
-  /** Free-form DJ comment for manual arrange */
+  /**
+   * Set-only note for booth prep (cue, floor). Not written to MP3 tags —
+   * rekordbox/MP3 comments stay on the stick file.
+   */
   comment?: string;
   /** Where the track link came from */
   source?: TrackSource;

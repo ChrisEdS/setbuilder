@@ -19,6 +19,19 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  // Desktop/webpack builds: keep Node builtins out of the browser bundle.
+  // (Turbopack uses the web WASM build in src/lib/openkey — do not alias `fs` globally.)
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve = config.resolve ?? {};
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+      };
+    }
+    return config;
+  },
 };
 
 export default nextConfig;

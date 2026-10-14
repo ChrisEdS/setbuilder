@@ -27,11 +27,9 @@ const de = {
   "builder.brief.vibe": "Vibe / Genre-Arc",
   "builder.brief.venue": "Venue / Soundsystem",
   "builder.brief.slotKind": "Slot-Art",
-  "builder.brief.slotNote": "Slot-Notiz",
   "builder.brief.audience": "Audience",
   "builder.brief.gear": "Gear",
   "builder.brief.duration": "Dauer (Min)",
-  "builder.brief.slotText": "{kind} · {minutes} Min",
 
   // Folds
   "builder.library.title": "Set laden & Keys",
@@ -143,6 +141,26 @@ const de = {
   "builder.view.keys.hint":
     "Phasen im Slot, Energie pro Track und Camelot-Keys entlang der Reihenfolge, mit Mix-Score und Clashes.",
   "builder.tool.sort": "Sortieren",
+  "builder.tool.energy": "Energie aus Dateien",
+  "builder.tool.energyTip":
+    "Berechnet Energy Level 1–10 aus den Stick-Dateien (Essentia), setzt es im Draft und schreibt es in die MP3-Tags. Die Set-Notiz bleibt unangetastet; Key und BPM auch.",
+  "builder.tool.energyBusy": "Energie…",
+  "builder.energy.confirm":
+    "Energie aus Stick-Dateien berechnen und in die MP3 auf dem Stick schreiben? Das Audio bleibt unverändert; Key und BPM werden nicht überschrieben. Chrome, Edge oder Desktop nötig.",
+  "builder.energy.confirmMissing":
+    "OK = nur die {missing} Tracks ohne Energie. Abbrechen = alle {total} mit Datei neu berechnen.",
+  "builder.energy.confirmAll":
+    "Alle Tracks haben schon Energie. Alle {total} mit Datei neu berechnen und schreiben?",
+  "builder.energy.noStick":
+    "Kein Stick verbunden. Unter „Set laden & Keys“ den Stick wählen (Chrome / Edge / Desktop).",
+  "builder.energy.noFile":
+    "Keine Tracks mit Stick-Pfad. Set vom Stick laden, damit die Dateien gefunden werden.",
+  "builder.energy.notMp3": "Kein MP3 — nur Draft",
+  "builder.energy.progress": "{done}/{total} · {skipped} übersprungen · {errors} Fehler",
+  "builder.energy.done":
+    "Fertig: {set} gesetzt, {written} in MP3 geschrieben · {skipped} übersprungen · {errors} Fehler",
+  "builder.energy.denied":
+    "Kein Schreibzugriff auf den Stick. Im Dialog erlauben, sonst wird nur der Draft aktualisiert.",
   "builder.sort.harmonic": "Harmonisch",
   "builder.sort.harmonicHint":
     "Nächster Track: verwandter Camelot-Key, weiche Energie, kleine BPM-Schritte. Hebt den Mix-Score, senkt Clashes.",
@@ -192,9 +210,11 @@ const de = {
   "builder.row.keyOpen": "Key offen",
   "builder.row.bpmOpen": "BPM offen",
   "builder.row.energy": "Energie {level}",
-  "builder.row.commentTag": "Kommentar",
-  "builder.row.comment": "Kommentar",
-  "builder.row.commentPlaceholder": "Cue, Energy, Vocal rein, Floor-Notiz…",
+  "builder.row.setNoteTag": "Set-Notiz",
+  "builder.row.setNote": "Set-Notiz",
+  "builder.row.setNotePlaceholder": "Cue, Vocal rein, Floor-Notiz…",
+  "builder.row.setNoteTip":
+    "Nur für dieses Set in SETFORM. Wird nicht in die MP3-Tags geschrieben — anders als der Kommentar in rekordbox.",
   "builder.row.bpmPlaceholder": "BPM",
   "builder.row.bpmAria": "BPM für {name}",
   "builder.row.keyOption": "Key",
@@ -392,11 +412,9 @@ const en: Record<keyof typeof de, string> = {
   "builder.brief.vibe": "Vibe / genre arc",
   "builder.brief.venue": "Venue / sound system",
   "builder.brief.slotKind": "Slot type",
-  "builder.brief.slotNote": "Slot note",
   "builder.brief.audience": "Audience",
   "builder.brief.gear": "Gear",
   "builder.brief.duration": "Duration (min)",
-  "builder.brief.slotText": "{kind} · {minutes} min",
 
   "builder.library.title": "Load set & keys",
   "builder.library.keys": "{done}/{total} keys",
@@ -503,6 +521,26 @@ const en: Record<keyof typeof de, string> = {
   "builder.view.keys.hint":
     "Phases in the slot, energy per track and Camelot keys along the order, with mix score and clashes.",
   "builder.tool.sort": "Sort",
+  "builder.tool.energy": "Energy from files",
+  "builder.tool.energyTip":
+    "Computes Energy Level 1–10 from stick files (Essentia), sets it in the draft, and writes it into MP3 tags. The set note stays untouched; so do key and BPM.",
+  "builder.tool.energyBusy": "Energy…",
+  "builder.energy.confirm":
+    "Compute energy from stick files and write it into the MP3s on the stick? Audio stays unchanged; key and BPM are not overwritten. Needs Chrome, Edge or desktop.",
+  "builder.energy.confirmMissing":
+    "OK = only the {missing} tracks without energy. Cancel = recompute all {total} with a file.",
+  "builder.energy.confirmAll":
+    "Every track already has energy. Recompute and write all {total} with a file?",
+  "builder.energy.noStick":
+    "No stick connected. Choose the stick under “Load set & keys” (Chrome / Edge / desktop).",
+  "builder.energy.noFile":
+    "No tracks with a stick path. Load the set from the stick so the files can be found.",
+  "builder.energy.notMp3": "Not MP3 — draft only",
+  "builder.energy.progress": "{done}/{total} · {skipped} skipped · {errors} errors",
+  "builder.energy.done":
+    "Done: {set} set, {written} written to MP3 · {skipped} skipped · {errors} errors",
+  "builder.energy.denied":
+    "No write access to the stick. Allow it in the dialog, otherwise only the draft is updated.",
   "builder.sort.harmonic": "Harmonic",
   "builder.sort.harmonicHint":
     "Next track: related Camelot key, smooth energy, small BPM steps. Raises the mix score, cuts clashes.",
@@ -551,9 +589,11 @@ const en: Record<keyof typeof de, string> = {
   "builder.row.keyOpen": "Key open",
   "builder.row.bpmOpen": "BPM open",
   "builder.row.energy": "Energy {level}",
-  "builder.row.commentTag": "Comment",
-  "builder.row.comment": "Comment",
-  "builder.row.commentPlaceholder": "Cue, energy, vocal in, floor note…",
+  "builder.row.setNoteTag": "Set note",
+  "builder.row.setNote": "Set note",
+  "builder.row.setNotePlaceholder": "Cue, vocal in, floor note…",
+  "builder.row.setNoteTip":
+    "Only for this set in SETFORM. Not written to MP3 tags — unlike the comment in rekordbox.",
   "builder.row.bpmPlaceholder": "BPM",
   "builder.row.bpmAria": "BPM for {name}",
   "builder.row.keyOption": "Key",

@@ -37,6 +37,27 @@ export function stickFileCount(): number {
   return stickFiles.length;
 }
 
+/** Look up a remembered stick File by rekordbox path (analyze-only fallback). */
+export function lookupRememberedStickFile(
+  filePath: string,
+  filename = "",
+): File | null {
+  if (!stickFiles.length) return null;
+  const match = matchStickFile(
+    stickFiles.map((file) => ({
+      name: file.name,
+      path: file.webkitRelativePath || file.name,
+    })),
+    filePath,
+    filename,
+  );
+  if (!match) return null;
+  const key = match.path || match.name;
+  return (
+    stickFiles.find((item) => (item.webkitRelativePath || item.name) === key) ?? null
+  );
+}
+
 export function stickAudioUrl(filePath: string, filename = ""): string | null {
   if (typeof URL === "undefined" || !stickFiles.length) return null;
   const match = matchStickFile(

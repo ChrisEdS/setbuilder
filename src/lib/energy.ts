@@ -41,6 +41,31 @@ export function parseEnergyLevel(text: string | undefined | null): number | unde
 }
 
 /**
+ * True when the text is only tag metadata (Energy / Camelot), not a set note.
+ * Used to keep Set-Notiz free of MP3/rekordbox comment tokens.
+ */
+export function isMetadataComment(text: string | undefined | null): boolean {
+  if (!text) return true;
+  const trimmed = text.trim();
+  if (!trimmed) return true;
+  // "Energy 6", "Energie 6", "7A - Energy 6", "7A · Energy 6"
+  if (
+    /^(?:\d{1,2}[ABab]\s*[·|/\-–—]?\s*)?(?:energ(?:y|ie)(?:\s*level)?[\s:=–—-]*)?(10|[1-9])(?:\s*\/\s*10)?$/i.test(
+      trimmed,
+    )
+  ) {
+    return true;
+  }
+  // Comment that is only the energy token repeated (from older energy writes).
+  const withoutEnergy = trimmed
+    .replace(/\benerg(?:y|ie)(?:\s*level)?[\s:=–—-]*?(10|[1-9])(?:\s*\/\s*10)?\b/gi, "")
+    .replace(/\b\d{1,2}[ABab]\b/g, "")
+    .replace(/[·|/\-–—]+/g, " ")
+    .trim();
+  return withoutEnergy === "";
+}
+
+/**
  * Dedicated fields (Grouping, Label, Energy column): a lone 1–10 or "E6"
  * counts, because Mixed In Key often writes only the number there.
  */

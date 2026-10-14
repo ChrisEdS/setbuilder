@@ -185,14 +185,12 @@ export function rehydrateStickCovers(draft: SetDraft, library: StickTrack[]): Se
     if (!hit) return track;
     const imageUrl = coverUrl(hit.artworkPath) ?? track.imageUrl;
     const energyLevel = track.energyLevel ?? hit.energyLevel;
-    const comment = track.comment || hit.comment;
     const bpm = track.bpm || hit.bpm;
     const keyCamelot = track.keyCamelot || hit.keyCamelot;
     if (
       imageUrl === track.imageUrl &&
       (hit.filePath || "") === (track.filePath || "") &&
       energyLevel === track.energyLevel &&
-      comment === (track.comment || "") &&
       bpm === track.bpm &&
       keyCamelot === track.keyCamelot
     ) {
@@ -204,7 +202,6 @@ export function rehydrateStickCovers(draft: SetDraft, library: StickTrack[]): Se
       imageUrl,
       filePath: hit.filePath || track.filePath,
       energyLevel,
-      comment,
       bpm,
       keyCamelot,
     };
@@ -284,8 +281,12 @@ export function libraryTrackToSetTrack(
     bpm: stick?.bpm || row.bpm,
     keyCamelot: stick?.keyCamelot || parseKeyValue(row.key) || "",
     note: "",
-    comment: stick?.comment || "",
-    energyLevel: stick?.energyLevel ?? row.energy,
+    // Set-Notiz stays empty — stick/MP3 comments only feed energyLevel.
+    comment: "",
+    energyLevel:
+      stick?.energyLevel ??
+      row.energy ??
+      energyFromRekordboxTags({ comment: stick?.comment }),
     filePath: stick?.filePath || "",
     source: "rekordbox",
     why: t("exports.stick.whyLibrary"),
@@ -315,7 +316,8 @@ function toSetTrack(
     bpm: track.bpm,
     keyCamelot: track.keyCamelot,
     note: "",
-    comment: track.comment,
+    // Set-Notiz is set-only; MP3/rekordbox Comments are not copied here.
+    comment: "",
     energyLevel: track.energyLevel,
     filePath: track.filePath,
     source: "rekordbox",

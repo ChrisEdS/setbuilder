@@ -5,7 +5,6 @@ import {
   createTranslate,
   errorText,
   isGeneratedNote,
-  localizeNote,
   localizeWhy,
   phaseHint,
   phaseLabel,
@@ -47,6 +46,15 @@ import {
   readStickFromHandle,
   stickPermission,
 } from "@/lib/stick-session";
+import { stickFileCount } from "@/lib/stick-audio";
+import {
+  ensureStickWriteAccess,
+  isWritableMp3,
+  resolveTrackAudio,
+  writeStickFileBytes,
+} from "@/lib/stick-file";
+import { analyzeFileEnergy } from "@/lib/openkey/client";
+import { writeEnergy } from "@/lib/openkey/writeEnergy";
 import { sanitizeDraftImages } from "@/lib/media";
 import { TrackArt } from "@/components/TrackArt";
 import { StickReloadBanner } from "@/components/StickReloadBanner";
@@ -65,7 +73,7 @@ import { pickStreamingMatch } from "@/lib/match-link";
 import { swapIntoSlot } from "@/lib/replace-track";
 import { CAMELOT_CODES, mixJoin, relationHint } from "@/lib/harmonic";
 import { distributeRoles, fitToSlot, reorderDraft } from "@/lib/extract-set";
-import { parseEnergyLevel } from "@/lib/energy";
+import { isMetadataComment, parseEnergyLevel } from "@/lib/energy";
 import type { SetSortTechnique } from "@/lib/sort-set";
 import { looksLikeMusicLink, sourceLabel } from "@/lib/music-link";
 import {
@@ -141,14 +149,18 @@ let cachedDraft: SetDraft = DEFAULT_SET;
 let draftPersisted = true;
 
 function normalizeTrack(track: SetTrack): SetTrack {
+  const rawComment = track.comment ?? "";
+  const energyLevel = track.energyLevel ?? parseEnergyLevel(rawComment);
+  // Older drafts stored MP3 Energy tokens in comment — strip those; keep real set notes.
+  const comment = isMetadataComment(rawComment) ? "" : rawComment;
   return {
     ...track,
-    comment: track.comment ?? "",
+    comment,
     source: track.source ?? "spotify",
     // Machine notes from earlier versions ("open/groove · Übergang: long-blend") are noise.
     note: isGeneratedNote(track.note) ? "" : (track.note ?? ""),
     safetyAlt: track.safetyAlt ?? "",
-    energyLevel: track.energyLevel ?? parseEnergyLevel(track.comment),
+    energyLevel,
   };
 }
 
@@ -383,6 +395,8 @@ export function SetBuilder() {
   const [libraryPreview, setLibraryPreview] = useState<SetTrack | null>(null);
   const [libraryRows, setLibraryRows] = useState<LibraryRow[]>([]);
   const [matchingLinks, setMatchingLinks] = useState(false);
+  const [analyzingEnergy, setAnalyzingEnergy] = useState(false);
+  const [stickReady, setStickReady] = useState(false);
   const [replaceFor, setReplaceFor] = useState<string | null>(null);
   /** Setliste: tracks whose key, BPM, energy and comment fields are open */
   const [openDetails, setOpenDetails] = useState<Set<string>>(() => new Set());
@@ -401,14 +415,15 @@ export function SetBuilder() {
 
   // Feedback like "+ Titel → Peak / Anchor" is a toast: it follows the scroll and fades after a while.
   // Longer texts (the rekordbox import steps) stay long enough to be read.
+  // Energy batch progress must not fade while analysis is still running.
   useEffect(() => {
-    if (!status) return;
+    if (!status || analyzingEnergy) return;
     const timer = window.setTimeout(
       () => setStatus(null),
       Math.min(24000, 6000 + status.length * 50),
     );
     return () => window.clearTimeout(timer);
-  }, [status]);
+  }, [status, analyzingEnergy]);
 
   const persisted = useSyncExternalStore(
     subscribeDraft,
@@ -479,6 +494,18 @@ export function SetBuilder() {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
+      const handle = await loadPersistedStickHandle().catch(() => null);
+      if (cancelled) return;
+      setStickReady(!!handle || stickFileCount() > 0);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [libraryRows.length, draft.tracks.length]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
       const handle = await loadPersistedStickHandle();
       if (!handle || cancelled) return;
       if (!(await stickPermission(handle, "read", false))) return;
@@ -489,6 +516,7 @@ export function SetBuilder() {
         if (cancelled) return;
         setLibraryRows(stickLibraryRows(stick.library));
         setDraft((current) => rehydrateStickCovers(current, stick.library));
+        setStickReady(true);
       } catch {
         /* Banner still offers a manual reconnect. */
       }
@@ -1453,6 +1481,120 @@ export function SetBuilder() {
     sortSet("harmonic");
   }
 
+  async function energyFromFiles() {
+    const current = readStoredDraft();
+    const withPath = current.tracks.filter((track) => track.filePath?.trim());
+    if (!withPath.length) {
+      setStatus(t("builder.energy.noFile"));
+      return;
+    }
+    const stick = await loadPersistedStickHandle().catch(() => null);
+    if (!stick && stickFileCount() === 0) {
+      setStatus(t("builder.energy.noStick"));
+      return;
+    }
+    if (!window.confirm(t("builder.energy.confirm"))) return;
+
+    const missing = withPath.filter((track) => track.energyLevel == null);
+    let targets = withPath;
+    if (missing.length === 0) {
+      if (!window.confirm(t("builder.energy.confirmAll", { total: withPath.length }))) {
+        return;
+      }
+    } else if (missing.length < withPath.length) {
+      const onlyMissing = window.confirm(
+        t("builder.energy.confirmMissing", {
+          missing: missing.length,
+          total: withPath.length,
+        }),
+      );
+      targets = onlyMissing ? missing : withPath;
+    } else {
+      targets = missing;
+    }
+
+    const writeRoot = stick
+      ? await ensureStickWriteAccess(stick)
+      : null;
+    if (stick && !writeRoot) {
+      setStatus(t("builder.energy.denied"));
+    }
+
+    setAnalyzingEnergy(true);
+    let done = 0;
+    let skipped = 0;
+    let errors = 0;
+    let setCount = 0;
+    let written = 0;
+    let lastError = "";
+    const total = targets.length;
+
+    const progress = () =>
+      setStatus(
+        t("builder.energy.progress", {
+          done,
+          total,
+          skipped,
+          errors,
+        }),
+      );
+    progress();
+
+    try {
+      for (const track of targets) {
+        const path = track.filePath!.trim();
+        try {
+          const resolved = await resolveTrackAudio(path, writeRoot ?? stick);
+          if (!resolved) {
+            skipped += 1;
+            done += 1;
+            progress();
+            continue;
+          }
+          const energy = await analyzeFileEnergy(resolved.file);
+
+          // Always patch from storage so Sortieren / other edits don't race.
+          // Set-Notiz (comment) stays untouched — Energy goes to energyLevel + MP3 tags.
+          const latest = readStoredDraft();
+          setDraft({
+            ...latest,
+            tracks: latest.tracks.map((item) =>
+              item.id === track.id ? { ...item, energyLevel: energy } : item,
+            ),
+          });
+          setCount += 1;
+
+          if (isWritableMp3(resolved.file, path) && resolved.handle && writeRoot) {
+            const bytes = new Uint8Array(await resolved.file.arrayBuffer());
+            const tagged = writeEnergy(bytes, energy);
+            await writeStickFileBytes(resolved.handle, tagged);
+            written += 1;
+          } else if (!isWritableMp3(resolved.file, path)) {
+            // Draft updated; non-MP3 has no ID3 write in v1.
+            skipped += 1;
+          } else if (!resolved.handle || !writeRoot) {
+            skipped += 1;
+          }
+        } catch (error) {
+          errors += 1;
+          lastError = error instanceof Error ? error.message : String(error);
+          console.error("[energy]", track.name, lastError);
+        }
+        done += 1;
+        progress();
+      }
+      const summary = t("builder.energy.done", {
+        set: setCount,
+        written,
+        skipped,
+        errors,
+      });
+      setStatus(errors && lastError ? `${summary} · ${lastError}` : summary);
+    } finally {
+      setAnalyzingEnergy(false);
+    }
+  }
+
   function fitSlot() {
     setDraft((current) => {
       const result = fitToSlot(current, t);
@@ -1690,17 +1832,7 @@ export function SetBuilder() {
               value={draft.slotKind ?? "peaktime"}
               onChange={(e) => {
                 const slotKind = e.target.value as SetSlotKind;
-                const kind = SLOT_KINDS.find((item) => item.id === slotKind);
-                setDraft((c) => ({
-                  ...c,
-                  slotKind,
-                  slot: kind
-                    ? t("builder.brief.slotText", {
-                        kind: slotLabel(t, kind.id),
-                        minutes: c.durationMinutes,
-                      })
-                    : c.slot,
-                }));
+                setDraft((c) => ({ ...c, slotKind }));
               }}
             >
               {SLOT_KINDS.map((kind) => (
@@ -1709,15 +1841,6 @@ export function SetBuilder() {
                 </option>
               ))}
             </select>
-          </label>
-          <label>
-            <span>{t("builder.brief.slotNote")}</span>
-            <input
-              value={draft.slot}
-              onChange={(e) =>
-                setDraft((c) => ({ ...c, slot: e.target.value }))
-              }
-            />
           </label>
           <label>
             <span>{t("builder.brief.audience")}</span>
@@ -2215,6 +2338,25 @@ export function SetBuilder() {
               <button
                 type="button"
                 className="btn ghost"
+                onClick={() => void energyFromFiles()}
+                disabled={
+                  analyzingEnergy ||
+                  !stickReady ||
+                  !draft.tracks.some((track) => track.filePath?.trim())
+                }
+              >
+                {analyzingEnergy
+                  ? t("builder.tool.energyBusy")
+                  : t("builder.tool.energy")}
+              </button>
+              <span className="tip-bubble" role="tooltip">
+                {t("builder.tool.energyTip")}
+              </span>
+            </span>
+            <span className="tip">
+              <button
+                type="button"
+                className="btn ghost"
                 onClick={fitSlot}
                 disabled={filledMs <= targetMs * 1.05}
               >
@@ -2537,18 +2679,19 @@ export function SetBuilder() {
                             track.transition !== "unset"
                               ? transitionLabel(t, track.transition)
                               : null,
-                            (track.comment || "").trim() ? t("builder.row.commentTag") : null,
+                            (track.comment || "").trim() ? t("builder.row.setNoteTag") : null,
                           ]
                             .filter(Boolean)
                             .join(" · ")}
                         </span>
                       </summary>
                     <label className="manual-comment">
-                      <span>{t("builder.row.comment")}</span>
+                      <span>{t("builder.row.setNote")}</span>
                       <textarea
-                        value={track.comment || localizeNote(track.note, t)}
+                        value={track.comment || ""}
                         rows={2}
-                        placeholder={t("builder.row.commentPlaceholder")}
+                        placeholder={t("builder.row.setNotePlaceholder")}
+                        title={t("builder.row.setNoteTip")}
                         onChange={(e) =>
                           patchTrack(track.id, {
                             comment: e.target.value,

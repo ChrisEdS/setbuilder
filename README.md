@@ -2,7 +2,7 @@
 
 [Deutsch](README.de.md) · **English**
 
-**Version 2.6.0** · Dramaturgy, not a playlist.
+**Version 3.0.0** · Dramaturgy, not a playlist.
 
 SETFORM prepares DJ sets for rekordbox. You load a playlist or history from the export stick (or a collection XML), lay out the arc by slot and duration, check energy, key and BPM, and take the set with you as rekordbox XML, PDF, M3U or text. The logic follows Mixed In Key: energy first, then key, then BPM. The workflow follows the [DJ.Studio prep workflow](https://dj.studio/blog/dj-set-preparation#crafting-a-dj-set-that-feels-right-advanced-tips): brief → build the set → transitions → export.
 
@@ -19,11 +19,17 @@ SETFORM prepares DJ sets for rekordbox. You load a playlist or history from the 
 
 ![Load a set: rekordbox stick and collection](docs/screenshots/en/01-rekordbox-load.png)
 
-**Rekordbox stick.** In the dialog, choose the whole stick, not a subfolder. SETFORM finds the database itself, even in the hidden `PIONEER` or `.PIONEER` folder (depending on the rekordbox version). It reads playlists and the played history. Order, key, BPM and comment are kept, and files from the stick can be previewed directly. If you only have the database, choose `export.pdb`.
+**Rekordbox stick.** Prefer **Choose stick** (Chrome / Edge / desktop) for the volume root, or pick `PIONEER` / `PIONEER/rekordbox`. If the folder dialog fails or hangs, use **export.pdb** (`PIONEER/rekordbox/export.pdb` or `.PIONEER/…`) — the most reliable path. Avoid selecting the whole USB with every music file; that can stall. SETFORM finds the database itself, even in the hidden `PIONEER` or `.PIONEER` folder. It reads playlists and the played history. Order, key and BPM are kept; Energy Level is read from the rekordbox comment when Mixed In Key wrote it there. Files from the stick can be previewed directly. Status text shows while the dialog is open, while files are listed, and while the database is read.
+
+**Player check.** After a stick is chosen, a short strip shows one verdict and one primary action (prepare for player, eject, or open rekordbox). Details (folder, database, OneLibrary, SETFORM playlists) sit behind a toggle. Green means Device Library players can use the stick; amber means a step is still needed.
 
 **Collection without a stick.** In rekordbox, export via *File → Export Collection in XML…* and load the file. Key and BPM are matched onto the tracks in the set by artist and title. An unencrypted `master.db` and CSV work too. After the import, the library searches across all tracks and matching again fills in missing keys.
 
-**Energy.** The Energy Level (1–10) comes from Mixed In Key. SETFORM reads it from the rekordbox comment (for example `7A - Energy 6`), from the collection XML, from a CSV column `Energy`, or you set it by hand.
+**Energy.** The Energy Level (1–10) comes from Mixed In Key. SETFORM reads it from the rekordbox comment (for example `7A - Energy 6`, `Energie 6`), from Grouping / Label / Remixer in the collection XML or CSV (`Energy` / `Energie`), from a lone `6` or `E8` in those fields, or you set it by hand in the setlist. USB `export.pdb` has comments but not Grouping — reload tags in rekordbox and load the collection XML if energy stays empty.
+
+**Set note.** In the setlist details, **Set note** is only for this set in SETFORM (cue, floor). It is not the MP3/rekordbox comment and is not written back into ID3 tags.
+
+**Energy from stick files.** Under **Edit set**, **Energy from files** analyzes tracks that have a stick path (Chrome / Edge / desktop). It sets `energyLevel` in the draft and, for MP3s, writes ID3 `TXXX EnergyLevel` plus `Energy N` in the file comment — audio bytes stay unchanged; key, BPM and the Set note stay untouched. After writing, reload tags in rekordbox so the player and library see the new values. `master.db` on the computer is never touched. Analysis uses [essentia.js](https://github.com/MTG/essentia.js) (AGPL-3.0) in the browser only; see [THIRD_PARTY.md](THIRD_PARTY.md).
 
 ## 2. Setlist
 
@@ -32,7 +38,8 @@ SETFORM prepares DJ sets for rekordbox. You load a playlist or history from the 
 Each track shows its source (rekordbox), phase and role. Below are key, BPM and energy, the transition from the previous track (“Adjacent key (±1) · +1 BPM · Energy +1”) and the reasoning (“Why here”). Change the order by dragging or with the arrows; “Replace” swaps a title.
 
 **Edit set**
-- **Sort harmonically:** orders within the phases by Camelot key and BPM
+- **Sort:** five techniques, each only inside a phase (Alternatives stay at the end). **Harmonic** (related Camelot keys, soft energy, small BPM steps — raises mix score, cuts clashes), **Energy wave** (climbs Open→Peak, falls in Release), **Build tempo** (BPM ramp), **Camelot journey** (clockwise around the wheel), **Waves** (in Peak, groove and impact alternate). If the order does not change, SETFORM says so — often key/energy/BPM are missing, or each phase only has one or two tracks.
+- **Energy from files:** computes Energy Level from stick audio (Essentia), sets it in the draft, and writes ID3 energy tags into MP3s on the stick (Chrome / Edge / desktop). The Set note is not changed. Then reload tags in rekordbox.
 - **Trim to slot:** keeps, per phase, the tracks whose energy fits the band; the rest moves to Alternatives
 - **Assign roles:** Anchor on the strongest Peak tracks and the closer, Bridge at a phase change, key clash, BPM or energy jump, otherwise Groove
 - **Find Spotify links:** looks up a Spotify match for tracks without a link so you can preview them in the set (needs the Spotify credentials, see Setup). Your rekordbox export is unaffected.
@@ -56,7 +63,14 @@ Drag titles between the columns. **Plan B** asks for at least two fitting altern
 
 ![Arc: phases in the slot and energy path](docs/screenshots/en/04-arc.png)
 
-The arc shows how the phases fill the slot (green fits, yellow runs over the window) and how each track's energy sits against the phase's target band. Jumps of three levels or more are marked. A key clash can't be bought back with matching energy and BPM.
+The arc shows how the phases fill the slot (active phase is highlighted; yellow means over the window) and how each track's energy sits against the phase's target band. Jumps of three levels or more are marked.
+
+**Key path** adds three stats with a **?** for a short explanation:
+- **Keys set** — share of performance tracks with a Camelot key
+- **Mix score** — average of every transition (key and energy in equal parts, small BPM correction). Above ~75 % is smooth; below ~50 % often clashes
+- **Clashes** — transitions whose keys sit far apart on the Camelot wheel
+
+Sort, drag, or change key/energy in the setlist to move the numbers. A clash can't be bought back with matching energy and BPM alone.
 
 | Phase | Energy target |
 |---|---|
@@ -72,11 +86,11 @@ The arc shows how the phases fill the slot (green fits, yellow runs over the win
 
 The **Take with you** menu exports:
 
-- **Write to stick:** adds the set as playlist `SETFORM - <title>` and the alternatives next to it as `SETFORM - <title> Alternatives` in `export.pdb`. Chrome, Edge or the desktop app. The same stick is remembered: after a restart, “Reconnect stick” is enough, and writing does not ask again. Only tracks already on the stick are written; similar titles (remix, original mix) are offered before they go in. If the set is already there, *Update* restores the last backup and writes the current set. Before every write SETFORM copies the original to `SETFORM-Backup/` (the three newest backups stay) and checks the copy. After writing, the database is read and verified; if that fails the old state is put back. XML and M3U are also written to the `SETFORM` folder on the stick. After loading and writing, SETFORM checks whether a player can find the library: if a stale `exportLibrary.db` (OneLibrary) sits next to it, *Prepare for player* moves it to `SETFORM-Backup` so CDJ-3000, XDJ-XZ and older units read `export.pdb`; *Eject stick* flushes the cache with `diskutil`. CDJ-3000X, XDJ-AZ and OPUS-QUAD still need rekordbox — SETFORM cannot write the encrypted OneLibrary. The rekordbox library on the computer is never touched. Try it on a spare or copied stick first, and check that the player shows the playlist.
+- **Write to stick:** adds the set as playlist `SETFORM - <title>` and the alternatives next to it as `SETFORM - <title> Alternatives` in `export.pdb`. Chrome, Edge or the desktop app. The same stick is remembered: after a restart, “Reconnect stick” is enough, and writing does not ask again. Only tracks already on the stick are written; similar titles (remix, original mix) are offered before they go in. If the set is already there, *Update* restores the last backup and writes the current set. Before every write SETFORM copies the original to `SETFORM-Backup/` (the three newest backups stay) and checks the copy. After writing, the database is read and verified; if that fails the old state is put back. XML and M3U are also written to the `SETFORM` folder on the stick. The stick health strip (see above) offers *Prepare for player* when a stale `exportLibrary.db` (OneLibrary) would hide your playlists on CDJ-3000 / XDJ-XZ, and *Eject* to flush the OS cache. CDJ-3000X, XDJ-AZ and OPUS-QUAD still need rekordbox — SETFORM cannot write the encrypted OneLibrary. The rekordbox library on the computer (`master.db`) is never touched. Try it on a spare or copied stick first, and check that the player shows the playlist.
 - **rekordbox XML:** saved as `SETFORM-rekordbox.xml`. In rekordbox set *Preferences → Advanced → Database → rekordbox xml* to this file once; the playlist then appears under *rekordbox xml* in the left tree, right-click → *Import Playlist*. The performance and the alternatives come as two playlists.
 - **PDF:** print view with brief, order, key, BPM, transition and alternatives
 - **M3U:** playlist in performance order, naming the alternatives playlist on the stick
-- **Copy text:** the set with brief, comments and alternatives
+- **Copy text:** the set with brief, set notes and alternatives
 
 Under **Connections & setups** you can save the brief and the set as a setup, load it again, or back it up as JSON.
 
@@ -122,7 +136,7 @@ The interface, the API answers and the exports (PDF, text, rekordbox XML comment
 npm test
 ```
 
-Runs with the built-in Node test runner. The hooks in [`scripts/test-hooks.mjs`](scripts/test-hooks.mjs) resolve the `@/` alias and imports without an extension. Covered: energy, Camelot rules, trim to slot, replacement ranking, Plan B, export, the stick import and the language files.
+Runs with the built-in Node test runner. The hooks in [`scripts/test-hooks.mjs`](scripts/test-hooks.mjs) resolve the `@/` alias and imports without an extension. Covered: energy parsing, Openkey energy formula and ID3 write (EnergyLevel + comment, audio unchanged, Serato GEOB preserved), Camelot / mix-score rules, set sorts, trim to slot, replacement ranking, Plan B, export (BPM, notes), stick import / write / health / session, and the language files.
 
 ## Desktop (Mac, Windows, Linux)
 
@@ -148,4 +162,4 @@ Once the Apple and Windows certificates are in as GitHub secrets, the next relea
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE). Client-side energy analysis uses essentia.js (AGPL-3.0); see [THIRD_PARTY.md](THIRD_PARTY.md).
