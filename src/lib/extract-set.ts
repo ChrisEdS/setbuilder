@@ -31,6 +31,7 @@ export type ExtractOptions = {
   slot?: string;
   audience?: string;
   gear?: string;
+  notes?: string;
   /** Prefer Camelot-compatible order inside each phase */
   harmonize?: boolean;
 };
@@ -131,6 +132,7 @@ export function extractSetFromPlaylist(
     slotKind: DEFAULT_SET.slotKind,
     audience: options.audience ?? DEFAULT_SET.audience,
     gear: options.gear ?? DEFAULT_SET.gear,
+    notes: options.notes ?? DEFAULT_SET.notes ?? "",
     durationMinutes,
     tracks: withSafety,
   };

@@ -90,7 +90,7 @@ export type SetDraft = {
   audience: string;
   gear: string;
   /** Free-form brief notes (promoter, doors, curfew, …). */
-  notes: string;
+  notes?: string;
   durationMinutes: number;
   tracks: SetTrack[];
 };
