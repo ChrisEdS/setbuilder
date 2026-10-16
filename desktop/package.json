@@ -1,7 +1,7 @@
 {
   "name": "setform",
   "productName": "SETBUILDER",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "description": "DJ set preparation for rekordbox",
   "homepage": "https://github.com/ChrisEdS/setbuilder",
   "author": {
@@ -19,6 +19,9 @@
     "start": "node scripts/prepare.js && electron .",
     "dist": "node scripts/prepare.js && electron-builder --publish never"
   },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  },
   "devDependencies": {
     "electron": "^37.2.0",
     "electron-builder": "^26.0.12"
@@ -32,6 +35,13 @@
       "output": "dist",
       "buildResources": "build"
     },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "ChrisEdS",
+        "repo": "setbuilder"
+      }
+    ],
     "files": [
       "electron/**/*",
       "package.json"

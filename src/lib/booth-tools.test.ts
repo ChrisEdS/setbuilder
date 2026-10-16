@@ -138,3 +138,9 @@ test("stick file match accepts the folder prefix the browser adds", () => {
   const hit = matchStickFile(files, "/Contents/Night Drive.mp3", "Night Drive.mp3");
   assert.equal(hit?.name, "Night Drive.mp3");
 });
+
+test("stick file match accepts a title without the audio extension", () => {
+  const files = [{ name: "Night Drive.mp3", path: "USB/Contents/Night Drive.mp3" }];
+  const hit = matchStickFile(files, "", "Night Drive");
+  assert.equal(hit?.name, "Night Drive.mp3");
+});

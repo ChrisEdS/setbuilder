@@ -123,6 +123,20 @@ test("a hidden-only PIONEER folder is a reason players miss the library", () => 
   assert.equal(health.verdict, "hiddenFolder");
 });
 
+test("after prepare, a .PIONEER stick with OneLibrary aside is ready", () => {
+  const health = assessStick({
+    pioneer: ".PIONEER",
+    pdb: { buffer: fixture(), size: fixture().byteLength },
+    libraryDb: null,
+    exportExt: false,
+    analysis: true,
+    sidecar: true,
+    libraryAside: true,
+  });
+  assert.equal(health.verdict, "ready");
+  assert.equal(health.libraryAside, true);
+});
+
 test("picking only export.pdb cannot say whether a player will find the library", () => {
   const health = assessStick({
     pioneer: "none",

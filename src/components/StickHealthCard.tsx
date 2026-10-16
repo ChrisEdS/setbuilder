@@ -35,6 +35,42 @@ function verdictKey(health: StickHealth, canPrepare: boolean): MessageKey {
   }
 }
 
+function meaningKey(health: StickHealth, canPrepare: boolean): MessageKey {
+  switch (health.verdict) {
+    case "ready":
+      if (health.libraryAside) {
+        return health.pioneer === ".PIONEER"
+          ? "library.stickHealth.meaning.readyAsideHidden"
+          : "library.stickHealth.meaning.readyAside";
+      }
+      if (health.libraryDb.synced) return "library.stickHealth.meaning.readySynced";
+      return "library.stickHealth.meaning.ready";
+    case "needsRekordbox":
+      return canPrepare
+        ? "library.stickHealth.meaning.needsRekordbox"
+        : "library.stickHealth.meaning.needsRekordboxFiles";
+    case "hiddenFolder":
+      return "library.stickHealth.meaning.hiddenFolder";
+    case "empty":
+      return "library.stickHealth.meaning.empty";
+    case "broken":
+      return "library.stickHealth.meaning.broken";
+    case "incomplete":
+      return "library.stickHealth.meaning.incomplete";
+  }
+}
+
+function nextKey(action: StickAction): MessageKey {
+  switch (action) {
+    case "eject":
+      return "library.stickHealth.next.eject";
+    case "prepare":
+      return "library.stickHealth.next.prepare";
+    case "openRekordbox":
+      return "library.stickHealth.next.openRekordbox";
+  }
+}
+
 function verdictTone(health: StickHealth): Tone {
   switch (health.verdict) {
     case "ready":
@@ -50,21 +86,42 @@ function verdictTone(health: StickHealth): Tone {
 
 type Fact = { id: string; tone: Tone; label: string; value: string };
 
+function folderFact(health: StickHealth, t: Translate): Fact {
+  if (health.pioneer === "none") {
+    return {
+      id: "folder",
+      tone: "warn",
+      label: t("library.stickHealth.fact.folder"),
+      value: t("library.stickHealth.fact.folderNone"),
+    };
+  }
+  if (health.pioneer === "both") {
+    return {
+      id: "folder",
+      tone: "ok",
+      label: t("library.stickHealth.fact.folder"),
+      value: t("library.stickHealth.fact.folderBoth"),
+    };
+  }
+  if (health.pioneer === ".PIONEER") {
+    return {
+      id: "folder",
+      tone: health.libraryAside || health.verdict === "ready" ? "ok" : "warn",
+      label: t("library.stickHealth.fact.folder"),
+      value: t("library.stickHealth.fact.folderHidden"),
+    };
+  }
+  return {
+    id: "folder",
+    tone: "ok",
+    label: t("library.stickHealth.fact.folder"),
+    value: t("library.stickHealth.fact.folderPlain"),
+  };
+}
+
 /** Facts a DJ can act on. Problems first; the file-system trivia last. */
 function facts(health: StickHealth, t: Translate): Fact[] {
-  const list: Fact[] = [];
-
-  list.push({
-    id: "folder",
-    tone: health.pioneer === "PIONEER" || health.pioneer === "both" ? "ok" : "warn",
-    label: t("library.stickHealth.fact.folder"),
-    value:
-      health.pioneer === "none"
-        ? t("library.stickHealth.fact.folderNone")
-        : health.pioneer === "both"
-          ? t("library.stickHealth.fact.folderBoth")
-          : health.pioneer,
-  });
+  const list: Fact[] = [folderFact(health, t)];
 
   const dbOk = health.pdb.present && !health.pdb.error;
   list.push({
@@ -145,7 +202,17 @@ export function StickHealthCard({
   const [rekordbox, setRekordbox] = useState(false);
   const [busy, setBusy] = useState<Busy>(null);
   const [note, setNote] = useState<MessageKey | null>(null);
-  const [open, setOpen] = useState(false);
+  const [noteOk, setNoteOk] = useState(false);
+  // null = follow verdict (warn/bad open); after the DJ toggles, keep their choice
+  // until the verdict changes.
+  const [userOpen, setUserOpen] = useState<boolean | null>(null);
+  const [seenVerdict, setSeenVerdict] = useState(health.verdict);
+  if (health.verdict !== seenVerdict) {
+    setSeenVerdict(health.verdict);
+    setUserOpen(null);
+  }
+  const open =
+    userOpen ?? (health.verdict !== "ready" && health.verdict !== "empty");
 
   useEffect(() => {
     let ignore = false;
@@ -183,11 +250,13 @@ export function StickHealthCard({
     if (kind === "prepare" && !window.confirm(t("library.stickHealth.fix.confirm"))) return;
     setBusy(kind);
     setNote(null);
+    setNoteOk(false);
     try {
       if (kind === "prepare") await onPrepare?.();
       else if (kind === "restore") await onRestoreLibrary?.();
       else if (kind === "eject") await onEject?.();
       else await openRekordbox();
+      setNoteOk(true);
       setNote(
         kind === "eject"
           ? "library.stickHealth.fix.ejected"
@@ -198,6 +267,7 @@ export function StickHealthCard({
               : "library.stickHealth.prepare.opened",
       );
     } catch {
+      setNoteOk(false);
       setNote(
         kind === "eject"
           ? "library.stickHealth.fix.ejectFailed"
@@ -272,16 +342,21 @@ export function StickHealthCard({
               className="btn ghost stick-strip-toggle"
               aria-expanded={open}
               aria-controls={detailsId}
-              onClick={() => setOpen((value) => !value)}
+              onClick={() => setUserOpen(!open)}
             >
               {t(open ? "library.stickHealth.less" : "library.stickHealth.details")}
             </button>
           </Tip>
         </div>
       </div>
-      {note ? <p className="stick-strip-note">{t(note)}</p> : null}
+      {note ? (
+        <p className={"stick-strip-note" + (noteOk ? " is-ok" : " is-bad")}>{t(note)}</p>
+      ) : primary ? (
+        <p className="stick-strip-next">{t(nextKey(primary))}</p>
+      ) : null}
       {open ? (
         <div className="stick-strip-details" id={detailsId}>
+          <p className="stick-strip-meaning">{t(meaningKey(health, caps.canPrepare))}</p>
           <dl className="stick-strip-facts">
             {facts(health, t).map((fact) => (
               <div key={fact.id} className={`is-${fact.tone}`}>

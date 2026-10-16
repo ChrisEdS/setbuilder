@@ -105,8 +105,12 @@ export function assessStick(input: StickHealthInput): StickHealth {
   if (!pdb.present || pdb.error) verdict = "broken";
   else if (pdb.playlists === 0) verdict = "empty";
   else if (libraryDb.present && !libraryDb.synced) verdict = "needsRekordbox";
-  else if (input.pioneer === ".PIONEER") verdict = "hiddenFolder";
   else if (input.pioneer === "none") verdict = "incomplete";
+  // .PIONEER alone is a soft warning — after prepare (OneLibrary aside) the stick
+  // is ready for Device Library players; don't keep alarming the DJ.
+  else if (input.pioneer === ".PIONEER" && !input.libraryAside) {
+    verdict = "hiddenFolder";
+  }
 
   return {
     verdict,

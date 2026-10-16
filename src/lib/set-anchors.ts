@@ -60,7 +60,7 @@ export function applySetAnchors(draft: SetDraft): SetDraft {
   if (!performance.length) return draft;
 
   let opener = openerId ? performance.find((track) => track.id === openerId) : null;
-  let closer = closerId ? performance.find((track) => track.id === closerId) : null;
+  const closer = closerId ? performance.find((track) => track.id === closerId) : null;
 
   // If both pins point at the same track and there are others, keep closer last
   // and leave opener unset in the middle case — prefer distinct ends.

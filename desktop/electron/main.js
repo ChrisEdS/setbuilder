@@ -1,8 +1,9 @@
-const { app, BrowserWindow, Menu, dialog, shell, nativeImage } = require("electron");
+const { app, BrowserWindow, Menu, dialog, shell, nativeImage, ipcMain } = require("electron");
 const { spawn } = require("child_process");
 const fs = require("fs");
 const http = require("http");
 const path = require("path");
+const { autoUpdater } = require("electron-updater");
 
 function appIcon() {
   const candidates = [
@@ -39,6 +40,79 @@ app.setName("SETBUILDER");
 let mainWindow = null;
 let server = null;
 let serverLog = "";
+let updateReady = false;
+
+function sendUpdate(payload) {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.webContents.send("desktop:update", payload);
+}
+
+function setupUpdater() {
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.on("checking-for-update", () => sendUpdate({ type: "checking" }));
+  autoUpdater.on("update-available", (info) => {
+    sendUpdate({ type: "available", version: info.version });
+  });
+  autoUpdater.on("update-not-available", (info) => {
+    sendUpdate({ type: "not-available", version: info.version || app.getVersion() });
+  });
+  autoUpdater.on("download-progress", (progress) => {
+    sendUpdate({ type: "progress", percent: progress.percent || 0 });
+  });
+  autoUpdater.on("update-downloaded", (info) => {
+    updateReady = true;
+    sendUpdate({ type: "downloaded", version: info.version });
+  });
+  autoUpdater.on("error", (error) => {
+    const message = error instanceof Error ? error.message : String(error);
+    sendUpdate({ type: "error", message });
+  });
+
+  ipcMain.handle("desktop:getInfo", () => ({
+    version: app.getVersion(),
+    name: "SETBUILDER",
+    packaged: app.isPackaged,
+    platform: process.platform,
+    arch: process.arch,
+    electron: process.versions.electron,
+    updateSupported: app.isPackaged,
+  }));
+
+  ipcMain.handle("desktop:checkForUpdates", async () => {
+    if (!app.isPackaged) {
+      return { ok: false, message: "Updates nur in der installierten App." };
+    }
+    try {
+      await autoUpdater.checkForUpdates();
+      return { ok: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return { ok: false, message };
+    }
+  });
+
+  ipcMain.handle("desktop:downloadUpdate", async () => {
+    if (!app.isPackaged) {
+      return { ok: false, message: "Updates nur in der installierten App." };
+    }
+    try {
+      await autoUpdater.downloadUpdate();
+      return { ok: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return { ok: false, message };
+    }
+  });
+
+  ipcMain.handle("desktop:installUpdate", () => {
+    if (!updateReady) {
+      return { ok: false, message: "Noch kein Update geladen." };
+    }
+    setImmediate(() => autoUpdater.quitAndInstall(false, true));
+    return { ok: true };
+  });
+}
 
 function userEnvFile() {
   return path.join(app.getPath("userData"), ".env");
@@ -205,6 +279,8 @@ function startServer() {
       HOSTNAME: APP_HOST,
       PORT: String(PORT),
       SETBUILDER_DATA_DIR: dataDir(),
+      SETBUILDER_DESKTOP: "1",
+      SETBUILDER_VERSION: app.getVersion(),
       // Legacy env name still read by older server builds / docs.
       SETFORM_DATA_DIR: dataDir(),
     },
@@ -315,6 +391,7 @@ function createWindow() {
     trafficLightPosition: { x: 16, y: 16 },
     ...(icon ? { icon } : {}),
     webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -368,6 +445,7 @@ if (!gotLock) {
 
   app.whenReady().then(async () => {
     loadEnv();
+    setupUpdater();
     const chrome = process.versions.chrome;
     const platformToken =
       process.platform === "win32"
@@ -380,7 +458,7 @@ if (!gotLock) {
     app.setAboutPanelOptions({
       applicationName: "SETBUILDER",
       applicationVersion: app.getVersion(),
-      version: "Apple Silicon",
+      version: process.arch === "arm64" ? "Apple Silicon" : process.arch,
       credits: "DJ-Set-Vorbereitung",
     });
     try {
@@ -390,6 +468,11 @@ if (!gotLock) {
         await waitForServer();
       }
       createWindow();
+      if (app.isPackaged) {
+        setTimeout(() => {
+          autoUpdater.checkForUpdates().catch(() => undefined);
+        }, 8000);
+      }
     } catch (error) {
       const raw = error instanceof Error ? error.message : String(error);
       const busy = raw.includes("EADDRINUSE");

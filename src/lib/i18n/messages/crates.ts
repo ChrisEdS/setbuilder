@@ -100,12 +100,20 @@ const de = {
   "crates.player.prevTip": "Zum vorherigen Track in der Performance-Reihenfolge.",
   "crates.player.next": "Nächster Track",
   "crates.player.nextTip": "Zum nächsten Track in der Performance-Reihenfolge.",
+  "crates.player.play": "Abspielen",
+  "crates.player.pause": "Pause",
+  "crates.player.playTip": "Track vom Stick abspielen.",
+  "crates.player.pauseTip": "Wiedergabe pausieren.",
+  "crates.player.seek": "Position im Track",
   "crates.player.close": "Player schließen",
   "crates.player.closeTip": "Player-Leiste schließen.",
   "crates.player.then": "danach {join}",
   "crates.player.iframeTitle": "{label} Player",
   "crates.player.noEmbed": "Kein Embed für diesen Eintrag.",
   "crates.player.pickStick": "Stick-Ordner wählen, dann spielt die Datei hier.",
+  "crates.player.unsupportedFormat":
+    "Dieses Format spielt der Browser nicht ab (z. B. AIFF). MP3 oder M4A auf dem Stick nutzen — oder in der Quelle öffnen.",
+  "crates.player.loadFailed": "Datei gefunden, aber Abspielen hat nicht geklappt. Stick noch verbunden?",
   "crates.player.openSource": "In der Quelle öffnen",
 } as const;
 
@@ -202,12 +210,20 @@ const en: Record<keyof typeof de, string> = {
   "crates.player.prevTip": "Go to the previous track in the performance order.",
   "crates.player.next": "Next track",
   "crates.player.nextTip": "Go to the next track in the performance order.",
+  "crates.player.play": "Play",
+  "crates.player.pause": "Pause",
+  "crates.player.playTip": "Play the track from the stick.",
+  "crates.player.pauseTip": "Pause playback.",
+  "crates.player.seek": "Position in track",
   "crates.player.close": "Close player",
   "crates.player.closeTip": "Close the player bar.",
   "crates.player.then": "then {join}",
   "crates.player.iframeTitle": "{label} player",
   "crates.player.noEmbed": "No embed for this entry.",
   "crates.player.pickStick": "Choose the stick folder and the file plays here.",
+  "crates.player.unsupportedFormat":
+    "This browser cannot play this format (e.g. AIFF). Use MP3 or M4A on the stick — or open in the source.",
+  "crates.player.loadFailed": "File found, but playback failed. Is the stick still connected?",
   "crates.player.openSource": "Open in source",
 };
 

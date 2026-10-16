@@ -32,6 +32,7 @@ import { Tip } from "@/components/Hint";
 import { EnergyPath } from "@/components/EnergyPath";
 import { HarmonicPath } from "@/components/HarmonicPath";
 import { LibraryPanel } from "@/components/LibraryPanel";
+import { AppUpdateCard } from "@/components/AppUpdateCard";
 import { PreviewPlayer } from "@/components/PreviewPlayer";
 import { ReplaceMenu } from "@/components/ReplaceMenu";
 import type { LibraryRow } from "@/components/LibraryPanel";
@@ -401,9 +402,6 @@ export function SetBuilder() {
     readSetupsSnapshot,
     () => EMPTY_SETUPS,
   );
-  // null = follow the brief title (so the default follows the interface language)
-  const [setupNameInput, setSetupName] = useState<string | null>(null);
-  const setupName = setupNameInput ?? draft.title;
   const [selectedSetup, setSelectedSetup] = useState("");
   const [spotifyConnected, setSpotifyConnected] = useState<boolean | null>(null);
   const [tidalConnected, setTidalConnected] = useState<boolean | null>(null);
@@ -1393,14 +1391,18 @@ export function SetBuilder() {
   }
 
   function saveSetup() {
-    const name = setupName.trim() || draft.title || t("builder.setups.fallbackName");
+    const name = draft.title.trim() || t("builder.setups.fallbackName");
+    if (name !== draft.title) {
+      setDraft((current) => ({ ...current, title: name }));
+    }
+    const nextDraft = name === draft.title ? draft : { ...draft, title: name };
     const nextSetup: SavedSetup = {
       id:
         setups.find((item) => item.name === name)?.id ||
         `setup-${Date.now().toString(36)}`,
       name,
       savedAt: new Date().toISOString(),
-      draft,
+      draft: nextDraft,
     };
     const next = [
       nextSetup,
@@ -1408,7 +1410,6 @@ export function SetBuilder() {
     ];
     const stored = writeSetups(next);
     setSelectedSetup(nextSetup.id);
-    setSetupName(name);
     if (!stored) {
       fail("settings", t("builder.fail.setupStorage"), t("builder.fail.setupStorageHint"));
       return;
@@ -1423,12 +1424,12 @@ export function SetBuilder() {
     const next = {
       ...DEFAULT_SET,
       ...setup.draft,
+      title: setup.draft.title?.trim() || setup.name,
       tracks: (setup.draft.tracks ?? []).map(normalizeTrack),
     };
     setDraft(next);
-    setSetupName(setup.name);
     setFocusTrackId(null);
-    setStatus(t("builder.status.setupLoaded", { name: setup.name }));
+    setStatus(t("builder.status.setupLoaded", { name: next.title }));
   }
 
   function deleteSetup() {
@@ -1441,13 +1442,12 @@ export function SetBuilder() {
   }
 
   function downloadSetup() {
-    const name = (setupName.trim() || draft.title || "setform").replace(
-      /[^\w\-]+/g,
-      "-",
+    const title = draft.title.trim() || "setform";
+    const name = title.replace(/[^\w\-]+/g, "-");
+    const blob = new Blob(
+      [JSON.stringify({ name: title, draft }, null, 2)],
+      { type: "application/json" },
     );
-    const blob = new Blob([JSON.stringify({ name, draft }, null, 2)], {
-      type: "application/json",
-    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -1472,11 +1472,11 @@ export function SetBuilder() {
         if (!incoming?.tracks || !incoming.title) {
           throw new Error(t("builder.fail.notSetup"));
         }
-        const name = parsed.name || incoming.title;
-        setSetupName(name);
+        const name = incoming.title.trim() || parsed.name || t("builder.setups.fallbackName");
         setDraft({
           ...DEFAULT_SET,
           ...incoming,
+          title: name,
           tracks: incoming.tracks.map(normalizeTrack),
         });
         setStatus(t("builder.status.setupFromFile", { name }));
@@ -1676,8 +1676,10 @@ export function SetBuilder() {
             <label className="setup-field">
               <span>{t("builder.setups.name")}</span>
               <input
-                value={setupName}
-                onChange={(event) => setSetupName(event.target.value)}
+                value={draft.title}
+                onChange={(event) =>
+                  setDraft((current) => ({ ...current, title: event.target.value }))
+                }
                 aria-label={t("builder.setups.nameAria")}
               />
             </label>
@@ -1751,6 +1753,7 @@ export function SetBuilder() {
             </div>
             <FieldNoticeView notice={localNotice("settings")} />
           </div>
+          <AppUpdateCard />
         </div>
         <ConnectionSetup onStatus={noteSettings} />
         <FieldNoticeView notice={localNotice("connect")} />

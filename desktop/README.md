@@ -2,6 +2,8 @@
 
 Electron-Hülle für Mac, Windows und Linux. Sie startet den SETBUILDER-Server lokal und öffnet ihn im eigenen Fenster. Spotify und Tidal sind optional und brauchen keine Zugangsdaten zum Start. Ihre Redirects bleiben `http://127.0.0.1:4317/...`.
 
+DJ-Workflow und Screenshots: [Anleitung](../docs/GUIDE.de.md) · [Guide (EN)](../docs/GUIDE.md). Kurzüberblick: [README](../README.de.md).
+
 Der Next-Server wird auf dem Rechner gebaut, auf dem die App entstehen soll. Die Bildbibliothek ist an das Betriebssystem gebunden.
 
 ## Starten
@@ -30,7 +32,9 @@ Ergebnis unter `desktop/dist/`:
 - Windows: NSIS-Installer
 - Linux: AppImage und `.deb`
 
-Für eine andere Architektur als die des Build-Rechners die Flags von electron-builder setzen, zum Beispiel `npx electron-builder --mac --x64 --publish never`. Der Server-Build davor muss trotzdem auf einem passenden System liegen. GitHub Actions macht das pro System, siehe `.github/workflows/desktop.yml`. Ein Tag `v*` lädt die Dateien als Release hoch.
+Für eine andere Architektur als die des Build-Rechners die Flags von electron-builder setzen, zum Beispiel `npx electron-builder --mac --x64 --publish never`. Der Server-Build davor muss trotzdem auf einem passenden System liegen. GitHub Actions macht das pro System, siehe `.github/workflows/desktop.yml`. Ein Tag `v*` lädt die Dateien als Release hoch (inkl. `latest*.yml` für den In-App-Updater).
+
+In der App unter **Verbindungen & Setups → App & Updates** siehst du die Version und kannst in der Desktop-App nach Updates suchen. Der Browser-Build zeigt die Version und verlinkt die GitHub-Releases.
 
 Ohne Apple- und Windows-Zertifikat sind die Pakete unsigniert. Linux startet die AppImage direkt. Windows zeigt SmartScreen, „Trotzdem ausführen“ setzt die Installation fort.
 
