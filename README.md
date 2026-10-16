@@ -4,13 +4,14 @@
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
 
-**Version 3.3.0** · Dramaturgy, not a playlist.
+**Version 3.4.0** · Dramaturgy, not a playlist.
 
 SETBUILDER prepares DJ sets for rekordbox. You load a playlist or history from the export stick (or a collection XML), lay out the arc by slot and duration, check energy, key and BPM, and take the set with you as rekordbox XML, PDF, M3U or text. The logic follows Mixed In Key: energy first, then key, then BPM. The workflow follows the [DJ.Studio prep workflow](https://dj.studio/blog/dj-set-preparation#crafting-a-dj-set-that-feels-right-advanced-tips): brief → build the set → transitions → export.
 
 **Highlights**
 - ⚡ **Energy from files** — Analyze stick MP3s, write Energy into ID3 (audio untouched), reload tags in rekordbox
 - 🔑 **Key path** — Camelot along the set with mix score, clash badges and Mixed In Key–style sorts
+- 🎯 **Perfect sort** — Whole-set Camelot TSP (Held-Karp): kill clashes, max mix score; opener/closer stay pinned
 - 🎚️ **Arc & energy** — Phases Open→Release against target bands; jumps called out
 - 📌 **Opener & closer** — Pin the first and last performance track; sorts keep them at the ends
 - 💾 **Stick round-trip** — Load from `export.pdb`, write the set back, player check before the gig

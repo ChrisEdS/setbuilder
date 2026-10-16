@@ -38,10 +38,11 @@ Each track shows its source (rekordbox), phase and role. Controls sit under the 
 **Opener & closer.** Pin a performance track as **Opener** (stays first, phase Open) or **Closer** (stays last, phase Release). Extract suggests warm open / release pins; you can change or clear them anytime. Sorting re-applies the pins so they stay at the ends.
 
 **Edit set**
-- **Sort:** reorders only inside each phase (Alternatives stay at the end; pinned opener/closer stay first/last overall). Same menu on the setlist and on the Key path. If nothing moves, SETBUILDER says so — often key/energy/BPM are missing, or a phase has only one or two tracks.
+- **Sort:** most techniques reorder only inside each phase (Alternatives stay at the end; pinned opener/closer stay first/last overall). **Perfect · Max score** is different: it reorders the whole performance across phase seams, then re-lays Open→Release by timeline. Same menu on the setlist and on the Key path. If nothing moves, SETBUILDER says so — often key/energy/BPM are missing, or a phase has only one or two tracks.
 
   | Technique | What it does |
   |---|---|
+  | **Perfect · Max score** | Whole-set Camelot TSP (exact Held-Karp ≤18 tracks, else NN+2-opt/Or-opt). Minimizes clashes first, then maximizes mix score. Opener/closer stay pinned; phases are re-laid after. 100% needs keys that all connect on the wheel — disconnected clusters still leave a bridge clash |
   | **Harmonic** | Related Camelot keys, soft energy, small BPM steps |
   | **One-step** | Mixed In Key: energy ±1 per transition |
   | **Energy wave** | Climbs Open→Peak, falls in Release |
@@ -82,7 +83,7 @@ The arc shows how the phases fill the slot (active phase is highlighted; yellow 
 - **Mix score** — average of every transition (key and energy in equal parts, small BPM correction). Above ~75 % is smooth; below ~50 % often clashes
 - **Clashes** — transitions whose keys sit far apart on the Camelot wheel
 
-Sort, drag, or change key/energy in the setlist to move the numbers. A clash can't be bought back with matching energy and BPM alone.
+Sort (especially **Perfect · Max score**), drag, or change key/energy in the setlist to move the numbers. A clash can't be bought back with matching energy and BPM alone — if two Camelot clusters never touch (for example 1A/12A vs 8A/9A), Perfect still leaves the fewest possible bridge clashes.
 
 | Phase | Energy target |
 |---|---|

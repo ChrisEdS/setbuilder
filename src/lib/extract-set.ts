@@ -12,6 +12,7 @@ import { LocalizedError } from "@/lib/i18n/error";
 import { isGeneratedNote } from "@/lib/i18n/stored";
 import { tDe, type Translate } from "@/lib/i18n/core";
 import { bestPhaseFor } from "@/lib/plan-b";
+import { orderByPerfectHarmony } from "@/lib/perfect-harmony";
 import { applySetAnchors, withSuggestedAnchors } from "@/lib/set-anchors";
 import type { SpotifyTrack } from "@/lib/spotify";
 import {
@@ -455,11 +456,13 @@ export function reorderDraft(draft: SetDraft, technique: SetSortTechnique): SetD
   const performance = draft.tracks.filter((track) => track.role !== "safety");
   const safeties = draft.tracks.filter((track) => track.role === "safety");
 
-  const phased: SetTrack[] = [];
-  for (const phase of PHASES) {
-    const group = performance.filter((track) => track.phase === phase.id);
-    phased.push(...orderPhase(group, phase.id, technique));
-  }
+  const phased =
+    technique === "perfect"
+      ? reorderPerformancePerfect(performance, draft)
+      : PHASES.flatMap((phase) => {
+          const group = performance.filter((track) => track.phase === phase.id);
+          return orderPhase(group, phase.id, technique);
+        });
 
   const withRelations = phased.map((track, index, arr) => {
     const prev = index > 0 ? arr[index - 1] : null;
@@ -474,6 +477,37 @@ export function reorderDraft(draft: SetDraft, technique: SetSortTechnique): SetD
   });
 
   return applySetAnchors({ ...draft, tracks: [...withRelations, ...safeties] });
+}
+
+/**
+ * Whole-set Camelot TSP: kill clashes across phase seams, then re-lay phases
+ * by timeline share so the arc still reads Open → Release.
+ */
+function reorderPerformancePerfect(performance: SetTrack[], draft: SetDraft): SetTrack[] {
+  if (performance.length <= 1) return performance;
+  const ordered = orderByPerfectHarmony(performance, {
+    fixedStartId: draft.openerId,
+    fixedEndId: draft.closerId,
+  });
+  return rephaseByTimeline(ordered);
+}
+
+function rephaseByTimeline(tracks: SetTrack[]): SetTrack[] {
+  const total = tracks.reduce((sum, track) => sum + (track.durationMs || 1), 0);
+  let cursor = 0;
+  const boundaries = PHASES.map((phase) => {
+    cursor += phase.share;
+    return { id: phase.id, until: cursor };
+  });
+  let acc = 0;
+  return tracks.map((track) => {
+    const duration = track.durationMs || 1;
+    const midpoint = (acc + duration / 2) / total;
+    acc += duration;
+    const phase =
+      boundaries.find((boundary) => midpoint <= boundary.until)?.id ?? "release";
+    return { ...track, phase };
+  });
 }
 
 /**

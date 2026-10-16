@@ -163,6 +163,9 @@ const de = {
     "Fertig: {set} gesetzt, {written} in MP3 geschrieben · {skipped} übersprungen · {errors} Fehler",
   "builder.energy.denied":
     "Kein Schreibzugriff auf den Stick. Im Dialog erlauben, sonst wird nur der Draft aktualisiert.",
+  "builder.sort.perfect": "Perfekt · Max Score",
+  "builder.sort.perfectHint":
+    "Ganzes Set: exakter Camelot-TSP (Held-Karp ≤18, sonst NN+2-opt/Or-opt). Clashes zuerst killen, dann Mix-Score. Opener/Closer bleiben. Phasen danach neu.",
   "builder.sort.harmonic": "Harmonisch",
   "builder.sort.harmonicHint":
     "Nächster Track: verwandter Camelot-Key, weiche Energie, kleine BPM-Schritte. Hebt den Mix-Score, senkt Clashes.",
@@ -353,6 +356,8 @@ const de = {
   "builder.status.setupFromFile": "„{name}“ aus Datei geladen.",
   "builder.status.fileDownloaded": "Einstellungsdatei heruntergeladen.",
   "builder.status.reset": "Brief zurückgesetzt — das Set ist leer.",
+  "builder.status.sorted.perfect":
+    "Perfekt sortiert: minimale Clashes, maximaler Mix-Score. Bogen prüfen — Opener/Closer bleiben. 100 % nur wenn alle Keys verbunden sind.",
   "builder.status.sorted.harmonic":
     "Harmonisch sortiert: verwandte Keys beieinander. Mix-Score und Clashes im Bogen prüfen.",
   "builder.status.sorted.gentle":
@@ -606,6 +611,9 @@ const en: Record<keyof typeof de, string> = {
     "Done: {set} set, {written} written to MP3 · {skipped} skipped · {errors} errors",
   "builder.energy.denied":
     "No write access to the stick. Allow it in the dialog, otherwise only the draft is updated.",
+  "builder.sort.perfect": "Perfect · Max score",
+  "builder.sort.perfectHint":
+    "Whole set: exact Camelot TSP (Held-Karp ≤18, else NN+2-opt/Or-opt). Kill clashes first, then max mix score. Opener/closer stay. Phases re-laid after.",
   "builder.sort.harmonic": "Harmonic",
   "builder.sort.harmonicHint":
     "Next track: related Camelot key, smooth energy, small BPM steps. Raises the mix score, cuts clashes.",
@@ -791,6 +799,8 @@ const en: Record<keyof typeof de, string> = {
   "builder.status.setupFromFile": "“{name}” loaded from file.",
   "builder.status.fileDownloaded": "Settings file downloaded.",
   "builder.status.reset": "Brief reset — the set is empty.",
+  "builder.status.sorted.perfect":
+    "Sorted for max score: minimal clashes, maximal mix score. Check the Arc — opener/closer stay. 100% only when all keys connect.",
   "builder.status.sorted.harmonic":
     "Sorted harmonically: related keys together. Check mix score and clashes on the Arc.",
   "builder.status.sorted.gentle":

@@ -13,9 +13,11 @@ import {
   orderByHarmonicPath,
   parseBpm,
 } from "@/lib/harmonic";
+import { orderByPerfectHarmony } from "@/lib/perfect-harmony";
 import type { SetPhaseId } from "@/lib/set";
 
 export const SET_SORTS = [
+  "perfect",
   "harmonic",
   "gentle",
   "energy",
@@ -29,6 +31,7 @@ export const SET_SORTS = [
 export type SetSortTechnique = (typeof SET_SORTS)[number];
 
 type Sortable = {
+  id?: string;
   keyCamelot: string;
   bpm: string;
   energyLevel?: number;
@@ -42,6 +45,11 @@ export function orderPhase<T extends Sortable>(
 ): T[] {
   const rise = phase !== "release";
   switch (technique) {
+    case "perfect":
+      // Global perfect mode is handled in reorderDraft; per-phase fallback.
+      return orderByPerfectHarmony(
+        tracks.map((track, index) => ({ ...track, id: track.id ?? `t${index}` })),
+      );
     case "harmonic":
       return orderByHarmonicPath(tracks, rise);
     case "gentle":

@@ -38,10 +38,11 @@ Jeder Track zeigt die Quelle (rekordbox), Phase und Rolle. Die Steuerung sitzt u
 **Opener & Closer.** Einen Performance-Track als **Opener** pinnen (bleibt vorne, Phase Open) oder als **Closer** (bleibt hinten, Phase Release). Beim Extrahieren schlägt SETBUILDER warme Open-/Release-Pins vor; du kannst sie jederzeit ändern oder lösen. Sortieren setzt die Pins wieder an die Enden.
 
 **Set bearbeiten**
-- **Sortieren:** nur innerhalb einer Phase (Alternativen bleiben am Ende; gepinnter Opener/Closer bleiben insgesamt vorne/hinten). Dasselbe Menü in der Setliste und im Key-Verlauf. Ändert sich nichts, sagt SETBUILDER das — oft fehlen Key/Energie/BPM, oder eine Phase hat nur ein bis zwei Tracks.
+- **Sortieren:** die meisten Techniken nur innerhalb einer Phase (Alternativen bleiben am Ende; gepinnter Opener/Closer bleiben insgesamt vorne/hinten). **Perfekt · Max Score** ist anders: es ordnet die ganze Performance über Phasengrenzen neu und legt Open→Release danach nach Timeline neu. Dasselbe Menü in der Setliste und im Key-Verlauf. Ändert sich nichts, sagt SETBUILDER das — oft fehlen Key/Energie/BPM, oder eine Phase hat nur ein bis zwei Tracks.
 
   | Technik | Was sie macht |
   |---|---|
+  | **Perfekt · Max Score** | Ganzes Set als Camelot-TSP (exakt Held-Karp ≤18 Tracks, sonst NN+2-opt/Or-opt). Zuerst Clashes minimieren, dann Mix-Score maximieren. Opener/Closer bleiben; Phasen werden danach neu gelegt. 100 % nur wenn alle Keys auf dem Wheel verbunden sind — getrennte Cluster lassen weiterhin einen Bridge-Clash |
   | **Harmonisch** | Verwandte Camelot-Keys, weiche Energie, kleine BPM-Schritte |
   | **Ein-Schritt** | Mixed In Key: Energie ±1 pro Übergang |
   | **Energie-Welle** | Steigt Open→Peak, fällt im Release |
@@ -82,7 +83,7 @@ Der Bogen zeigt, wie die Phasen den Slot füllen (aktive Phase hervorgehoben; ge
 - **Mix-Score** — Mittel aller Übergänge (Key und Energie zu gleichen Teilen, kleine BPM-Korrektur). Über ~75 % ist weich, unter ~50 % knallt es oft
 - **Clashes** — Übergänge, deren Keys auf dem Camelot-Wheel weit auseinanderliegen
 
-Sortieren, Ziehen oder Key/Energie in der Setliste ändern die Zahlen. Ein Key-Clash lässt sich nicht allein durch gleiche Energie und BPM ausgleichen.
+Sortieren (besonders **Perfekt · Max Score**), Ziehen oder Key/Energie in der Setliste ändern die Zahlen. Ein Key-Clash lässt sich nicht allein durch gleiche Energie und BPM ausgleichen — wenn zwei Camelot-Cluster sich nie berühren (z. B. 1A/12A vs. 8A/9A), lässt Perfekt trotzdem die wenigsten Bridge-Clashes übrig.
 
 | Phase | Energie-Ziel |
 |---|---|
