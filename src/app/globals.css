@@ -382,6 +382,16 @@ textarea {
   min-height: 2.6em;
 }
 
+.app-update-card .app-update-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.app-update-card .app-update-hint a {
+  color: #1ed760;
+}
+
 .setup-card {
   display: grid;
   gap: 0.7rem;

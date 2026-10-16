@@ -38,6 +38,10 @@ In der App unter **Verbindungen & Setups → App & Updates** siehst du die Versi
 
 Ohne Apple- und Windows-Zertifikat sind die Pakete unsigniert. Linux startet die AppImage direkt. Windows zeigt SmartScreen, „Trotzdem ausführen“ setzt die Installation fort.
 
+**macOS ohne Developer-ID:** Squirrel.Mac lehnt Auto-Updates ab (`Code signature … did not pass validation`). Die App erkennt ad-hoc Builds und zeigt statt „Update laden“ den Link zu den GitHub-Releases. Automatische Updates brauchen die Secrets `MAC_CSC_LINK` / `MAC_CSC_KEY_PASSWORD` (und idealerweise Notarisierung).
+
+Release-Job: Jede Architektur legt `latest-mac-<arch>.yml` ab; `desktop/scripts/prepare-release-assets.mjs` merged sie zu einer `latest-mac.yml` (arm64 + x64) und normalisiert Windows-Dateinamen ohne Leerzeichen, damit electron-updater die Assets trifft.
+
 macOS hängt an Browser-Downloads das Attribut `com.apple.quarantine`. Die Meldung lautet dann „SETBUILDER.app is damaged and can’t be opened“. Die App ist nicht beschädigt. Nach dem Entpacken:
 
 ```bash

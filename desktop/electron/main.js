@@ -1,9 +1,34 @@
 const { app, BrowserWindow, Menu, dialog, shell, nativeImage, ipcMain } = require("electron");
-const { spawn } = require("child_process");
+const { spawn, spawnSync } = require("child_process");
 const fs = require("fs");
 const http = require("http");
 const path = require("path");
 const { autoUpdater } = require("electron-updater");
+
+/**
+ * Squirrel.Mac only accepts updates when the running app has a real Developer ID
+ * signature. CI builds without MAC_CSC_* secrets are ad-hoc (`identity=-`) and
+ * fail with "Code signature … did not pass validation".
+ */
+function isMacAdhocSigned() {
+  if (process.platform !== "darwin" || !app.isPackaged) return false;
+  try {
+    const appBundle = path.resolve(process.execPath, "..", "..", "..");
+    const result = spawnSync("codesign", ["-dv", "--verbose=4", appBundle], {
+      encoding: "utf8",
+    });
+    const out = `${result.stdout || ""}\n${result.stderr || ""}`;
+    return /Signature=adhoc/i.test(out) || /flags=.*\badhoc\b/i.test(out);
+  } catch {
+    return true;
+  }
+}
+
+function isSignatureUpdateError(message) {
+  return /code signature|did not pass validation|code failed to satisfy|specified code requirement/i.test(
+    message,
+  );
+}
 
 function appIcon() {
   const candidates = [
@@ -48,6 +73,10 @@ function sendUpdate(payload) {
 }
 
 function setupUpdater() {
+  const macAdhoc = isMacAdhocSigned();
+  // Auto-install only works with Developer ID–signed Mac builds.
+  const updateSupported = app.isPackaged && !macAdhoc;
+
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
   autoUpdater.on("checking-for-update", () => sendUpdate({ type: "checking" }));
@@ -66,7 +95,11 @@ function setupUpdater() {
   });
   autoUpdater.on("error", (error) => {
     const message = error instanceof Error ? error.message : String(error);
-    sendUpdate({ type: "error", message });
+    sendUpdate({
+      type: "error",
+      message,
+      code: isSignatureUpdateError(message) ? "signature" : undefined,
+    });
   });
 
   ipcMain.handle("desktop:getInfo", () => ({
@@ -76,19 +109,27 @@ function setupUpdater() {
     platform: process.platform,
     arch: process.arch,
     electron: process.versions.electron,
-    updateSupported: app.isPackaged,
+    updateSupported,
+    updateManualOnly: Boolean(macAdhoc),
   }));
 
   ipcMain.handle("desktop:checkForUpdates", async () => {
     if (!app.isPackaged) {
       return { ok: false, message: "Updates nur in der installierten App." };
     }
+    if (macAdhoc) {
+      return { ok: false, code: "unsigned", message: "unsigned" };
+    }
     try {
       await autoUpdater.checkForUpdates();
       return { ok: true };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      return { ok: false, message };
+      return {
+        ok: false,
+        message,
+        code: isSignatureUpdateError(message) ? "signature" : undefined,
+      };
     }
   });
 
@@ -96,12 +137,19 @@ function setupUpdater() {
     if (!app.isPackaged) {
       return { ok: false, message: "Updates nur in der installierten App." };
     }
+    if (macAdhoc) {
+      return { ok: false, code: "unsigned", message: "unsigned" };
+    }
     try {
       await autoUpdater.downloadUpdate();
       return { ok: true };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      return { ok: false, message };
+      return {
+        ok: false,
+        message,
+        code: isSignatureUpdateError(message) ? "signature" : undefined,
+      };
     }
   });
 
@@ -468,7 +516,8 @@ if (!gotLock) {
         await waitForServer();
       }
       createWindow();
-      if (app.isPackaged) {
+      // Skip background checks on ad-hoc Mac builds — ShipIt cannot install them.
+      if (app.isPackaged && !isMacAdhocSigned()) {
         setTimeout(() => {
           autoUpdater.checkForUpdates().catch(() => undefined);
         }, 8000);

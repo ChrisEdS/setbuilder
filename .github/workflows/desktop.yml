@@ -77,6 +77,17 @@ jobs:
           fi
           npm run build && npx electron-builder --publish never $args
 
+      - name: Keep per-arch Mac update metadata
+        if: runner.os == 'macOS'
+        working-directory: desktop/dist
+        shell: bash
+        run: |
+          if [ -f latest-mac.yml ]; then
+            mv latest-mac.yml "latest-mac-${{ matrix.arch }}.yml"
+            echo "stored latest-mac-${{ matrix.arch }}.yml"
+            cat "latest-mac-${{ matrix.arch }}.yml"
+          fi
+
       - name: Server modules shipped
         shell: bash
         run: |
@@ -94,13 +105,19 @@ jobs:
   publish:
     name: Publish release
     needs: build
-    if: always() && startsWith(github.ref, 'refs/tags/') && !cancelled()
+    # Only ship when every matrix package succeeded — never publish a half release.
+    if: ${{ !cancelled() && needs.build.result == 'success' && startsWith(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v5
+
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
           merge-multiple: true
+
+      - name: Prepare updater metadata
+        run: node desktop/scripts/prepare-release-assets.mjs artifacts
 
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2

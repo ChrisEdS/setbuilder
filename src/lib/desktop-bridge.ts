@@ -6,7 +6,7 @@ export type DesktopUpdateEvent =
   | { type: "not-available"; version: string }
   | { type: "progress"; percent: number }
   | { type: "downloaded"; version: string }
-  | { type: "error"; message: string };
+  | { type: "error"; message: string; code?: "signature" };
 
 export type DesktopInfo = {
   version: string;
@@ -15,13 +15,16 @@ export type DesktopInfo = {
   platform: NodeJS.Platform;
   arch: string;
   electron: string;
+  /** True when Squirrel/NSIS auto-update can install (signed Mac / packaged). */
   updateSupported: boolean;
+  /** Packaged Mac build without Developer ID — install new versions from GitHub. */
+  updateManualOnly?: boolean;
 };
 
 export type DesktopBridge = {
   getInfo: () => Promise<DesktopInfo>;
-  checkForUpdates: () => Promise<{ ok: boolean; message?: string }>;
-  downloadUpdate: () => Promise<{ ok: boolean; message?: string }>;
+  checkForUpdates: () => Promise<{ ok: boolean; message?: string; code?: string }>;
+  downloadUpdate: () => Promise<{ ok: boolean; message?: string; code?: string }>;
   installUpdate: () => Promise<{ ok: boolean; message?: string }>;
   onUpdateEvent: (callback: (event: DesktopUpdateEvent) => void) => () => void;
 };

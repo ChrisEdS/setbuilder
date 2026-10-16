@@ -1,7 +1,7 @@
 {
   "name": "setform",
   "productName": "SETBUILDER",
-  "version": "3.4.0",
+  "version": "3.4.1",
   "description": "DJ set preparation for rekordbox",
   "homepage": "https://github.com/ChrisEdS/setbuilder",
   "author": {
@@ -78,11 +78,13 @@
     "win": {
       "target": [
         "nsis"
-      ]
+      ],
+      "artifactName": "${productName}-Setup-${version}.${ext}"
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "${productName}-Setup-${version}.${ext}"
     },
     "linux": {
       "target": [

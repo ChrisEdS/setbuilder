@@ -305,11 +305,16 @@ const de = {
   "builder.app.statusDownloading": "Lade Update… {percent}%",
   "builder.app.statusReady": "Version {version} ist geladen. Neu starten zum Installieren.",
   "builder.app.statusCurrent": "Du hast die aktuelle Version.",
+  "builder.app.statusUnsigned":
+    "Diese Mac-Build ist nicht mit Apple signiert. Automatische Updates gehen damit nicht — neue Version von GitHub laden und die App ersetzen.",
+  "builder.app.signatureFailed":
+    "Update abgelehnt (Signatur). Unsignierte Builds können sich nicht selbst aktualisieren — bitte die neue Version von GitHub laden.",
   "builder.app.check": "Nach Updates suchen",
   "builder.app.checking": "Prüfe…",
   "builder.app.checkTip": "GitHub-Releases prüfen, ob eine neuere Desktop-Version da ist.",
   "builder.app.download": "Update laden",
   "builder.app.downloadTip": "Die neue Version im Hintergrund herunterladen.",
+  "builder.app.downloadManual": "Neue Version laden",
   "builder.app.install": "Neu starten & installieren",
   "builder.app.installTip": "SETBUILDER beenden und die geladene Version installieren.",
   "builder.app.openReleases": "Releases auf GitHub",
@@ -750,11 +755,16 @@ const en: Record<keyof typeof de, string> = {
   "builder.app.statusDownloading": "Downloading update… {percent}%",
   "builder.app.statusReady": "Version {version} is downloaded. Restart to install.",
   "builder.app.statusCurrent": "You are on the latest version.",
+  "builder.app.statusUnsigned":
+    "This Mac build is not Apple-signed. Automatic updates won’t work — download the new version from GitHub and replace the app.",
+  "builder.app.signatureFailed":
+    "Update rejected (code signature). Unsigned builds can’t self-update — download the new version from GitHub.",
   "builder.app.check": "Check for updates",
   "builder.app.checking": "Checking…",
   "builder.app.checkTip": "Check GitHub releases for a newer desktop build.",
   "builder.app.download": "Download update",
   "builder.app.downloadTip": "Download the new version in the background.",
+  "builder.app.downloadManual": "Download new version",
   "builder.app.install": "Restart & install",
   "builder.app.installTip": "Quit SETBUILDER and install the downloaded version.",
   "builder.app.openReleases": "Releases on GitHub",

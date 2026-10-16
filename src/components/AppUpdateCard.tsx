@@ -24,7 +24,15 @@ type Phase =
   | "downloading"
   | "ready"
   | "current"
-  | "error";
+  | "error"
+  | "manual";
+
+function looksLikeSignatureFailure(message: string, code?: string) {
+  if (code === "signature" || code === "unsigned") return true;
+  return /code signature|did not pass validation|code failed to satisfy|specified code requirement/i.test(
+    message,
+  );
+}
 
 export function AppUpdateCard() {
   const { t } = useI18n();
@@ -56,7 +64,9 @@ export function AppUpdateCard() {
     if (!bridge) return;
     let cancelled = false;
     void bridge.getInfo().then((info) => {
-      if (!cancelled) setDesktop(info);
+      if (cancelled) return;
+      setDesktop(info);
+      if (info.updateManualOnly) setPhase("manual");
     });
     const stop = bridge.onUpdateEvent((event: DesktopUpdateEvent) => {
       if (event.type === "checking") {
@@ -80,24 +90,29 @@ export function AppUpdateCard() {
         setError(null);
       } else if (event.type === "error") {
         setPhase("error");
-        setError(event.message);
+        setError(
+          looksLikeSignatureFailure(event.message, event.code)
+            ? t("builder.app.signatureFailed")
+            : event.message,
+        );
       }
     });
     return () => {
       cancelled = true;
       stop();
     };
-  }, [bridge]);
+  }, [bridge, t]);
 
   const version = desktop?.version || web?.version || "—";
   const channel = desktop
     ? t("builder.app.channelDesktop")
     : t("builder.app.channelWeb");
   const releasesUrl = web?.releasesUrl || "https://github.com/ChrisEdS/setbuilder/releases";
-  const canUpdate = Boolean(bridge && desktop?.updateSupported);
+  const manualOnly = Boolean(desktop?.updateManualOnly);
+  const canUpdate = Boolean(bridge && desktop?.updateSupported && !manualOnly);
 
   async function check() {
-    if (!bridge || busy) return;
+    if (!bridge || busy || manualOnly) return;
     setBusy(true);
     setError(null);
     setPhase("checking");
@@ -105,7 +120,11 @@ export function AppUpdateCard() {
       const result = await bridge.checkForUpdates();
       if (!result.ok) {
         setPhase("error");
-        setError(result.message || t("builder.app.checkFailed"));
+        setError(
+          looksLikeSignatureFailure(result.message || "", result.code)
+            ? t("builder.app.signatureFailed")
+            : result.message || t("builder.app.checkFailed"),
+        );
       }
     } catch (caught) {
       setPhase("error");
@@ -116,7 +135,7 @@ export function AppUpdateCard() {
   }
 
   async function download() {
-    if (!bridge || busy) return;
+    if (!bridge || busy || manualOnly) return;
     setBusy(true);
     setError(null);
     setPhase("downloading");
@@ -125,7 +144,11 @@ export function AppUpdateCard() {
       const result = await bridge.downloadUpdate();
       if (!result.ok) {
         setPhase("error");
-        setError(result.message || t("builder.app.downloadFailed"));
+        setError(
+          looksLikeSignatureFailure(result.message || "", result.code)
+            ? t("builder.app.signatureFailed")
+            : result.message || t("builder.app.downloadFailed"),
+        );
       }
     } catch (caught) {
       setPhase("error");
@@ -148,19 +171,21 @@ export function AppUpdateCard() {
   }
 
   const statusText =
-    phase === "checking"
-      ? t("builder.app.statusChecking")
-      : phase === "available" && remoteVersion
-        ? t("builder.app.statusAvailable", { version: remoteVersion })
-        : phase === "downloading"
-          ? t("builder.app.statusDownloading", { percent: progress })
-          : phase === "ready" && remoteVersion
-            ? t("builder.app.statusReady", { version: remoteVersion })
-            : phase === "current"
-              ? t("builder.app.statusCurrent")
-              : phase === "error" && error
-                ? error
-                : t("builder.app.statusIdle");
+    phase === "manual" || manualOnly
+      ? t("builder.app.statusUnsigned")
+      : phase === "checking"
+        ? t("builder.app.statusChecking")
+        : phase === "available" && remoteVersion
+          ? t("builder.app.statusAvailable", { version: remoteVersion })
+          : phase === "downloading"
+            ? t("builder.app.statusDownloading", { percent: progress })
+            : phase === "ready" && remoteVersion
+              ? t("builder.app.statusReady", { version: remoteVersion })
+              : phase === "current"
+                ? t("builder.app.statusCurrent")
+                : phase === "error" && error
+                  ? error
+                  : t("builder.app.statusIdle");
 
   return (
     <div className="setup-card app-update-card">
@@ -223,11 +248,18 @@ export function AppUpdateCard() {
             ) : null}
           </>
         ) : (
-          <a className="btn ghost" href={releasesUrl} target="_blank" rel="noreferrer">
-            {t("builder.app.openReleases")}
+          <a className="btn" href={releasesUrl} target="_blank" rel="noreferrer">
+            {manualOnly ? t("builder.app.downloadManual") : t("builder.app.openReleases")}
           </a>
         )}
       </div>
+      {phase === "error" && !manualOnly ? (
+        <p className="app-update-hint">
+          <a href={releasesUrl} target="_blank" rel="noreferrer">
+            {t("builder.app.openReleases")}
+          </a>
+        </p>
+      ) : null}
     </div>
   );
 }
