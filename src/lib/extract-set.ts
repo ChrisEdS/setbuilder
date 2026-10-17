@@ -13,7 +13,11 @@ import { isGeneratedNote } from "@/lib/i18n/stored";
 import { tDe, type Translate } from "@/lib/i18n/core";
 import { bestPhaseFor } from "@/lib/plan-b";
 import { orderByPerfectHarmony } from "@/lib/perfect-harmony";
-import { applySetAnchors, withSuggestedAnchors } from "@/lib/set-anchors";
+import {
+  applySetAnchors,
+  lockPerformanceEnds,
+  withSuggestedAnchors,
+} from "@/lib/set-anchors";
 import type { SpotifyTrack } from "@/lib/spotify";
 import {
   DEFAULT_SET,
@@ -455,6 +459,12 @@ export function reharmonizeDraft(draft: SetDraft): SetDraft {
 export function reorderDraft(draft: SetDraft, technique: SetSortTechnique): SetDraft {
   const performance = draft.tracks.filter((track) => track.role !== "safety");
   const safeties = draft.tracks.filter((track) => track.role === "safety");
+  // Pins win; otherwise keep the current first/last song at the ends.
+  const startId = draft.openerId?.trim() || performance[0]?.id || null;
+  const endId =
+    draft.closerId?.trim() ||
+    performance[performance.length - 1]?.id ||
+    null;
 
   const phased =
     technique === "perfect"
@@ -464,7 +474,12 @@ export function reorderDraft(draft: SetDraft, technique: SetSortTechnique): SetD
           return orderPhase(group, phase.id, technique);
         });
 
-  const withRelations = phased.map((track, index, arr) => {
+  const locked =
+    technique === "perfect"
+      ? phased
+      : lockPerformanceEnds(phased, startId, endId);
+
+  const withRelations = locked.map((track, index, arr) => {
     const prev = index > 0 ? arr[index - 1] : null;
     const relation = prev
       ? harmonicRelation(prev.keyCamelot, track.keyCamelot)
@@ -482,12 +497,16 @@ export function reorderDraft(draft: SetDraft, technique: SetSortTechnique): SetD
 /**
  * Whole-set Camelot TSP: kill clashes across phase seams, then re-lay phases
  * by timeline share so the arc still reads Open → Release.
+ *
+ * Pins win when set; otherwise the current first/last performance tracks stay
+ * so Perfect matches the “Opener/closer stay” copy without requiring a pin.
  */
 function reorderPerformancePerfect(performance: SetTrack[], draft: SetDraft): SetTrack[] {
   if (performance.length <= 1) return performance;
   const ordered = orderByPerfectHarmony(performance, {
-    fixedStartId: draft.openerId,
-    fixedEndId: draft.closerId,
+    fixedStartId: draft.openerId ?? performance[0]?.id ?? null,
+    fixedEndId:
+      draft.closerId ?? performance[performance.length - 1]?.id ?? null,
   });
   return rephaseByTimeline(ordered);
 }

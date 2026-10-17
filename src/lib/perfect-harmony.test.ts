@@ -140,7 +140,56 @@ test("reorderDraft perfect reorders across phases and re-lays the arc", () => {
   const performance = next.tracks.filter((item) => item.role !== "safety");
   const after = pathStats(performance);
   assert.equal(next.tracks[next.tracks.length - 1].role, "safety");
+  // Without pins, current ends still stay (Perfect copy: opener/closer stay).
+  assert.equal(performance[0].id, "a");
+  assert.equal(performance[performance.length - 1].id, "f");
   assert.ok(after.clashes <= before.clashes);
   assert.ok((after.avg ?? 0) >= (before.avg ?? 0) - 0.01);
   assert.ok(performance.every((item) => item.phase));
+});
+
+test("reorderDraft perfect respects pinned opener over current first track", () => {
+  const track = (
+    id: string,
+    phase: "open" | "peak" | "release",
+    keyCamelot: string,
+    energyLevel: number,
+  ) => ({
+    id,
+    name: id,
+    artists: ["X"],
+    album: "",
+    durationMs: 180_000,
+    uri: "",
+    externalUrl: "",
+    imageUrl: null,
+    phase,
+    role: "groove" as const,
+    transition: "unset" as const,
+    bpm: "124",
+    keyCamelot,
+    energyLevel,
+    note: "",
+    why: "",
+    safetyAlt: "",
+  });
+  const draft = {
+    ...DEFAULT_SET,
+    openerId: "c",
+    closerId: "a",
+    tracks: [
+      track("a", "open", "1A", 4),
+      track("b", "open", "8A", 5),
+      track("c", "peak", "2A", 8),
+      track("d", "peak", "9A", 9),
+      track("e", "release", "1B", 5),
+      track("f", "release", "3A", 4),
+    ],
+  };
+  const next = reorderDraft(draft, "perfect");
+  const performance = next.tracks.filter((item) => item.role !== "safety");
+  assert.equal(performance[0].id, "c");
+  assert.equal(performance[performance.length - 1].id, "a");
+  assert.equal(next.openerId, "c");
+  assert.equal(next.closerId, "a");
 });

@@ -36,6 +36,8 @@ type Sortable = {
   bpm: string;
   energyLevel?: number;
   energy?: number;
+  /** Used by Waves to alternate groove ↔ impact (anchor). */
+  role?: string;
 };
 
 export function orderPhase<T extends Sortable>(
@@ -82,12 +84,43 @@ function cmpMissing(a: number | null, b: number | null): number | null {
   return null;
 }
 
+function camelotNumber(input: string): number | null {
+  const code = normalizeCamelot(input);
+  if (!code) return null;
+  return Number(code.slice(0, -1));
+}
+
+function camelotMode(input: string): string | null {
+  const code = normalizeCamelot(input);
+  if (!code) return null;
+  return code.slice(-1);
+}
+
+/** Clockwise steps on the Camelot wheel (0–11). */
+function clockwise(from: number, to: number): number {
+  return (to - from + 12) % 12;
+}
+
+/**
+ * Energy primary; Camelot key clusters equal-energy ties; BPM last.
+ * Matches the “Key is only the tie-breaker” sort hint.
+ */
 export function orderByEnergy<T extends Sortable>(tracks: T[], rise = true): T[] {
   return [...tracks].sort((a, b) => {
     const missing = cmpMissing(energyValue(a), energyValue(b));
     if (missing != null) return missing;
     const delta = (energyValue(a) as number) - (energyValue(b) as number);
     if (delta !== 0) return rise ? delta : -delta;
+
+    const numA = camelotNumber(a.keyCamelot);
+    const numB = camelotNumber(b.keyCamelot);
+    const keyMissing = cmpMissing(numA, numB);
+    if (keyMissing != null) return keyMissing;
+    if (numA !== numB) return (numA as number) - (numB as number);
+    const modeA = camelotMode(a.keyCamelot) ?? "";
+    const modeB = camelotMode(b.keyCamelot) ?? "";
+    if (modeA !== modeB) return modeA.localeCompare(modeB);
+
     const bpm = (parseBpm(a.bpm) ?? 0) - (parseBpm(b.bpm) ?? 0);
     return rise ? bpm : -bpm;
   });
@@ -132,13 +165,19 @@ export function orderByGentleEnergy<T extends Sortable>(
         const abs = Math.abs(step);
         if (abs === 0) cost = 1.2;
         else if (abs === 1) cost = (step > 0) === rise ? 0 : 0.55;
-        else if (abs === 2) cost = (step > 0) === rise ? 2.2 : 2.8;
-        else cost = 8 + abs;
+        else if (abs === 2) cost = (step > 0) === rise ? 6 : 8;
+        else cost = 20 + abs * 3;
       }
       const bpmDelta =
         Math.abs((parseBpm(candidate.bpm) ?? 0) - (parseBpm(prev.bpm) ?? 0)) *
         0.02;
       cost += bpmDelta;
+      // Prefer mixable keys when energy cost ties.
+      const relation = harmonicRelation(prev.keyCamelot, candidate.keyCamelot);
+      if (relation === "clash") cost += 2.5;
+      else if (relation === "contrast") cost += 1.2;
+      else if (relation === "same" || relation === "relative") cost -= 0.15;
+      else if (relation === "adjacent") cost -= 0.08;
       if (cost < best) {
         best = cost;
         bestIdx = index;
@@ -199,14 +238,14 @@ export function orderByTempoPulse<T extends Sortable>(
 
 /**
  * Mixed In Key energy arc: climb, dip about two levels, climb again to the
- * high point. Open/lift stay a single climb; release a single fall.
+ * high point. Only Peak gets the dip; Open/Lift/Rise climb, Release falls.
  */
 export function orderByEnergyRoller<T extends Sortable>(
   tracks: T[],
   phase: SetPhaseId,
 ): T[] {
   if (phase === "release") return orderByEnergy(tracks, false);
-  if (phase === "open" || phase === "lift") return orderByEnergy(tracks, true);
+  if (phase !== "peak") return orderByEnergy(tracks, true);
 
   const ranked = orderByEnergy(tracks, true);
   const n = ranked.length;
@@ -230,17 +269,10 @@ export function orderByEnergyRoller<T extends Sortable>(
   ];
 }
 
-function camelotNumber(input: string): number | null {
-  const code = normalizeCamelot(input);
-  if (!code) return null;
-  return Number(code.slice(0, -1));
-}
-
-function clockwise(from: number, to: number): number {
-  return (to - from + 12) % 12;
-}
-
-/** Walk the Camelot wheel clockwise instead of clustering the same key. */
+/**
+ * Walk the Camelot wheel clockwise instead of clustering the same key.
+ * Same-key stacking is penalized; +1 adjacent is preferred.
+ */
 export function orderByCamelotJourney<T extends Sortable>(tracks: T[]): T[] {
   if (tracks.length <= 1) return tracks;
   const remaining = [...tracks];
@@ -257,11 +289,15 @@ export function orderByCamelotJourney<T extends Sortable>(tracks: T[]): T[] {
       let score = 80;
       if (prevNum != null && num != null) {
         const spin = clockwise(prevNum, num);
-        if (relation === "same") score = 0;
-        else if (relation === "relative") score = 0.4;
-        else if (relation === "adjacent" && spin === 1) score = 1;
-        else if (relation === "energyBoost") score = 2;
-        else score = spin + (relation === "adjacent" ? 0.2 : 0.6);
+        if (relation === "adjacent" && spin === 1) score = 0;
+        else if (relation === "relative") score = 0.5;
+        else if (relation === "energyBoost" && spin === 1) score = 1.2;
+        else if (relation === "adjacent" && spin === 11) score = 2.2;
+        else if (relation === "same") score = 3.5;
+        else if (relation === "energyBoost") score = 2.5 + spin * 0.15;
+        else if (relation === "contrast") score = 12 + spin;
+        else if (relation === "clash") score = 40 + spin;
+        else score = spin + 0.6;
       }
       if (score < best) {
         best = score;
@@ -273,10 +309,43 @@ export function orderByCamelotJourney<T extends Sortable>(tracks: T[]): T[] {
   return ordered;
 }
 
-/** Peak: groove and impact alternate. Other phases follow the energy of the slot. */
+/**
+ * Peak: groove and impact (anchor) alternate when roles are set;
+ * otherwise low/high energy interleave. Other phases follow energy of the slot.
+ */
 export function orderByWaves<T extends Sortable>(tracks: T[], phase: SetPhaseId): T[] {
   if (phase === "release") return orderByEnergy(tracks, false);
   if (phase !== "peak") return orderByEnergy(tracks, true);
+
+  const grooves = tracks.filter((track) => track.role === "groove");
+  const impacts = tracks.filter((track) => track.role === "anchor");
+  const others = tracks.filter(
+    (track) => track.role !== "groove" && track.role !== "anchor",
+  );
+
+  if (grooves.length > 0 && impacts.length > 0) {
+    const g = orderByEnergy(grooves, true);
+    const i = orderByEnergy(impacts, true);
+    const o = orderByEnergy(others, true);
+    const out: T[] = [];
+    let gi = 0;
+    let ii = 0;
+    let takeImpact = false;
+    while (gi < g.length || ii < i.length) {
+      if (takeImpact && ii < i.length) out.push(i[ii++]);
+      else if (!takeImpact && gi < g.length) out.push(g[gi++]);
+      else if (ii < i.length) out.push(i[ii++]);
+      else out.push(g[gi++]);
+      takeImpact = !takeImpact;
+    }
+    // Sprinkle remaining roles into the middle by energy order.
+    for (const track of o) {
+      const mid = Math.min(out.length, Math.max(1, Math.floor(out.length / 2)));
+      out.splice(mid, 0, track);
+    }
+    return out;
+  }
+
   const ranked = orderByEnergy(tracks, true);
   const out: T[] = [];
   let low = 0;

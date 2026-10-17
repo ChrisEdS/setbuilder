@@ -47,23 +47,25 @@ export function withSuggestedAnchors(draft: SetDraft): SetDraft {
 }
 
 /**
- * Move pinned opener to performance start (phase open) and closer to the end
- * (phase release). Same id for both only works with a one-track set.
+ * Move start/end tracks to the performance ends (phase open / release).
+ * Does not write openerId/closerId — used after sort so positional ends stay
+ * without silently creating pins.
  */
-export function applySetAnchors(draft: SetDraft): SetDraft {
-  const openerId = draft.openerId?.trim() || null;
-  const closerId = draft.closerId?.trim() || null;
-  if (!openerId && !closerId) return draft;
+export function lockPerformanceEnds(
+  performance: SetTrack[],
+  startId: string | null,
+  endId: string | null,
+): SetTrack[] {
+  if (!performance.length || (!startId && !endId)) return performance;
 
-  const performance = draft.tracks.filter((track) => track.role !== "safety");
-  const safeties = draft.tracks.filter((track) => track.role === "safety");
-  if (!performance.length) return draft;
+  let opener = startId
+    ? performance.find((track) => track.id === startId) ?? null
+    : null;
+  const closer = endId
+    ? performance.find((track) => track.id === endId) ?? null
+    : null;
 
-  let opener = openerId ? performance.find((track) => track.id === openerId) : null;
-  const closer = closerId ? performance.find((track) => track.id === closerId) : null;
-
-  // If both pins point at the same track and there are others, keep closer last
-  // and leave opener unset in the middle case — prefer distinct ends.
+  // Prefer distinct ends when both ids collide on a multi-track set.
   if (opener && closer && opener.id === closer.id && performance.length > 1) {
     opener = null;
   }
@@ -81,13 +83,47 @@ export function applySetAnchors(draft: SetDraft): SetDraft {
     });
   }
   nextPerf.push(...middle);
-  // Same id as opener (one-track set) must not be pushed twice.
   if (closer && closer.id !== opener?.id) {
     nextPerf.push({
       ...closer,
       phase: "release",
       role: closer.role === "safety" ? "groove" : closer.role,
     });
+  }
+  return nextPerf;
+}
+
+/**
+ * Move pinned opener to performance start (phase open) and closer to the end
+ * (phase release). Same id for both only works with a one-track set.
+ */
+export function applySetAnchors(draft: SetDraft): SetDraft {
+  const openerId = draft.openerId?.trim() || null;
+  const closerId = draft.closerId?.trim() || null;
+  if (!openerId && !closerId) return draft;
+
+  const performance = draft.tracks.filter((track) => track.role !== "safety");
+  const safeties = draft.tracks.filter((track) => track.role === "safety");
+  if (!performance.length) return draft;
+
+  const nextPerf = lockPerformanceEnds(performance, openerId, closerId);
+
+  // Drop pins that no longer exist; clear opener when it collided with closer.
+  let nextOpenerId: string | null =
+    openerId && performance.some((track) => track.id === openerId)
+      ? openerId
+      : null;
+  let nextCloserId: string | null =
+    closerId && performance.some((track) => track.id === closerId)
+      ? closerId
+      : null;
+  if (
+    nextOpenerId &&
+    nextCloserId &&
+    nextOpenerId === nextCloserId &&
+    performance.length > 1
+  ) {
+    nextOpenerId = null;
   }
 
   const withRelations = nextPerf.map((track, index, arr) => {
@@ -102,8 +138,8 @@ export function applySetAnchors(draft: SetDraft): SetDraft {
 
   return {
     ...draft,
-    openerId: opener?.id ?? null,
-    closerId: closer?.id ?? null,
+    openerId: nextOpenerId,
+    closerId: nextCloserId,
     tracks: [...withRelations, ...safeties],
   };
 }

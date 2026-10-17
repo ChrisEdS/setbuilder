@@ -35,22 +35,22 @@ How to prepare a set with rekordbox: load → build → export. Screenshots use 
 
 Each track shows its source (rekordbox), phase and role. Controls sit under the title: phase and role on one row, play / move / Replace / **Opener** / **Closer** / remove on the next. Hover any control for a short tip. Below are key, BPM and energy, the transition from the previous track (“Adjacent key (±1) · +1 BPM · Energy +1”) and the reasoning (“Why here”). Change the order by dragging or with the arrows; “Replace” swaps a title.
 
-**Opener & closer.** Pin a performance track as **Opener** (stays first, phase Open) or **Closer** (stays last, phase Release). Extract suggests warm open / release pins; you can change or clear them anytime. Sorting re-applies the pins so they stay at the ends.
+**Opener & closer.** Pin a performance track as **Opener** (stays first, phase Open) or **Closer** (stays last, phase Release). Extract suggests warm open / release pins; you can change or clear them anytime. Sorting keeps pinned ends — and without a pin, the current first and last performance tracks stay at the ends anyway.
 
 **Edit set**
-- **Sort:** most techniques reorder only inside each phase (Alternatives stay at the end; pinned opener/closer stay first/last overall). **Perfect · Max score** is different: it reorders the whole performance across phase seams, then re-lays Open→Release by timeline. Same menu on the setlist and on the Key path. If nothing moves, SETBUILDER says so — often key/energy/BPM are missing, or a phase has only one or two tracks.
+- **Sort:** most techniques reorder only inside each phase (Alternatives stay at the end; opener/closer stay first/last overall). **Perfect · Max score** is different: it reorders the whole performance across phase seams, then re-lays Open→Release by timeline. Same menu on the setlist and on the Key path. If nothing moves, SETBUILDER says so — often key/energy/BPM are missing, or a phase has only one or two tracks.
 
   | Technique | What it does |
   |---|---|
-  | **Perfect · Max score** | Whole-set Camelot TSP (exact Held-Karp ≤18 tracks, else NN+2-opt/Or-opt). Minimizes clashes first, then maximizes mix score. Opener/closer stay pinned; phases are re-laid after. 100% needs keys that all connect on the wheel — disconnected clusters still leave a bridge clash |
-  | **Harmonic** | Related Camelot keys, soft energy, small BPM steps |
-  | **One-step** | Mixed In Key: energy ±1 per transition |
-  | **Energy wave** | Climbs Open→Peak, falls in Release |
-  | **Twin peak** | Build, dip ≈−2, climb again (rise/peak) |
-  | **Build tempo** | BPM ramp with the phase |
-  | **BPM chain** | Stay in the ±2–4 pocket |
-  | **Camelot journey** | Clockwise around the wheel |
-  | **Waves** | In Peak, groove and impact alternate |
+  | **Perfect · Max score** | Whole-set Camelot TSP (exact Held-Karp ≤18 tracks, else NN+2-opt/Or-opt). Minimizes clashes first, then maximizes mix score. Opener/closer stay; phases are re-laid after. 100% needs keys that all connect on the wheel — disconnected clusters still leave a bridge clash |
+  | **Harmonic** | Per phase: related Camelot keys, smooth energy, small BPM steps |
+  | **One-step** | Per phase · Mixed In Key: energy prefers ±1 with the phase |
+  | **Energy wave** | Per phase: climbs Open→Peak, falls in Release; key is the tie-breaker |
+  | **Twin peak** | Per phase: in Peak build, dip ≈−2, climb again; Open/Lift/Rise only climb |
+  | **Build tempo** | Per phase: BPM ramp with the phase |
+  | **BPM chain** | Per phase: stay in the ±2–4 pocket |
+  | **Camelot journey** | Per phase: clockwise around the wheel (does not stack the same key) |
+  | **Waves** | Per phase: in Peak, groove ↔ impact (anchor); else low/high energy |
 
 - **Energy from files:** computes Energy Level from stick audio (Essentia), sets it in the draft, and writes ID3 energy tags into MP3s on the stick (Chrome / Edge / desktop). The Set note is not changed. Then reload tags in rekordbox.
 - **Trim to slot:** keeps, per phase, the tracks whose energy fits the band; the rest moves to Alternatives

@@ -325,7 +325,7 @@ export const EXTRACT_STEPS: { title: string; body: string }[] = [
   },
   {
     title: "4. Harmonik nachziehen",
-    body: "„Harmonisch sortieren“ ordnet innerhalb einer Phase nach Camelot, Energie und kleinen BPM-Schritten. Opener und Closer, die du festlegst, bleiben Anfang und Ende. Ein bewusster Kontrast vor dem Peak-Anchor bleibt erlaubt. Die Live-Zeile unter jedem Track zeigt den tatsächlichen Übergang, auch nachdem du selbst gezogen oder einen Key geändert hast.",
+    body: "„Harmonisch sortieren“ ordnet innerhalb einer Phase nach Camelot, Energie und kleinen BPM-Schritten. Opener und Closer bleiben Anfang und Ende — gepinnt oder als aktuelle erste/letzte Performance-Tracks. Ein bewusster Kontrast vor dem Peak-Anchor bleibt erlaubt. Die Live-Zeile unter jedem Track zeigt den tatsächlichen Übergang, auch nachdem du selbst gezogen oder einen Key geändert hast.",
   },
 ];
 

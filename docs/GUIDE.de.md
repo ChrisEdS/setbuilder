@@ -35,22 +35,22 @@ So bereitest du ein Set mit rekordbox vor: laden → bauen → exportieren. Die 
 
 Jeder Track zeigt die Quelle (rekordbox), Phase und Rolle. Die Steuerung sitzt unter dem Titel: Phase und Rolle in einer Zeile, Play / Verschieben / Ersatz / **Opener** / **Closer** / Entfernen darunter. Hover zeigt kurze Tipps. Darunter stehen Key, BPM und Energie, der Übergang zum Vorgänger („Nachbar-Key (±1) · +1 BPM · Energie +1“) und die Begründung („Warum hier“). Die Reihenfolge änderst du per Ziehen oder mit den Pfeilen, „Ersatz“ tauscht einen Titel aus.
 
-**Opener & Closer.** Einen Performance-Track als **Opener** pinnen (bleibt vorne, Phase Open) oder als **Closer** (bleibt hinten, Phase Release). Beim Extrahieren schlägt SETBUILDER warme Open-/Release-Pins vor; du kannst sie jederzeit ändern oder lösen. Sortieren setzt die Pins wieder an die Enden.
+**Opener & Closer.** Einen Performance-Track als **Opener** pinnen (bleibt vorne, Phase Open) oder als **Closer** (bleibt hinten, Phase Release). Beim Extrahieren schlägt SETBUILDER warme Open-/Release-Pins vor; du kannst sie jederzeit ändern oder lösen. Sortieren hält gepinnte Enden — und ohne Pin bleiben die aktuellen ersten und letzten Performance-Tracks sowieso an den Enden.
 
 **Set bearbeiten**
-- **Sortieren:** die meisten Techniken nur innerhalb einer Phase (Alternativen bleiben am Ende; gepinnter Opener/Closer bleiben insgesamt vorne/hinten). **Perfekt · Max Score** ist anders: es ordnet die ganze Performance über Phasengrenzen neu und legt Open→Release danach nach Timeline neu. Dasselbe Menü in der Setliste und im Key-Verlauf. Ändert sich nichts, sagt SETBUILDER das — oft fehlen Key/Energie/BPM, oder eine Phase hat nur ein bis zwei Tracks.
+- **Sortieren:** die meisten Techniken nur innerhalb einer Phase (Alternativen bleiben am Ende; Opener/Closer bleiben insgesamt vorne/hinten). **Perfekt · Max Score** ist anders: es ordnet die ganze Performance über Phasengrenzen neu und legt Open→Release danach nach Timeline neu. Dasselbe Menü in der Setliste und im Key-Verlauf. Ändert sich nichts, sagt SETBUILDER das — oft fehlen Key/Energie/BPM, oder eine Phase hat nur ein bis zwei Tracks.
 
   | Technik | Was sie macht |
   |---|---|
   | **Perfekt · Max Score** | Ganzes Set als Camelot-TSP (exakt Held-Karp ≤18 Tracks, sonst NN+2-opt/Or-opt). Zuerst Clashes minimieren, dann Mix-Score maximieren. Opener/Closer bleiben; Phasen werden danach neu gelegt. 100 % nur wenn alle Keys auf dem Wheel verbunden sind — getrennte Cluster lassen weiterhin einen Bridge-Clash |
-  | **Harmonisch** | Verwandte Camelot-Keys, weiche Energie, kleine BPM-Schritte |
-  | **Ein-Schritt** | Mixed In Key: Energie ±1 pro Übergang |
-  | **Energie-Welle** | Steigt Open→Peak, fällt im Release |
-  | **Doppel-Peak** | Aufbauen, kurz −2, wieder hoch (Rise/Peak) |
-  | **Tempo aufbauen** | BPM-Rampe mit der Phase |
-  | **BPM-Kette** | Im ±2–4-Pocket bleiben |
-  | **Camelot-Reise** | Im Uhrzeigersinn ums Wheel |
-  | **Wellen** | Im Peak wechseln Groove und Impact |
+  | **Harmonisch** | Pro Phase: verwandte Camelot-Keys, weiche Energie, kleine BPM-Schritte |
+  | **Ein-Schritt** | Pro Phase · Mixed In Key: Energie bevorzugt ±1 mit der Phase |
+  | **Energie-Welle** | Pro Phase: steigt Open→Peak, fällt im Release; Key ist der Tiebreaker |
+  | **Doppel-Peak** | Pro Phase: im Peak aufbauen, kurz −2, wieder hoch; Open/Lift/Rise nur steigen |
+  | **Tempo aufbauen** | Pro Phase: BPM-Rampe mit der Phase |
+  | **BPM-Kette** | Pro Phase: im ±2–4-Pocket bleiben |
+  | **Camelot-Reise** | Pro Phase: im Uhrzeigersinn ums Wheel (stapelt denselben Key nicht) |
+  | **Wellen** | Pro Phase: im Peak Groove ↔ Impact (Anchor); sonst Low/High-Energie |
 
 - **Energie aus Dateien:** berechnet den Energy Level aus Stick-Audio (Essentia), setzt ihn im Draft und schreibt Energy-Tags in die MP3 auf dem Stick (Chrome / Edge / Desktop). Die Set-Notiz bleibt unangetastet. Danach Tags in rekordbox neu laden.
 - **Auf Slot kürzen:** behält pro Phase die Tracks, deren Energie ins Band passt; der Rest wandert unter Alternativen

@@ -18,6 +18,7 @@ const t = (id: string, extra: Record<string, unknown> = {}) =>
     keyCamelot: string;
     bpm: string;
     energyLevel?: number;
+    role?: string;
   };
 
 test("energy sort climbs, then falls in the release direction", () => {
@@ -26,12 +27,38 @@ test("energy sort climbs, then falls in the release direction", () => {
   assert.deepEqual(orderByEnergy(group, false).map((x) => x.id), ["hi", "mid", "lo"]);
 });
 
+test("energy sort uses Camelot key as tie-breaker before BPM", () => {
+  const group = [
+    t("bpmSlow", { energyLevel: 5, keyCamelot: "10A", bpm: "120" }),
+    t("bpmFast", { energyLevel: 5, keyCamelot: "3A", bpm: "128" }),
+    t("midKey", { energyLevel: 5, keyCamelot: "8A", bpm: "124" }),
+  ];
+  assert.deepEqual(orderByEnergy(group, true).map((x) => x.id), [
+    "bpmFast",
+    "midKey",
+    "bpmSlow",
+  ]);
+});
+
 test("tempo sort puts missing BPM last", () => {
   const group = [t("b", { bpm: "128" }), t("none", { bpm: "" }), t("a", { bpm: "122" })];
   assert.deepEqual(orderByTempo(group, true).map((x) => x.id), ["a", "b", "none"]);
 });
 
-test("Camelot journey keeps the opener and then walks clockwise", () => {
+test("Camelot journey prefers clockwise adjacent over stacking the same key", () => {
+  const group = [
+    t("start", { keyCamelot: "8A" }),
+    t("same", { keyCamelot: "8A" }),
+    t("next", { keyCamelot: "9A" }),
+    t("far", { keyCamelot: "3A" }),
+  ];
+  assert.deepEqual(
+    orderByCamelotJourney(group).map((x) => x.id),
+    ["start", "next", "same", "far"],
+  );
+});
+
+test("Camelot journey walks clockwise then relative when useful", () => {
   const group = [
     t("start", { keyCamelot: "8A" }),
     t("far", { keyCamelot: "3A" }),
@@ -40,7 +67,7 @@ test("Camelot journey keeps the opener and then walks clockwise", () => {
   ];
   assert.deepEqual(
     orderByCamelotJourney(group).map((x) => x.keyCamelot),
-    ["8A", "8B", "9A", "3A"],
+    ["8A", "9A", "8B", "3A"],
   );
 });
 
@@ -54,6 +81,19 @@ test("peak waves interleave low and high energy", () => {
   assert.deepEqual(
     orderByWaves(group, "peak").map((x) => x.energyLevel),
     [5, 10, 6, 9],
+  );
+});
+
+test("peak waves alternate groove and impact when roles are set", () => {
+  const group = [
+    t("g1", { energyLevel: 4, role: "groove" }),
+    t("a1", { energyLevel: 9, role: "anchor" }),
+    t("g2", { energyLevel: 6, role: "groove" }),
+    t("a2", { energyLevel: 8, role: "anchor" }),
+  ];
+  assert.deepEqual(
+    orderByWaves(group, "peak").map((x) => x.role),
+    ["groove", "anchor", "groove", "anchor"],
   );
 });
 
@@ -83,7 +123,7 @@ test("tempo pulse keeps the opener and stays near BPM", () => {
   );
 });
 
-test("energy roller climbs, dips, then climbs again in peak", () => {
+test("energy roller dips only in peak; rise climbs like open", () => {
   const group = [
     t("a", { energyLevel: 3 }),
     t("b", { energyLevel: 5 }),
@@ -96,6 +136,10 @@ test("energy roller climbs, dips, then climbs again in peak", () => {
   );
   assert.deepEqual(
     orderByEnergyRoller(group, "open").map((x) => x.energyLevel),
+    [3, 5, 7, 9],
+  );
+  assert.deepEqual(
+    orderByEnergyRoller(group, "rise").map((x) => x.energyLevel),
     [3, 5, 7, 9],
   );
 });
@@ -111,15 +155,61 @@ test("reorderDraft keeps alternatives at the end and phases intact", () => {
   };
   const next = reorderDraft(draft, "energy");
   assert.equal(next.tracks[next.tracks.length - 1].role, "safety");
+  // Positional opener (p1) stays first even when energy would prefer p0.
   assert.deepEqual(
     next.tracks.filter((track) => track.role !== "safety").map((track) => track.id),
-    ["p0", "p1"],
+    ["p1", "p0"],
   );
   // Sorting never writes a machine note; a hand-written cue survives.
   assert.deepEqual(
     next.tracks.filter((track) => track.role !== "safety").map((track) => track.note),
-    ["Cue bei 2:10", ""],
+    ["", "Cue bei 2:10"],
   );
+});
+
+test("reorderDraft energy keeps positional opener and closer without pins", () => {
+  const track = (
+    id: string,
+    phase: "open" | "peak" | "release",
+    energyLevel: number,
+  ) =>
+    ({
+      id,
+      name: id,
+      artists: ["X"],
+      album: "",
+      durationMs: 1,
+      uri: "",
+      externalUrl: "",
+      imageUrl: null,
+      phase,
+      role: "groove" as const,
+      transition: "unset" as const,
+      bpm: "124",
+      keyCamelot: "8A",
+      energyLevel,
+      note: "",
+      why: "",
+      safetyAlt: "",
+    });
+  const draft = {
+    ...DEFAULT_SET,
+    openerId: null,
+    closerId: null,
+    tracks: [
+      track("open-hi", "open", 8),
+      track("open-lo", "open", 3),
+      track("peak", "peak", 9),
+      track("close-lo", "release", 2),
+      track("close-hi", "release", 6),
+    ],
+  };
+  const next = reorderDraft(draft, "energy");
+  const performance = next.tracks.filter((item) => item.role !== "safety");
+  assert.equal(performance[0].id, "open-hi");
+  assert.equal(performance[performance.length - 1].id, "close-hi");
+  assert.equal(next.openerId, null);
+  assert.equal(next.closerId, null);
 });
 
 test("switching sort techniques can change order; repeating one does not", () => {

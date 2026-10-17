@@ -168,28 +168,28 @@ const de = {
     "Ganzes Set: exakter Camelot-TSP (Held-Karp ≤18, sonst NN+2-opt/Or-opt). Clashes zuerst killen, dann Mix-Score. Opener/Closer bleiben. Phasen danach neu.",
   "builder.sort.harmonic": "Harmonisch",
   "builder.sort.harmonicHint":
-    "Nächster Track: verwandter Camelot-Key, weiche Energie, kleine BPM-Schritte. Hebt den Mix-Score, senkt Clashes.",
+    "Pro Phase: nächster Track verwandter Camelot-Key, weiche Energie, kleine BPM-Schritte. Opener/Closer bleiben. Hebt den Mix-Score, senkt Clashes.",
   "builder.sort.gentle": "Ein-Schritt",
   "builder.sort.gentleHint":
-    "Mixed In Key: Energie nur ±1 pro Übergang, in Phasenrichtung. Weniger Sprünge, weicher Floor.",
+    "Pro Phase · Mixed In Key: Energie bevorzugt ±1, in Phasenrichtung. Opener/Closer bleiben. Weniger Sprünge, weicher Floor.",
   "builder.sort.energy": "Energie-Welle",
   "builder.sort.energyHint":
-    "Open bis Peak steigt die Energie, Release fällt. Key ist nur der Tiebreaker.",
+    "Pro Phase: Open bis Peak steigt die Energie, Release fällt. Key ist der Tiebreaker, BPM danach. Opener/Closer bleiben.",
   "builder.sort.roller": "Doppel-Peak",
   "builder.sort.rollerHint":
-    "Mixed In Key Arc: erst aufbauen, kurz absacken (−2), dann zum Peak. Open/Lift nur steigen, Release nur fallen.",
+    "Pro Phase · Mixed In Key Arc: im Peak aufbauen, kurz absacken (−2), dann zum Peak. Open/Lift/Rise nur steigen, Release nur fallen. Opener/Closer bleiben.",
   "builder.sort.tempo": "Tempo aufbauen",
   "builder.sort.tempoHint":
-    "BPM steigt in der Phase (Release fällt). Klassische House/Techno-Rampe.",
+    "Pro Phase: BPM steigt (Release fällt). Opener/Closer bleiben. Klassische House/Techno-Rampe.",
   "builder.sort.pulse": "BPM-Kette",
   "builder.sort.pulseHint":
-    "Nächster Track möglichst nah am aktuellen BPM (±2–4), leicht mit der Phase. Bleibt im Pocket.",
+    "Pro Phase: nächster Track möglichst nah am aktuellen BPM (±2–4), leicht mit der Phase. Opener/Closer bleiben. Bleibt im Pocket.",
   "builder.sort.journey": "Camelot-Reise",
   "builder.sort.journeyHint":
-    "Läuft im Uhrzeigersinn ums Wheel, statt denselben Key zu stapeln.",
+    "Pro Phase: läuft im Uhrzeigersinn ums Wheel, statt denselben Key zu stapeln. Opener/Closer bleiben.",
   "builder.sort.waves": "Wellen",
   "builder.sort.wavesHint":
-    "Im Peak wechseln Groove und Impact. Davor steigt die Energie, danach fällt sie.",
+    "Pro Phase: im Peak wechseln Groove und Impact (Anchor); sonst Low/High-Energie. Davor steigt die Energie, danach fällt sie. Opener/Closer bleiben.",
   "builder.tool.fit": "Auf Slot kürzen",
   "builder.tool.fitTip":
     "Kürzt das Set auf die Dauer im Brief. Pro Phase bleiben gleichmäßig verteilte Tracks, der Rest wandert unter Alternativen. Nichts geht verloren.",
@@ -232,13 +232,13 @@ const de = {
     "Als ersten Track des Sets festlegen (Open). Bleibt beim Sortieren vorne.",
   "builder.row.clearOpener": "Opener lösen",
   "builder.row.clearOpenerTip":
-    "Pin lösen — der Track bleibt im Set, Sortieren wählt wieder frei den Anfang.",
+    "Pin lösen — der Track bleibt im Set. Sortieren hält weiter den aktuellen ersten Track, bis du einen anderen pinnst oder nach vorne ziehst.",
   "builder.row.setCloser": "Closer",
   "builder.row.setCloserTitle":
     "Als letzten Track des Sets festlegen (Release). Bleibt beim Sortieren hinten.",
   "builder.row.clearCloser": "Closer lösen",
   "builder.row.clearCloserTip":
-    "Pin lösen — der Track bleibt im Set, Sortieren wählt wieder frei das Ende.",
+    "Pin lösen — der Track bleibt im Set. Sortieren hält weiter den aktuellen letzten Track, bis du einen anderen pinnst oder nach hinten ziehst.",
   "builder.row.openerBadge": "Opener",
   "builder.row.openerBadgeTip": "Gepinnter Opener — erster Performance-Track, auch nach Sortieren.",
   "builder.row.closerBadge": "Closer",
@@ -368,23 +368,23 @@ const de = {
   "builder.status.sorted.perfect":
     "Perfekt sortiert: minimale Clashes, maximaler Mix-Score. Bogen prüfen — Opener/Closer bleiben. 100 % nur wenn alle Keys verbunden sind.",
   "builder.status.sorted.harmonic":
-    "Harmonisch sortiert: verwandte Keys beieinander. Mix-Score und Clashes im Bogen prüfen.",
+    "Harmonisch sortiert (pro Phase): verwandte Keys beieinander. Opener/Closer bleiben. Mix-Score und Clashes im Bogen prüfen.",
   "builder.status.sorted.gentle":
-    "Ein-Schritt: Energie läuft in kleinen Stufen. Sprünge im Bogen prüfen.",
+    "Ein-Schritt (pro Phase): Energie in kleinen Stufen. Opener/Closer bleiben. Sprünge im Bogen prüfen.",
   "builder.status.sorted.energy":
-    "Nach Energie sortiert: die Welle folgt den Phasen. Mix-Score im Bogen prüfen.",
+    "Energie-Welle (pro Phase): steigt Open→Peak, fällt im Release. Opener/Closer bleiben.",
   "builder.status.sorted.roller":
-    "Doppel-Peak: aufbauen, kurz atmen, dann zum Peak. Mix-Score im Bogen prüfen.",
+    "Doppel-Peak: im Peak aufbauen, kurz atmen, wieder hoch. Open/Lift/Rise nur steigen. Opener/Closer bleiben.",
   "builder.status.sorted.tempo":
-    "Nach Tempo sortiert: BPM baut auf, im Release wieder runter.",
+    "Tempo (pro Phase): BPM baut auf, im Release wieder runter. Opener/Closer bleiben.",
   "builder.status.sorted.pulse":
-    "BPM-Kette: Tempo bleibt nah beieinander, leicht mit der Phase.",
+    "BPM-Kette (pro Phase): Tempo bleibt nah beieinander. Opener/Closer bleiben.",
   "builder.status.sorted.journey":
-    "Camelot-Reise: das Set läuft im Uhrzeigersinn ums Wheel.",
+    "Camelot-Reise (pro Phase): im Uhrzeigersinn, ohne denselben Key zu stapeln. Opener/Closer bleiben.",
   "builder.status.sorted.waves":
-    "Wellen: im Peak wechseln Groove und Impact.",
+    "Wellen (pro Phase): im Peak Groove und Impact (Anchor). Opener/Closer bleiben.",
   "builder.status.sorted.unchanged":
-    "Reihenfolge unverändert: innerhalb jeder Phase passt die Lage schon, oder Key, Energie und BPM fehlen. Tracks zwischen Phasen ziehen oder die Werte in der Setliste setzen.",
+    "Reihenfolge unverändert: innerhalb jeder Phase passt die Lage schon (Opener/Closer bleiben sowieso), oder Key, Energie und BPM fehlen. Tracks zwischen Phasen ziehen oder die Werte in der Setliste setzen.",
   "builder.status.fits": "Das Set passt schon in den Slot.",
   "builder.status.fitStuck":
     "Nicht weiter kürzbar: der erste und der letzte Track und ein Track pro Phase bleiben immer. Lange Tracks von Hand auf Alternativen setzen.",
@@ -625,28 +625,28 @@ const en: Record<keyof typeof de, string> = {
     "Whole set: exact Camelot TSP (Held-Karp ≤18, else NN+2-opt/Or-opt). Kill clashes first, then max mix score. Opener/closer stay. Phases re-laid after.",
   "builder.sort.harmonic": "Harmonic",
   "builder.sort.harmonicHint":
-    "Next track: related Camelot key, smooth energy, small BPM steps. Raises the mix score, cuts clashes.",
+    "Per phase: next track related Camelot key, smooth energy, small BPM steps. Opener/closer stay. Raises the mix score, cuts clashes.",
   "builder.sort.gentle": "One-step",
   "builder.sort.gentleHint":
-    "Mixed In Key: energy moves ±1 per transition, with the phase. Fewer jumps, smoother floor.",
+    "Per phase · Mixed In Key: energy prefers ±1, with the phase. Opener/closer stay. Fewer jumps, smoother floor.",
   "builder.sort.energy": "Energy wave",
   "builder.sort.energyHint":
-    "Energy rises from Open to Peak, falls in Release. Key is only the tie-breaker.",
+    "Per phase: energy rises from Open to Peak, falls in Release. Key is the tie-breaker, BPM after. Opener/closer stay.",
   "builder.sort.roller": "Twin peak",
   "builder.sort.rollerHint":
-    "Mixed In Key arc: build, dip about −2, climb to the peak. Open/Lift only climb, Release only fall.",
+    "Per phase · Mixed In Key arc: in Peak build, dip about −2, climb to the peak. Open/Lift/Rise only climb, Release only fall. Opener/closer stay.",
   "builder.sort.tempo": "Build tempo",
   "builder.sort.tempoHint":
-    "BPM rises in the phase (falls in Release). Classic house/techno ramp.",
+    "Per phase: BPM rises (falls in Release). Opener/closer stay. Classic house/techno ramp.",
   "builder.sort.pulse": "BPM chain",
   "builder.sort.pulseHint":
-    "Next track stays close to the current BPM (±2–4), lightly with the phase. Stays in the pocket.",
+    "Per phase: next track stays close to the current BPM (±2–4), lightly with the phase. Opener/closer stay. Stays in the pocket.",
   "builder.sort.journey": "Camelot journey",
   "builder.sort.journeyHint":
-    "Walks clockwise around the wheel instead of stacking the same key.",
+    "Per phase: walks clockwise around the wheel instead of stacking the same key. Opener/closer stay.",
   "builder.sort.waves": "Waves",
   "builder.sort.wavesHint":
-    "In the peak, groove and impact alternate. Before that energy rises, after that it falls.",
+    "Per phase: in Peak, groove and impact (anchor) alternate; else low/high energy. Before that energy rises, after that it falls. Opener/closer stay.",
   "builder.tool.fit": "Trim to slot",
   "builder.tool.fitTip":
     "Trims the set to the duration in the brief. Evenly spread tracks stay in each phase, the rest moves to Alternatives. Nothing is lost.",
@@ -688,13 +688,13 @@ const en: Record<keyof typeof de, string> = {
     "Pin as the first track of the set (Open). Stays first when you sort.",
   "builder.row.clearOpener": "Unpin opener",
   "builder.row.clearOpenerTip":
-    "Unpin — the track stays in the set; sorting picks the start freely again.",
+    "Unpin — the track stays in the set. Sorting still keeps the current first track until you pin another or move one to the front.",
   "builder.row.setCloser": "Closer",
   "builder.row.setCloserTitle":
     "Pin as the last track of the set (Release). Stays last when you sort.",
   "builder.row.clearCloser": "Unpin closer",
   "builder.row.clearCloserTip":
-    "Unpin — the track stays in the set; sorting picks the end freely again.",
+    "Unpin — the track stays in the set. Sorting still keeps the current last track until you pin another or move one to the end.",
   "builder.row.openerBadge": "Opener",
   "builder.row.openerBadgeTip": "Pinned opener — first performance track, even after sorting.",
   "builder.row.closerBadge": "Closer",
@@ -820,23 +820,23 @@ const en: Record<keyof typeof de, string> = {
   "builder.status.sorted.perfect":
     "Sorted for max score: minimal clashes, maximal mix score. Check the Arc — opener/closer stay. 100% only when all keys connect.",
   "builder.status.sorted.harmonic":
-    "Sorted harmonically: related keys together. Check mix score and clashes on the Arc.",
+    "Sorted harmonically (per phase): related keys together. Opener/closer stay. Check mix score and clashes on the Arc.",
   "builder.status.sorted.gentle":
-    "One-step: energy moves in small steps. Check jumps on the Arc.",
+    "One-step (per phase): energy in small steps. Opener/closer stay. Check jumps on the Arc.",
   "builder.status.sorted.energy":
-    "Sorted by energy: the wave follows the phases. Check the mix score on the Arc.",
+    "Energy wave (per phase): climbs Open→Peak, falls in Release. Opener/closer stay.",
   "builder.status.sorted.roller":
-    "Twin peak: build, breathe, then climb to the peak. Check the mix score on the Arc.",
+    "Twin peak: in Peak build, breathe, climb again. Open/Lift/Rise only climb. Opener/closer stay.",
   "builder.status.sorted.tempo":
-    "Sorted by tempo: BPM builds, then drops in the release.",
+    "Tempo (per phase): BPM builds, then drops in Release. Opener/closer stay.",
   "builder.status.sorted.pulse":
-    "BPM chain: tempo stays close, lightly with the phase.",
+    "BPM chain (per phase): tempo stays close. Opener/closer stay.",
   "builder.status.sorted.journey":
-    "Camelot journey: the set walks clockwise around the wheel.",
+    "Camelot journey (per phase): clockwise, without stacking the same key. Opener/closer stay.",
   "builder.status.sorted.waves":
-    "Waves: in the peak, groove and impact alternate.",
+    "Waves (per phase): in Peak, groove and impact (anchor). Opener/closer stay.",
   "builder.status.sorted.unchanged":
-    "Order unchanged: within each phase it already fits, or key, energy and BPM are missing. Drag tracks across phases or set the values in the setlist.",
+    "Order unchanged: within each phase it already fits (opener/closer stay anyway), or key, energy and BPM are missing. Drag tracks across phases or set the values in the setlist.",
   "builder.status.fits": "The set already fits the slot.",
   "builder.status.fitStuck":
     "Cannot trim further: the first and last track and one track per phase always stay. Move long tracks to Alternatives by hand.",

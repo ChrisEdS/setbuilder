@@ -306,10 +306,8 @@ export function orderByHarmonicPath<
 ): T[] {
   if (tracks.length <= 1) return tracks;
   const remaining = [...tracks];
-  // Start with track that has a key, else first
-  let startIdx = remaining.findIndex((t) => normalizeCamelot(t.keyCamelot));
-  if (startIdx < 0) startIdx = 0;
-  const ordered: T[] = [remaining.splice(startIdx, 1)[0]];
+  // Keep the current first track (phase opener / set opener) as the seed.
+  const ordered: T[] = [remaining.shift()!];
 
   while (remaining.length) {
     const prev = ordered[ordered.length - 1];
