@@ -34,6 +34,12 @@ import { HarmonicPath } from "@/components/HarmonicPath";
 import { LibraryPanel } from "@/components/LibraryPanel";
 import { AppUpdateCard } from "@/components/AppUpdateCard";
 import { PreviewPlayer } from "@/components/PreviewPlayer";
+import {
+  getPreviewTransportSnapshot,
+  requestPreviewPause,
+  requestPreviewResume,
+  subscribePreviewTransport,
+} from "@/lib/preview-transport";
 import { ReplaceMenu } from "@/components/ReplaceMenu";
 import type { LibraryRow } from "@/components/LibraryPanel";
 import {
@@ -407,6 +413,11 @@ export function SetBuilder() {
   const [tidalConnected, setTidalConnected] = useState<boolean | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
   const [focusTrackId, setFocusTrackId] = useState<string | null>(null);
+  const previewTransport = useSyncExternalStore(
+    subscribePreviewTransport,
+    getPreviewTransportSnapshot,
+    getPreviewTransportSnapshot,
+  );
   const [libraryPreview, setLibraryPreview] = useState<SetTrack | null>(null);
   const [libraryRows, setLibraryRows] = useState<LibraryRow[]>([]);
   const [matchingLinks, setMatchingLinks] = useState(false);
@@ -1863,6 +1874,12 @@ export function SetBuilder() {
             SETBUILDER
           </p>
           <h1>{t("builder.hero.title")}</h1>
+          <div className="hero-manifesto">
+            <p className="hero-manifesto-lead">
+              {t("builder.hero.manifestoLead")}
+            </p>
+            <p>{t("builder.hero.manifestoBody")}</p>
+          </div>
           <p className="lede">{t("builder.hero.lede")}</p>
         </div>
         <div className="hero-meta" aria-label={t("builder.brief.aria")}>
@@ -2756,7 +2773,14 @@ export function SetBuilder() {
                           </Tip>
                         </div>
                         <div className="timeline-tools">
-                          <Tip text={t("builder.row.playTip")}>
+                          <Tip
+                            text={
+                              previewTransport.trackId === track.id &&
+                              previewTransport.playing
+                                ? t("builder.row.pauseTip")
+                                : t("builder.row.playTip")
+                            }
+                          >
                             <button
                               type="button"
                               className={
@@ -2764,12 +2788,39 @@ export function SetBuilder() {
                                   ? "is-playing"
                                   : undefined
                               }
-                              onClick={() => setFocusTrackId(track.id)}
-                              aria-label={t("builder.row.playAria", {
-                                name: track.name,
-                              })}
+                              onClick={() => {
+                                if (
+                                  previewTransport.trackId === track.id &&
+                                  previewTransport.playing
+                                ) {
+                                  requestPreviewPause();
+                                  return;
+                                }
+                                if (
+                                  focusTrackId === track.id &&
+                                  previewTransport.trackId === track.id &&
+                                  !previewTransport.playing
+                                ) {
+                                  requestPreviewResume();
+                                  return;
+                                }
+                                setFocusTrackId(track.id);
+                              }}
+                              aria-label={
+                                previewTransport.trackId === track.id &&
+                                previewTransport.playing
+                                  ? t("builder.row.pauseAria", {
+                                      name: track.name,
+                                    })
+                                  : t("builder.row.playAria", {
+                                      name: track.name,
+                                    })
+                              }
                             >
-                              ▶
+                              {previewTransport.trackId === track.id &&
+                              previewTransport.playing
+                                ? "❚❚"
+                                : "▶"}
                             </button>
                           </Tip>
                           <Tip text={t("builder.row.moveUpTip")}>

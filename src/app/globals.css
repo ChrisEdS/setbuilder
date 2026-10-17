@@ -136,6 +136,30 @@ textarea {
   font-weight: 700;
 }
 
+.hero-manifesto {
+  margin: 1rem 0 0;
+  max-width: 42ch;
+  padding: 0.85rem 0 0;
+  border-top: 1px solid color-mix(in oklab, var(--line) 80%, transparent);
+}
+
+.hero-manifesto p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.hero-manifesto-lead {
+  margin-bottom: 0.45rem !important;
+  color: var(--ink) !important;
+  font-family: var(--font-display), "Space Grotesk", sans-serif;
+  font-size: 1.08rem !important;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.25 !important;
+}
+
 .lede {
   margin: 0.9rem 0 0;
   max-width: 36ch;

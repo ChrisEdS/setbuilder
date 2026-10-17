@@ -20,6 +20,9 @@ const de = {
 
   // Hero and brief form
   "builder.hero.title": "Dramaturgie statt Playlist.",
+  "builder.hero.manifestoLead": "Ein gutes Set muss nicht perfekt sein.",
+  "builder.hero.manifestoBody":
+    "Musik lässt sich analysieren, sortieren und planen – aber am Ende entscheiden dein Gehör, dein Gefühl und der Moment auf dem Dancefloor. Kein Score und kein Algorithmus kann ersetzen, was du als DJ wahrnimmst. SETBUILDER soll dir deshalb keine Entscheidungen abnehmen. Es ist ein Werkzeug, das dir Orientierung gibt, Übergänge sichtbar macht und neue Ideen liefert. Nutze es als Hilfestellung und Inspiration – aber vertraue am Ende immer deinen Ohren.",
   "builder.hero.lede":
     "SETBUILDER formt aus dem Rekordbox-Stick ein Set. Playlist oder History laden, den Bogen nach Slot und Dauer legen, und an Key und BPM sehen, ob der Übergang zum nächsten Track trägt. Spotify, Tidal und Beatport sind die Ergänzung, wenn ein Track noch nicht auf dem Stick liegt.",
   "builder.brief.aria": "Set brief",
@@ -218,6 +221,8 @@ const de = {
   "builder.row.roleAria": "Rolle für {name}",
   "builder.row.playAria": "{name} abspielen",
   "builder.row.playTip": "Im Player unten anhören — Fokus auf diesen Track.",
+  "builder.row.pauseAria": "{name} pausieren",
+  "builder.row.pauseTip": "Wiedergabe pausieren.",
   "builder.row.moveUpTip": "Einen Platz nach oben in der gespielten Reihenfolge.",
   "builder.row.moveDownTip": "Einen Platz nach unten in der gespielten Reihenfolge.",
   "builder.row.removeTip": "Aus dem Set entfernen. Opener-/Closer-Pin fällt mit weg.",
@@ -482,6 +487,9 @@ const en: Record<keyof typeof de, string> = {
   "builder.defaults.gear": "CDJs / USB",
 
   "builder.hero.title": "Dramaturgy, not a playlist.",
+  "builder.hero.manifestoLead": "A good set does not have to be perfect.",
+  "builder.hero.manifestoBody":
+    "Music can be analyzed, sorted and planned — but in the end your ears, your feel and the moment on the dancefloor decide. No score and no algorithm can replace what you perceive as a DJ. SETBUILDER is not here to take decisions away from you. It is a tool that gives you orientation, makes transitions visible and sparks new ideas. Use it as help and inspiration — but in the end, always trust your ears.",
   "builder.hero.lede":
     "SETBUILDER shapes a set from your rekordbox stick. Load a playlist or history, lay out the arc by slot and duration, and see from key and BPM whether the transition to the next track holds. Spotify, Tidal and Beatport fill the gaps when a track isn't on the stick yet.",
   "builder.brief.aria": "Set brief",
@@ -674,6 +682,8 @@ const en: Record<keyof typeof de, string> = {
   "builder.row.roleAria": "Role for {name}",
   "builder.row.playAria": "Play {name}",
   "builder.row.playTip": "Listen in the player below — focus this track.",
+  "builder.row.pauseAria": "Pause {name}",
+  "builder.row.pauseTip": "Pause playback.",
   "builder.row.moveUpTip": "Move one slot up in the played order.",
   "builder.row.moveDownTip": "Move one slot down in the played order.",
   "builder.row.removeTip": "Remove from the set. Opener/closer pin goes with it.",

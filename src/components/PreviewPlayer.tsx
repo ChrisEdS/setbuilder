@@ -15,6 +15,11 @@ import {
   stickAudioBaseName,
   subscribeStickFiles,
 } from "@/lib/stick-audio";
+import {
+  getPreviewTransportSnapshot,
+  reportPreviewPlayback,
+  subscribePreviewTransport,
+} from "@/lib/preview-transport";
 import { resolveTrackAudio } from "@/lib/stick-file";
 import { performanceTracks, type SetTrack } from "@/lib/set";
 
@@ -85,6 +90,41 @@ function PreviewDock({
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const transport = useSyncExternalStore(
+    subscribePreviewTransport,
+    getPreviewTransportSnapshot,
+    getPreviewTransportSnapshot,
+  );
+  const seenPauseToken = useRef(transport.pauseToken);
+  const seenPlayToken = useRef(transport.playToken);
+
+  useEffect(() => {
+    reportPreviewPlayback(track.id, playing);
+    return () => reportPreviewPlayback(null, false);
+  }, [track.id, playing]);
+
+  useEffect(() => {
+    if (transport.pauseToken === seenPauseToken.current) return;
+    seenPauseToken.current = transport.pauseToken;
+    const audio = audioRef.current;
+    if (!audio || !src) return;
+    audio.pause();
+    setPlaying(false);
+  }, [transport.pauseToken, src]);
+
+  useEffect(() => {
+    if (transport.playToken === seenPlayToken.current) return;
+    seenPlayToken.current = transport.playToken;
+    const audio = audioRef.current;
+    if (!audio || !src) return;
+    void audio.play().then(
+      () => setPlaying(true),
+      () => {
+        setPlaying(false);
+        setLocalIssue("error");
+      },
+    );
+  }, [transport.playToken, src]);
 
   useEffect(() => {
     let cancelled = false;
