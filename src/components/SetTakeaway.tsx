@@ -98,25 +98,43 @@ function MenuItem({
   hint,
   disabled,
   danger,
+  primary,
   onClick,
 }: {
   title: string;
   hint: string;
   disabled?: boolean;
   danger?: boolean;
+  /** Emphasize the main takeaway action (usually stick write). */
+  primary?: boolean;
   onClick?: () => void;
 }) {
+  const className = [
+    "menu-item",
+    danger ? "danger" : "",
+    primary ? "is-primary" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
   return (
     <button
       type="button"
       role="menuitem"
-      className={danger ? "menu-item danger" : "menu-item"}
+      className={className}
       disabled={disabled || !onClick}
       onClick={onClick}
     >
       <strong>{title}</strong>
       <span>{hint}</span>
     </button>
+  );
+}
+
+function MenuGroup({ label }: { label: string }) {
+  return (
+    <p className="menu-group" role="presentation">
+      {label}
+    </p>
   );
 }
 
@@ -210,35 +228,39 @@ export function SetMenus({
   return (
     <div className="set-menus">
       <Menu label={<>{t("library.menu.take")} <span aria-hidden="true">▾</span></>} primary disabled={!canExport}>
-        <MenuItem
-          title="PDF"
-          hint={t("library.menu.pdfHint")}
-          disabled={!canExport}
-          onClick={onExportPdf}
-        />
-        <MenuItem
-          title="rekordbox"
-          hint={t("library.menu.rekordboxHint")}
-          disabled={!canExport}
-          onClick={onExportRekordbox}
-        />
+        <MenuGroup label={t("library.menu.groupPlayer")} />
         <MenuItem
           title={t("library.menu.stick")}
           hint={t("library.menu.stickHint")}
+          primary
           disabled={!canExport}
           onClick={onWriteStick}
         />
+        <MenuGroup label={t("library.menu.groupBooth")} />
         <MenuItem
-          title="M3U"
-          hint={t("library.menu.m3uHint")}
+          title={t("library.menu.pdf")}
+          hint={t("library.menu.pdfHint")}
           disabled={!canExport}
-          onClick={onExportM3u}
+          onClick={onExportPdf}
         />
         <MenuItem
           title={t("library.menu.copyText")}
           hint={t("library.menu.copyTextHint")}
           disabled={!canExport}
           onClick={onCopyText}
+        />
+        <MenuGroup label={t("library.menu.groupDesk")} />
+        <MenuItem
+          title={t("library.menu.rekordbox")}
+          hint={t("library.menu.rekordboxHint")}
+          disabled={!canExport}
+          onClick={onExportRekordbox}
+        />
+        <MenuItem
+          title={t("library.menu.m3u")}
+          hint={t("library.menu.m3uHint")}
+          disabled={!canExport}
+          onClick={onExportM3u}
         />
       </Menu>
     </div>

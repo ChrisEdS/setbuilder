@@ -93,17 +93,25 @@ Sortieren (besonders **Perfekt · Max Score**), Ziehen oder Key/Energie in der S
 | Peak | 8–10 |
 | Release | 4–6 |
 
-## 5. Zurück nach rekordbox
+## 5. Mitnehmen
 
-![Mitnehmen: PDF, rekordbox-XML, auf Stick schreiben, M3U, Text kopieren](screenshots/de/05-export-v302.png)
+![Mitnehmen: Auf Stick schreiben, PDF, XML, M3U, Text kopieren](screenshots/de/05-export-v302.png)
 
-Das Menü **Mitnehmen** exportiert:
+Das Menü **Mitnehmen** ist nach Ziel gruppiert:
 
-- **Auf Stick schreiben:** legt das Set als Playlist `SETBUILDER - <Titel>` und die Alternativen daneben als `SETBUILDER - <Titel> Alternativen` in die `export.pdb`. Chrome, Edge oder die Desktop-App. Derselbe Stick wird gemerkt: nach einem Neustart reicht „Stick verbinden“, Schreiben braucht ihn nicht noch einmal. Nur Tracks, die schon auf dem Stick liegen, werden geschrieben; ähnliche Titel (Remix, Original Mix) fragt SETBUILDER nach, bevor sie mitkommen. Liegt das Set schon da, aktualisiert „Aktualisieren“ es über das letzte Backup und schreibt neu. Vor jedem Schreiben kopiert SETBUILDER das Original nach `SETBUILDER-Backup/` (die drei neuesten Sicherungen bleiben) und prüft die Kopie. Danach wird die Datenbank gelesen und verifiziert; schlägt das fehl, kommt der alte Stand zurück. Zusätzlich liegen XML und M3U im Ordner `SETBUILDER` auf dem Stick. Der Stick-Health-Strip (siehe oben) bietet „Für Player vorbereiten“, wenn eine veraltete `exportLibrary.db` (OneLibrary) die Playlists auf CDJ-3000 / XDJ-XZ verdecken würde, und „Auswerfen“ für den OS-Cache. CDJ-3000X, XDJ-AZ und OPUS-QUAD brauchen weiter rekordbox — die verschlüsselte OneLibrary kann SETBUILDER nicht schreiben. Die rekordbox-Bibliothek auf dem Rechner (`master.db`) wird nie angefasst. Erst an einem Ersatz- oder kopierten Stick üben; **nie mit ungetestetem Stick zum Gig**.
-- **rekordbox-XML:** gespeichert als `SETBUILDER-rekordbox.xml`. In rekordbox einmal *Einstellungen → Erweitert → Datenbank → rekordbox xml* auf diese Datei setzen; die Playlist erscheint dann links unter *rekordbox xml*, Rechtsklick → *Playlist importieren*. Performance und Alternativen kommen als zwei Playlists.
-- **PDF:** Druckansicht mit Brief, Reihenfolge, Key, BPM, Übergang und Alternativen
-- **M3U:** Playlist der Performance-Reihenfolge, mit dem Namen der Alternativen-Playlist auf dem Stick
-- **Text kopieren:** Set mit Brief, Set-Notizen und Alternativen
+### Für den Player
+
+- **Auf Stick schreiben** (Hauptweg): Playlist `SETBUILDER - <Titel>` plus Alternativen als `SETBUILDER - <Titel> Alternativen` in die `export.pdb`. Chrome, Edge oder Desktop-App. Der Stick wird gemerkt — nach Neustart reicht *Stick verbinden*. Nur Titel, die schon auf dem Stick liegen, werden geschrieben; ähnliche Treffer (Remix / Original Mix, oder derselbe Titel mehrfach) erscheinen als **eine** klare *Diesen nehmen*-Wahl. Liegt die Playlist schon da, ersetzt *Aktualisieren* sie (mit Sicherung). Vor jedem Schreiben Kopie nach `SETBUILDER-Backup/` (die drei neuesten bleiben), danach Prüfung; bei Fehler kommt der alte Stand zurück. Zusätzlich XML und M3U im Ordner `SETBUILDER` auf dem Stick. Der Health-Strip bietet *Für Player vorbereiten*, wenn eine veraltete OneLibrary (`exportLibrary.db`) Playlists auf CDJ-3000 / XDJ-XZ verdecken würde, und *Auswerfen* vor dem Abziehen. CDJ-3000X, XDJ-AZ und OPUS-QUAD brauchen weiter rekordbox für OneLibrary. Die Bibliothek auf dem Rechner (`master.db`) bleibt unangetastet. Erst an einem Ersatz-Stick üben; **nie mit ungetestetem Stick zum Gig**.
+
+### Für die Kabine
+
+- **PDF:** Druckansicht mit Brief, Reihenfolge, Key und BPM (im Dialog „Als PDF speichern“)
+- **Text kopieren:** Set mit Brief und Kommentaren in die Zwischenablage
+
+### Für den Rechner
+
+- **XML für rekordbox:** Datei `SETBUILDER-rekordbox.xml` zum *Import* in rekordbox — schreibt nicht den Stick. In rekordbox einmal *Einstellungen → Erweitert → Datenbank → rekordbox xml* auf diese Datei setzen; dann links unter *rekordbox xml* → Rechtsklick → *Playlist importieren*. Performance und Alternativen als zwei Playlists.
+- **M3U:** Playlist-Datei für Geräte, die M3U lesen
 
 Der Brief und das Set lassen sich unter **Verbindungen & Setups** als Setup speichern, wieder laden oder als JSON sichern. Der Speichern-Name folgt dem Set-Titel aus dem Brief.
 

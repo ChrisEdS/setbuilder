@@ -4,9 +4,9 @@
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
 
-**Version 3.4.0** · Dramaturgy, not a playlist.
+**Version 3.4.3** · Dramaturgy, not a playlist.
 
-SETBUILDER prepares DJ sets for rekordbox. You load a playlist or history from the export stick (or a collection XML), lay out the arc by slot and duration, check energy, key and BPM, and take the set with you as rekordbox XML, PDF, M3U or text. The logic follows Mixed In Key: energy first, then key, then BPM. The workflow follows the [DJ.Studio prep workflow](https://dj.studio/blog/dj-set-preparation#crafting-a-dj-set-that-feels-right-advanced-tips): brief → build the set → transitions → export.
+SETBUILDER prepares DJ sets for rekordbox. You load a playlist or history from the export stick (or a collection XML), lay out the arc by slot and duration, check energy, key and BPM, and take the set with you — stick write for the player, PDF for the booth, XML/M3U for the computer. The logic follows Mixed In Key: energy first, then key, then BPM. The workflow follows the [DJ.Studio prep workflow](https://dj.studio/blog/dj-set-preparation#crafting-a-dj-set-that-feels-right-advanced-tips): brief → build the set → transitions → export.
 
 **Highlights**
 - ⚡ **Energy from files** — Analyze stick MP3s, write Energy into ID3 (audio untouched), reload tags in rekordbox
@@ -15,6 +15,7 @@ SETBUILDER prepares DJ sets for rekordbox. You load a playlist or history from t
 - 🎚️ **Arc & energy** — Phases Open→Release against target bands; jumps called out
 - 📌 **Opener & closer** — Pin the first and last performance track; sorts keep them at the ends
 - 💾 **Stick round-trip** — Load from `export.pdb`, write the set back, player check before the gig
+- 🎒 **Take with you** — Menu grouped by player / booth / computer; stick write first
 - 🛟 **Plan B** — Roles and alternatives per phase when the floor turns
 
 ## How a set works
@@ -22,7 +23,7 @@ SETBUILDER prepares DJ sets for rekordbox. You load a playlist or history from t
 1. **Brief** — title, vibe, venue, slot type and duration
 2. **Load from rekordbox** — stick (`export.pdb`) or collection XML
 3. **Build the set** — phases, roles, opener/closer, sort and trim
-4. **Back to rekordbox** — stick write, XML, PDF, M3U or text
+4. **Take with you** — stick write, then PDF / text, or XML / M3U
 
 📖 **Full walkthrough with screenshots:** [docs/GUIDE.md](docs/GUIDE.md)
 

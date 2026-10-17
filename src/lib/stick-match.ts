@@ -69,6 +69,25 @@ function titleScore(wanted: string, have: string): number {
 
 const SUGGEST_MIN = 0.78;
 
+function candidateLabel(item: Pick<StickCandidate, "artist" | "title">): string {
+  return `${mixless(item.artist)}\0${mixless(item.title)}`;
+}
+
+/** Keep one row per artist+title — sticks often list the same track more than once. */
+function dedupeCandidates(ranked: StickCandidate[]): StickCandidate[] {
+  const best = new Map<string, StickCandidate>();
+  for (const item of ranked) {
+    const key = candidateLabel(item);
+    const prev = best.get(key);
+    if (!prev || item.score > prev.score || (item.score === prev.score && item.id < prev.id)) {
+      best.set(key, item);
+    }
+  }
+  return [...best.values()].sort(
+    (a, b) => b.score - a.score || a.title.localeCompare(b.title) || a.id - b.id,
+  );
+}
+
 /** Near-matches for set tracks the exact matcher left out. One clear hit, or up to three. */
 export function suggestStickMatches<T extends NamedTrack>(
   missing: T[],
@@ -86,7 +105,7 @@ export function suggestStickMatches<T extends NamedTrack>(
       }))
       .filter((item) => item.score >= SUGGEST_MIN)
       .sort((a, b) => b.score - a.score || a.title.localeCompare(b.title));
-    const unique = ranked.filter((item, index, list) => list.findIndex((row) => row.id === item.id) === index);
+    const unique = dedupeCandidates(ranked);
     const top = unique[0];
     const close = unique.filter((item) => top && item.score >= top.score - 0.05).slice(0, 3);
     if (close.length) out.push({ track, candidates: close });

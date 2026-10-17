@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Tip } from "@/components/Hint";
 import { StickHealthCard } from "@/components/StickHealthCard";
 import { errorText } from "@/lib/i18n/error";
 import { useI18n } from "@/lib/i18n/react";
@@ -173,6 +172,14 @@ export function StickWriteDialog({
   const plan = step.kind === "planned" ? step.plan : null;
   const missing = plan?.match.missing ?? [];
   const suggestions = plan?.suggestions ?? [];
+  const leftOut = missing.filter(
+    (track) =>
+      !suggestions.some(
+        (item) =>
+          item.track.name === track.name &&
+          item.track.artists.join() === track.artists.join(),
+      ),
+  );
 
   return (
     <dialog
@@ -191,25 +198,24 @@ export function StickWriteDialog({
       {step.kind === "idle" || step.kind === "error" ? (
         <>
           <p>{t("library.stickWrite.intro")}</p>
-          <p className="stick-safety">{t("library.stickWrite.safety")}</p>
+          <details className="stick-safety-fold">
+            <summary>{t("library.stickWrite.safetyMore")}</summary>
+            <p className="stick-safety">{t("library.stickWrite.safetyDetails")}</p>
+          </details>
           {step.kind === "error" ? (
             <p className="stick-warn" role="alert">
               {step.text}
             </p>
           ) : null}
-          <div className="stick-actions">
-            <Tip text={t("common.closeTip")}>
-              <button type="button" className="btn ghost" onClick={onClose}>
-                {t("library.stickWrite.close")}
-              </button>
-            </Tip>
-            <Tip text={t("library.stickWrite.chooseHint")} disabled={!canPick} end>
-              <button type="button" className="btn" onClick={() => void choose()} disabled={!canPick}>
-                {t("library.stickWrite.choose")}
-              </button>
-            </Tip>
-          </div>
           <p className="stick-hint">{t("library.stickWrite.chooseHint")}</p>
+          <div className="stick-actions">
+            <button type="button" className="btn ghost" onClick={onClose}>
+              {t("library.stickWrite.close")}
+            </button>
+            <button type="button" className="btn" onClick={() => void choose()} disabled={!canPick}>
+              {t("library.stickWrite.choose")}
+            </button>
+          </div>
         </>
       ) : null}
 
@@ -229,58 +235,62 @@ export function StickWriteDialog({
             <div className="stick-missing">
               <strong>{t("library.stickWrite.suggestTitle")}</strong>
               <ul>
-                {suggestions.map((item) => (
-                  <li key={(item.track as SetTrack).id ?? item.track.name}>
-                    <span>
-                      {item.track.artists.filter((name) => name && name !== "Unknown").join(", ")}
-                      {item.track.artists.length ? " – " : ""}
-                      {item.track.name}
-                    </span>
-                    {item.candidates.map((candidate) => (
-                      <button
-                        key={candidate.id}
-                        type="button"
-                        className="btn ghost"
-                        onClick={() => {
-                          const id = (item.track as SetTrack).id;
-                          if (!id || !root.current) return;
-                          const next = { ...hints, [id]: candidate.id };
-                          setHints(next);
-                          void planFrom(root.current, next);
-                        }}
-                      >
-                        {t("library.stickWrite.suggestUse")}: {candidate.artist} – {candidate.title}
-                      </button>
-                    ))}
-                  </li>
-                ))}
+                {suggestions.map((item) => {
+                  const setLabel = [
+                    item.track.artists.filter((name) => name && name !== "Unknown").join(", "),
+                    item.track.name,
+                  ]
+                    .filter(Boolean)
+                    .join(" – ");
+                  return (
+                    <li key={(item.track as SetTrack).id ?? item.track.name}>
+                      <span>{setLabel}</span>
+                      {item.candidates.map((candidate) => {
+                        const stickLabel = [candidate.artist, candidate.title]
+                          .filter(Boolean)
+                          .join(" – ");
+                        const sameLabel =
+                          stickLabel.replace(/\s+/g, " ").trim().toLowerCase() ===
+                          setLabel.replace(/\s+/g, " ").trim().toLowerCase();
+                        return (
+                          <button
+                            key={candidate.id}
+                            type="button"
+                            className="btn ghost"
+                            onClick={() => {
+                              const id = (item.track as SetTrack).id;
+                              if (!id || !root.current) return;
+                              const next = { ...hints, [id]: candidate.id };
+                              setHints(next);
+                              void planFrom(root.current, next);
+                            }}
+                          >
+                            {sameLabel || item.candidates.length === 1
+                              ? t("library.stickWrite.suggestUse")
+                              : `${t("library.stickWrite.suggestUse")}: ${stickLabel}`}
+                          </button>
+                        );
+                      })}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           ) : null}
-          {missing.length ? (
+          {leftOut.length ? (
             <div className="stick-missing">
               <strong>{t("library.stickWrite.missingTitle")}</strong>
               <ul>
-                {missing
-                  .filter(
-                    (track) =>
-                      !suggestions.some(
-                        (item) =>
-                          item.track.name === track.name &&
-                          item.track.artists.join() === track.artists.join(),
-                      ),
-                  )
-                  .slice(0, 6)
-                  .map((track, index) => (
-                    <li key={`${track.name}-${index}`}>
-                      {track.artists.filter((name) => name && name !== "Unknown").join(", ")}
-                      {track.artists.length ? " – " : ""}
-                      {track.name}
-                    </li>
-                  ))}
+                {leftOut.slice(0, 6).map((track, index) => (
+                  <li key={`${track.name}-${index}`}>
+                    {track.artists.filter((name) => name && name !== "Unknown").join(", ")}
+                    {track.artists.length ? " – " : ""}
+                    {track.name}
+                  </li>
+                ))}
               </ul>
-              {missing.length > 6 ? (
-                <span>{t("library.stickWrite.missingMore", { count: missing.length - 6 })}</span>
+              {leftOut.length > 6 ? (
+                <span>{t("library.stickWrite.missingMore", { count: leftOut.length - 6 })}</span>
               ) : null}
             </div>
           ) : null}
@@ -337,15 +347,15 @@ export function StickWriteDialog({
               }}
             />
           ) : plan.hasLibraryDb ? (
-            <p className="stick-warn">{t("library.stickWrite.oneLibrary")}</p>
+            <p className="stick-hint">{t("library.stickWrite.oneLibrary")}</p>
           ) : null}
-          <p className="stick-safety">{t("library.stickWrite.safety")}</p>
+          <p className="stick-hint">{t("library.stickWrite.safety")}</p>
           <div className="stick-actions">
-            <button type="button" className="btn ghost" onClick={() => void restore()}>
-              {t("library.stickWrite.restore")}
-            </button>
             <button type="button" className="btn ghost" onClick={onClose}>
               {t("library.stickWrite.cancel")}
+            </button>
+            <button type="button" className="btn ghost" onClick={() => void restore()}>
+              {t("library.stickWrite.restore")}
             </button>
             {plan.alreadyOnStick ? (
               <button type="button" className="btn" onClick={() => void rewrite()}>

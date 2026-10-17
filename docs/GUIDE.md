@@ -93,17 +93,25 @@ Sort (especially **Perfect · Max score**), drag, or change key/energy in the se
 | Peak | 8–10 |
 | Release | 4–6 |
 
-## 5. Back to rekordbox
+## 5. Take with you
 
-![Take with you: PDF, rekordbox XML, write to stick, M3U, copy text](screenshots/en/05-export-v302.png)
+![Take with you: write to stick, PDF, XML, M3U, copy text](screenshots/en/05-export-v302.png)
 
-The **Take with you** menu exports:
+The **Take with you** menu is grouped by where the set goes next:
 
-- **Write to stick:** adds the set as playlist `SETBUILDER - <title>` and the alternatives next to it as `SETBUILDER - <title> Alternatives` in `export.pdb`. Chrome, Edge or the desktop app. The same stick is remembered: after a restart, “Reconnect stick” is enough, and writing does not ask again. Only tracks already on the stick are written; similar titles (remix, original mix) are offered before they go in. If the set is already there, *Update* restores the last backup and writes the current set. Before every write SETBUILDER copies the original to `SETBUILDER-Backup/` (the three newest backups stay) and checks the copy. After writing, the database is read and verified; if that fails the old state is put back. XML and M3U are also written to the `SETBUILDER` folder on the stick. The stick health strip (see above) offers *Prepare for player* when a stale `exportLibrary.db` (OneLibrary) would hide your playlists on CDJ-3000 / XDJ-XZ, and *Eject* to flush the OS cache. CDJ-3000X, XDJ-AZ and OPUS-QUAD still need rekordbox — SETBUILDER cannot write the encrypted OneLibrary. The rekordbox library on the computer (`master.db`) is never touched. Practice on a spare or copied stick first; **never go to a gig with an untested stick**.
-- **rekordbox XML:** saved as `SETBUILDER-rekordbox.xml`. In rekordbox set *Preferences → Advanced → Database → rekordbox xml* to this file once; the playlist then appears under *rekordbox xml* in the left tree, right-click → *Import Playlist*. The performance and the alternatives come as two playlists.
-- **PDF:** print view with brief, order, key, BPM, transition and alternatives
-- **M3U:** playlist in performance order, naming the alternatives playlist on the stick
-- **Copy text:** the set with brief, set notes and alternatives
+### For the player
+
+- **Write to stick** (main path): playlist `SETBUILDER - <title>` plus alternatives as `SETBUILDER - <title> Alternatives` in `export.pdb`. Chrome, Edge or the desktop app. The stick is remembered — after a restart, *Reconnect stick* is enough. Only tracks already on the stick are written; near-matches (remix / original mix, or the same title listed more than once) show as one clear *Use this* choice. If the playlist is already there, *Update* replaces it (backup first). Every write copies the database to `SETBUILDER-Backup/` (keeps the three newest), then verifies; on failure the old state is restored. XML and M3U also land in the `SETBUILDER` folder on the stick. The health strip offers *Prepare for player* when a stale OneLibrary (`exportLibrary.db`) would hide playlists on CDJ-3000 / XDJ-XZ, and *Eject* before you unplug. CDJ-3000X, XDJ-AZ and OPUS-QUAD still need rekordbox for OneLibrary. The computer library (`master.db`) is never touched. Practice on a spare stick first; **never go to a gig with an untested stick**.
+
+### For the booth
+
+- **PDF:** print view with brief, order, key and BPM (save as PDF in the print dialog)
+- **Copy text:** set with brief and comments to the clipboard
+
+### For the computer
+
+- **XML for rekordbox:** file `SETBUILDER-rekordbox.xml` to *import* in rekordbox — not writing the stick. In rekordbox set *Preferences → Advanced → Database → rekordbox xml* to this file once; then left tree → *rekordbox xml* → right-click → *Import Playlist*. Performance and alternatives come as two playlists.
+- **M3U:** playlist file for devices that read M3U
 
 Under **Connections & setups** you can save the brief and the set as a setup, load it again, or back it up as JSON. The save name follows the set title from the brief.
 

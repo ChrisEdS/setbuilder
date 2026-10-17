@@ -6103,25 +6103,43 @@ body {
   z-index: 80;
   display: grid;
   gap: 2px;
-  width: min(320px, calc(100vw - 32px));
-  padding: 0.375rem;
+  width: min(380px, calc(100vw - 32px));
+  padding: 0.45rem;
   border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 14px;
+  border-radius: 18px;
   background: #151515;
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
+}
+
+.menu-group {
+  margin: 0.45rem 0.55rem 0.15rem;
+  padding: 0;
+  color: #8f8f8f;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.menu-group:first-child {
+  margin-top: 0.2rem;
 }
 
 .menu-item {
   display: grid;
   gap: 0.15rem;
   width: 100%;
-  padding: 0.6rem 0.75rem;
+  padding: 0.65rem 0.8rem;
   border: 0 !important;
-  border-radius: 10px !important;
+  border-radius: 12px !important;
   background: transparent !important;
   color: #fff !important;
   text-align: left;
   cursor: pointer;
+}
+
+.menu-item.is-primary {
+  background: rgba(255, 255, 255, 0.06) !important;
 }
 
 .menu-item strong {
@@ -6137,7 +6155,7 @@ body {
 
 .menu-item:hover:not(:disabled),
 .menu-item:focus-visible {
-  background: rgba(255, 255, 255, 0.08) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
   outline: none;
 }
 
@@ -6167,7 +6185,7 @@ body {
   .set-menus .menu-panel {
     left: 0;
     right: auto;
-    width: min(320px, calc(100vw - 48px));
+    width: min(380px, calc(100vw - 48px));
   }
 
   .set-tools-label {
@@ -6642,12 +6660,12 @@ body {
 /* Write the set to a rekordbox stick. */
 .stick-dialog {
   margin: auto;
-  width: min(560px, calc(100vw - 32px));
+  width: min(640px, calc(100vw - 24px));
   max-height: calc(100vh - 48px);
   overflow: auto;
   padding: 1.25rem 1.4rem 1.1rem;
   border: 1px solid var(--line-strong);
-  border-radius: 16px;
+  border-radius: 20px;
   background: #151515;
   color: var(--ink);
   box-shadow: var(--shadow-md);
@@ -6668,6 +6686,29 @@ body {
   color: var(--muted);
   font-size: 0.86rem;
 }
+.stick-dialog .stick-safety-fold {
+  margin: 0 0 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.35rem 0.7rem;
+}
+.stick-dialog .stick-safety-fold > summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 600;
+  list-style: none;
+}
+.stick-dialog .stick-safety-fold > summary::-webkit-details-marker {
+  display: none;
+}
+.stick-dialog .stick-safety-fold[open] > summary {
+  margin-bottom: 0.35rem;
+  color: var(--ink);
+}
+.stick-dialog .stick-safety-fold .stick-safety {
+  margin: 0 0 0.35rem;
+}
 .stick-dialog .stick-warn {
   padding: 0.55rem 0.7rem;
   border: 1px solid rgba(248, 113, 113, 0.5);
@@ -6677,22 +6718,34 @@ body {
 }
 .stick-missing {
   margin: 0 0 0.7rem;
-  padding: 0.55rem 0.7rem;
+  padding: 0.7rem 0.85rem;
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  border-radius: 14px;
   font-size: 0.88rem;
 }
 .stick-missing ul {
-  margin: 0.3rem 0 0.2rem;
-  padding-left: 1.1rem;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
   color: var(--muted);
 }
 .stick-missing li {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 0.35rem;
-  margin: 0.45rem 0;
+  gap: 0.4rem;
+  margin: 0.55rem 0 0;
+  padding: 0.45rem 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.stick-missing li:first-child {
+  margin-top: 0.35rem;
+  padding-top: 0;
+  border-top: 0;
+}
+.stick-missing li > span {
+  color: var(--ink);
+  font-weight: 600;
 }
 .stick-missing .btn {
   font-size: 0.82rem;
@@ -6703,6 +6756,17 @@ body {
   justify-content: flex-start;
   align-items: center;
   gap: 0.5rem;
+  margin-top: 0.25rem;
+  padding-top: 0.15rem;
+}
+
+.stick-dialog .stick-actions .btn {
+  width: auto;
+  min-width: 0;
+}
+
+.stick-dialog > .stick-hint {
+  margin-bottom: 0.85rem;
 }
 
 .stick-reload {
