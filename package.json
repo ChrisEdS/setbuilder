@@ -1,6 +1,6 @@
 {
   "name": "setform",
-  "version": "3.4.1",
+  "version": "3.4.2",
   "license": "MIT",
   "scripts": {
     "dev": "next dev -p 4327 -H 127.0.0.1",

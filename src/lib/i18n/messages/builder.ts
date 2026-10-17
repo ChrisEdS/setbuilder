@@ -322,16 +322,20 @@ const de = {
   "builder.app.downloadFailed": "Download hat nicht geklappt.",
   "builder.app.installFailed": "Installation hat nicht geklappt.",
   "builder.setups.aria": "Verbindungen und Setups",
-  "builder.setups.intro": "Brief sichern. Spotify und Tidal hier verbinden.",
+  "builder.setups.intro": "Brief sichern, Setup laden, optional Spotify und Tidal verbinden.",
+  "builder.setups.sectionBrief": "Brief & Setup",
+  "builder.setups.sectionServices": "Dienste",
   "builder.setups.name": "Name",
   "builder.setups.nameAria": "Setup-Name",
   "builder.setups.stored": "Gespeicherter Stand",
   "builder.setups.selectAria": "Gespeichertes Setup",
   "builder.setups.choose": "Wählen…",
   "builder.setups.fileTitle": "Datei",
-  "builder.setups.fileHint": "JSON sichern oder auf einem anderen Rechner öffnen.",
+  "builder.setups.fileHint": "Als JSON sichern oder auf einem anderen Rechner öffnen.",
   "builder.setups.download": "Herunterladen",
   "builder.setups.fallbackName": "Setup",
+  "builder.app.statusUnsignedShort":
+    "Nicht mit Apple signiert — Updates manuell von GitHub laden.",
 
   // Status toasts
   "builder.status.added": "+ {name} → {phase} / {role}",
@@ -772,7 +776,9 @@ const en: Record<keyof typeof de, string> = {
   "builder.app.downloadFailed": "Download failed.",
   "builder.app.installFailed": "Install failed.",
   "builder.setups.aria": "Connections and setups",
-  "builder.setups.intro": "Save the brief. Connect Spotify and Tidal here.",
+  "builder.setups.intro": "Save the brief, load a setup, optionally connect Spotify and Tidal.",
+  "builder.setups.sectionBrief": "Brief & setup",
+  "builder.setups.sectionServices": "Services",
   "builder.setups.name": "Name",
   "builder.setups.nameAria": "Setup name",
   "builder.setups.stored": "Saved state",
@@ -782,6 +788,8 @@ const en: Record<keyof typeof de, string> = {
   "builder.setups.fileHint": "Save as JSON or open on another computer.",
   "builder.setups.download": "Download",
   "builder.setups.fallbackName": "Setup",
+  "builder.app.statusUnsignedShort":
+    "Not Apple-signed — download updates manually from GitHub.",
 
   "builder.status.added": "+ {name} → {phase} / {role}",
   "builder.status.addedMany": "+ {tracks} → {phase} / {role}",

@@ -34,7 +34,7 @@ function looksLikeSignatureFailure(message: string, code?: string) {
   );
 }
 
-export function AppUpdateCard() {
+export function AppUpdateCard({ variant = "card" }: { variant?: "card" | "strip" }) {
   const { t } = useI18n();
   const bridge = desktopBridge();
   const [web, setWeb] = useState<WebInfo | null>(null);
@@ -172,7 +172,9 @@ export function AppUpdateCard() {
 
   const statusText =
     phase === "manual" || manualOnly
-      ? t("builder.app.statusUnsigned")
+      ? variant === "strip"
+        ? t("builder.app.statusUnsignedShort")
+        : t("builder.app.statusUnsigned")
       : phase === "checking"
         ? t("builder.app.statusChecking")
         : phase === "available" && remoteVersion
@@ -187,13 +189,66 @@ export function AppUpdateCard() {
                   ? error
                   : t("builder.app.statusIdle");
 
+  const actions = canUpdate ? (
+    <>
+      <Tip text={t("builder.app.checkTip")} disabled={busy}>
+        <button
+          type="button"
+          className={variant === "strip" ? "btn ghost" : "btn"}
+          disabled={busy || phase === "downloading"}
+          onClick={() => void check()}
+        >
+          {busy && phase === "checking" ? t("builder.app.checking") : t("builder.app.check")}
+        </button>
+      </Tip>
+      {phase === "available" ? (
+        <Tip text={t("builder.app.downloadTip")} disabled={busy}>
+          <button
+            type="button"
+            className="btn ghost"
+            disabled={busy}
+            onClick={() => void download()}
+          >
+            {t("builder.app.download")}
+          </button>
+        </Tip>
+      ) : null}
+      {phase === "ready" ? (
+        <Tip text={t("builder.app.installTip")} disabled={busy}>
+          <button type="button" className="btn" disabled={busy} onClick={() => void install()}>
+            {t("builder.app.install")}
+          </button>
+        </Tip>
+      ) : null}
+    </>
+  ) : (
+    <a
+      className={variant === "strip" ? "btn ghost" : "btn"}
+      href={releasesUrl}
+      target="_blank"
+      rel="noreferrer"
+    >
+      {manualOnly ? t("builder.app.downloadManual") : t("builder.app.openReleases")}
+    </a>
+  );
+
+  if (variant === "strip") {
+    return (
+      <div className="app-update-strip" role="status">
+        <div className="app-update-strip-copy">
+          <strong>{t("builder.app.versionLine", { version, channel })}</strong>
+          <span>{statusText}</span>
+        </div>
+        <div className="app-update-strip-actions">{actions}</div>
+      </div>
+    );
+  }
+
   return (
     <div className="setup-card app-update-card">
       <h3>{t("builder.app.title")}</h3>
       <p className="app-update-version">
-        <strong>
-          {t("builder.app.versionLine", { version, channel })}
-        </strong>
+        <strong>{t("builder.app.versionLine", { version, channel })}</strong>
       </p>
       {desktop ? (
         <p className="app-update-meta">
@@ -207,52 +262,7 @@ export function AppUpdateCard() {
       <p className="app-update-status" role="status">
         {statusText}
       </p>
-      <div className="setup-actions">
-        {canUpdate ? (
-          <>
-            <Tip text={t("builder.app.checkTip")} disabled={busy}>
-              <button
-                type="button"
-                className="btn"
-                disabled={busy || phase === "downloading"}
-                onClick={() => void check()}
-              >
-                {busy && phase === "checking"
-                  ? t("builder.app.checking")
-                  : t("builder.app.check")}
-              </button>
-            </Tip>
-            {phase === "available" ? (
-              <Tip text={t("builder.app.downloadTip")} disabled={busy}>
-                <button
-                  type="button"
-                  className="btn ghost"
-                  disabled={busy}
-                  onClick={() => void download()}
-                >
-                  {t("builder.app.download")}
-                </button>
-              </Tip>
-            ) : null}
-            {phase === "ready" ? (
-              <Tip text={t("builder.app.installTip")} disabled={busy}>
-                <button
-                  type="button"
-                  className="btn"
-                  disabled={busy}
-                  onClick={() => void install()}
-                >
-                  {t("builder.app.install")}
-                </button>
-              </Tip>
-            ) : null}
-          </>
-        ) : (
-          <a className="btn" href={releasesUrl} target="_blank" rel="noreferrer">
-            {manualOnly ? t("builder.app.downloadManual") : t("builder.app.openReleases")}
-          </a>
-        )}
-      </div>
+      <div className="setup-actions">{actions}</div>
       {phase === "error" && !manualOnly ? (
         <p className="app-update-hint">
           <a href={releasesUrl} target="_blank" rel="noreferrer">

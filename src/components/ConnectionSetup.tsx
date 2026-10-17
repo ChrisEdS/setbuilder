@@ -36,6 +36,87 @@ const EMPTY = {
   TIDAL_CLIENT_SECRET: "",
 };
 
+function ServiceCard({
+  title,
+  ready,
+  dashboardHref,
+  dashboardLabel,
+  help,
+  redirectUri,
+  redirectAria,
+  idValue,
+  secretValue,
+  onId,
+  onSecret,
+  onCopy,
+  storedPlaceholder,
+  t,
+}: {
+  title: string;
+  ready: boolean;
+  dashboardHref: string;
+  dashboardLabel: string;
+  help: ReactNode;
+  redirectUri: string;
+  redirectAria: string;
+  idValue: string;
+  secretValue: string;
+  onId: (value: string) => void;
+  onSecret: (value: string) => void;
+  onCopy: () => void;
+  storedPlaceholder: boolean;
+  t: (key: MessageKey) => string;
+}) {
+  return (
+    <section className={`setup-service${ready ? " is-ready" : ""}`}>
+      <header className="setup-service-head">
+        <div className="setup-service-title">
+          <h3>{title}</h3>
+          <span className={`setup-badge${ready ? " ready" : ""}`}>
+            {ready ? t("library.connection.badgeReady") : t("library.connection.badgeOptional")}
+          </span>
+        </div>
+        <a className="setup-service-link" href={dashboardHref} target="_blank" rel="noreferrer">
+          {dashboardLabel}
+        </a>
+      </header>
+      <p className="setup-service-help">{help}</p>
+      <div className="setup-field">
+        <span>{t("library.connection.redirectLabel")}</span>
+        <div className="setup-copy">
+          <input readOnly value={redirectUri} aria-label={redirectAria} />
+          <Tip text={t("library.connection.copyUriTip")} end>
+            <button type="button" className="btn ghost" onClick={onCopy}>
+              {t("common.copy")}
+            </button>
+          </Tip>
+        </div>
+      </div>
+      <div className="setup-fields">
+        <label className="setup-field">
+          <span>Client ID</span>
+          <input
+            value={idValue}
+            autoComplete="off"
+            placeholder={storedPlaceholder ? t("library.connection.stored") : "Client ID"}
+            onChange={(event) => onId(event.target.value)}
+          />
+        </label>
+        <label className="setup-field">
+          <span>Client Secret</span>
+          <input
+            type="password"
+            value={secretValue}
+            autoComplete="off"
+            placeholder={storedPlaceholder ? t("library.connection.stored") : "Client Secret"}
+            onChange={(event) => onSecret(event.target.value)}
+          />
+        </label>
+      </div>
+    </section>
+  );
+}
+
 export function ConnectionSetup({
   onStatus,
 }: {
@@ -149,116 +230,52 @@ export function ConnectionSetup({
     <div className="setups-connect">
       <p className="setups-connect-note">{t("library.connection.note")}</p>
 
-      <section className="setup-card">
-        <h3>
-          {status?.spotifyConfigured
-            ? t("library.connection.spotifyTitleReady")
-            : t("library.connection.spotifyTitleMissing")}
-        </h3>
-        <ol className="setup-steps">
-          <li>
-            <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noreferrer">
-              {t("library.connection.spotifyOpen")}
-            </a>
-          </li>
-          <li>{t("library.connection.spotifyStep2")}</li>
-          <li>{t("library.connection.spotifyStep3")}</li>
-        </ol>
-        <div className="setup-field">
-          <span>Redirect URI</span>
-          <div className="setup-copy">
-            <input readOnly value={status?.spotifyRedirectUri ?? ""} aria-label="Spotify Redirect URI" />
-            <Tip text={t("library.connection.copyUriTip")} end>
-              <button
-                type="button"
-                className="btn ghost"
-                onClick={() => void copy(status?.spotifyRedirectUri ?? "")}
-              >
-                {t("common.copy")}
-              </button>
-            </Tip>
-          </div>
-        </div>
-        <div className="setup-fields">
-          <label className="setup-field">
-            <span>Client ID</span>
-            <input
-              value={fields.SPOTIFY_CLIENT_ID}
-              autoComplete="off"
-              placeholder={status?.spotifyConfigured ? t("library.connection.stored") : "Client ID"}
-              onChange={(event) => setField("SPOTIFY_CLIENT_ID", event.target.value)}
-            />
-          </label>
-          <label className="setup-field">
-            <span>Client Secret</span>
-            <input
-              type="password"
-              value={fields.SPOTIFY_CLIENT_SECRET}
-              autoComplete="off"
-              placeholder={status?.spotifyConfigured ? t("library.connection.stored") : "Client Secret"}
-              onChange={(event) => setField("SPOTIFY_CLIENT_SECRET", event.target.value)}
-            />
-          </label>
-        </div>
-      </section>
+      <div className="setups-services">
+        <ServiceCard
+          title={
+            status?.spotifyConfigured
+              ? t("library.connection.spotifyTitleReady")
+              : t("library.connection.spotifyTitleMissing")
+          }
+          ready={Boolean(status?.spotifyConfigured)}
+          dashboardHref="https://developer.spotify.com/dashboard"
+          dashboardLabel={t("library.connection.spotifyOpen")}
+          help={t("library.connection.spotifyHelp")}
+          redirectUri={status?.spotifyRedirectUri ?? ""}
+          redirectAria="Spotify Redirect URI"
+          idValue={fields.SPOTIFY_CLIENT_ID}
+          secretValue={fields.SPOTIFY_CLIENT_SECRET}
+          onId={(value) => setField("SPOTIFY_CLIENT_ID", value)}
+          onSecret={(value) => setField("SPOTIFY_CLIENT_SECRET", value)}
+          onCopy={() => void copy(status?.spotifyRedirectUri ?? "")}
+          storedPlaceholder={Boolean(status?.spotifyConfigured)}
+          t={t}
+        />
 
-      <section className="setup-card">
-        <h3>
-          {status?.tidalConfigured
-            ? t("library.connection.tidalTitleReady")
-            : t("library.connection.tidalTitleOptional")}
-        </h3>
-        <ol className="setup-steps">
-          <li>
-            <a href="https://developer.tidal.com" target="_blank" rel="noreferrer">
-              {t("library.connection.tidalOpen")}
-            </a>
-          </li>
-          <li>
-            {rich(t("library.connection.tidalScopes"), {
-              read: <code>user.read</code>,
-              playlists: <code>playlists.read</code>,
-            })}
-          </li>
-          <li>{t("library.connection.tidalStep3")}</li>
-        </ol>
-        <div className="setup-field">
-          <span>Redirect URI</span>
-          <div className="setup-copy">
-            <input readOnly value={status?.tidalRedirectUri ?? ""} aria-label="Tidal Redirect URI" />
-            <Tip text={t("library.connection.copyUriTip")} end>
-              <button
-                type="button"
-                className="btn ghost"
-                onClick={() => void copy(status?.tidalRedirectUri ?? "")}
-              >
-                {t("common.copy")}
-              </button>
-            </Tip>
-          </div>
-        </div>
-        <div className="setup-fields">
-          <label className="setup-field">
-            <span>Client ID</span>
-            <input
-              value={fields.TIDAL_CLIENT_ID}
-              autoComplete="off"
-              placeholder={status?.tidalConfigured ? t("library.connection.stored") : "Client ID"}
-              onChange={(event) => setField("TIDAL_CLIENT_ID", event.target.value)}
-            />
-          </label>
-          <label className="setup-field">
-            <span>Client Secret</span>
-            <input
-              type="password"
-              value={fields.TIDAL_CLIENT_SECRET}
-              autoComplete="off"
-              placeholder={status?.tidalConfigured ? t("library.connection.stored") : "Client Secret"}
-              onChange={(event) => setField("TIDAL_CLIENT_SECRET", event.target.value)}
-            />
-          </label>
-        </div>
-      </section>
+        <ServiceCard
+          title={
+            status?.tidalConfigured
+              ? t("library.connection.tidalTitleReady")
+              : t("library.connection.tidalTitleOptional")
+          }
+          ready={Boolean(status?.tidalConfigured)}
+          dashboardHref="https://developer.tidal.com"
+          dashboardLabel={t("library.connection.tidalOpen")}
+          help={rich(t("library.connection.tidalHelp"), {
+            read: <code>user.read</code>,
+            playlists: <code>playlists.read</code>,
+          })}
+          redirectUri={status?.tidalRedirectUri ?? ""}
+          redirectAria="Tidal Redirect URI"
+          idValue={fields.TIDAL_CLIENT_ID}
+          secretValue={fields.TIDAL_CLIENT_SECRET}
+          onId={(value) => setField("TIDAL_CLIENT_ID", value)}
+          onSecret={(value) => setField("TIDAL_CLIENT_SECRET", value)}
+          onCopy={() => void copy(status?.tidalRedirectUri ?? "")}
+          storedPlaceholder={Boolean(status?.tidalConfigured)}
+          t={t}
+        />
+      </div>
 
       <div className="setup-connect-save">
         <Tip text={t("library.connection.saveTip")} disabled={saving}>

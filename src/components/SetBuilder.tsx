@@ -1670,93 +1670,100 @@ export function SetBuilder() {
           <h2>{t("builder.settings.title")}</h2>
           <p>{t("builder.setups.intro")}</p>
         </div>
-        <div className="setups-grid">
-          <div className="setup-card">
-            <h3>{t("common.save")}</h3>
-            <label className="setup-field">
+
+        <div className="setups-zone">
+          <h3 className="setups-zone-title">{t("builder.setups.sectionBrief")}</h3>
+          <div className="setups-toolbar">
+            <label className="setup-field setups-toolbar-name">
               <span>{t("builder.setups.name")}</span>
-              <input
-                value={draft.title}
-                onChange={(event) =>
-                  setDraft((current) => ({ ...current, title: event.target.value }))
-                }
-                aria-label={t("builder.setups.nameAria")}
-              />
-            </label>
-            <button type="button" className="btn" onClick={saveSetup}>
-              {t("common.save")}
-            </button>
-          </div>
-          <div className="setup-card">
-            <h3>{t("common.load")}</h3>
-            <label className="setup-field">
-              <span>{t("builder.setups.stored")}</span>
-              <select
-                value={selectedSetup}
-                onChange={(event) => setSelectedSetup(event.target.value)}
-                aria-label={t("builder.setups.selectAria")}
-              >
-                <option value="">{t("builder.setups.choose")}</option>
-                {setups.map((setup) => (
-                  <option key={setup.id} value={setup.id}>
-                    {setup.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="setup-actions">
-              <button
-                type="button"
-                className="btn ghost"
-                disabled={!selectedSetup}
-                onClick={() => loadSetup()}
-              >
-                {t("common.load")}
-              </button>
-              <button
-                type="button"
-                className="btn ghost"
-                disabled={!selectedSetup}
-                onClick={deleteSetup}
-              >
-                {t("common.delete")}
-              </button>
-            </div>
-          </div>
-          <div className="setup-card">
-            <h3>{t("builder.setups.fileTitle")}</h3>
-            <p>{t("builder.setups.fileHint")}</p>
-            <div className="setup-actions">
-              <button type="button" className="btn ghost" onClick={downloadSetup}>
-                {t("builder.setups.download")}
-              </button>
-              <label className="btn ghost file-btn">
-                {t("common.open")}
+              <div className="setups-inline">
                 <input
-                  type="file"
-                  accept="application/json,.json"
-                  hidden
-                  onChange={(event) => {
-                    uploadSetup(event.target.files?.[0] ?? null);
-                    event.currentTarget.value = "";
-                  }}
+                  value={draft.title}
+                  onChange={(event) =>
+                    setDraft((current) => ({ ...current, title: event.target.value }))
+                  }
+                  aria-label={t("builder.setups.nameAria")}
                 />
-              </label>
-              <button
-                type="button"
-                className="btn ghost danger"
-                title={t("library.menu.resetHint")}
-                onClick={resetSet}
-              >
-                {t("library.menu.reset")}
-              </button>
+                <button type="button" className="btn" onClick={saveSetup}>
+                  {t("common.save")}
+                </button>
+              </div>
+            </label>
+
+            <label className="setup-field setups-toolbar-load">
+              <span>{t("builder.setups.stored")}</span>
+              <div className="setups-inline">
+                <select
+                  value={selectedSetup}
+                  onChange={(event) => setSelectedSetup(event.target.value)}
+                  aria-label={t("builder.setups.selectAria")}
+                >
+                  <option value="">{t("builder.setups.choose")}</option>
+                  {setups.map((setup) => (
+                    <option key={setup.id} value={setup.id}>
+                      {setup.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="btn ghost"
+                  disabled={!selectedSetup}
+                  onClick={() => loadSetup()}
+                >
+                  {t("common.load")}
+                </button>
+                <button
+                  type="button"
+                  className="btn ghost"
+                  disabled={!selectedSetup}
+                  onClick={deleteSetup}
+                >
+                  {t("common.delete")}
+                </button>
+              </div>
+            </label>
+
+            <div className="setup-field setups-toolbar-file">
+              <span>{t("builder.setups.fileTitle")}</span>
+              <div className="setups-inline setups-inline-wrap">
+                <button type="button" className="btn ghost" onClick={downloadSetup}>
+                  {t("builder.setups.download")}
+                </button>
+                <label className="btn ghost file-btn">
+                  {t("common.open")}
+                  <input
+                    type="file"
+                    accept="application/json,.json"
+                    hidden
+                    onChange={(event) => {
+                      uploadSetup(event.target.files?.[0] ?? null);
+                      event.currentTarget.value = "";
+                    }}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="btn ghost danger"
+                  title={t("library.menu.resetHint")}
+                  onClick={resetSet}
+                >
+                  {t("library.menu.reset")}
+                </button>
+              </div>
+              <p className="setups-toolbar-hint">{t("builder.setups.fileHint")}</p>
             </div>
-            <FieldNoticeView notice={localNotice("settings")} />
           </div>
-          <AppUpdateCard />
+          <FieldNoticeView notice={localNotice("settings")} />
         </div>
-        <ConnectionSetup onStatus={noteSettings} />
-        <FieldNoticeView notice={localNotice("connect")} />
+
+        <div className="setups-zone">
+          <h3 className="setups-zone-title">{t("builder.setups.sectionServices")}</h3>
+          <ConnectionSetup onStatus={noteSettings} />
+          <FieldNoticeView notice={localNotice("connect")} />
+        </div>
+
+        <AppUpdateCard variant="strip" />
       </section>
     );
   }
