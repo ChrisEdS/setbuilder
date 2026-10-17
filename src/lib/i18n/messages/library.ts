@@ -241,31 +241,31 @@ const de = {
   "library.stickHealth.verdict.ready": "Bereit für CDJ-3000, XDJ-XZ und ältere Player.",
   "library.stickHealth.verdict.readySynced": "Bereit für alle Player — rekordbox hat die Bibliothek erneuert.",
   "library.stickHealth.verdict.readyAside": "Bereit für CDJ-3000 und XDJ-XZ. Alte Bibliothek liegt sicher im Backup.",
-  "library.stickHealth.verdict.needsRekordbox": "Player würden noch die alte rekordbox-Bibliothek zeigen, nicht deine Playlists.",
-  "library.stickHealth.verdict.needsRekordboxFiles": "Stick braucht rekordbox, bevor er im Player läuft.",
+  "library.stickHealth.verdict.needsRekordbox": "Noch nicht bereit: Die alte Player-Bibliothek verdeckt deine Playlists.",
+  "library.stickHealth.verdict.needsRekordboxFiles": "Noch nicht bereit: Stick braucht rekordbox, bevor der Player ihn liest.",
   "library.stickHealth.verdict.hiddenFolder": "Ordner heißt .PIONEER (versteckt) — viele Player finden ihn trotzdem.",
-  "library.stickHealth.verdict.empty": "Die Datenbank auf dem Stick hat noch keine Playlists.",
+  "library.stickHealth.verdict.empty": "Noch nicht bereit: Auf dem Stick liegen noch keine Playlists.",
   "library.stickHealth.verdict.broken": "Keine lesbare rekordbox-Datenbank auf diesem Stick.",
   "library.stickHealth.verdict.incomplete": "Nur eine Datei gewählt — für den Player-Check den ganzen Stick wählen.",
-  "library.stickHealth.next.eject": "Nächster Schritt: Auswerfen, dann Stick in den Player stecken.",
-  "library.stickHealth.next.prepare": "Nächster Schritt: Für Player vorbereiten — alte Bibliothek zur Seite legen.",
-  "library.stickHealth.next.openRekordbox": "Nächster Schritt: In rekordbox öffnen und den Stick dort auswerfen.",
+  "library.stickHealth.next.eject": "Grün geschafft. Nächster Schritt: Auswerfen, dann Stick in den Player.",
+  "library.stickHealth.next.prepare": "Zum Grün: „Für Player vorbereiten“ tippen — danach wird der Punkt grün, dann auswerfen.",
+  "library.stickHealth.next.openRekordbox": "Zum Grün: In rekordbox öffnen, Stick dort auswerfen und die Device Library schreiben lassen.",
   "library.stickHealth.meaning.ready":
     "Die Stick-Datenbank ist lesbar. CDJ-3000, XDJ-XZ und ältere Player zeigen deine Playlists. Vor dem Abziehen immer auswerfen.",
   "library.stickHealth.meaning.readySynced":
     "rekordbox hat die Player-Bibliothek geschrieben. Auch neuere Player (CDJ-3000X, XDJ-AZ, OPUS-QUAD) sollten den Stick finden.",
   "library.stickHealth.meaning.readyAside":
-    "Die alte OneLibrary liegt im Backup, damit der Player deine aktuellen Playlists aus export.pdb liest. Das ist beabsichtigt — nicht kaputt.",
+    "Grün: Die alte OneLibrary liegt im Backup, der Player liest deine aktuellen Playlists aus export.pdb. Das ist beabsichtigt — nicht kaputt. Jetzt auswerfen und in den Player.",
   "library.stickHealth.meaning.readyAsideHidden":
-    "Vorbereitung ist durch. Die alte Bibliothek liegt im Backup. Der Ordner heißt .PIONEER (versteckt) — auf vielen Sticks normal. Auswerfen und in den Player; wenn nichts erscheint, Stick in rekordbox öffnen.",
+    "Grün: Vorbereitung ist durch, alte Bibliothek im Backup. Der Ordner heißt .PIONEER (versteckt) — auf vielen Sticks normal. Auswerfen und in den Player; wenn nichts erscheint, Stick in rekordbox öffnen.",
   "library.stickHealth.meaning.needsRekordbox":
-    "Auf dem Stick liegt noch eine ältere Player-Bibliothek. Ohne Vorbereitung zeigen CDJ-3000 und XDJ-XZ die alten Playlists. „Für Player vorbereiten“ legt sie sicher zur Seite.",
+    "Auf dem Stick liegt noch eine ältere OneLibrary von rekordbox. CDJ-3000 und XDJ-XZ lesen die zuerst und zeigen dann nicht deine SETBUILDER-Playlists. So wird der Punkt grün: 1) „Für Player vorbereiten“ — die alte Bibliothek wandert sicher nach SETBUILDER-Backup. 2) „Auswerfen“. 3) Stick in den Player stecken. (CDJ-3000X, XDJ-AZ und OPUS-QUAD brauchen danach weiter rekordbox.)",
   "library.stickHealth.meaning.needsRekordboxFiles":
-    "Dieser Stick braucht rekordbox, bevor ein Player die Bibliothek findet. In rekordbox den Stick öffnen, auswerfen und die Device Library schreiben lassen.",
+    "Dieser Stick braucht rekordbox, bevor ein Player die Bibliothek findet. So wird’s grün: Stick in rekordbox öffnen, dort auswerfen und die Device Library schreiben lassen — danach hier „Erneut prüfen“.",
   "library.stickHealth.meaning.hiddenFolder":
     "Pioneer speichert die Bibliothek oft als versteckten Ordner .PIONEER. Viele CDJs finden ihn. Wenn der Player leer bleibt: Stick in rekordbox öffnen — rekordbox legt oft PIONEER ohne Punkt an.",
   "library.stickHealth.meaning.empty":
-    "export.pdb ist da, enthält aber noch keine Playlists. Zuerst Sets auf den Stick schreiben, dann erneut prüfen.",
+    "export.pdb ist da, enthält aber noch keine Playlists. So wird’s grün: zuerst ein Set mit „Auf Stick schreiben“ legen, dann erneut prüfen.",
   "library.stickHealth.meaning.broken":
     "Keine lesbare export.pdb gefunden. Den ganzen Stick wählen (nicht nur einen Unterordner) oder in rekordbox neu exportieren.",
   "library.stickHealth.meaning.incomplete":
@@ -277,11 +277,11 @@ const de = {
   "library.stickHealth.recheck": "Erneut prüfen",
   "library.stickHealth.recheckTip": "Stick erneut lesen — nach rekordbox oder Dateiänderungen.",
   "library.stickHealth.tip.prepare":
-    "Alte Player-Bibliothek sicher zur Seite legen, damit der Player deine aktuellen Playlists liest. Danach auswerfen.",
+    "Macht den Status grün für CDJ-3000 / XDJ-XZ: legt die alte Player-Bibliothek sicher beiseite. Danach auswerfen.",
   "library.stickHealth.tip.eject":
     "Stick sicher auswerfen, bevor du ihn abziehst und in den Player steckst.",
   "library.stickHealth.tip.openRekordbox":
-    "rekordbox öffnen, dort den Stick auswerfen und die Player-Bibliothek schreiben lassen.",
+    "rekordbox öffnen, dort den Stick auswerfen und die Player-Bibliothek schreiben lassen — danach hier erneut prüfen.",
   "library.stickHealth.tip.restore":
     "OneLibrary aus dem SETBUILDER-Backup zurück auf den Stick legen.",
   "library.stickHealth.fact.folder": "Ordner",
@@ -296,7 +296,7 @@ const de = {
   "library.stickHealth.fact.library": "Player-Bibliothek",
   "library.stickHealth.fact.libraryNone": "keine OneLibrary — Player lesen export.pdb",
   "library.stickHealth.fact.librarySynced": "OneLibrary aktuell, von rekordbox geschrieben",
-  "library.stickHealth.fact.libraryStale": "OneLibrary älter als deine Playlists",
+  "library.stickHealth.fact.libraryStale": "älter als deine Playlists — „Für Player vorbereiten“ macht grün",
   "library.stickHealth.fact.libraryAside": "OneLibrary liegt sicher in SETBUILDER-Backup",
   "library.stickHealth.fact.setform": "SETBUILDER-Playlists",
   "library.stickHealth.fact.setformNone": "noch keine auf dem Stick",
@@ -307,9 +307,9 @@ const de = {
   "library.stickHealth.why": "CDJ-3000, XDJ-XZ und ältere lesen export.pdb. CDJ-3000X, XDJ-AZ und OPUS-QUAD brauchen eine Player-Bibliothek aus rekordbox. Vor dem Player immer auswerfen.",
   "library.stickHealth.fix.prepare": "Für Player vorbereiten",
   "library.stickHealth.fix.preparing": "Bereite vor…",
-  "library.stickHealth.fix.done": "Fertig. Stick ist vorbereitet — jetzt auswerfen, dann in den Player.",
+  "library.stickHealth.fix.done": "Grün. Stick ist vorbereitet — jetzt auswerfen, dann in den Player.",
   "library.stickHealth.fix.restored": "Player-Bibliothek liegt wieder auf dem Stick.",
-  "library.stickHealth.fix.confirm": "Die alte Player-Bibliothek (exportLibrary.db) kommt nach SETBUILDER-Backup. CDJ-3000, XDJ-XZ und ältere Player lesen dann deine Playlists. CDJ-3000X, XDJ-AZ und OPUS-QUAD sehen ohne rekordbox weiter keine Bibliothek. Fortfahren?",
+  "library.stickHealth.fix.confirm": "Die alte Player-Bibliothek (exportLibrary.db) kommt nach SETBUILDER-Backup. Danach wird der Status grün für CDJ-3000, XDJ-XZ und ältere — sie lesen deine Playlists. CDJ-3000X, XDJ-AZ und OPUS-QUAD sehen ohne rekordbox weiter keine Bibliothek. Fortfahren?",
   "library.stickHealth.fix.eject": "Auswerfen",
   "library.stickHealth.fix.ejecting": "Werfe aus…",
   "library.stickHealth.fix.ejected": "Ausgeworfen. Stick abziehen und in den Player.",
@@ -568,31 +568,31 @@ const en: Record<keyof typeof de, string> = {
   "library.stickHealth.verdict.ready": "Ready for CDJ-3000, XDJ-XZ and older players.",
   "library.stickHealth.verdict.readySynced": "Ready for all players — rekordbox refreshed the library.",
   "library.stickHealth.verdict.readyAside": "Ready for CDJ-3000 and XDJ-XZ. Old library is safely in the backup.",
-  "library.stickHealth.verdict.needsRekordbox": "Players would still show the old rekordbox library, not your playlists.",
-  "library.stickHealth.verdict.needsRekordboxFiles": "Stick needs rekordbox before it works in the player.",
+  "library.stickHealth.verdict.needsRekordbox": "Not ready yet: the old player library is hiding your playlists.",
+  "library.stickHealth.verdict.needsRekordboxFiles": "Not ready yet: this stick needs rekordbox before a player can read it.",
   "library.stickHealth.verdict.hiddenFolder": "Folder is named .PIONEER (hidden) — many players still find it.",
-  "library.stickHealth.verdict.empty": "The database on the stick has no playlists yet.",
+  "library.stickHealth.verdict.empty": "Not ready yet: there are no playlists on the stick.",
   "library.stickHealth.verdict.broken": "No readable rekordbox database on this stick.",
   "library.stickHealth.verdict.incomplete": "Only one file picked — choose the whole stick for the player check.",
-  "library.stickHealth.next.eject": "Next: eject, then put the stick in the player.",
-  "library.stickHealth.next.prepare": "Next: prepare for the player — move the old library aside.",
-  "library.stickHealth.next.openRekordbox": "Next: open in rekordbox and eject the stick there.",
+  "library.stickHealth.next.eject": "You’re green. Next: eject, then put the stick in the player.",
+  "library.stickHealth.next.prepare": "To go green: tap “Prepare for player” — the dot turns green, then eject.",
+  "library.stickHealth.next.openRekordbox": "To go green: open in rekordbox, eject the stick there, and let it write the device library.",
   "library.stickHealth.meaning.ready":
     "The stick database is readable. CDJ-3000, XDJ-XZ and older players will show your playlists. Always eject before you unplug.",
   "library.stickHealth.meaning.readySynced":
     "rekordbox has written the player library. Newer players (CDJ-3000X, XDJ-AZ, OPUS-QUAD) should find the stick too.",
   "library.stickHealth.meaning.readyAside":
-    "The old OneLibrary is in the backup so the player reads your current playlists from export.pdb. That is intentional — not broken.",
+    "Green: the old OneLibrary is in the backup, so the player reads your current playlists from export.pdb. That is intentional — not broken. Now eject and put it in the player.",
   "library.stickHealth.meaning.readyAsideHidden":
-    "Prepare is done. The old library is in the backup. The folder is named .PIONEER (hidden) — normal on many sticks. Eject and try the player; if it stays empty, open the stick in rekordbox.",
+    "Green: prepare is done, old library in the backup. The folder is named .PIONEER (hidden) — normal on many sticks. Eject and try the player; if it stays empty, open the stick in rekordbox.",
   "library.stickHealth.meaning.needsRekordbox":
-    "An older player library is still on the stick. Without prepare, CDJ-3000 and XDJ-XZ show the old playlists. “Prepare for player” moves it aside safely.",
+    "An older OneLibrary from rekordbox is still on the stick. CDJ-3000 and XDJ-XZ read that first and then won’t show your SETBUILDER playlists. To turn the dot green: 1) “Prepare for player” — the old library moves safely into SETBUILDER-Backup. 2) “Eject”. 3) Put the stick in the player. (CDJ-3000X, XDJ-AZ and OPUS-QUAD still need rekordbox after that.)",
   "library.stickHealth.meaning.needsRekordboxFiles":
-    "This stick needs rekordbox before a player finds the library. Open the stick in rekordbox, eject there, and let it write the device library.",
+    "This stick needs rekordbox before a player finds the library. To go green: open the stick in rekordbox, eject there, let it write the device library — then tap “Check again” here.",
   "library.stickHealth.meaning.hiddenFolder":
     "Pioneer often stores the library as a hidden .PIONEER folder. Many CDJs find it. If the player stays empty: open the stick in rekordbox — it often creates PIONEER without the dot.",
   "library.stickHealth.meaning.empty":
-    "export.pdb is there but has no playlists yet. Write sets to the stick first, then check again.",
+    "export.pdb is there but has no playlists yet. To go green: write a set with “Write to stick” first, then check again.",
   "library.stickHealth.meaning.broken":
     "No readable export.pdb found. Choose the whole stick (not a subfolder) or re-export from rekordbox.",
   "library.stickHealth.meaning.incomplete":
@@ -604,11 +604,11 @@ const en: Record<keyof typeof de, string> = {
   "library.stickHealth.recheck": "Check again",
   "library.stickHealth.recheckTip": "Re-read the stick — after rekordbox or file changes.",
   "library.stickHealth.tip.prepare":
-    "Move the old player library aside safely so the player reads your current playlists. Then eject.",
+    "Turns the status green for CDJ-3000 / XDJ-XZ: moves the old player library aside safely. Then eject.",
   "library.stickHealth.tip.eject":
     "Eject the stick safely before you unplug it and put it in the player.",
   "library.stickHealth.tip.openRekordbox":
-    "Open rekordbox, eject the stick there, and let it write the player library.",
+    "Open rekordbox, eject the stick there, and let it write the player library — then check again here.",
   "library.stickHealth.tip.restore":
     "Put OneLibrary from the SETBUILDER backup back onto the stick.",
   "library.stickHealth.fact.folder": "Folder",
@@ -623,7 +623,7 @@ const en: Record<keyof typeof de, string> = {
   "library.stickHealth.fact.library": "Player library",
   "library.stickHealth.fact.libraryNone": "no OneLibrary — players read export.pdb",
   "library.stickHealth.fact.librarySynced": "OneLibrary current, written by rekordbox",
-  "library.stickHealth.fact.libraryStale": "OneLibrary older than your playlists",
+  "library.stickHealth.fact.libraryStale": "older than your playlists — “Prepare for player” turns green",
   "library.stickHealth.fact.libraryAside": "OneLibrary is safely in SETBUILDER-Backup",
   "library.stickHealth.fact.setform": "SETBUILDER playlists",
   "library.stickHealth.fact.setformNone": "none on the stick yet",
@@ -634,9 +634,9 @@ const en: Record<keyof typeof de, string> = {
   "library.stickHealth.why": "CDJ-3000, XDJ-XZ and older read export.pdb. CDJ-3000X, XDJ-AZ and OPUS-QUAD need a player library from rekordbox. Always eject before the player.",
   "library.stickHealth.fix.prepare": "Prepare for player",
   "library.stickHealth.fix.preparing": "Preparing…",
-  "library.stickHealth.fix.done": "Done. Stick is prepared — now eject, then put it in the player.",
+  "library.stickHealth.fix.done": "Green. Stick is prepared — now eject, then put it in the player.",
   "library.stickHealth.fix.restored": "Player library is back on the stick.",
-  "library.stickHealth.fix.confirm": "The old player library (exportLibrary.db) will go to SETBUILDER-Backup. CDJ-3000, XDJ-XZ and older players will then read your playlists. CDJ-3000X, XDJ-AZ and OPUS-QUAD still will not see a library without rekordbox. Continue?",
+  "library.stickHealth.fix.confirm": "The old player library (exportLibrary.db) will go to SETBUILDER-Backup. After that the status turns green for CDJ-3000, XDJ-XZ and older — they will read your playlists. CDJ-3000X, XDJ-AZ and OPUS-QUAD still will not see a library without rekordbox. Continue?",
   "library.stickHealth.fix.eject": "Eject",
   "library.stickHealth.fix.ejecting": "Ejecting…",
   "library.stickHealth.fix.ejected": "Ejected. Unplug the stick and put it in the player.",

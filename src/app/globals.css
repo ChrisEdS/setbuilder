@@ -6899,7 +6899,10 @@ body {
   gap: 0 0.6rem;
   padding-left: 0.85rem;
 }
-.stick-strip-facts > div::before {
+/* Status dots only when the tone means something (ok / warn / bad). */
+.stick-strip-facts > div.is-ok::before,
+.stick-strip-facts > div.is-warn::before,
+.stick-strip-facts > div.is-bad::before {
   content: "";
   position: absolute;
   top: 0.5em;
@@ -6907,13 +6910,20 @@ body {
   width: 0.4rem;
   height: 0.4rem;
   border-radius: 50%;
-  background: var(--line-strong);
+}
+.stick-strip-facts > div.is-ok::before {
+  background: var(--ok);
 }
 .stick-strip-facts > div.is-warn::before {
   background: #fbbf24;
 }
 .stick-strip-facts > div.is-bad::before {
   background: var(--danger);
+}
+/* Mute = info only: no status bubble, quieter type. */
+.stick-strip-facts > div.is-mute {
+  padding-left: 0;
+  opacity: 0.85;
 }
 .stick-strip-facts dt {
   color: var(--muted);
