@@ -45,7 +45,7 @@ export function ReplaceMenu({
     [tracks, targetId, library, libraryEnabled, t],
   );
   return (
-    <div className="replace-menu" role="listbox" aria-label={t("crates.replace.ariaLabel")}>
+    <div className="replace-menu" role="menu" aria-label={t("crates.replace.ariaLabel")}>
       <div className="replace-menu-head">
         <strong>{t("crates.replace.title")}</strong>
         <button type="button" className="btn ghost" onClick={onClose}>
@@ -69,6 +69,7 @@ export function ReplaceMenu({
               </div>
               <button
                 type="button"
+                role="menuitem"
                 className="btn"
                 onClick={() => {
                   onReplace(targetId, option.id);
@@ -111,6 +112,7 @@ export function ReplaceMenu({
                   ) : null}
                   <button
                     type="button"
+                    role="menuitem"
                     className="btn"
                     onClick={() => {
                       onReplaceFromLibrary?.(targetId, row);

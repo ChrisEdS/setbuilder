@@ -93,7 +93,7 @@ export function canReshuffleDraft(draft: SetDraft): boolean {
 
 /**
  * Shuffle the stored playlist pool and rebuild the set for the same brief.
- * Keeps title/vibe/venue/…; clears opener/closer pins via suggested anchors.
+ * Keeps title/vibe/venue/… and opener/closer pins (forced into the cast).
  */
 export function reshuffleDraftFromPool(
   draft: SetDraft,
@@ -145,6 +145,10 @@ export function reshuffleDraftFromPool(
       harmonize: true,
     },
     t,
+    {
+      openerId: draft.openerId ?? null,
+      closerId: draft.closerId ?? null,
+    },
   );
   return {
     ...next,
@@ -207,12 +211,20 @@ function buildDraftFromPool(
   playlistName: string,
   options: ExtractOptions,
   t: Translate,
+  pins: { openerId?: string | null; closerId?: string | null } = {},
 ): SetDraft {
   const durationMinutes = Math.max(20, options.durationMinutes || 60);
   const targetMs = durationMinutes * 60_000;
   const harmonize = options.harmonize !== false;
+  const openerId = pins.openerId?.trim() || null;
+  const closerId = pins.closerId?.trim() || null;
 
-  const selected = packTracks(pool, targetMs);
+  const selected = ensurePinsInPack(
+    packTracks(pool, targetMs),
+    pool,
+    openerId,
+    closerId,
+  );
   const catalogCount = selected.filter(
     (track) => track.bpm || track.catalogPopularity != null,
   ).length;
@@ -250,7 +262,7 @@ function buildDraftFromPool(
   const withRoles = assignRolesAndTransitions(sequenced, t);
   const withSafety = appendSafetyCrates(withRoles, pool, selected, t);
 
-  return withSuggestedAnchors({
+  const base: SetDraft = {
     title: options.title?.trim() || playlistName,
     vibe: options.vibe?.trim() || t("analysis.extract.vibe", { name: playlistName }),
     venue: options.venue ?? DEFAULT_SET.venue,
@@ -261,7 +273,45 @@ function buildDraftFromPool(
     notes: options.notes ?? DEFAULT_SET.notes ?? "",
     durationMinutes,
     tracks: withSafety,
-  });
+    openerId,
+    closerId,
+  };
+
+  // Keep explicit pins at the ends; otherwise suggest warm open/release.
+  if (openerId || closerId) return applySetAnchors(base);
+  return withSuggestedAnchors(base);
+}
+
+/** Force pinned opener/closer into the performance pack when they exist in the pool. */
+function ensurePinsInPack(
+  selected: Enriched[],
+  pool: Enriched[],
+  openerId: string | null,
+  closerId: string | null,
+): Enriched[] {
+  if (!openerId && !closerId) return selected;
+  const byId = new Map(pool.map((track) => [track.id, track]));
+  const next = [...selected];
+  const ids = new Set(next.map((track) => track.id));
+
+  const include = (id: string | null) => {
+    if (!id || ids.has(id)) return;
+    const track = byId.get(id);
+    if (!track) return;
+    for (let i = next.length - 1; i >= 0; i--) {
+      if (next[i].id !== openerId && next[i].id !== closerId) {
+        ids.delete(next[i].id);
+        next.splice(i, 1);
+        break;
+      }
+    }
+    next.push(track);
+    ids.add(id);
+  };
+
+  include(openerId);
+  include(closerId);
+  return next;
 }
 
 function catalogEnergy(

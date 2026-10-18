@@ -22,9 +22,9 @@ const de = {
   "builder.hero.title": "Dramaturgie statt Playlist.",
   "builder.hero.manifestoLead": "Ein gutes Set muss nicht perfekt sein.",
   "builder.hero.manifestoBody":
-    "Musik lässt sich analysieren, sortieren und planen – aber am Ende entscheiden dein Gehör, dein Gefühl und der Moment auf dem Dancefloor. Kein Score und kein Algorithmus kann ersetzen, was du als DJ wahrnimmst. SETBUILDER soll dir deshalb keine Entscheidungen abnehmen. Es ist ein Werkzeug, das dir Orientierung gibt, Übergänge sichtbar macht und neue Ideen liefert. Nutze es als Hilfestellung und Inspiration – aber vertraue am Ende immer deinen Ohren.",
+    "Musik lässt sich analysieren und planen – aber Gehör, Gefühl und Floor entscheiden. SETBUILDER gibt Orientierung, macht Übergänge sichtbar und liefert Ideen. Nutze es als Hilfe – und vertraue dann deinen Ohren.",
   "builder.hero.lede":
-    "SETBUILDER formt aus dem Rekordbox-Stick ein Set. Playlist oder History laden, den Bogen nach Slot und Dauer legen, und an Key und BPM sehen, ob der Übergang zum nächsten Track trägt. Spotify, Tidal und Beatport sind die Ergänzung, wenn ein Track noch nicht auf dem Stick liegt.",
+    "SETBUILDER formt aus dem Rekordbox-Stick ein Set: Playlist oder History laden, den Bogen nach Slot und Dauer legen, Key und BPM prüfen. Spotify, Tidal und Beatport ergänzen, wenn ein Track noch nicht auf dem Stick liegt.",
   "builder.brief.aria": "Set brief",
   "builder.brief.title": "Titel",
   "builder.brief.vibe": "Vibe / Genre-Arc",
@@ -148,11 +148,11 @@ const de = {
   "builder.tool.sort": "Sortieren",
   "builder.tool.reshuffle": "Andere Songs",
   "builder.tool.reshuffleTip":
-    "Würfelt aus dem Playlist-Pool ({pool} Tracks) eine neue Performance für denselben Brief. Alternativen werden neu gefüllt. Opener/Closer und Notizen gehen verloren.",
+    "Würfelt aus dem Playlist-Pool ({pool} Tracks) eine neue Performance für denselben Brief. Alternativen werden neu gefüllt. Opener/Closer-Pins bleiben; Notizen gehen verloren.",
   "builder.tool.reshuffleDisabledTip":
     "Nur nach Extract aus einer größeren Playlist. Stick-only-Sets ohne Pool können nicht neu gewürfelt werden.",
   "builder.tool.reshuffleConfirm":
-    "Setliste aus dem Playlist-Pool ({pool} Tracks) neu setzen? Brief bleibt — Reihenfolge, Rollen, Opener/Closer und Notizen werden ersetzt.",
+    "Setliste aus dem Playlist-Pool ({pool} Tracks) neu setzen? Brief und Opener/Closer bleiben — Reihenfolge, Rollen und Notizen werden ersetzt.",
   "builder.tool.energy": "Energie aus Dateien",
   "builder.tool.energyTip":
     "Berechnet Energy Level 1–10 aus den Stick-Dateien (Essentia), setzt es im Draft und schreibt es in die MP3-Tags. Die Set-Notiz bleibt unangetastet; Key und BPM auch.",
@@ -231,7 +231,9 @@ const de = {
   "builder.row.pauseAria": "{name} pausieren",
   "builder.row.pauseTip": "Wiedergabe pausieren.",
   "builder.row.moveUpTip": "Einen Platz nach oben in der gespielten Reihenfolge.",
+  "builder.row.moveUpAria": "{name} nach oben",
   "builder.row.moveDownTip": "Einen Platz nach unten in der gespielten Reihenfolge.",
+  "builder.row.moveDownAria": "{name} nach unten",
   "builder.row.removeTip": "Aus dem Set entfernen. Opener-/Closer-Pin fällt mit weg.",
   "builder.row.removeAria": "{name} entfernen",
   "builder.row.sourceTip":
@@ -500,9 +502,9 @@ const en: Record<keyof typeof de, string> = {
   "builder.hero.title": "Dramaturgy, not a playlist.",
   "builder.hero.manifestoLead": "A good set does not have to be perfect.",
   "builder.hero.manifestoBody":
-    "Music can be analyzed, sorted and planned — but in the end your ears, your feel and the moment on the dancefloor decide. No score and no algorithm can replace what you perceive as a DJ. SETBUILDER is not here to take decisions away from you. It is a tool that gives you orientation, makes transitions visible and sparks new ideas. Use it as help and inspiration — but in the end, always trust your ears.",
+    "Music can be analyzed and planned — but your ears, your feel and the floor decide. SETBUILDER orients you, shows transitions and sparks ideas. Use it as help — then trust your ears.",
   "builder.hero.lede":
-    "SETBUILDER shapes a set from your rekordbox stick. Load a playlist or history, lay out the arc by slot and duration, and see from key and BPM whether the transition to the next track holds. Spotify, Tidal and Beatport fill the gaps when a track isn't on the stick yet.",
+    "SETBUILDER shapes a set from your rekordbox stick: load playlist or history, lay the arc by slot and duration, check key and BPM. Spotify, Tidal and Beatport fill gaps when a track isn't on the stick yet.",
   "builder.brief.aria": "Set brief",
   "builder.brief.title": "Title",
   "builder.brief.vibe": "Vibe / genre arc",
@@ -621,11 +623,11 @@ const en: Record<keyof typeof de, string> = {
   "builder.tool.sort": "Sort",
   "builder.tool.reshuffle": "Different songs",
   "builder.tool.reshuffleTip":
-    "Picks a new performance from the playlist pool ({pool} tracks) for the same brief. Alternatives are refilled. Opener/closer and notes are lost.",
+    "Picks a new performance from the playlist pool ({pool} tracks) for the same brief. Alternatives are refilled. Opener/closer pins stay; notes are lost.",
   "builder.tool.reshuffleDisabledTip":
     "Only after extracting from a larger playlist. Stick-only sets without a pool cannot be reshuffled.",
   "builder.tool.reshuffleConfirm":
-    "Rebuild the setlist from the playlist pool ({pool} tracks)? The brief stays — order, roles, opener/closer and notes are replaced.",
+    "Rebuild the setlist from the playlist pool ({pool} tracks)? Brief and opener/closer stay — order, roles and notes are replaced.",
   "builder.tool.energy": "Energy from files",
   "builder.tool.energyTip":
     "Computes Energy Level 1–10 from stick files (Essentia), sets it in the draft, and writes it into MP3 tags. The set note stays untouched; so do key and BPM.",
@@ -703,7 +705,9 @@ const en: Record<keyof typeof de, string> = {
   "builder.row.pauseAria": "Pause {name}",
   "builder.row.pauseTip": "Pause playback.",
   "builder.row.moveUpTip": "Move one slot up in the played order.",
+  "builder.row.moveUpAria": "Move {name} up",
   "builder.row.moveDownTip": "Move one slot down in the played order.",
+  "builder.row.moveDownAria": "Move {name} down",
   "builder.row.removeTip": "Remove from the set. Opener/closer pin goes with it.",
   "builder.row.removeAria": "Remove {name}",
   "builder.row.sourceTip":
@@ -757,7 +761,7 @@ const en: Record<keyof typeof de, string> = {
     "How you go into the next track: long blend when it's smooth, EQ or a break on a clash, a reset when energy drops.",
   "builder.row.transitionAria": "Transition for {name}",
 
-  "builder.curve.aria": "Energy curve",
+  "builder.curve.aria": "Phases in the slot",
   "builder.curve.title": "Phases in the slot",
   "builder.curve.summary":
     "{duration} / {minutes}:00 · {performance} performance · {safety} alternatives",

@@ -2476,26 +2476,31 @@ export function SetBuilder() {
             matchingLinks={matchingLinks}
             onMatchLinks={() => void matchStreamingLinks()}
             trailing={
-              <span className="tip set-tools-reset">
+              <Tip text={t("library.menu.resetHint")} end className="set-tools-reset">
                 <button
                   type="button"
                   className="btn ghost danger"
                   onClick={resetSet}
-                  title={t("library.menu.resetHint")}
                 >
                   {t("library.menu.reset")}
                 </button>
-                <span className="tip-bubble" role="tooltip">
-                  {t("library.menu.resetHint")}
-                </span>
-              </span>
+              </Tip>
             }
           >
             <SetSortMenu
               disabled={mainTracks.length < 2}
               onSort={sortSet}
             />
-            <span className="tip">
+            <Tip
+              text={
+                canReshuffleDraft(draft)
+                  ? t("builder.tool.reshuffleTip", {
+                      pool: draft.sourcePool?.length ?? 0,
+                    })
+                  : t("builder.tool.reshuffleDisabledTip")
+              }
+              disabled={!canReshuffleDraft(draft)}
+            >
               <button
                 type="button"
                 className="btn ghost"
@@ -2505,15 +2510,15 @@ export function SetBuilder() {
               >
                 {t("builder.tool.reshuffle")}
               </button>
-              <span className="tip-bubble" role="tooltip">
-                {canReshuffleDraft(draft)
-                  ? t("builder.tool.reshuffleTip", {
-                      pool: draft.sourcePool?.length ?? 0,
-                    })
-                  : t("builder.tool.reshuffleDisabledTip")}
-              </span>
-            </span>
-            <span className="tip">
+            </Tip>
+            <Tip
+              text={t("builder.tool.energyTip")}
+              disabled={
+                analyzingEnergy ||
+                !stickReady ||
+                !draft.tracks.some((track) => track.filePath?.trim())
+              }
+            >
               <button
                 type="button"
                 className="btn ghost"
@@ -2528,11 +2533,11 @@ export function SetBuilder() {
                   ? t("builder.tool.energyBusy")
                   : t("builder.tool.energy")}
               </button>
-              <span className="tip-bubble" role="tooltip">
-                {t("builder.tool.energyTip")}
-              </span>
-            </span>
-            <span className="tip">
+            </Tip>
+            <Tip
+              text={t("builder.tool.fitTip")}
+              disabled={filledMs <= targetMs * 1.05}
+            >
               <button
                 type="button"
                 className="btn ghost"
@@ -2541,11 +2546,11 @@ export function SetBuilder() {
               >
                 {t("builder.tool.fit")}
               </button>
-              <span className="tip-bubble" role="tooltip">
-                {t("builder.tool.fitTip")}
-              </span>
-            </span>
-            <span className="tip">
+            </Tip>
+            <Tip
+              text={t("builder.tool.assignTip")}
+              disabled={mainTracks.length < 2}
+            >
               <button
                 type="button"
                 className="btn ghost"
@@ -2554,10 +2559,7 @@ export function SetBuilder() {
               >
                 {t("builder.tool.assign")}
               </button>
-              <span className="tip-bubble" role="tooltip">
-                {t("builder.tool.assignTip")}
-              </span>
-            </span>
+            </Tip>
           </SetTools>
           <FieldNoticeView notice={localNotice("library")} />
           <FieldNoticeView notice={localNotice("export")} />
@@ -2872,7 +2874,7 @@ export function SetBuilder() {
                             <button
                               type="button"
                               onClick={() => moveTrack(track.id, -1)}
-                              aria-label={t("builder.row.moveUpTip")}
+                              aria-label={t("builder.row.moveUpAria", { name: track.name })}
                             >
                               ↑
                             </button>
@@ -2881,7 +2883,7 @@ export function SetBuilder() {
                             <button
                               type="button"
                               onClick={() => moveTrack(track.id, 1)}
-                              aria-label={t("builder.row.moveDownTip")}
+                              aria-label={t("builder.row.moveDownAria", { name: track.name })}
                             >
                               ↓
                             </button>

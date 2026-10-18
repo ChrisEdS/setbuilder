@@ -7,9 +7,7 @@
 **Version 3.6.0** · Dramaturgie statt Playlist.
 
 > Ein gutes Set muss nicht perfekt sein.  
-> Musik lässt sich analysieren, sortieren und planen – aber am Ende entscheiden dein Gehör, dein Gefühl und der Moment auf dem Dancefloor. Kein Score und kein Algorithmus kann ersetzen, was du als DJ wahrnimmst.
->
-> SETBUILDER soll dir deshalb keine Entscheidungen abnehmen. Es ist ein Werkzeug, das dir Orientierung gibt, Übergänge sichtbar macht und neue Ideen liefert. Nutze es als Hilfestellung und Inspiration – aber vertraue am Ende immer deinen Ohren.
+> Musik lässt sich analysieren und planen – aber Gehör, Gefühl und Floor entscheiden. SETBUILDER gibt Orientierung, macht Übergänge sichtbar und liefert Ideen. Nutze es als Hilfe – und vertraue dann deinen Ohren.
 
 SETBUILDER bereitet DJ-Sets für rekordbox vor. Du lädst Playlist oder History vom Export-Stick (oder eine Collection-XML), legst den Bogen nach Slot und Dauer, prüfst Energie, Key und BPM und nimmst das Set mit — Stick für den Player, PDF für die Kabine, XML/M3U für den Rechner. Die Logik folgt Mixed In Key: erst Energie, dann Key, dann BPM. Der Ablauf folgt dem [DJ.Studio Prep-Workflow](https://dj.studio/blog/dj-set-preparation#crafting-a-dj-set-that-feels-right-advanced-tips): Brief → Set bauen → Transitions → Export.
 

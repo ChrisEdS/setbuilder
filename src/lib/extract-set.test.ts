@@ -110,6 +110,31 @@ test("reshuffleDraftFromPool keeps the brief and can change the cast", () => {
   assert.ok(canReshuffleDraft(next));
 });
 
+test("reshuffleDraftFromPool keeps opener and closer pins in the cast", () => {
+  const crate = Array.from({ length: 40 }, (_, i) => spotifyTrack(i));
+  let draft = extractSetFromPlaylist(crate, "Pinned Night", {
+    durationMinutes: 45,
+  });
+  const performance = draft.tracks.filter((track) => track.role !== "safety");
+  // Pin tracks that packTracks would normally drop on a reverse shuffle.
+  const openerId = performance[performance.length - 1]?.id ?? performance[0].id;
+  const closerId = performance[0]?.id ?? performance[performance.length - 1].id;
+  draft = {
+    ...draft,
+    openerId,
+    closerId,
+  };
+  const next = reshuffleDraftFromPool(draft, tEn, () => 0);
+  const nextPerf = next.tracks.filter((track) => track.role !== "safety");
+  assert.equal(next.openerId, openerId);
+  assert.equal(next.closerId, closerId);
+  assert.equal(nextPerf[0]?.id, openerId);
+  assert.equal(nextPerf[nextPerf.length - 1]?.id, closerId);
+  assert.ok(nextPerf.some((track) => track.id === openerId));
+  assert.ok(nextPerf.some((track) => track.id === closerId));
+});
+
+
 test("canReshuffleDraft is false without a usable pool", () => {
   assert.equal(canReshuffleDraft({ ...DEFAULT_SET, tracks: [] }), false);
   const tiny = extractSetFromPlaylist(

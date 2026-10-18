@@ -942,7 +942,7 @@ a.button-link.tidal-login {
 }
 
 .crate-columns.wide-safety {
-  grid-template-columns: 1fr 1fr 1fr 2.2fr;
+  grid-template-columns: 1fr 1fr 1fr 1.55fr;
 }
 
 .crate-col {
@@ -4659,11 +4659,12 @@ button.drag-handle:active i {
 
 .tip-bubble {
   position: absolute;
-  z-index: 80;
+  z-index: 120;
   top: calc(100% + 8px);
-  right: 0;
+  left: 0;
+  right: auto;
   width: max-content;
-  max-width: 260px;
+  max-width: min(260px, calc(100vw - 16px));
   padding: 0.5rem 0.65rem;
   border-radius: 8px;
   background: #1c1c1c;
@@ -4683,9 +4684,21 @@ button.drag-handle:active i {
   visibility: hidden;
 }
 
-.tip:hover .tip-bubble,
-.tip:focus-within .tip-bubble,
-.tip.is-open .tip-bubble {
+/* Portaled tips: fixed + JS-clamped; sit above the preview dock. */
+.tip-bubble.tip-bubble-portal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: auto;
+  z-index: 120;
+  opacity: 1;
+  visibility: visible;
+  display: block;
+}
+
+.tip:hover .tip-bubble:not(.tip-bubble-portal),
+.tip:focus-within .tip-bubble:not(.tip-bubble-portal),
+.tip.is-open .tip-bubble:not(.tip-bubble-portal) {
   opacity: 1;
   visibility: visible;
 }
@@ -5440,13 +5453,7 @@ html[lang="en"] .energy-bars li.jump::before {
   font-weight: 600;
 }
 
-/* Tooltips open towards the right of their button, the last one towards the left. */
-.tip-bubble {
-  left: 0;
-  right: auto;
-}
-
-.tip.tip-end .tip-bubble {
+.tip.tip-end .tip-bubble:not(.tip-bubble-portal) {
   left: auto;
   right: 0;
 }
@@ -5964,9 +5971,6 @@ html[lang="en"] .energy-bars li.jump::before {
   .library-add-bar select {
     flex: 1 1 auto;
   }
-}
-.tip-bubble {
-  max-width: min(260px, calc(100vw - 32px));
 }
 
 /* Bogen: Key-Verlauf as a card like the Energie-Verlauf above it */
@@ -6492,15 +6496,112 @@ body {
   white-space: nowrap;
 }
 
-/* Alternativen: one picker, one verdict line. */
+/* Alternativen: compact phase chip + verdict. */
 .crate-item-tools.is-safety {
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+  padding: 0.35rem 0.55rem 0.55rem;
+  min-width: 0;
+}
+
+.crate-item-tools.is-safety label.safety-phase {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.2rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.crate-item-tools.is-safety select {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0;
+}
+
+.crate-item-tools.is-safety .crate-planb-note {
+  margin: 0;
+  min-width: 0;
+  flex: 0 1 auto;
 }
 
 .crate-item-tools.is-safety .btn {
   min-height: 34px !important;
-  justify-self: start;
+  align-self: start;
   white-space: nowrap;
+}
+
+/*
+ * Alternativen: one row per track — metadata left, Ersatz/Plan B right when wide.
+ * Uses the column width instead of stretching a single stacked card.
+ */
+.crate-col.is-safety .crate-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "card"
+    "swap"
+    "tools";
+  align-items: start;
+  gap: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.crate-col.is-safety .crate-item > .crate-card {
+  grid-area: card;
+  min-width: 0;
+}
+
+.crate-col.is-safety .crate-item > .safety-swap {
+  grid-area: swap;
+}
+
+.crate-col.is-safety .crate-item > .crate-item-tools {
+  grid-area: tools;
+}
+
+.crate-col.is-safety .crate-item > .tip:has(.crate-remove) {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  z-index: 2;
+}
+
+.crate-col.is-wide.is-safety .crate-item {
+  grid-template-columns: minmax(0, 1fr) minmax(9.5rem, 12.5rem);
+  grid-template-areas:
+    "card tools"
+    "swap swap";
+  gap: 0.35rem 0.65rem;
+  padding: 0.15rem 0;
+}
+
+.crate-col.is-wide.is-safety .crate-item > .crate-item-tools.is-safety {
+  padding: 0.45rem 0.35rem 0.45rem 0.65rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.crate-col.is-wide.is-safety .crate-track-list {
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+
+@media (max-width: 1100px) {
+  .crate-col.is-wide.is-safety .crate-item {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "card"
+      "swap"
+      "tools";
+  }
+
+  .crate-col.is-wide.is-safety .crate-item > .crate-item-tools.is-safety {
+    border-left: 0;
+    padding-left: 0.55rem;
+  }
 }
 
 .crate-planb-note.ok {
@@ -7050,11 +7151,18 @@ body {
   overflow-wrap: break-word;
 }
 
-.tip:hover > .tip-bubble,
-.tip:focus-within > .tip-bubble,
-.tip.is-open > .tip-bubble {
+.tip:hover > .tip-bubble:not(.tip-bubble-portal),
+.tip:focus-within > .tip-bubble:not(.tip-bubble-portal),
+.tip.is-open > .tip-bubble:not(.tip-bubble-portal) {
   opacity: 1 !important;
   visibility: visible !important;
+}
+
+.tip-bubble.tip-bubble-portal {
+  z-index: 120 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
 }
 
 /* The active phase is a selection (where new tracks land), not a verdict: green stays

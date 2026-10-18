@@ -814,7 +814,7 @@ function SafetySwap({
   );
 }
 
-/** One line under the picker of an Alternative: does it count as Plan B, and if not, why. */
+/** Compact Plan B row under an Alternative: phase target + fit verdict. */
 function SafetyTools({
   track,
   tracks,
@@ -832,7 +832,7 @@ function SafetyTools({
   return (
     <div className="crate-item-tools is-safety">
       {onSetPhase ? (
-        <label>
+        <label className="safety-phase">
           <span>{t("crates.safety.replacesFor")}</span>
           <select
             value={track.phase}
