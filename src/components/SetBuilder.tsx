@@ -47,6 +47,7 @@ import {
   mediaPathsForDraft,
   rehydrateStickCovers,
   stickLibraryRows,
+  type StickTrack,
 } from "@/lib/rekordbox-stick";
 import {
   hydrateStickMedia,
@@ -56,8 +57,9 @@ import {
 } from "@/lib/stick-session";
 import { stickFileCount } from "@/lib/stick-audio";
 import {
-  enrichDraftEnergyFromFiles,
+  applyEnergyLevels,
   ensureStickWriteAccess,
+  missingEnergyFromFiles,
   isWritableMp3,
   resolveTrackAudio,
   writeStickFileBytes,
@@ -430,6 +432,10 @@ export function SetBuilder() {
   const [matchingLinks, setMatchingLinks] = useState(false);
   const [analyzingEnergy, setAnalyzingEnergy] = useState(false);
   const [stickReady, setStickReady] = useState(false);
+  // Long work (stick read, tag scan, sort) keeps the status line up until it finishes.
+  const statusHold = useRef(0);
+  const [statusHeld, setStatusHeld] = useState(false);
+  const stickJob = useRef(0);
   const [replaceFor, setReplaceFor] = useState<string | null>(null);
   /** Setliste: tracks whose key, BPM, energy and comment fields are open */
   const [openDetails, setOpenDetails] = useState<Set<string>>(() => new Set());
@@ -446,16 +452,12 @@ export function SetBuilder() {
   /** What the duration field shows while it is being edited (null = the draft value). */
   const [durationText, setDurationText] = useState<string | null>(null);
 
-  // A page scroll must not get stuck when the pointer crosses a select or an
-  // inner list. Native selects change their value on the wheel; the library,
-  // stick and crate lists swallow the gesture until you reach their edge.
-  // A burst that started on the page keeps moving the page. A new gesture
-  // that starts on a list still scrolls that list.
+  // Native selects change their value when the wheel crosses them. The listener
+  // exists only while the pointer is on a select, so the rest of the page can
+  // scroll on the compositor thread. Lists keep their own scroll and chain to
+  // the page at the ends (overscroll-behavior: auto).
   useEffect(() => {
-    const traps = "select, .library-list, .stick-list, .crate-col-body, .result-list";
-    const gestureGapMs = 320;
-    let lastAt = 0;
-    let pageGesture = true;
+    let select: HTMLSelectElement | null = null;
 
     function pixels(event: WheelEvent, delta: number) {
       if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) return delta * 16;
@@ -463,65 +465,66 @@ export function SetBuilder() {
       return delta;
     }
 
-    function consumesWheel(element: Element) {
-      if (element instanceof HTMLSelectElement) return true;
-      if (!(element instanceof HTMLElement)) return false;
-      const overflowY = getComputedStyle(element).overflowY;
-      return (
-        (overflowY === "auto" || overflowY === "scroll") &&
-        element.scrollHeight > element.clientHeight + 1
-      );
-    }
-
     function onWheel(event: WheelEvent) {
-      const now = performance.now();
-      const continuous = now - lastAt < gestureGapMs;
-      lastAt = now;
-
-      const target = event.target;
-      if (!(target instanceof Element)) {
-        pageGesture = true;
-        return;
-      }
-
-      const trap = target.closest(traps);
-      if (!trap || trap.closest("dialog, .stick-dialog") || !consumesWheel(trap)) {
-        pageGesture = true;
-        return;
-      }
-
-      const followPage = trap instanceof HTMLSelectElement || (continuous && pageGesture);
-      if (!followPage) {
-        pageGesture = false;
-        return;
-      }
-
+      if (!select) return;
       event.preventDefault();
-      if (trap instanceof HTMLSelectElement && document.activeElement === trap) {
-        trap.blur();
-      }
+      if (document.activeElement === select) select.blur();
       window.scrollBy({
         top: pixels(event, event.deltaY),
         left: pixels(event, event.deltaX),
       });
-      pageGesture = true;
     }
 
-    document.addEventListener("wheel", onWheel, { capture: true, passive: false });
-    return () => document.removeEventListener("wheel", onWheel, { capture: true });
+    function detach() {
+      if (!select) return;
+      document.removeEventListener("wheel", onWheel, { capture: true });
+      select = null;
+    }
+
+    function onOver(event: Event) {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const next = target.closest("select");
+      if (
+        !(next instanceof HTMLSelectElement) ||
+        next.closest("dialog, .stick-dialog")
+      ) {
+        detach();
+        return;
+      }
+      if (select === next) return;
+      detach();
+      select = next;
+      document.addEventListener("wheel", onWheel, { capture: true, passive: false });
+    }
+
+    function onOut(event: Event) {
+      if (!select) return;
+      const related = event instanceof MouseEvent ? event.relatedTarget : null;
+      if (related instanceof Node && select.contains(related)) return;
+      detach();
+    }
+
+    document.addEventListener("pointerover", onOver, true);
+    document.addEventListener("pointerout", onOut, true);
+    return () => {
+      detach();
+      document.removeEventListener("pointerover", onOver, true);
+      document.removeEventListener("pointerout", onOut, true);
+    };
   }, []);
 
   // Feedback like "+ Titel → Peak / Anchor" is a toast: it follows the scroll and fades after a while.
   // Longer texts (the rekordbox import steps) stay long enough to be read.
-  // Energy batch progress must not fade while analysis is still running.
+  // Energy batch progress and other long work must not fade while they are still running.
   useEffect(() => {
-    if (!status || analyzingEnergy) return;
+    if (!status || analyzingEnergy || statusHeld) return;
     const timer = window.setTimeout(
       () => setStatus(null),
       Math.min(24000, 6000 + status.length * 50),
     );
     return () => window.clearTimeout(timer);
-  }, [status, analyzingEnergy]);
+  }, [status, analyzingEnergy, statusHeld]);
 
   const persisted = useSyncExternalStore(
     subscribeDraft,
@@ -603,37 +606,118 @@ export function SetBuilder() {
 
   useEffect(() => {
     let cancelled = false;
+    let held = false;
+    let job = 0;
+    function finish(message: string | null) {
+      if (!held) return;
+      held = false;
+      // A newer stick job owns the banner. Releasing this hold must not clear it.
+      if (cancelled || stickJob.current !== job) cancelWork();
+      else endWork(message);
+    }
     void (async () => {
       const handle = await loadPersistedStickHandle();
       if (!handle || cancelled) return;
       if (!(await stickPermission(handle, "read", false))) return;
+      if (cancelled) return;
+      job = ++stickJob.current;
+      beginWork(t("builder.stick.reading"));
+      held = true;
       try {
         const stick = await readStickFromHandle(handle);
-        if (cancelled) return;
-        await hydrateStickMedia(handle, mediaPathsForDraft(readStoredDraft(), stick.library));
-        if (cancelled) return;
+        if (cancelled || stickJob.current !== job) {
+          finish(null);
+          return;
+        }
         setLibraryRows(stickLibraryRows(stick.library, stick.sets));
-        const covered = rehydrateStickCovers(readStoredDraft(), stick.library);
-        const withEnergy = await enrichDraftEnergyFromFiles(covered, handle);
-        if (cancelled) return;
-        setDraft(withEnergy);
-        setStickReady(true);
+        await mergeStickFilesIntoDraft(stick.library, (done, total) => {
+          if (!cancelled && stickJob.current === job && total > 0) {
+            setStatus(t("builder.stick.tags", { done, total }));
+          }
+        });
+        if (!cancelled && stickJob.current === job) setStickReady(true);
+        finish(stickJob.current === job ? t("builder.stick.ready") : null);
       } catch {
-        /* Banner still offers a manual reconnect. */
+        finish(null);
       }
     })();
     return () => {
       cancelled = true;
+      finish(null);
     };
     // Once on launch: reconnect a stick this browser already allowed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  function beginWork(message: string) {
+    statusHold.current += 1;
+    setStatusHeld(true);
+    setStatus(message);
+  }
+
+  function endWork(message: string | null) {
+    statusHold.current = Math.max(0, statusHold.current - 1);
+    setStatusHeld(statusHold.current > 0);
+    setStatus(message);
+  }
+
+  function cancelWork() {
+    statusHold.current = Math.max(0, statusHold.current - 1);
+    setStatusHeld(statusHold.current > 0);
+  }
+
+  /**
+   * Covers and tag energy for the current draft. Never writes an older snapshot
+   * back: file reads take long enough that the user may already have edited.
+   */
+  async function mergeStickFilesIntoDraft(
+    library: StickTrack[],
+    onProgress?: (done: number, total: number) => void,
+  ) {
+    const handle = await loadPersistedStickHandle().catch(() => null);
+    if (handle) {
+      await hydrateStickMedia(
+        handle,
+        mediaPathsForDraft(readStoredDraft(), library),
+      );
+    }
+    const base = readStoredDraft();
+    const covered = library.length ? rehydrateStickCovers(base, library) : base;
+    if (covered !== base) setDraft(covered);
+    const levels = await missingEnergyFromFiles(
+      readStoredDraft().tracks,
+      handle,
+      onProgress,
+    );
+    setDraft((latest) => applyEnergyLevels(latest, levels));
+  }
+
+  function showStickMerge(library: StickTrack[], done: string | null) {
+    const job = ++stickJob.current;
+    beginWork(t("builder.stick.reading"));
+    void (async () => {
+      const current = () => stickJob.current === job;
+      try {
+        await mergeStickFilesIntoDraft(library, (doneCount, total) => {
+          if (current() && total > 0) {
+            setStatus(t("builder.stick.tags", { done: doneCount, total }));
+          }
+        });
+        if (!current()) cancelWork();
+        else endWork(done);
+      } catch {
+        if (!current()) cancelWork();
+        else endWork(done);
+      }
+    })();
+  }
 
   function setDraft(updater: SetDraft | ((current: SetDraft) => SetDraft)) {
     // Always read the store — never the render closure. The stick-reconnect
     // effect and rapid Sortieren clicks would otherwise rewrite a stale draft.
     const current = readStoredDraft();
     const next = typeof updater === "function" ? updater(current) : updater;
+    if (next === current) return;
     persistDraft(next);
   }
 
@@ -712,8 +796,14 @@ export function SetBuilder() {
     }
 
     clearNotice();
-    setStatus(null);
+    beginWork(t("builder.status.extracting"));
     setIsExtracting(true);
+    let settled = false;
+    const settle = (message: string | null) => {
+      if (settled) return;
+      settled = true;
+      endWork(message);
+    };
     try {
       const tidalPlaylist = playlistUrl.toLowerCase().includes("tidal.com");
       const response = await fetch(tidalPlaylist ? "/api/playlist/tidal" : "/api/playlist", {
@@ -747,6 +837,7 @@ export function SetBuilder() {
 
       if (response.status === 401 || data.code === "AUTH_REQUIRED") {
         setSpotifyConnected(false);
+        settle(null);
         fail(
           "playlist",
           t("builder.fail.spotifyAuth"),
@@ -768,7 +859,7 @@ export function SetBuilder() {
       ).length;
       const tidalMatched = data.playlist?.tidalMatched ?? 0;
       const tidalKeyed = data.playlist?.tidalKeyed ?? 0;
-      setStatus(
+      settle(
         t(
           tidalMatched === 0
             ? "builder.status.extractedTidalNone"
@@ -787,6 +878,7 @@ export function SetBuilder() {
       );
       await refreshAuthStatus();
     } catch (err) {
+      settle(null);
       fail(
         "playlist",
         errorText(err, t, "builder.fail.extract"),
@@ -1595,17 +1687,24 @@ export function SetBuilder() {
   }
 
   function sortSet(technique: SetSortTechnique) {
-    const current = readStoredDraft();
-    const next = reorderDraft(current, technique);
-    const changed = next.tracks.some(
-      (track, index) => track.id !== current.tracks[index]?.id,
-    );
-    setDraft(next);
-    setStatus(
-      changed
-        ? t(`builder.status.sorted.${technique}`)
-        : t("builder.status.sorted.unchanged"),
-    );
+    beginWork(t("builder.status.sorting"));
+    window.setTimeout(() => {
+      try {
+        const current = readStoredDraft();
+        const next = reorderDraft(current, technique);
+        const changed = next.tracks.some(
+          (track, index) => track.id !== current.tracks[index]?.id,
+        );
+        setDraft(next);
+        endWork(
+          changed
+            ? t(`builder.status.sorted.${technique}`)
+            : t("builder.status.sorted.unchanged"),
+        );
+      } catch {
+        endWork(null);
+      }
+    }, 0);
   }
 
   function reshuffleSongs() {
@@ -1623,18 +1722,27 @@ export function SetBuilder() {
     ))) {
       return;
     }
-    const next = reshuffleDraftFromPool(
-      { ...current, sourcePool: choice.pool },
-      t,
-    );
-    setDraft(choice.fromStick ? { ...next, sourcePool: current.sourcePool } : next);
-    setFocusTrackId(null);
-    setStatus(
-      t("builder.status.reshuffle.done", {
-        pool: choice.pool.length,
-        tracks: next.tracks.filter((track) => track.role !== "safety").length,
-      }),
-    );
+    beginWork(t("builder.status.reshuffling"));
+    const pool = choice.pool;
+    const fromStick = choice.fromStick;
+    window.setTimeout(() => {
+      try {
+        const next = reshuffleDraftFromPool(
+          { ...current, sourcePool: pool },
+          t,
+        );
+        setDraft(fromStick ? { ...next, sourcePool: current.sourcePool } : next);
+        setFocusTrackId(null);
+        endWork(
+          t("builder.status.reshuffle.done", {
+            pool: pool.length,
+            tracks: next.tracks.filter((track) => track.role !== "safety").length,
+          }),
+        );
+      } catch {
+        endWork(null);
+      }
+    }, 0);
   }
 
   async function energyFromFiles() {
@@ -2099,7 +2207,11 @@ export function SetBuilder() {
         </p>
       ) : null}
 
-      {status ? <p className="banner status">{status}</p> : null}
+      {status ? (
+        <p className="banner status" role="status" aria-live="polite" aria-busy={statusHeld || analyzingEnergy}>
+          {status}
+        </p>
+      ) : null}
 
       {libraryRows.length === 0 ? (
         <StickReloadBanner
@@ -2107,13 +2219,7 @@ export function SetBuilder() {
           onLoaded={(rows) => {
             setLibraryRows(rows);
             const library = rows.flatMap((row) => (row.stick ? [row.stick] : []));
-            void (async () => {
-              const handle = await loadPersistedStickHandle().catch(() => null);
-              const covered = library.length
-                ? rehydrateStickCovers(readStoredDraft(), library)
-                : readStoredDraft();
-              setDraft(await enrichDraftEnergyFromFiles(covered, handle));
-            })();
+            showStickMerge(library, t("builder.stick.ready"));
           }}
         />
       ) : null}
@@ -2138,23 +2244,13 @@ export function SetBuilder() {
           onRows={(rows) => {
             setLibraryRows(rows);
             const library = rows.flatMap((row) => (row.stick ? [row.stick] : []));
-            void (async () => {
-              const handle = await loadPersistedStickHandle().catch(() => null);
-              const covered = library.length
-                ? rehydrateStickCovers(readStoredDraft(), library)
-                : readStoredDraft();
-              setDraft(await enrichDraftEnergyFromFiles(covered, handle));
-            })();
+            showStickMerge(library, t("builder.stick.ready"));
           }}
           onApply={(next, message) => {
             setDraft(next);
             clearNotice();
-            setStatus(message);
-            void (async () => {
-              const handle = await loadPersistedStickHandle().catch(() => null);
-              const enriched = await enrichDraftEnergyFromFiles(next, handle);
-              setDraft(enriched);
-            })();
+            const library = libraryRows.flatMap((row) => (row.stick ? [row.stick] : []));
+            showStickMerge(library, message);
           }}
         />
       </details>

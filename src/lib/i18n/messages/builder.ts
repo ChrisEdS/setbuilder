@@ -47,6 +47,9 @@ const de = {
   "builder.stickReload.reconnect": "Stick verbinden",
   "builder.stickReload.busy": "Lese den Stick…",
   "builder.stickReload.later": "Später",
+  "builder.stick.reading": "Lese den Stick…",
+  "builder.stick.tags": "Energie aus Tags {done}/{total}",
+  "builder.stick.ready": "Stick gelesen.",
   "builder.build.title": "Set bauen",
   "builder.build.summary": "{performance} Performance · {safety} Alternativen",
   "builder.build.note":
@@ -384,6 +387,9 @@ const de = {
   "builder.status.setupFromFile": "„{name}“ aus Datei geladen.",
   "builder.status.fileDownloaded": "Einstellungsdatei heruntergeladen.",
   "builder.status.reset": "Brief zurückgesetzt — das Set ist leer.",
+  "builder.status.sorting": "Sortiere das Set…",
+  "builder.status.reshuffling": "Mische das Set neu…",
+  "builder.status.extracting": "Playlist wird gelesen…",
   "builder.status.sorted.perfect":
     "Perfekt sortiert: minimale Clashes, maximaler Mix-Score. Bogen prüfen — Opener/Closer bleiben. 100 % nur wenn alle Keys verbunden sind.",
   "builder.status.sorted.harmonic":
@@ -531,6 +537,9 @@ const en: Record<keyof typeof de, string> = {
   "builder.stickReload.reconnect": "Reconnect stick",
   "builder.stickReload.busy": "Reading the stick…",
   "builder.stickReload.later": "Later",
+  "builder.stick.reading": "Reading the stick…",
+  "builder.stick.tags": "Energy from tags {done}/{total}",
+  "builder.stick.ready": "Stick read.",
   "builder.build.title": "Build set",
   "builder.build.summary": "{performance} performance · {safety} alternatives",
   "builder.build.note":
@@ -859,6 +868,9 @@ const en: Record<keyof typeof de, string> = {
   "builder.status.setupFromFile": "“{name}” loaded from file.",
   "builder.status.fileDownloaded": "Settings file downloaded.",
   "builder.status.reset": "Brief reset — the set is empty.",
+  "builder.status.sorting": "Sorting the set…",
+  "builder.status.reshuffling": "Reshuffling the set…",
+  "builder.status.extracting": "Reading the playlist…",
   "builder.status.sorted.perfect":
     "Sorted for max score: minimal clashes, maximal mix score. Check the Arc — opener/closer stay. 100% only when all keys connect.",
   "builder.status.sorted.harmonic":

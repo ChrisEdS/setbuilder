@@ -164,6 +164,66 @@ export async function writeStickFileBytes(
   }
 }
 
+export type EnergyReadProgress = (done: number, total: number) => void;
+
+/**
+ * Energy levels found in MP3 tags for tracks that do not have one yet.
+ * Keyed by track id. Callers merge this into the latest draft so a slow
+ * read cannot replace edits made while the files were open.
+ */
+export async function missingEnergyFromFiles(
+  tracks: Array<{ id: string; energyLevel?: number; filePath?: string }>,
+  root?: DirLike | null,
+  onProgress?: EnergyReadProgress,
+): Promise<Map<string, number>> {
+  const pending = tracks.filter(
+    (track) => track.energyLevel == null && Boolean(track.filePath?.trim()),
+  );
+  const levels = new Map<string, number>();
+  onProgress?.(0, pending.length);
+  if (pending.length) {
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 0);
+    });
+  }
+  let done = 0;
+  for (const track of pending) {
+    try {
+      const resolved = await resolveTrackAudio(track.filePath ?? "", root);
+      if (resolved && isWritableMp3(resolved.file, track.filePath)) {
+        const bytes = new Uint8Array(await resolved.file.arrayBuffer());
+        const energy = energyLevelFromId3(bytes);
+        if (energy != null) levels.set(track.id, energy);
+      }
+    } catch {
+      // A missing or unreadable file stays without energy.
+    }
+    done += 1;
+    onProgress?.(done, pending.length);
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 0);
+    });
+  }
+  return levels;
+}
+
+/** Fill gaps only. Tracks that already have energy, and unknown ids, stay as they are. */
+export function applyEnergyLevels(
+  draft: SetDraft,
+  levels: ReadonlyMap<string, number>,
+): SetDraft {
+  if (levels.size === 0) return draft;
+  let changed = false;
+  const tracks = draft.tracks.map((track) => {
+    if (track.energyLevel != null) return track;
+    const level = levels.get(track.id);
+    if (level == null) return track;
+    changed = true;
+    return { ...track, energyLevel: level };
+  });
+  return changed ? { ...draft, tracks } : draft;
+}
+
 /**
  * Fill missing energyLevel from MP3 ID3 tags on the stick.
  * SETBUILDER writes Energy into the files, not into export.pdb — so a stick reload
@@ -172,31 +232,8 @@ export async function writeStickFileBytes(
 export async function enrichDraftEnergyFromFiles(
   draft: SetDraft,
   root?: DirLike | null,
+  onProgress?: EnergyReadProgress,
 ): Promise<SetDraft> {
-  let changed = false;
-  const tracks = [];
-  for (const track of draft.tracks) {
-    if (track.energyLevel != null || !track.filePath?.trim()) {
-      tracks.push(track);
-      continue;
-    }
-    try {
-      const resolved = await resolveTrackAudio(track.filePath, root);
-      if (!resolved || !isWritableMp3(resolved.file, track.filePath)) {
-        tracks.push(track);
-        continue;
-      }
-      const bytes = new Uint8Array(await resolved.file.arrayBuffer());
-      const energy = energyLevelFromId3(bytes);
-      if (energy == null) {
-        tracks.push(track);
-        continue;
-      }
-      changed = true;
-      tracks.push({ ...track, energyLevel: energy });
-    } catch {
-      tracks.push(track);
-    }
-  }
-  return changed ? { ...draft, tracks } : draft;
+  const levels = await missingEnergyFromFiles(draft.tracks, root, onProgress);
+  return applyEnergyLevels(draft, levels);
 }

@@ -5,9 +5,7 @@ import { FieldNoticeView, type FieldNotice } from "@/components/FieldNotice";
 import { StickHealthCard } from "@/components/StickHealthCard";
 import {
   applyStickSet,
-  mediaPathsForDraft,
   readRekordboxStick,
-  rehydrateStickCovers,
   stickLibraryRows,
   type RekordboxStickSet,
   type StickTrack,
@@ -15,10 +13,8 @@ import {
 import { errorText } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n/react";
 import { rememberStickFiles } from "@/lib/stick-audio";
-import { enrichDraftEnergyFromFiles } from "@/lib/stick-file";
 import { formatDuration, trackCount, type SetDraft } from "@/lib/set";
 import {
-  hydrateStickMedia,
   isPickerBlocked,
   loadPersistedStickHandle,
   pickAndRememberStick,
@@ -224,16 +220,6 @@ export function RekordboxStick({
       (minutes ? ` · ${formatDuration(minutes)}` : "") +
       (set.missing ? ` · ${t("library.stick.unmatched", { count: set.missing })}` : "");
     onApply(next, message);
-    const rootPromise = healthRoot
-      ? Promise.resolve(healthRoot)
-      : loadPersistedStickHandle();
-    void rootPromise.then(async (handle) => {
-      if (!handle) return;
-      await hydrateStickMedia(handle, mediaPathsForDraft(next, set.tracks));
-      const covered = rehydrateStickCovers(next, set.tracks);
-      // Energy written by SETBUILDER lives in MP3 tags, not yet in export.pdb.
-      onApply(await enrichDraftEnergyFromFiles(covered, handle), message);
-    });
   }
 
   const locking = busy || phase === "listing" || phase === "reading";
