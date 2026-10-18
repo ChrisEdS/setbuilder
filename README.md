@@ -4,7 +4,7 @@
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
 
-**Version 3.6.2** · Dramaturgy, not a playlist.
+**Version 3.6.3** · Dramaturgy, not a playlist.
 
 > A good set does not have to be perfect.  
 > Music can be analyzed, sorted and planned — but in the end your ears, your feel and the moment on the dancefloor decide. No score and no algorithm can replace what you perceive as a DJ.
