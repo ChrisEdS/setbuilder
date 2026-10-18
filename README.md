@@ -4,7 +4,7 @@
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
 
-**Version 3.6.0** · Dramaturgy, not a playlist.
+**Version 3.6.1** · Dramaturgy, not a playlist.
 
 > A good set does not have to be perfect.  
 > Music can be analyzed and planned — but your ears, your feel and the floor decide. SETBUILDER orients you, shows transitions and sparks ideas. Use it as help — then trust your ears.
