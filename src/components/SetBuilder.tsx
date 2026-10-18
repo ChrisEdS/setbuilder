@@ -1902,12 +1902,12 @@ export function SetBuilder() {
           </p>
           <h1>{t("builder.hero.title")}</h1>
           <div className="hero-manifesto">
+            <p className="lede">{t("builder.hero.lede")}</p>
             <p className="hero-manifesto-lead">
               {t("builder.hero.manifestoLead")}
             </p>
             <p>{t("builder.hero.manifestoBody")}</p>
           </div>
-          <p className="lede">{t("builder.hero.lede")}</p>
         </div>
         <div className="hero-meta" aria-label={t("builder.brief.aria")}>
           <label>
@@ -2978,8 +2978,18 @@ export function SetBuilder() {
                         </div>
                       </div>
                     </div>
-                    {track.role !== "safety" ? (
-                      <MixJoinLine tracks={mainTracks} track={track} />
+                    {track.role !== "safety" || track.why ? (
+                      <div className="manual-subline">
+                        {track.role !== "safety" ? (
+                          <MixJoinLine tracks={mainTracks} track={track} />
+                        ) : null}
+                        {track.why ? (
+                          <p className="why-inline">
+                            <strong>{t("builder.row.why")}</strong>{" "}
+                            {localizeWhy(track.why, t)}
+                          </p>
+                        ) : null}
+                      </div>
                     ) : null}
                     {replaceFor === track.id ? (
                       <ReplaceMenu
@@ -2991,12 +3001,6 @@ export function SetBuilder() {
                         onReplaceFromLibrary={replaceFromLibrary}
                         onPlayRow={playLibraryRow}
                       />
-                    ) : null}
-                    {track.why ? (
-                      <p className="why-inline">
-                        <strong>{t("builder.row.why")}</strong>{" "}
-                        {localizeWhy(track.why, t)}
-                      </p>
                     ) : null}
                     <details
                       className="track-details"
