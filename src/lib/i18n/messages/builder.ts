@@ -146,6 +146,13 @@ const de = {
   "builder.view.keys.hint":
     "Phasen im Slot, Energie pro Track und Camelot-Keys entlang der Reihenfolge, mit Mix-Score und Clashes.",
   "builder.tool.sort": "Sortieren",
+  "builder.tool.reshuffle": "Andere Songs",
+  "builder.tool.reshuffleTip":
+    "Würfelt aus dem Playlist-Pool ({pool} Tracks) eine neue Performance für denselben Brief. Alternativen werden neu gefüllt. Opener/Closer und Notizen gehen verloren.",
+  "builder.tool.reshuffleDisabledTip":
+    "Nur nach Extract aus einer größeren Playlist. Stick-only-Sets ohne Pool können nicht neu gewürfelt werden.",
+  "builder.tool.reshuffleConfirm":
+    "Setliste aus dem Playlist-Pool ({pool} Tracks) neu setzen? Brief bleibt — Reihenfolge, Rollen, Opener/Closer und Notizen werden ersetzt.",
   "builder.tool.energy": "Energie aus Dateien",
   "builder.tool.energyTip":
     "Berechnet Energy Level 1–10 aus den Stick-Dateien (Essentia), setzt es im Draft und schreibt es in die MP3-Tags. Die Set-Notiz bleibt unangetastet; Key und BPM auch.",
@@ -390,6 +397,10 @@ const de = {
     "Wellen (pro Phase): im Peak Groove und Impact (Anchor). Opener/Closer bleiben.",
   "builder.status.sorted.unchanged":
     "Reihenfolge unverändert: innerhalb jeder Phase passt die Lage schon (Opener/Closer bleiben sowieso), oder Key, Energie und BPM fehlen. Tracks zwischen Phasen ziehen oder die Werte in der Setliste setzen.",
+  "builder.status.reshuffle.done":
+    "Neue Auswahl aus dem Pool ({pool}): {tracks} Performance-Tracks. Bogen und Alternativen prüfen.",
+  "builder.status.reshuffle.unavailable":
+    "Kein Playlist-Pool zum Würfeln — Set zuerst aus einer größeren Playlist extrahieren.",
   "builder.status.fits": "Das Set passt schon in den Slot.",
   "builder.status.fitStuck":
     "Nicht weiter kürzbar: der erste und der letzte Track und ein Track pro Phase bleiben immer. Lange Tracks von Hand auf Alternativen setzen.",
@@ -608,6 +619,13 @@ const en: Record<keyof typeof de, string> = {
   "builder.view.keys.hint":
     "Phases in the slot, energy per track and Camelot keys along the order, with mix score and clashes.",
   "builder.tool.sort": "Sort",
+  "builder.tool.reshuffle": "Different songs",
+  "builder.tool.reshuffleTip":
+    "Picks a new performance from the playlist pool ({pool} tracks) for the same brief. Alternatives are refilled. Opener/closer and notes are lost.",
+  "builder.tool.reshuffleDisabledTip":
+    "Only after extracting from a larger playlist. Stick-only sets without a pool cannot be reshuffled.",
+  "builder.tool.reshuffleConfirm":
+    "Rebuild the setlist from the playlist pool ({pool} tracks)? The brief stays — order, roles, opener/closer and notes are replaced.",
   "builder.tool.energy": "Energy from files",
   "builder.tool.energyTip":
     "Computes Energy Level 1–10 from stick files (Essentia), sets it in the draft, and writes it into MP3 tags. The set note stays untouched; so do key and BPM.",
@@ -847,6 +865,10 @@ const en: Record<keyof typeof de, string> = {
     "Waves (per phase): in Peak, groove and impact (anchor). Opener/closer stay.",
   "builder.status.sorted.unchanged":
     "Order unchanged: within each phase it already fits (opener/closer stay anyway), or key, energy and BPM are missing. Drag tracks across phases or set the values in the setlist.",
+  "builder.status.reshuffle.done":
+    "New pick from the pool ({pool}): {tracks} performance tracks. Check the arc and Alternatives.",
+  "builder.status.reshuffle.unavailable":
+    "No playlist pool to reshuffle — extract from a larger playlist first.",
   "builder.status.fits": "The set already fits the slot.",
   "builder.status.fitStuck":
     "Cannot trim further: the first and last track and one track per phase always stay. Move long tracks to Alternatives by hand.",

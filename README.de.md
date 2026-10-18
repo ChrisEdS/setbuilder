@@ -4,7 +4,7 @@
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
 
-**Version 3.5.0** · Dramaturgie statt Playlist.
+**Version 3.6.0** · Dramaturgie statt Playlist.
 
 > Ein gutes Set muss nicht perfekt sein.  
 > Musik lässt sich analysieren, sortieren und planen – aber am Ende entscheiden dein Gehör, dein Gefühl und der Moment auf dem Dancefloor. Kein Score und kein Algorithmus kann ersetzen, was du als DJ wahrnimmst.
@@ -17,6 +17,7 @@ SETBUILDER bereitet DJ-Sets für rekordbox vor. Du lädst Playlist oder History 
 - ⚡ **Energie aus Dateien** — Stick-MP3s analysieren, Energy in ID3 schreiben (Audio unangetastet), Tags in rekordbox neu laden
 - 🔑 **Key-Verlauf** — Camelot entlang des Sets mit Mix-Score, Clash-Badges und Mixed-In-Key-Sortierungen
 - 🎯 **Perfekt-Sort** — Ganzes Set als Camelot-TSP (Held-Karp): Clashes killen, Mix-Score maximieren; Opener/Closer bleiben
+- 🎲 **Andere Songs** — Aus dem Playlist-Pool eine neue Performance für denselben Brief würfeln
 - 🎚️ **Bogen & Energie** — Phasen Open→Release gegen Zielbänder; Sprünge sichtbar
 - 📌 **Opener & Closer** — Enden pinnen oder aktuelle erste/letzte Tracks; jede Sortierung respektiert sie
 - 💾 **Stick-Rundreise** — Aus `export.pdb` laden, Set zurückschreiben, Player-Check vor dem Gig
@@ -27,7 +28,7 @@ SETBUILDER bereitet DJ-Sets für rekordbox vor. Du lädst Playlist oder History 
 
 1. **Brief** — Titel, Vibe, Venue, Slot-Art und Dauer
 2. **Aus rekordbox laden** — Stick (`export.pdb`) oder Collection-XML
-3. **Set bauen** — Phasen, Rollen, Opener/Closer, Sortieren und Kürzen
+3. **Set bauen** — Phasen, Rollen, Opener/Closer, Sortieren, bei Bedarf Andere Songs, Kürzen
 4. **Mitnehmen** — Stick schreiben, dann PDF / Text, oder XML / M3U
 
 📖 **Ausführliche Anleitung mit Screenshots:** [docs/GUIDE.de.md](docs/GUIDE.de.md)

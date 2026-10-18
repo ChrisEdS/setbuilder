@@ -52,6 +52,7 @@ Each track shows its source (rekordbox), phase and role. Controls sit under the 
   | **Camelot journey** | Per phase: clockwise around the wheel (does not stack the same key) |
   | **Waves** | Per phase: in Peak, groove ↔ impact (anchor); else low/high energy |
 
+- **Different songs:** between Sort and Energy. Picks a new performance from the stored playlist pool (after extract, up to ~120 tracks) for the same brief and refills Alternatives. Confirms first; opener/closer and notes are lost. Without a pool (e.g. stick-only) the button stays disabled.
 - **Energy from files:** computes Energy Level from stick audio (Essentia), sets it in the draft, and writes ID3 energy tags into MP3s on the stick (Chrome / Edge / desktop). The Set note is not changed. Then reload tags in rekordbox.
 - **Trim to slot:** keeps, per phase, the tracks whose energy fits the band; the rest moves to Alternatives
 - **Assign roles:** Anchor on the strongest Peak tracks and the closer, Bridge at a phase change, key clash, BPM or energy jump, otherwise Groove

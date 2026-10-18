@@ -1,8 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { distributeRoles, fitToSlot } from "./extract-set.ts";
+import {
+  canReshuffleDraft,
+  distributeRoles,
+  extractSetFromPlaylist,
+  fitToSlot,
+  reshuffleDraftFromPool,
+} from "./extract-set.ts";
 import { tEn } from "./i18n/core.ts";
-import { DEFAULT_SET, PHASES } from "./set.ts";
+import { DEFAULT_SET } from "./set.ts";
+import type { SpotifyTrack } from "./spotify.ts";
 
 const mk = (i: number, phase: string, energy?: number) => ({
   id: `t${i}`, name: `T${i}`, artists: ["A"], album: "", durationMs: 6 * 60_000, uri: "", externalUrl: "",
@@ -36,4 +43,81 @@ test("roles name the phase pivot with labels, and drop legacy machine notes", ()
   assert.equal(de.tracks[2].note, "");
   const en = distributeRoles(draft, tEn);
   assert.equal(en.tracks[1].why, "Phase pivot Open → Lift");
+});
+
+function spotifyTrack(i: number, over: Partial<SpotifyTrack> = {}): SpotifyTrack {
+  return {
+    id: `sp${i}`,
+    name: `Song ${i}`,
+    uri: `spotify:track:${i}`,
+    durationMs: 5 * 60_000,
+    explicit: false,
+    artists: ["Artist"],
+    album: "Album",
+    imageUrl: null,
+    externalUrl: `https://open.spotify.com/track/${i}`,
+    catalogBpm: String(120 + (i % 8)),
+    catalogKey: `${(i % 12) + 1}A`,
+    catalogPopularity: 0.3 + (i % 7) * 0.1,
+    ...over,
+  };
+}
+
+test("extract stores the playlist pool for later reshuffle", () => {
+  const crate = Array.from({ length: 40 }, (_, i) => spotifyTrack(i));
+  const draft = extractSetFromPlaylist(crate, "Big Night", {
+    durationMinutes: 60,
+  });
+  assert.ok(draft.sourcePool);
+  assert.equal(draft.sourcePool?.length, 40);
+  assert.ok(canReshuffleDraft(draft));
+  const performance = draft.tracks.filter((track) => track.role !== "safety");
+  assert.ok(performance.length < 40);
+  assert.ok(
+    draft.tracks.filter((track) => track.role === "safety").length <= 24,
+  );
+});
+
+test("reshuffleDraftFromPool keeps the brief and can change the cast", () => {
+  const crate = Array.from({ length: 50 }, (_, i) => spotifyTrack(i));
+  const draft = extractSetFromPlaylist(crate, "Big Night", {
+    durationMinutes: 45,
+    title: "Kept Title",
+    vibe: "Kept Vibe",
+    venue: "Kept Venue",
+  });
+  const before = draft.tracks
+    .filter((track) => track.role !== "safety")
+    .map((track) => track.id);
+
+  // Fisher–Yates with random() === 0 always swaps toward the front → reverse.
+  let calls = 0;
+  const random = () => {
+    calls += 1;
+    return 0;
+  };
+  const next = reshuffleDraftFromPool(draft, tEn, random);
+  assert.ok(calls > 0);
+  assert.equal(next.title, "Kept Title");
+  assert.equal(next.vibe, "Kept Vibe");
+  assert.equal(next.venue, "Kept Venue");
+  assert.equal(next.durationMinutes, 45);
+  assert.equal(next.sourcePool?.length, draft.sourcePool?.length);
+  const after = next.tracks
+    .filter((track) => track.role !== "safety")
+    .map((track) => track.id);
+  assert.notDeepEqual(before, after);
+  assert.ok(canReshuffleDraft(next));
+});
+
+test("canReshuffleDraft is false without a usable pool", () => {
+  assert.equal(canReshuffleDraft({ ...DEFAULT_SET, tracks: [] }), false);
+  const tiny = extractSetFromPlaylist(
+    [spotifyTrack(0), spotifyTrack(1)],
+    "Tiny",
+    { durationMinutes: 60 },
+  );
+  // Two tracks both fit a 60-min soft pack of at least 8? Actually pack takes
+  // both; pool size == performance → cannot reshuffle for a different cast.
+  assert.equal(canReshuffleDraft(tiny), false);
 });

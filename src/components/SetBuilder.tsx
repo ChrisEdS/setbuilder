@@ -81,7 +81,13 @@ import { openSetPdfExport } from "@/lib/export-pdf";
 import { pickStreamingMatch } from "@/lib/match-link";
 import { swapIntoSlot } from "@/lib/replace-track";
 import { CAMELOT_CODES, mixJoin, relationHint } from "@/lib/harmonic";
-import { distributeRoles, fitToSlot, reorderDraft } from "@/lib/extract-set";
+import {
+  canReshuffleDraft,
+  distributeRoles,
+  fitToSlot,
+  reorderDraft,
+  reshuffleDraftFromPool,
+} from "@/lib/extract-set";
 import {
   applySetAnchors,
   clearCloser,
@@ -1531,6 +1537,27 @@ export function SetBuilder() {
     );
   }
 
+  function reshuffleSongs() {
+    const current = readStoredDraft();
+    if (!canReshuffleDraft(current)) {
+      setStatus(t("builder.status.reshuffle.unavailable"));
+      return;
+    }
+    const poolSize = current.sourcePool?.length ?? 0;
+    if (!window.confirm(t("builder.tool.reshuffleConfirm", { pool: poolSize }))) {
+      return;
+    }
+    const next = reshuffleDraftFromPool(current, t);
+    setDraft(next);
+    setFocusTrackId(null);
+    setStatus(
+      t("builder.status.reshuffle.done", {
+        pool: next.sourcePool?.length ?? 0,
+        tracks: next.tracks.filter((track) => track.role !== "safety").length,
+      }),
+    );
+  }
+
   async function energyFromFiles() {
     const current = readStoredDraft();
     const withPath = current.tracks.filter((track) => track.filePath?.trim());
@@ -2468,6 +2495,24 @@ export function SetBuilder() {
               disabled={mainTracks.length < 2}
               onSort={sortSet}
             />
+            <span className="tip">
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={reshuffleSongs}
+                disabled={!canReshuffleDraft(draft)}
+                aria-label={t("builder.tool.reshuffle")}
+              >
+                {t("builder.tool.reshuffle")}
+              </button>
+              <span className="tip-bubble" role="tooltip">
+                {canReshuffleDraft(draft)
+                  ? t("builder.tool.reshuffleTip", {
+                      pool: draft.sourcePool?.length ?? 0,
+                    })
+                  : t("builder.tool.reshuffleDisabledTip")}
+              </span>
+            </span>
             <span className="tip">
               <button
                 type="button"

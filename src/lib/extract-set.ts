@@ -25,9 +25,13 @@ import {
   type SetDraft,
   type SetPhaseId,
   type SetTrack,
+  type SourcePoolTrack,
   type TrackRole,
   type TransitionVerb,
 } from "@/lib/set";
+
+/** How many leftovers become Alternativen after packing. */
+const SAFETY_ALT_CAP = 24;
 
 export type ExtractOptions = {
   durationMinutes: number;
@@ -73,10 +77,83 @@ export function extractSetFromPlaylist(
     );
   }
 
-  const durationMinutes = Math.max(20, options.durationMinutes || 60);
-  const targetMs = durationMinutes * 60_000;
-  const harmonize = options.harmonize !== false;
+  const pool = enrichPlaylistPool(tracks);
+  const sourcePool = pool.map(toSourcePoolTrack);
+  const draft = buildDraftFromPool(pool, playlistName, options, t);
+  return { ...draft, sourcePool };
+}
 
+/** True when the draft has a pool large enough to pick a different cast. */
+export function canReshuffleDraft(draft: SetDraft): boolean {
+  const pool = draft.sourcePool?.length ?? 0;
+  if (pool < 2) return false;
+  const performance = draft.tracks.filter((track) => track.role !== "safety").length;
+  return pool > performance;
+}
+
+/**
+ * Shuffle the stored playlist pool and rebuild the set for the same brief.
+ * Keeps title/vibe/venue/…; clears opener/closer pins via suggested anchors.
+ */
+export function reshuffleDraftFromPool(
+  draft: SetDraft,
+  t: Translate = tDe,
+  random: () => number = Math.random,
+): SetDraft {
+  const stored = draft.sourcePool;
+  if (!stored?.length) return draft;
+
+  const pool = enrichPlaylistPool(
+    stored.map((track) => ({
+      id: track.id,
+      name: track.name,
+      uri: track.uri,
+      durationMs: track.durationMs,
+      explicit: track.explicit ?? false,
+      artists: track.artists,
+      album: track.album,
+      imageUrl: track.imageUrl,
+      externalUrl: track.externalUrl,
+      popularity: track.popularity ?? null,
+      isrc: track.isrc ?? null,
+      catalogBpm: track.catalogBpm || track.bpm || "",
+      catalogKey: track.catalogKey || track.keyCamelot || "",
+      catalogPopularity: track.catalogPopularity ?? null,
+    })),
+  );
+  // Prefer stored energy when we already computed it at extract time.
+  for (let i = 0; i < pool.length; i++) {
+    const prior = stored[i];
+    if (prior?.energy != null) pool[i].energy = prior.energy;
+    if (prior?.bpm) pool[i].bpm = prior.bpm;
+    if (prior?.keyCamelot) pool[i].keyCamelot = prior.keyCamelot;
+  }
+
+  const shuffled = shuffleCopy(pool, random);
+  const next = buildDraftFromPool(
+    shuffled,
+    draft.title,
+    {
+      durationMinutes: draft.durationMinutes,
+      title: draft.title,
+      vibe: draft.vibe,
+      venue: draft.venue,
+      slot: draft.slot,
+      audience: draft.audience,
+      gear: draft.gear,
+      notes: draft.notes,
+      harmonize: true,
+    },
+    t,
+  );
+  return {
+    ...next,
+    slotKind: draft.slotKind,
+    sourcePool: stored,
+  };
+}
+
+function enrichPlaylistPool(tracks: SpotifyTrack[]): Enriched[] {
   const pool: Enriched[] = tracks.slice(0, Math.min(tracks.length, 120)).map(
     (track, index, arr) => {
       const position = arr.length <= 1 ? 0.5 : index / (arr.length - 1);
@@ -89,6 +166,51 @@ export function extractSetFromPlaylist(
     },
   );
   normalizeBpmEnergy(pool);
+  return pool;
+}
+
+function toSourcePoolTrack(track: Enriched): SourcePoolTrack {
+  return {
+    id: track.id,
+    name: track.name,
+    artists: track.artists,
+    album: track.album,
+    durationMs: track.durationMs,
+    uri: track.uri,
+    externalUrl: track.externalUrl,
+    imageUrl: track.imageUrl,
+    bpm: track.bpm,
+    keyCamelot: track.keyCamelot,
+    energy: track.energy,
+    popularity: track.popularity ?? null,
+    catalogPopularity: track.catalogPopularity ?? null,
+    catalogBpm: track.catalogBpm,
+    catalogKey: track.catalogKey,
+    explicit: track.explicit,
+    isrc: track.isrc ?? null,
+  };
+}
+
+function shuffleCopy<T>(items: T[], random: () => number): T[] {
+  const next = [...items];
+  for (let i = next.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    const tmp = next[i];
+    next[i] = next[j];
+    next[j] = tmp;
+  }
+  return next;
+}
+
+function buildDraftFromPool(
+  pool: Enriched[],
+  playlistName: string,
+  options: ExtractOptions,
+  t: Translate,
+): SetDraft {
+  const durationMinutes = Math.max(20, options.durationMinutes || 60);
+  const targetMs = durationMinutes * 60_000;
+  const harmonize = options.harmonize !== false;
 
   const selected = packTracks(pool, targetMs);
   const catalogCount = selected.filter(
@@ -99,7 +221,6 @@ export function extractSetFromPlaylist(
       ? arrangeByCatalogEnergy(selected)
       : assignPhasesByDuration(selected, targetMs);
 
-  // Harmonize inside each phase, keep phase sequence intact
   const byPhase = new Map<SetPhaseId, Enriched[]>();
   for (const phase of PHASES) byPhase.set(phase.id, []);
   for (const track of phased) {
@@ -110,12 +231,11 @@ export function extractSetFromPlaylist(
   for (const phase of PHASES) {
     const group = byPhase.get(phase.id) ?? [];
     const ordered =
-      harmonize && group.some((t) => normalizeCamelot(t.keyCamelot))
+      harmonize && group.some((item) => normalizeCamelot(item.keyCamelot))
         ? orderByHarmonicPath(group, phase.id !== "release")
         : group;
-    // Rise/Peak prefer slight energy rise via original crate energy if no keys
     const finalGroup =
-      !harmonize || group.some((t) => normalizeCamelot(t.keyCamelot))
+      !harmonize || group.some((item) => normalizeCamelot(item.keyCamelot))
         ? ordered
         : sortByEnergy(ordered, phase.id);
     for (const track of finalGroup) {
@@ -425,8 +545,8 @@ function appendSafetyCrates(
     };
   });
 
-  // Materialize Safety crate (standby tracks) — up to 8
-  const safetyTracks: SetTrack[] = leftovers.slice(0, 8).map((track, index) => ({
+  // Materialize Safety crate (standby tracks) — enough Plan B after reshuffle.
+  const safetyTracks: SetTrack[] = leftovers.slice(0, SAFETY_ALT_CAP).map((track, index) => ({
     id: track.id,
     name: track.name,
     artists: track.artists,

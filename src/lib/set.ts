@@ -80,6 +80,33 @@ export type SetTrack = {
 
 export type SetSlotKind = "warmup" | "support" | "peaktime" | "closing";
 
+/**
+ * Full playlist crate kept after extract so “Different songs” can reshuffle
+ * a new performance without re-fetching Spotify/Tidal/stick.
+ */
+export type SourcePoolTrack = {
+  id: string;
+  name: string;
+  artists: string[];
+  album: string;
+  durationMs: number;
+  uri: string;
+  externalUrl: string;
+  imageUrl: string | null;
+  bpm?: string;
+  keyCamelot?: string;
+  energy?: number;
+  energyLevel?: number;
+  filePath?: string;
+  source?: TrackSource;
+  popularity?: number | null;
+  catalogPopularity?: number | null;
+  catalogBpm?: string;
+  catalogKey?: string;
+  explicit?: boolean;
+  isrc?: string | null;
+};
+
 export type SetDraft = {
   title: string;
   vibe: string;
@@ -97,6 +124,8 @@ export type SetDraft = {
   closerId?: string | null;
   durationMinutes: number;
   tracks: SetTrack[];
+  /** Playlist pool from the last extract (max ~120). Enables reshuffle. */
+  sourcePool?: SourcePoolTrack[];
 };
 
 export const SLOT_KINDS: {

@@ -4,7 +4,7 @@
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
 
-**Version 3.5.0** · Dramaturgy, not a playlist.
+**Version 3.6.0** · Dramaturgy, not a playlist.
 
 > A good set does not have to be perfect.  
 > Music can be analyzed, sorted and planned — but in the end your ears, your feel and the moment on the dancefloor decide. No score and no algorithm can replace what you perceive as a DJ.
@@ -17,6 +17,7 @@ SETBUILDER prepares DJ sets for rekordbox. You load a playlist or history from t
 - ⚡ **Energy from files** — Analyze stick MP3s, write Energy into ID3 (audio untouched), reload tags in rekordbox
 - 🔑 **Key path** — Camelot along the set with mix score, clash badges and Mixed In Key–style sorts
 - 🎯 **Perfect sort** — Whole-set Camelot TSP (Held-Karp): kill clashes, max mix score; opener/closer stay
+- 🎲 **Different songs** — Reshuffle a new performance from the playlist pool for the same brief
 - 🎚️ **Arc & energy** — Phases Open→Release against target bands; jumps called out
 - 📌 **Opener & closer** — Pin ends, or keep the current first/last track; every sort respects them
 - 💾 **Stick round-trip** — Load from `export.pdb`, write the set back, player check before the gig
@@ -27,7 +28,7 @@ SETBUILDER prepares DJ sets for rekordbox. You load a playlist or history from t
 
 1. **Brief** — title, vibe, venue, slot type and duration
 2. **Load from rekordbox** — stick (`export.pdb`) or collection XML
-3. **Build the set** — phases, roles, opener/closer, sort and trim
+3. **Build the set** — phases, roles, opener/closer, sort, Different songs if needed, trim
 4. **Take with you** — stick write, then PDF / text, or XML / M3U
 
 📖 **Full walkthrough with screenshots:** [docs/GUIDE.md](docs/GUIDE.md)
