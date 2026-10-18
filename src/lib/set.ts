@@ -376,13 +376,33 @@ export function totalDurationMs(tracks: SetTrack[]): number {
   );
 }
 
+/** Outro (and the blend into the next track) that is not played out. */
+export const BLEND_MS = 2 * 60_000;
+
+/**
+ * Floor time of one track. Two minutes go to the blend; a short file still
+ * counts for up to 30 seconds so it does not disappear from the slot.
+ */
+export function playedDurationMs(durationMs: number): number {
+  if (durationMs <= 0) return 0;
+  return Math.min(durationMs, Math.max(durationMs - BLEND_MS, 30_000));
+}
+
+/** Playing time of the performance: file lengths minus the blend on each track. */
+export function playedTotalMs(tracks: SetTrack[]): number {
+  return performanceTracks(tracks).reduce(
+    (sum, track) => sum + playedDurationMs(track.durationMs),
+    0,
+  );
+}
+
 export function phaseDurationMs(
   tracks: SetTrack[],
   phase: SetPhaseId,
 ): number {
-  return totalDurationMs(
-    tracks.filter((track) => track.phase === phase && track.role !== "safety"),
-  );
+  return tracks
+    .filter((track) => track.phase === phase && track.role !== "safety")
+    .reduce((sum, track) => sum + playedDurationMs(track.durationMs), 0);
 }
 
 export function tracksByRole(tracks: SetTrack[], role: TrackRole): SetTrack[] {
@@ -416,7 +436,7 @@ export function exportSetText(draft: SetDraft, t: Translate = tDe): string {
       .join(" · "),
     t("exports.text.target", {
       target: draft.durationMinutes,
-      actual: formatDuration(totalDurationMs(draft.tracks)),
+      actual: formatDuration(playedTotalMs(draft.tracks)),
     }),
     ...(draft.notes?.trim() ? [draft.notes.trim(), ""] : [""]),
   ];

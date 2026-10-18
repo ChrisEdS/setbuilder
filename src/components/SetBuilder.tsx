@@ -82,12 +82,12 @@ import { pickStreamingMatch } from "@/lib/match-link";
 import { swapIntoSlot } from "@/lib/replace-track";
 import { CAMELOT_CODES, mixJoin, relationHint } from "@/lib/harmonic";
 import {
-  canReshuffleDraft,
   distributeRoles,
   fitToSlot,
   reorderDraft,
   reshuffleDraftFromPool,
 } from "@/lib/extract-set";
+import { reshufflePoolForDraft } from "@/lib/rekordbox-stick";
 import {
   applySetAnchors,
   clearCloser,
@@ -119,8 +119,9 @@ import {
   performanceTracks,
   phaseDurationMs,
   phaseWindowLabel,
+  playedDurationMs,
+  playedTotalMs,
   setPositionById,
-  totalDurationMs,
   trackCount,
 } from "@/lib/set";
 import {
@@ -445,6 +446,71 @@ export function SetBuilder() {
   /** What the duration field shows while it is being edited (null = the draft value). */
   const [durationText, setDurationText] = useState<string | null>(null);
 
+  // A page scroll must not get stuck when the pointer crosses a select or an
+  // inner list. Native selects change their value on the wheel; the library,
+  // stick and crate lists swallow the gesture until you reach their edge.
+  // A burst that started on the page keeps moving the page. A new gesture
+  // that starts on a list still scrolls that list.
+  useEffect(() => {
+    const traps = "select, .library-list, .stick-list, .crate-col-body, .result-list";
+    const gestureGapMs = 320;
+    let lastAt = 0;
+    let pageGesture = true;
+
+    function pixels(event: WheelEvent, delta: number) {
+      if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) return delta * 16;
+      if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) return delta * window.innerHeight;
+      return delta;
+    }
+
+    function consumesWheel(element: Element) {
+      if (element instanceof HTMLSelectElement) return true;
+      if (!(element instanceof HTMLElement)) return false;
+      const overflowY = getComputedStyle(element).overflowY;
+      return (
+        (overflowY === "auto" || overflowY === "scroll") &&
+        element.scrollHeight > element.clientHeight + 1
+      );
+    }
+
+    function onWheel(event: WheelEvent) {
+      const now = performance.now();
+      const continuous = now - lastAt < gestureGapMs;
+      lastAt = now;
+
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        pageGesture = true;
+        return;
+      }
+
+      const trap = target.closest(traps);
+      if (!trap || trap.closest("dialog, .stick-dialog") || !consumesWheel(trap)) {
+        pageGesture = true;
+        return;
+      }
+
+      const followPage = trap instanceof HTMLSelectElement || (continuous && pageGesture);
+      if (!followPage) {
+        pageGesture = false;
+        return;
+      }
+
+      event.preventDefault();
+      if (trap instanceof HTMLSelectElement && document.activeElement === trap) {
+        trap.blur();
+      }
+      window.scrollBy({
+        top: pixels(event, event.deltaY),
+        left: pixels(event, event.deltaX),
+      });
+      pageGesture = true;
+    }
+
+    document.addEventListener("wheel", onWheel, { capture: true, passive: false });
+    return () => document.removeEventListener("wheel", onWheel, { capture: true });
+  }, []);
+
   // Feedback like "+ Titel → Peak / Anchor" is a toast: it follows the scroll and fades after a while.
   // Longer texts (the rekordbox import steps) stay long enough to be read.
   // Energy batch progress must not fade while analysis is still running.
@@ -735,7 +801,7 @@ export function SetBuilder() {
     () => performanceTracks(draft.tracks),
     [draft.tracks],
   );
-  const filledMs = totalDurationMs(draft.tracks);
+  const filledMs = playedTotalMs(draft.tracks);
   const targetMs = draft.durationMinutes * 60_000;
   const activeGuide = arcGuideFor(t).find((item) => item.phase === activePhase);
 
@@ -744,6 +810,11 @@ export function SetBuilder() {
     if (roleFilter === "all") return mainTracks;
     return draft.tracks.filter((track) => track.role === roleFilter);
   }, [draft.tracks, mainTracks, roleFilter]);
+
+  const reshuffleChoice = useMemo(
+    () => reshufflePoolForDraft(draft, libraryRows),
+    [draft, libraryRows],
+  );
 
   const positions = useMemo(
     () => setPositionById(draft.tracks),
@@ -1539,20 +1610,28 @@ export function SetBuilder() {
 
   function reshuffleSongs() {
     const current = readStoredDraft();
-    if (!canReshuffleDraft(current)) {
+    const choice = reshufflePoolForDraft(current, libraryRows);
+    if (!choice) {
       setStatus(t("builder.status.reshuffle.unavailable"));
       return;
     }
-    const poolSize = current.sourcePool?.length ?? 0;
-    if (!window.confirm(t("builder.tool.reshuffleConfirm", { pool: poolSize }))) {
+    if (!window.confirm(t(
+      choice.fromStick
+        ? "builder.tool.reshuffleConfirmStick"
+        : "builder.tool.reshuffleConfirm",
+      { pool: choice.pool.length },
+    ))) {
       return;
     }
-    const next = reshuffleDraftFromPool(current, t);
-    setDraft(next);
+    const next = reshuffleDraftFromPool(
+      { ...current, sourcePool: choice.pool },
+      t,
+    );
+    setDraft(choice.fromStick ? { ...next, sourcePool: current.sourcePool } : next);
     setFocusTrackId(null);
     setStatus(
       t("builder.status.reshuffle.done", {
-        pool: next.sourcePool?.length ?? 0,
+        pool: choice.pool.length,
         tracks: next.tracks.filter((track) => track.role !== "safety").length,
       }),
     );
@@ -2493,19 +2572,22 @@ export function SetBuilder() {
             />
             <Tip
               text={
-                canReshuffleDraft(draft)
-                  ? t("builder.tool.reshuffleTip", {
-                      pool: draft.sourcePool?.length ?? 0,
-                    })
+                reshuffleChoice
+                  ? t(
+                      reshuffleChoice.fromStick
+                        ? "builder.tool.reshuffleTipStick"
+                        : "builder.tool.reshuffleTip",
+                      { pool: reshuffleChoice.pool.length },
+                    )
                   : t("builder.tool.reshuffleDisabledTip")
               }
-              disabled={!canReshuffleDraft(draft)}
+              disabled={!reshuffleChoice}
             >
               <button
                 type="button"
                 className="btn ghost"
                 onClick={reshuffleSongs}
-                disabled={!canReshuffleDraft(draft)}
+                disabled={!reshuffleChoice}
                 aria-label={t("builder.tool.reshuffle")}
               >
                 {t("builder.tool.reshuffle")}
@@ -2577,7 +2659,10 @@ export function SetBuilder() {
                           {
                             tracks: trackCount(visibleTimeline.length, t),
                             duration: formatDuration(
-                              visibleTimeline.reduce((sum, track) => sum + track.durationMs, 0),
+                              visibleTimeline.reduce(
+                                (sum, track) => sum + playedDurationMs(track.durationMs),
+                                0,
+                              ),
                             ),
                             minutes: draft.durationMinutes,
                           },

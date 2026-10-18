@@ -1000,7 +1000,7 @@ a.button-link.tidal-login {
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
-  overscroll-behavior: contain;
+  overscroll-behavior: auto;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -5498,13 +5498,13 @@ html[lang="en"] .energy-bars li.jump::before {
   margin: 0 !important;
 }
 
-/* Long lists scroll inside their panel instead of stretching the page. */
+/* Long lists keep a scrollbar. At the top or bottom the wheel continues on the page. */
 .stick-list,
 .library-list,
 .crate-add .result-list {
   overflow-y: auto !important;
   overflow-x: hidden;
-  overscroll-behavior: contain;
+  overscroll-behavior: auto;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
 }

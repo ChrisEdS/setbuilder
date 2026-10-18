@@ -8,7 +8,7 @@ import {
   reshuffleDraftFromPool,
 } from "./extract-set.ts";
 import { tEn } from "./i18n/core.ts";
-import { DEFAULT_SET } from "./set.ts";
+import { DEFAULT_SET, playedDurationMs } from "./set.ts";
 import type { SpotifyTrack } from "./spotify.ts";
 
 const mk = (i: number, phase: string, energy?: number) => ({
@@ -16,6 +16,12 @@ const mk = (i: number, phase: string, energy?: number) => ({
   imageUrl: null, phase, role: "groove", transition: "unset", bpm: "124", keyCamelot: "8A",
   note: "", why: "", safetyAlt: "", energyLevel: energy, source: "rekordbox",
 });
+test("played time keeps two minutes of every track for the blend", () => {
+  assert.equal(playedDurationMs(6 * 60_000), 4 * 60_000);
+  assert.equal(playedDurationMs(20_000), 20_000);
+  assert.equal(playedDurationMs(90_000), 30_000);
+});
+
 test("slot fit trims to the brief and prefers tracks in the phase band", () => {
   const energies = [3,5,4, 5,6,5, 6,7,8,6, 7,9,5,9,8,4, 5,4,6];
   const phases = ["open","open","open","lift","lift","lift","rise","rise","rise","rise","peak","peak","peak","peak","peak","peak","release","release","release"];
@@ -23,11 +29,19 @@ test("slot fit trims to the brief and prefers tracks in the phase band", () => {
   const draft: any = { ...DEFAULT_SET, durationMinutes: 60, tracks };
   const r = fitToSlot(draft);
   const kept = r.draft.tracks.filter((t:any)=>t.role!=="safety");
+  const fileMs = kept.reduce((sum: number, track: { durationMs: number }) => sum + track.durationMs, 0);
   assert.ok(r.afterMs < r.beforeMs);
-  assert.ok(r.afterMs <= 60*60_000*1.2);
+  assert.ok(r.afterMs <= 60 * 60_000 * 1.05);
+  assert.ok(fileMs > 60 * 60_000, "file length stays above the slot");
   assert.equal(kept[0].id, "t0");
   assert.equal(kept[kept.length-1].id, "t18");
-  for (const t of kept.filter((t:any)=>t.phase==="peak")) assert.ok(t.energyLevel >= 8, "peak keeps 8+");
+  const peak = kept.filter((t: { phase: string; energyLevel: number }) => t.phase === "peak");
+  assert.ok(peak.length >= 3);
+  assert.ok(
+    peak.filter((t: { energyLevel: number }) => t.energyLevel >= 8).length >=
+      peak.filter((t: { energyLevel: number }) => t.energyLevel < 8).length,
+    "peak prefers the phase band",
+  );
   assert.equal(r.moved, r.draft.tracks.filter((t:any)=>t.role==="safety").length);
 });
 
@@ -90,11 +104,12 @@ test("reshuffleDraftFromPool keeps the brief and can change the cast", () => {
     .filter((track) => track.role !== "safety")
     .map((track) => track.id);
 
-  // Fisher–Yates with random() === 0 always swaps toward the front → reverse.
+  // A fixed sequence that moves other tracks into the packed prefix.
+  // A constant 0 only swaps with the front and can rebuild the same cast.
   let calls = 0;
   const random = () => {
     calls += 1;
-    return 0;
+    return (calls % 3) / 3;
   };
   const next = reshuffleDraftFromPool(draft, tEn, random);
   assert.ok(calls > 0);

@@ -52,7 +52,7 @@ test("Bogen aria copy stays German in de, English in en", () => {
   assert.equal(tDe("analysis.harmonic.title"), "Key-Verlauf");
   assert.equal(tDe("builder.curve.aria"), "Phasen im Slot");
   assert.equal(tEn("analysis.harmonic.ariaLabel"), "Harmonic path");
-  assert.equal(tEn("builder.curve.aria"), "Energy curve");
+  assert.equal(tEn("builder.curve.aria"), "Phases in the slot");
   assert.match(tDe("analysis.energyPath.statKnownHint"), / /);
   assert.match(tDe("analysis.energyPath.noLevels"), /Energy Levels/);
 });

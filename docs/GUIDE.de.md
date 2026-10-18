@@ -52,7 +52,7 @@ Jeder Track zeigt die Quelle (rekordbox), Phase und Rolle. Die Steuerung sitzt u
   | **Camelot-Reise** | Pro Phase: im Uhrzeigersinn ums Wheel (stapelt denselben Key nicht) |
   | **Wellen** | Pro Phase: im Peak Groove ↔ Impact (Anchor); sonst Low/High-Energie |
 
-- **Andere Songs:** zwischen Sortieren und Energie. Würfelt aus dem gespeicherten Playlist-Pool (nach Extract, bis ~120 Tracks) eine neue Performance für denselben Brief und füllt Alternativen neu. Confirm vorher; Opener/Closer-Pins bleiben, Notizen gehen verloren. Ohne Pool (z. B. Stick-only) bleibt der Button disabled.
+- **Andere Songs:** zwischen Sortieren und Energie. Würfelt eine neue Performance für denselben Brief aus der Stick-Bibliothek (alle Playlists auf dem Export-Stick) oder, nach einem Extract, aus diesem Playlist-Pool. Confirm vorher; Opener/Closer-Pins bleiben, Notizen gehen verloren. Ohne größere Auswahl als das Set bleibt der Button aus.
 - **Energie aus Dateien:** berechnet den Energy Level aus Stick-Audio (Essentia), setzt ihn im Draft und schreibt Energy-Tags in die MP3 auf dem Stick (Chrome / Edge / Desktop). Die Set-Notiz bleibt unangetastet. Danach Tags in rekordbox neu laden.
 - **Auf Slot kürzen:** behält pro Phase die Tracks, deren Energie ins Band passt; der Rest wandert unter Alternativen
 - **Rollen verteilen:** Anchor auf den stärksten Peak-Tracks und den Schluss, Bridge bei Phasenwechsel, Key-Clash, BPM- oder Energie-Sprung, sonst Groove

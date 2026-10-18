@@ -22,6 +22,7 @@ import type { SpotifyTrack } from "@/lib/spotify";
 import {
   DEFAULT_SET,
   PHASES,
+  playedDurationMs,
   type SetDraft,
   type SetPhaseId,
   type SetTrack,
@@ -50,6 +51,9 @@ type Enriched = SpotifyTrack & {
   bpm: string;
   keyCamelot: string;
   energy: number;
+  energyLevel?: number;
+  filePath?: string;
+  source?: SetTrack["source"];
 };
 
 /**
@@ -103,8 +107,17 @@ export function reshuffleDraftFromPool(
   const stored = draft.sourcePool;
   if (!stored?.length) return draft;
 
+  const pinIds = new Set(
+    [draft.openerId, draft.closerId].filter((id): id is string => Boolean(id)),
+  );
+  const shuffled = shuffleCopy(stored, random);
+  const ordered = [
+    ...shuffled.filter((track) => pinIds.has(track.id)),
+    ...shuffled.filter((track) => !pinIds.has(track.id)),
+  ];
+
   const pool = enrichPlaylistPool(
-    stored.map((track) => ({
+    ordered.map((track) => ({
       id: track.id,
       name: track.name,
       uri: track.uri,
@@ -123,15 +136,18 @@ export function reshuffleDraftFromPool(
   );
   // Prefer stored energy when we already computed it at extract time.
   for (let i = 0; i < pool.length; i++) {
-    const prior = stored[i];
+    const prior = ordered[i];
     if (prior?.energy != null) pool[i].energy = prior.energy;
+    else if (prior?.energyLevel != null) pool[i].energy = prior.energyLevel / 10;
+    if (prior?.energyLevel != null) pool[i].energyLevel = prior.energyLevel;
     if (prior?.bpm) pool[i].bpm = prior.bpm;
     if (prior?.keyCamelot) pool[i].keyCamelot = prior.keyCamelot;
+    if (prior?.filePath) pool[i].filePath = prior.filePath;
+    if (prior?.source) pool[i].source = prior.source;
   }
 
-  const shuffled = shuffleCopy(pool, random);
   const next = buildDraftFromPool(
-    shuffled,
+    pool,
     draft.title,
     {
       durationMinutes: draft.durationMinutes,
@@ -382,15 +398,16 @@ function sortByEnergy(
 
 function packTracks(pool: Enriched[], targetMs: number): Enriched[] {
   const selected: Enriched[] = [];
-  let total = 0;
+  let played = 0;
   const softCap = targetMs * 1.06;
 
   for (const track of pool) {
-    if (selected.length >= 36) break;
-    if (total >= targetMs && selected.length >= 8) break;
-    if (total + track.durationMs > softCap && selected.length >= 8) continue;
+    if (selected.length >= 60) break;
+    const span = playedDurationMs(track.durationMs);
+    if (played >= targetMs && selected.length >= 8) break;
+    if (played + span > softCap && selected.length >= 8) continue;
     selected.push(track);
-    total += track.durationMs;
+    played += span;
   }
 
   if (selected.length === 0) return pool.slice(0, 12);
@@ -433,7 +450,10 @@ type RoleInput = Pick<
   | "phase"
 > & { energy?: number; energyLevel?: number };
 
-function assignRolesAndTransitions(tracks: RoleInput[], t: Translate): SetTrack[] {
+function assignRolesAndTransitions(
+  tracks: Array<RoleInput & { filePath?: string; source?: SetTrack["source"] }>,
+  t: Translate,
+): SetTrack[] {
   const peakIndexes = tracks
     .map((track, index) => (track.phase === "peak" ? index : -1))
     .filter((index) => index >= 0);
@@ -540,6 +560,8 @@ function assignRolesAndTransitions(tracks: RoleInput[], t: Translate): SetTrack[
       keyCamelot: track.keyCamelot,
       energy: track.energy ?? 0.5,
       energyLevel: track.energyLevel,
+      filePath: track.filePath,
+      source: track.source,
       // The row shows phase, role, transition and the live key relation; no machine note.
       note: "",
       why,
@@ -611,6 +633,9 @@ function appendSafetyCrates(
     bpm: track.bpm,
     keyCamelot: track.keyCamelot,
     energy: track.energy,
+    energyLevel: track.energyLevel,
+    filePath: track.filePath,
+    source: track.source,
     note: t("analysis.note.safety"),
     why: t("analysis.why.safetyNet"),
     safetyAlt: "",
@@ -737,25 +762,28 @@ export type SlotFitResult = {
 };
 
 /**
- * Trims a set that is longer than the slot. Per phase the tracks are spread
- * evenly (first track of the opener and last of the closer always stay) until
- * the phase budget of the brief is filled. Everything else moves to
- * Alternativen, so nothing is lost and Plan B comes for free.
+ * Trims a set whose playing time is longer than the slot. Each track gives
+ * two minutes to the blend, so the file lengths that stay are longer than
+ * the brief. Per phase the tracks are spread evenly (first of the opener and
+ * last of the closer always stay) until that phase's share of the slot is
+ * filled. Everything else moves to Alternativen.
  */
 export function fitToSlot(draft: SetDraft, t: Translate = tDe): SlotFitResult {
   const targetMs = draft.durationMinutes * 60_000;
   const performance = draft.tracks.filter((track) => track.role !== "safety");
-  const beforeMs = performance.reduce((sum, track) => sum + track.durationMs, 0);
+  const fallbackMs = 5 * 60_000;
+  const spanOf = (track: { durationMs: number }) =>
+    playedDurationMs(track.durationMs || fallbackMs);
+  const beforeMs = performance.reduce((sum, track) => sum + spanOf(track), 0);
   if (!performance.length || beforeMs <= targetMs * 1.05) {
     return { draft, kept: performance.length, moved: 0, beforeMs, afterMs: beforeMs };
   }
 
-  const fallbackMs = 5 * 60_000;
   const moveIds = new Set<string>();
   PHASES.forEach((phase, phaseIndex) => {
     const group = performance.filter((track) => track.phase === phase.id);
     if (!group.length) return;
-    const groupMs = group.reduce((sum, t) => sum + (t.durationMs || fallbackMs), 0);
+    const groupMs = group.reduce((sum, track) => sum + spanOf(track), 0);
     const budget = targetMs * phase.share;
     if (groupMs <= budget * 1.15) return;
     const avg = groupMs / group.length;
@@ -789,10 +817,9 @@ export function fitToSlot(draft: SetDraft, t: Translate = tDe): SlotFitResult {
     });
   });
 
-  // Rounding per phase can leave the set well over the slot. Take out one more
-  // track at a time from the phase that overshoots its budget the most, never
-  // the first or last track and never the last one left in a phase.
-  const spanOf = (track: SetTrack) => track.durationMs || fallbackMs;
+  // Rounding per phase can leave the playing time over the slot. Take out one
+  // more track at a time from the phase that overshoots its budget the most,
+  // never the first or last track and never the last one left in a phase.
   for (let guard = 0; guard < performance.length; guard++) {
     const kept = performance.filter((track) => !moveIds.has(track.id));
     const total = kept.reduce((sum, track) => sum + spanOf(track), 0);
@@ -850,6 +877,6 @@ export function fitToSlot(draft: SetDraft, t: Translate = tDe): SlotFitResult {
     kept: keptTracks.length,
     moved: moveIds.size,
     beforeMs,
-    afterMs: keptTracks.reduce((sum, track) => sum + track.durationMs, 0),
+    afterMs: keptTracks.reduce((sum, track) => sum + spanOf(track), 0),
   };
 }

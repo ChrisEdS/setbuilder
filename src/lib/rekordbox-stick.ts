@@ -10,6 +10,7 @@ import {
   type SetDraft,
   type SetPhaseId,
   type SetTrack,
+  type SourcePoolTrack,
   type TrackRole,
 } from "@/lib/set";
 
@@ -266,6 +267,75 @@ export function stickLibraryRows(
     playlists: playlistsByTrackId.get(track.id) ?? [],
     stick: track,
   }));
+}
+
+type StickLibraryRow = {
+  artist: string;
+  title: string;
+  key: string;
+  bpm: string;
+  energy?: number;
+  stick?: StickTrack;
+};
+
+/**
+ * Pool for “Different songs” from the stick library already loaded in the app.
+ * Reuses a set-track id when the file is already in the performance, so opener
+ * and closer pins still find their track.
+ */
+export function sourcePoolFromStickLibrary(
+  rows: StickLibraryRow[],
+  performance: SetTrack[] = [],
+): SourcePoolTrack[] {
+  const seen = new Set<string>();
+  const pool: SourcePoolTrack[] = [];
+  for (const row of rows) {
+    const stick = row.stick;
+    if (!stick || !row.title.trim()) continue;
+    if (seen.has(stick.id)) continue;
+    seen.add(stick.id);
+    const existing = performance.find(
+      (track) =>
+        (track.filePath && stick.filePath && track.filePath === stick.filePath) ||
+        track.id.includes(`:${stick.id}:`),
+    );
+    const key = stick.keyCamelot || parseKeyValue(row.key) || "";
+    pool.push({
+      id: existing?.id ?? `rekordbox:lib:${stick.id}`,
+      name: row.title,
+      artists: [row.artist || "Unknown"],
+      album: stick.album || "rekordbox",
+      durationMs: stick.durationMs,
+      uri: stick.filePath || `rekordbox:${stick.id}`,
+      externalUrl: "",
+      imageUrl: coverUrl(stick.artworkPath),
+      bpm: stick.bpm || row.bpm,
+      keyCamelot: key,
+      energyLevel: stick.energyLevel ?? row.energy,
+      filePath: stick.filePath,
+      source: "rekordbox",
+      catalogBpm: stick.bpm || row.bpm,
+      catalogKey: key,
+    });
+  }
+  return pool;
+}
+
+/** Stored extract pool wins. Otherwise the stick library, when it is larger than the set. */
+export function reshufflePoolForDraft(
+  draft: SetDraft,
+  library: StickLibraryRow[],
+): { pool: SourcePoolTrack[]; fromStick: boolean } | null {
+  const performance = draft.tracks.filter((track) => track.role !== "safety");
+  const stored = draft.sourcePool ?? [];
+  if (stored.length >= 2 && stored.length > performance.length) {
+    return { pool: stored, fromStick: false };
+  }
+  const stick = sourcePoolFromStickLibrary(library, performance);
+  if (stick.length >= 2 && stick.length > performance.length) {
+    return { pool: stick, fromStick: true };
+  }
+  return null;
 }
 
 /** A track picked from the stick library, placed into a chosen phase and role. */

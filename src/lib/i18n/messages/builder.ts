@@ -149,10 +149,14 @@ const de = {
   "builder.tool.reshuffle": "Andere Songs",
   "builder.tool.reshuffleTip":
     "Würfelt aus dem Playlist-Pool ({pool} Tracks) eine neue Performance für denselben Brief. Alternativen werden neu gefüllt. Opener/Closer-Pins bleiben; Notizen gehen verloren.",
+  "builder.tool.reshuffleTipStick":
+    "Würfelt aus der Stick-Bibliothek ({pool} Tracks, alle Playlists) eine neue Performance für denselben Brief. Alternativen werden neu gefüllt. Opener/Closer-Pins bleiben; Notizen gehen verloren.",
   "builder.tool.reshuffleDisabledTip":
-    "Nur nach Extract aus einer größeren Playlist. Stick-only-Sets ohne Pool können nicht neu gewürfelt werden.",
+    "Braucht mehr Tracks als im Set. Stick laden — dann kommt die Auswahl aus den Playlists darauf — oder eine längere Playlist extrahieren.",
   "builder.tool.reshuffleConfirm":
     "Setliste aus dem Playlist-Pool ({pool} Tracks) neu setzen? Brief und Opener/Closer bleiben — Reihenfolge, Rollen und Notizen werden ersetzt.",
+  "builder.tool.reshuffleConfirmStick":
+    "Setliste aus den {pool} Tracks auf dem Stick neu setzen? Brief und Opener/Closer bleiben — Reihenfolge, Rollen und Notizen werden ersetzt.",
   "builder.tool.energy": "Energie aus Dateien",
   "builder.tool.energyTip":
     "Berechnet Energy Level 1–10 aus den Stick-Dateien (Essentia), setzt es im Draft und schreibt es in die MP3-Tags. Die Set-Notiz bleibt unangetastet; Key und BPM auch.",
@@ -202,15 +206,16 @@ const de = {
     "Pro Phase: im Peak wechseln Groove und Impact (Anchor); sonst Low/High-Energie. Davor steigt die Energie, danach fällt sie. Opener/Closer bleiben.",
   "builder.tool.fit": "Auf Slot kürzen",
   "builder.tool.fitTip":
-    "Kürzt das Set auf die Dauer im Brief. Pro Phase bleiben gleichmäßig verteilte Tracks, der Rest wandert unter Alternativen. Nichts geht verloren.",
+    "Kürzt auf die Spielzeit im Brief. Zwei Minuten pro Track gehen an den Blend, deshalb bleibt mehr Dateilänge im Set. Der Rest wandert unter Alternativen.",
   "builder.tool.assign": "Rollen verteilen",
   "builder.tool.assignTip":
     "Setzt Anchor, Bridge und Groove neu nach Phase, Key und BPM. Die Reihenfolge bleibt.",
 
   // Setlist
-  "builder.list.headAll": "Performance-Set · {tracks} · {duration} / {minutes}:00 Slot",
+  "builder.list.headAll":
+    "Performance-Set · {tracks} · {duration} Spielzeit / {minutes}:00 Slot",
   "builder.list.headAllLong":
-    "Performance-Set · {tracks} · {duration} / {minutes}:00 Slot · zu lang",
+    "Performance-Set · {tracks} · {duration} Spielzeit / {minutes}:00 Slot · zu lang",
   "builder.list.headRole": "{role} · {tracks} · {duration}",
   "builder.list.detailsClose": "Details aus",
   "builder.list.detailsOpen": "Details ein",
@@ -301,7 +306,7 @@ const de = {
   "builder.curve.phaseClick": "{label}. Klick legt neue Tracks in diese Phase.",
   "builder.curve.phaseTime": "{actual} / ~{minutes} min",
   "builder.curve.note":
-    "Die Breite ist der Anteil am Brief, die Füllung die schon gelegte Spielzeit. Gelb heißt, die Phase liegt über ihrem Fenster.",
+    "Die Breite ist der Anteil am Brief, die Füllung die Spielzeit: pro Track zählen zwei Minuten weniger, weil der Blend das Ende frisst. Gelb heißt, die Phase liegt über ihrem Fenster.",
 
   // Connections & setups panel
   "builder.settings.title": "Verbindungen & Setups",
@@ -402,7 +407,7 @@ const de = {
   "builder.status.reshuffle.done":
     "Neue Auswahl aus dem Pool ({pool}): {tracks} Performance-Tracks. Bogen und Alternativen prüfen.",
   "builder.status.reshuffle.unavailable":
-    "Kein Playlist-Pool zum Würfeln — Set zuerst aus einer größeren Playlist extrahieren.",
+    "Kein größerer Pool. Stick mit Playlists laden, oder eine längere Playlist extrahieren.",
   "builder.status.fits": "Das Set passt schon in den Slot.",
   "builder.status.fitStuck":
     "Nicht weiter kürzbar: der erste und der letzte Track und ein Track pro Phase bleiben immer. Lange Tracks von Hand auf Alternativen setzen.",
@@ -624,10 +629,14 @@ const en: Record<keyof typeof de, string> = {
   "builder.tool.reshuffle": "Different songs",
   "builder.tool.reshuffleTip":
     "Picks a new performance from the playlist pool ({pool} tracks) for the same brief. Alternatives are refilled. Opener/closer pins stay; notes are lost.",
+  "builder.tool.reshuffleTipStick":
+    "Picks a new performance from the stick library ({pool} tracks, every playlist) for the same brief. Alternatives are refilled. Opener/closer pins stay; notes are lost.",
   "builder.tool.reshuffleDisabledTip":
-    "Only after extracting from a larger playlist. Stick-only sets without a pool cannot be reshuffled.",
+    "Needs more tracks than the set. Load the stick — then it draws from the playlists on it — or extract a longer playlist.",
   "builder.tool.reshuffleConfirm":
     "Rebuild the setlist from the playlist pool ({pool} tracks)? Brief and opener/closer stay — order, roles and notes are replaced.",
+  "builder.tool.reshuffleConfirmStick":
+    "Rebuild the setlist from the {pool} tracks on the stick? Brief and opener/closer stay — order, roles and notes are replaced.",
   "builder.tool.energy": "Energy from files",
   "builder.tool.energyTip":
     "Computes Energy Level 1–10 from stick files (Essentia), sets it in the draft, and writes it into MP3 tags. The set note stays untouched; so do key and BPM.",
@@ -677,14 +686,15 @@ const en: Record<keyof typeof de, string> = {
     "Per phase: in Peak, groove and impact (anchor) alternate; else low/high energy. Before that energy rises, after that it falls. Opener/closer stay.",
   "builder.tool.fit": "Trim to slot",
   "builder.tool.fitTip":
-    "Trims the set to the duration in the brief. Evenly spread tracks stay in each phase, the rest moves to Alternatives. Nothing is lost.",
+    "Trims to the playing time in the brief. Two minutes per track go to the blend, so more file length stays in the set. The rest moves to Alternatives.",
   "builder.tool.assign": "Assign roles",
   "builder.tool.assignTip":
     "Re-sets Anchor, Bridge and Groove by phase, key and BPM. The order stays.",
 
-  "builder.list.headAll": "Performance set · {tracks} · {duration} / {minutes}:00 slot",
+  "builder.list.headAll":
+    "Performance set · {tracks} · {duration} playing / {minutes}:00 slot",
   "builder.list.headAllLong":
-    "Performance set · {tracks} · {duration} / {minutes}:00 slot · too long",
+    "Performance set · {tracks} · {duration} playing / {minutes}:00 slot · too long",
   "builder.list.headRole": "{role} · {tracks} · {duration}",
   "builder.list.detailsClose": "Details off",
   "builder.list.detailsOpen": "Details on",
@@ -774,7 +784,7 @@ const en: Record<keyof typeof de, string> = {
   "builder.curve.phaseClick": "{label}. Click to put new tracks in this phase.",
   "builder.curve.phaseTime": "{actual} / ~{minutes} min",
   "builder.curve.note":
-    "The width is the share of the brief, the fill is the playing time already placed. Yellow means the phase runs over its window.",
+    "The width is the share of the brief, the fill is playing time: each track counts two minutes less, because the blend eats the end. Yellow means the phase runs over its window.",
 
   "builder.settings.title": "Connections & setups",
   "builder.settings.default": "Save · Connect",
@@ -872,7 +882,7 @@ const en: Record<keyof typeof de, string> = {
   "builder.status.reshuffle.done":
     "New pick from the pool ({pool}): {tracks} performance tracks. Check the arc and Alternatives.",
   "builder.status.reshuffle.unavailable":
-    "No playlist pool to reshuffle — extract from a larger playlist first.",
+    "No larger pool. Load a stick with playlists, or extract a longer playlist.",
   "builder.status.fits": "The set already fits the slot.",
   "builder.status.fitStuck":
     "Cannot trim further: the first and last track and one track per phase always stay. Move long tracks to Alternatives by hand.",
