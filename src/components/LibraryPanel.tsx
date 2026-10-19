@@ -416,7 +416,7 @@ export function LibraryPanel({
   rows: libraryRows,
   onRows: setLibraryRows,
   onStickSets,
-  chooseStick,
+  chooseStick: chooseStickRef,
 }: Props) {
   const { t } = useI18n();
   const [text, setText] = useState("");
@@ -429,8 +429,8 @@ export function LibraryPanel({
   const pendingChoose = useRef(false);
 
   useEffect(() => {
-    if (!chooseStick) return;
-    chooseStick.current = () => {
+    if (!chooseStickRef) return;
+    chooseStickRef.current = () => {
       if (stickChoose.current) {
         setSource("rekordbox");
         stickChoose.current();
@@ -440,9 +440,9 @@ export function LibraryPanel({
       setSource("rekordbox");
     };
     return () => {
-      chooseStick.current = null;
+      chooseStickRef.current = null;
     };
-  }, [chooseStick]);
+  }, [chooseStickRef]);
 
   useEffect(() => {
     if (source !== "rekordbox" || !pendingChoose.current) return;

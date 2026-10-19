@@ -198,7 +198,7 @@ export function RekordboxStick({
   onIndexed,
   onStickStatus,
   onSets,
-  chooseStick,
+  chooseStick: chooseStickRef,
 }: Props) {
   const { t } = useI18n();
   const [phase, setPhase] = useState<LoadPhase>("idle");
@@ -366,12 +366,12 @@ export function RekordboxStick({
   };
 
   useEffect(() => {
-    if (!chooseStick) return;
-    chooseStick.current = () => chooseImpl.current();
+    if (!chooseStickRef) return;
+    chooseStickRef.current = () => chooseImpl.current();
     return () => {
-      chooseStick.current = null;
+      chooseStickRef.current = null;
     };
-  }, [chooseStick]);
+  }, [chooseStickRef]);
 
   const locking = busy || phase === "listing" || phase === "reading";
   const pending = locking || phase === "picking";
