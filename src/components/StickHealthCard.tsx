@@ -187,6 +187,7 @@ export function StickHealthCard({
   onRestoreLibrary,
   onEject,
   canFix,
+  deprioritizeEject,
 }: {
   health: StickHealth;
   onRecheck?: () => void | Promise<void>;
@@ -196,6 +197,8 @@ export function StickHealthCard({
   onEject?: () => void | Promise<void>;
   /** We hold the whole stick, not just a file list — prepare and restore can write. */
   canFix?: boolean;
+  /** Stick-Status after import: eject stays available but not as the main action. */
+  deprioritizeEject?: boolean;
 }) {
   const { t } = useI18n();
   const detailsId = useId();
@@ -235,8 +238,9 @@ export function StickHealthCard({
     canOpenRekordbox: rekordbox,
     canRestore: Boolean(canFix && onRestoreLibrary),
   };
-  const primary = primaryStickAction(health, caps);
-  const secondary = secondaryStickActions(health, caps);
+  const actionOpts = deprioritizeEject ? { deprioritizeEject: true as const } : undefined;
+  const primary = primaryStickAction(health, caps, actionOpts);
+  const secondary = secondaryStickActions(health, caps, actionOpts);
   const tone = verdictTone(health);
 
   async function openRekordbox() {

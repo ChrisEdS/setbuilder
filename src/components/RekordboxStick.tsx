@@ -2,7 +2,6 @@
 
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { FieldNoticeView, type FieldNotice } from "@/components/FieldNotice";
-import { StickHealthCard } from "@/components/StickHealthCard";
 import {
   applyStickSet,
   readRekordboxStick,
@@ -10,7 +9,7 @@ import {
   type RekordboxStickSet,
   type StickTrack,
 } from "@/lib/rekordbox-stick";
-import { errorText } from "@/lib/i18n";
+import { errorText, type Translate } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n/react";
 import { rememberStickFiles } from "@/lib/stick-audio";
 import { formatDuration, trackCount, type SetDraft } from "@/lib/set";
@@ -26,6 +25,16 @@ import {
 import { inspectStick, inspectStickFiles, type StickHealth } from "@/lib/stick-health";
 import { prepareStickForPlayers, restorePlayerLibrary, type DirLike } from "@/lib/rekordbox-stick-write";
 
+export type StickStatusSlice = {
+  health: StickHealth;
+  checkingHealth: boolean;
+  healthRoot: DirLike | null;
+  refreshHealth: () => void | Promise<void>;
+  onPrepare?: () => void | Promise<void>;
+  onRestoreLibrary?: () => void | Promise<void>;
+  onEject?: () => void | Promise<void>;
+};
+
 type Props = {
   draft: SetDraft;
   busy: boolean;
@@ -40,6 +49,7 @@ type Props = {
       stick?: StickTrack;
     }>,
   ) => void;
+  onStickStatus?: (status: StickStatusSlice | null) => void;
 };
 
 /** Fills `{name}` placeholders of a translated text with elements (code, strong …). */
@@ -59,11 +69,139 @@ type StickError =
 
 type LoadPhase = "idle" | "picking" | "listing" | "reading";
 
+function StickSetList({
+  sets,
+  query,
+  kind,
+  pending,
+  onQuery,
+  onKind,
+  onTake,
+  kindLabel,
+  t,
+}: {
+  sets: RekordboxStickSet[];
+  query: string;
+  kind: "all" | "playlist" | "history";
+  pending: boolean;
+  onQuery: (value: string) => void;
+  onKind: (kind: "all" | "playlist" | "history") => void;
+  onTake: (set: RekordboxStickSet) => void;
+  kindLabel: (set: RekordboxStickSet) => string;
+  t: Translate;
+}) {
+  const needle = query.trim().toLowerCase();
+  const bothKinds =
+    sets.some((set) => set.kind === "playlist") &&
+    sets.some((set) => set.kind === "history");
+  const visible = sets.filter((set) => {
+    if (kind !== "all" && set.kind !== kind) return false;
+    if (!needle) return true;
+    return `${set.name} ${set.path}`.toLowerCase().includes(needle);
+  });
+  const kinds = [
+    ["all", "library.stick.kindAll"],
+    ["playlist", "library.stick.kindPlaylist"],
+    ["history", "library.stick.kindHistory"],
+  ] as const;
+
+  function setSubtitle(set: RekordboxStickSet) {
+    if (set.kind === "history" && set.tracks.length) {
+      // Play order from export.pdb — last row is the most recent track in the session.
+      for (const row of [...set.tracks].reverse()) {
+        const track = [row.artist, row.title].filter(Boolean).join(" — ");
+        if (track) {
+          return t("library.stick.historySnippet", { track });
+        }
+      }
+    }
+    const pathPart = set.path !== set.name ? ` · ${set.path}` : "";
+    return `${kindLabel(set)}${pathPart}`;
+  }
+
+  return (
+    <section
+      className="library-browser stick-sets builder-card"
+      aria-label={t("library.stick.setsTitle")}
+    >
+      <div className="library-browser-head">
+        <h3 className="library-browser-title">
+          <span className="library-browser-heading">{t("library.stick.setsTitle")}</span>
+          <span className="library-browser-meta">
+            {t("library.stick.setsCount", { shown: visible.length, total: sets.length })}
+          </span>
+        </h3>
+        <div className="library-browser-toolbar">
+          <span className="library-search-field">
+            <input
+              type="search"
+              value={query}
+              placeholder={t("library.stick.filterPlaceholder")}
+              aria-label={t("library.stick.filterAria")}
+              onChange={(event) => onQuery(event.target.value)}
+            />
+          </span>
+          {bothKinds ? (
+            <label className="library-playlist-pick">
+              <span className="sr-only">{t("library.stick.filterAria")}</span>
+              <select
+                value={kind}
+                aria-label={t("library.stick.filterAria")}
+                onChange={(event) => onKind(event.target.value as "all" | "playlist" | "history")}
+              >
+                {kinds.map(([id, key]) => (
+                  <option key={id} value={id}>
+                    {t(key)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+        </div>
+      </div>
+      {visible.length ? (
+        <ul className="library-list">
+          {visible.map((set) => {
+            const ms = set.tracks.reduce((sum, track) => sum + track.durationMs, 0);
+            return (
+              <li key={set.id}>
+                <div>
+                  <strong>{set.name}</strong>
+                  <span>{setSubtitle(set)}</span>
+                </div>
+                <em>
+                  {trackCount(set.tracks.length, t)}
+                  {ms ? ` · ${formatDuration(ms)}` : ""}
+                </em>
+                <button
+                  type="button"
+                  className="btn ghost lib-add"
+                  disabled={pending || set.tracks.length === 0}
+                  onClick={() => onTake(set)}
+                >
+                  {t("library.stick.loadSet")}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className="builder-note">
+          {needle
+            ? t("library.stick.filterEmpty", { query: query.trim() })
+            : t("library.stick.filterNone")}
+        </p>
+      )}
+    </section>
+  );
+}
+
 export function RekordboxStick({
   draft,
   busy,
   onApply,
   onIndexed,
+  onStickStatus,
 }: Props) {
   const { t } = useI18n();
   const [phase, setPhase] = useState<LoadPhase>("idle");
@@ -74,6 +212,8 @@ export function RekordboxStick({
   const [checkingHealth, setCheckingHealth] = useState(false);
   const [healthRoot, setHealthRoot] = useState<DirLike | null>(null);
   const [healthFiles, setHealthFiles] = useState<File[] | null>(null);
+  const [setQuery, setSetQuery] = useState("");
+  const [setKind, setSetKind] = useState<"all" | "playlist" | "history">("all");
   const dirInput = useRef<HTMLInputElement>(null);
   const loadGen = useRef(0);
 
@@ -251,139 +391,127 @@ export function RekordboxStick({
           ? { text: t("library.stick.reading"), hint: t("library.stick.readingHint") }
           : null;
 
+  useEffect(() => {
+    if (!onStickStatus) return;
+    if (!health) {
+      onStickStatus(null);
+      return;
+    }
+    onStickStatus({
+      health,
+      checkingHealth,
+      healthRoot,
+      refreshHealth: () => refreshHealth(),
+      onPrepare: healthRoot
+        ? async () => {
+            if (!(await stickPermission(healthRoot, "readwrite", true))) throw new Error("perm");
+            await prepareStickForPlayers(healthRoot);
+            await refreshHealth({ handle: healthRoot });
+          }
+        : undefined,
+      onRestoreLibrary: healthRoot
+        ? async () => {
+            if (!(await stickPermission(healthRoot, "readwrite", true))) throw new Error("perm");
+            await restorePlayerLibrary(healthRoot);
+            await refreshHealth({ handle: healthRoot });
+          }
+        : undefined,
+      onEject: healthRoot ? () => requestStickEject(healthRoot.name) : undefined,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handlers recreated; slice is for display only
+  }, [health, checkingHealth, healthRoot, onStickStatus]);
+
   return (
-    <div className="stick-import">
-      <div className="library-pane-grid">
-        <div>
-          <h3>{t("library.stick.title")}</h3>
-          <p>{t("library.stick.intro")}</p>
-          <p className="library-path">
-            {rich(t("library.stick.path"), {
-              pioneer: <code>PIONEER</code>,
-              dotPioneer: <code>.PIONEER</code>,
-            })}
-            {label ? (
-              <>
-                {" "}
-                {rich(t("library.stick.found"), { label: <strong>{label}</strong> })}
-              </>
-            ) : null}
-          </p>
-        </div>
-        <div className="stick-actions">
-          <button
-            type="button"
-            className={"btn" + (pending ? " is-busy" : "")}
-            disabled={pending}
-            onClick={() => void chooseFolder()}
-          >
-            {locking ? t("library.stick.reading") : t("library.stick.choose")}
-          </button>
-          <input
-            ref={dirInput}
-            type="file"
-            hidden
-            multiple
-            disabled={locking}
-            // Nonstandard directory picker. Always available if showDirectoryPicker fails.
-            {...{ webkitdirectory: "", directory: "" }}
-            onChange={(event) => {
-              void load(event.target.files);
-              event.currentTarget.value = "";
-            }}
-          />
-          {phase === "picking" || error?.kind === "blocked" ? (
+    <div className="rekordbox-stick-nested builder-stack">
+      <div className="library-source-pane stick-import-pane builder-card" role="tabpanel">
+        <div className="library-browser-head stick-import-head">
+          <h3 className="library-browser-title">
+            <span className="library-browser-heading">{t("library.stick.title")}</span>
+          </h3>
+          <div className="stick-actions">
             <button
               type="button"
-              className={"btn ghost library-file" + (locking ? " is-busy" : "")}
-              disabled={locking}
-              onClick={() => dirInput.current?.click()}
+              className={"btn" + (pending ? " is-busy" : "")}
+              disabled={pending}
+              onClick={() => void chooseFolder()}
             >
-              {t("library.stick.chooseFolder")}
+              {locking ? t("library.stick.reading") : t("library.stick.choose")}
             </button>
-          ) : null}
-          <label className={"btn ghost library-file" + (locking ? " is-busy" : "")}>
-            {t("library.stick.choosePdb")}
             <input
+              ref={dirInput}
               type="file"
               hidden
-              accept=".pdb,.xml,application/xml"
+              multiple
               disabled={locking}
+              // Nonstandard directory picker. Always available if showDirectoryPicker fails.
+              {...{ webkitdirectory: "", directory: "" }}
               onChange={(event) => {
                 void load(event.target.files);
                 event.currentTarget.value = "";
               }}
             />
-          </label>
-          {phase !== "idle" ? (
-            <button type="button" className="btn ghost" onClick={cancelLoad}>
-              {t("library.stick.cancel")}
-            </button>
-          ) : null}
+            {phase === "picking" || error?.kind === "blocked" ? (
+              <button
+                type="button"
+                className={"btn ghost library-file" + (locking ? " is-busy" : "")}
+                disabled={locking}
+                onClick={() => dirInput.current?.click()}
+              >
+                {t("library.stick.chooseFolder")}
+              </button>
+            ) : null}
+            <label className={"btn ghost library-file" + (locking ? " is-busy" : "")}>
+              {t("library.stick.choosePdb")}
+              <input
+                type="file"
+                hidden
+                accept=".pdb,.xml,application/xml"
+                disabled={locking}
+                onChange={(event) => {
+                  void load(event.target.files);
+                  event.currentTarget.value = "";
+                }}
+              />
+            </label>
+            {phase !== "idle" ? (
+              <button type="button" className="btn ghost" onClick={cancelLoad}>
+                {t("library.stick.cancel")}
+              </button>
+            ) : null}
+          </div>
+        </div>
+        <div className="library-source-pane-body stick-import-body">
+          <p className="library-path stick-import-lede">{t("library.stick.intro")}</p>
+          <p className="library-path">
+            {label
+              ? rich(t("library.stick.found"), { label: <strong>{label}</strong> })
+              : rich(t("library.stick.path"), {
+                  pioneer: <code>PIONEER</code>,
+                  dotPioneer: <code>.PIONEER</code>,
+                })}
+          </p>
+          {live ? (
+            <p className="field-notice" role="status">
+              <strong>{live.text}</strong>
+              <span>{live.hint}</span>
+            </p>
+          ) : (
+            <FieldNoticeView notice={notice} />
+          )}
         </div>
       </div>
-      {live ? (
-        <p className="field-notice" role="status">
-          <strong>{live.text}</strong>
-          <span>{live.hint}</span>
-        </p>
-      ) : (
-        <FieldNoticeView notice={notice} />
-      )}
-      {health ? (
-        <StickHealthCard
-          health={health}
-          checking={checkingHealth}
-          canFix={Boolean(healthRoot)}
-          onRecheck={() => void refreshHealth()}
-          onPrepare={
-            healthRoot
-              ? async () => {
-                  if (!(await stickPermission(healthRoot, "readwrite", true))) throw new Error("perm");
-                  await prepareStickForPlayers(healthRoot);
-                  await refreshHealth({ handle: healthRoot });
-                }
-              : undefined
-          }
-          onRestoreLibrary={
-            healthRoot
-              ? async () => {
-                  if (!(await stickPermission(healthRoot, "readwrite", true))) throw new Error("perm");
-                  await restorePlayerLibrary(healthRoot);
-                  await refreshHealth({ handle: healthRoot });
-                }
-              : undefined
-          }
-          onEject={healthRoot ? () => requestStickEject(healthRoot.name) : undefined}
-        />
-      ) : null}
       {sets.length ? (
-        <ul className="stick-list">
-          {sets.map((set) => {
-            const ms = set.tracks.reduce((sum, track) => sum + track.durationMs, 0);
-            return (
-              <li key={set.id}>
-                <div>
-                  <strong>{set.name}</strong>
-                  <span>
-                    {kindLabel(set)}
-                    {set.path !== set.name ? ` · ${set.path}` : ""}
-                    {` · ${trackCount(set.tracks.length, t)}`}
-                    {ms ? ` · ${formatDuration(ms)}` : ""}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  className="btn"
-                  disabled={pending || set.tracks.length === 0}
-                  onClick={() => take(set)}
-                >
-                  {t("library.stick.loadSet")}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+        <StickSetList
+          sets={sets}
+          query={setQuery}
+          kind={setKind}
+          pending={pending}
+          onQuery={setSetQuery}
+          onKind={setSetKind}
+          onTake={take}
+          kindLabel={kindLabel}
+          t={t}
+        />
       ) : null}
     </div>
   );

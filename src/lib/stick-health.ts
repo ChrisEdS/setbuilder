@@ -141,12 +141,18 @@ export type StickActionCaps = {
  * broken → rekordbox; needsRekordbox → prepare (or rekordbox when we only saw files);
  * hidden folder → rekordbox recreates PIONEER, else eject and try; ready or set aside → eject.
  */
+export type StickActionOpts = {
+  /** Import / read context: fix problems first; eject belongs after writing the set. */
+  deprioritizeEject?: boolean;
+};
+
 export function primaryStickAction(
   health: Pick<StickHealth, "verdict" | "libraryAside">,
   caps: StickActionCaps,
+  opts?: StickActionOpts,
 ): StickAction | null {
   const rekordbox = caps.canOpenRekordbox ? "openRekordbox" : null;
-  const eject = caps.canEject ? "eject" : null;
+  const eject = caps.canEject && !opts?.deprioritizeEject ? "eject" : null;
   switch (health.verdict) {
     case "broken":
       return rekordbox;
@@ -167,8 +173,9 @@ export function primaryStickAction(
 export function secondaryStickActions(
   health: Pick<StickHealth, "verdict" | "libraryAside">,
   caps: StickActionCaps & { canRestore: boolean },
+  opts?: StickActionOpts,
 ): Array<StickAction | "restore"> {
-  const primary = primaryStickAction(health, caps);
+  const primary = primaryStickAction(health, caps, opts);
   const list: Array<StickAction | "restore"> = [];
   if (caps.canEject && primary !== "eject") list.push("eject");
   if (caps.canOpenRekordbox && primary !== "openRekordbox") list.push("openRekordbox");
@@ -206,7 +213,7 @@ function named(files: File[], name: string): File | undefined {
 export async function inspectStickFiles(files: File[]): Promise<StickHealth> {
   const paths = files.map((file) => file.webkitRelativePath || file.name);
   const pdbFile = named(files, "export.pdb");
-    const libraryFile = named(files, "exportLibrary.db");
+  const libraryFile = named(files, "exportLibrary.db");
   const buffer = pdbFile ? await pdbFile.arrayBuffer() : null;
   return assessStick({
     pioneer: pioneerFromPaths(paths),

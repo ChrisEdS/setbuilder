@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("setbuilderDesktop", {
+  platform: process.platform,
   getInfo: () => ipcRenderer.invoke("desktop:getInfo"),
   checkForUpdates: () => ipcRenderer.invoke("desktop:checkForUpdates"),
   downloadUpdate: () => ipcRenderer.invoke("desktop:downloadUpdate"),

@@ -429,6 +429,7 @@ export function SetBuilder() {
   );
   const [libraryPreview, setLibraryPreview] = useState<SetTrack | null>(null);
   const [libraryRows, setLibraryRows] = useState<LibraryRow[]>([]);
+  const devLibraryLoaded = useRef(false);
   const [matchingLinks, setMatchingLinks] = useState(false);
   const [analyzingEnergy, setAnalyzingEnergy] = useState(false);
   const [stickReady, setStickReady] = useState(false);
@@ -648,6 +649,19 @@ export function SetBuilder() {
     // Once on launch: reconnect a stick this browser already allowed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "development") return;
+    if (devLibraryLoaded.current || libraryRows.length > 0) return;
+    if (sessionStorage.getItem("setbuilder-dev-library") !== "1") return;
+    devLibraryLoaded.current = true;
+    void fetch("/dev-ui-test-library.json")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((rows: LibraryRow[] | null) => {
+        if (rows?.length) setLibraryRows(rows);
+      })
+      .catch(() => undefined);
+  }, [libraryRows.length]);
 
   function beginWork(message: string) {
     statusHold.current += 1;
@@ -1609,7 +1623,16 @@ export function SetBuilder() {
     };
     setDraft(next);
     setFocusTrackId(null);
-    setStatus(t("builder.status.setupLoaded", { name: next.title }));
+    const needsStick =
+      !stickReady && next.tracks.some((track) => track.filePath?.trim());
+    setStatus(
+      t(
+        needsStick
+          ? "builder.status.setupNeedsStick"
+          : "builder.status.setupLoaded",
+        { name: next.title },
+      ),
+    );
   }
 
   function deleteSetup() {
@@ -1683,6 +1706,7 @@ export function SetBuilder() {
     }
     setDraft(DEFAULT_SET);
     setFocusTrackId(null);
+    setSelectedSetup("");
     setStatus(t("builder.status.reset"));
   }
 
@@ -1897,6 +1921,12 @@ export function SetBuilder() {
         </div>
 
         <div className="setups-zone">
+          <h3 className="setups-zone-title">{t("builder.setups.sectionServices")}</h3>
+          <ConnectionSetup onStatus={noteSettings} />
+          <FieldNoticeView notice={localNotice("connect")} />
+        </div>
+
+        <div className="setups-zone">
           <h3 className="setups-zone-title">{t("builder.setups.sectionBrief")}</h3>
           <div className="setups-toolbar">
             <label className="setup-field setups-toolbar-name">
@@ -1982,12 +2012,6 @@ export function SetBuilder() {
           <FieldNoticeView notice={localNotice("settings")} />
         </div>
 
-        <div className="setups-zone">
-          <h3 className="setups-zone-title">{t("builder.setups.sectionServices")}</h3>
-          <ConnectionSetup onStatus={noteSettings} />
-          <FieldNoticeView notice={localNotice("connect")} />
-        </div>
-
         <AppUpdateCard variant="strip" />
       </section>
     );
@@ -2007,7 +2031,8 @@ export function SetBuilder() {
           ? t("builder.conn.connected")
           : t("builder.conn.notConnected");
     const body = (
-      <div className="crate-connect">
+      <div className="crate-connect builder-card builder-stack">
+        <div className="crate-connect-row">
         <div className="import-actions">
           {spotifyConnected ? (
             <button
@@ -2045,11 +2070,12 @@ export function SetBuilder() {
             </a>
           )}
         </div>
-        <p className="head-meta">
+        <p className="panel-inline-status builder-status">
           {t("builder.conn.state", { spotify: spotifyState, tidal: tidalState })}
         </p>
+        </div>
         {spotifyConnected && tidalConnected ? null : (
-          <p className="import-hint">{t("builder.conn.hint")}</p>
+          <p className="builder-note">{t("builder.conn.hint")}</p>
         )}
       </div>
     );
@@ -2072,6 +2098,40 @@ export function SetBuilder() {
     <div className="set-shell">
       {authNote ? <p className="banner status">{authNote}</p> : null}
       <div className="topbar">
+        <div className="set-switch" role="group" aria-label={t("builder.setups.topAria")}>
+          <label className="set-switch-pick">
+            <span>{t("builder.setups.topLabel")}</span>
+            <select
+              value={selectedSetup}
+              onChange={(event) => {
+                const id = event.target.value;
+                setSelectedSetup(id);
+                if (id) loadSetup(id);
+              }}
+              aria-label={t("builder.setups.selectAria")}
+              disabled={setups.length === 0}
+            >
+              <option value="">
+                {setups.length === 0
+                  ? t("builder.setups.topEmpty")
+                  : t("builder.setups.topChoose")}
+              </option>
+              {setups.map((setup) => (
+                <option key={setup.id} value={setup.id}>
+                  {setup.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            className="btn ghost"
+            title={t("library.menu.resetHint")}
+            onClick={resetSet}
+          >
+            {t("builder.setups.scratch")}
+          </button>
+        </div>
         <LanguageSwitch />
       </div>
       <header className="hero">
@@ -2269,7 +2329,7 @@ export function SetBuilder() {
           <div className="panel-head">
             <div>
               <h2>{t("builder.build.title")}</h2>
-              <p className="section-note">{t("builder.build.note")}</p>
+              <p className="builder-note">{t("builder.build.note")}</p>
             </div>
           </div>
 
@@ -2353,7 +2413,7 @@ export function SetBuilder() {
                       {isPending ? t("builder.search.busy") : t("builder.search.submit")}
                     </button>
                   </form>
-                  <p className="import-hint">{t("builder.search.hint")}</p>
+                  <p className="builder-note">{t("builder.search.hint")}</p>
                 </>
               ) : null}
 
@@ -2427,7 +2487,7 @@ export function SetBuilder() {
                     </div>
                   ) : null}
                   {renderConnection()}
-                  <p className="import-hint">{t("builder.link.hint")}</p>
+                  <p className="builder-note">{t("builder.link.hint")}</p>
                 </>
               ) : null}
 
@@ -2540,9 +2600,9 @@ export function SetBuilder() {
 
               {addTab === "auto" ? (
                 <>
-                  <p className="section-note">{t("builder.auto.note")}</p>
+                  <p className="builder-note">{t("builder.auto.note")}</p>
                   {draft.tracks.length > 0 ? (
-                    <p className="import-hint">
+                    <p className="builder-note">
                       {t("builder.auto.replaces", {
                         tracks: trackCount(draft.tracks.length, t),
                       })}
@@ -2646,6 +2706,7 @@ export function SetBuilder() {
               draft={draft}
             />
           </div>
+          {draft.tracks.length > 0 ? (
           <SetTools
             canMatch={draft.tracks.length > 0}
             matchingLinks={matchingLinks}
@@ -2739,66 +2800,14 @@ export function SetBuilder() {
               </button>
             </Tip>
           </SetTools>
+          ) : null}
           <FieldNoticeView notice={localNotice("library")} />
           <FieldNoticeView notice={localNotice("export")} />
 
           {crateView === "list" ? (
             <div className="crate-view crate-list">
               <div className="crate-list-head">
-                <div className="crate-list-lead">
-                  <p className="head-meta">
-                    {roleFilter === "all"
-                      ? t(
-                          filledMs > targetMs * 1.05
-                            ? "builder.list.headAllLong"
-                            : "builder.list.headAll",
-                          {
-                            tracks: trackCount(visibleTimeline.length, t),
-                            duration: formatDuration(
-                              visibleTimeline.reduce(
-                                (sum, track) => sum + playedDurationMs(track.durationMs),
-                                0,
-                              ),
-                            ),
-                            minutes: draft.durationMinutes,
-                          },
-                        )
-                      : t("builder.list.headRole", {
-                          role: roleLabel(t, roleFilter),
-                          tracks: trackCount(visibleTimeline.length, t),
-                          duration: formatDuration(
-                            visibleTimeline.reduce((sum, track) => sum + track.durationMs, 0),
-                          ),
-                        })}
-                  </p>
-                  <Tip
-                    text={t("builder.list.detailsTitle")}
-                    disabled={visibleTimeline.length === 0}
-                    end
-                  >
-                    <button
-                      type="button"
-                      className="list-setting"
-                      aria-pressed={
-                        visibleTimeline.length > 0 &&
-                        visibleTimeline.every((track) => openDetails.has(track.id))
-                      }
-                      disabled={visibleTimeline.length === 0}
-                      onClick={() =>
-                        setOpenDetails((current) =>
-                          visibleTimeline.every((track) => current.has(track.id))
-                            ? new Set()
-                            : new Set(visibleTimeline.map((track) => track.id)),
-                        )
-                      }
-                    >
-                      {visibleTimeline.length > 0 &&
-                      visibleTimeline.every((track) => openDetails.has(track.id))
-                        ? t("builder.list.detailsClose")
-                        : t("builder.list.detailsOpen")}
-                    </button>
-                  </Tip>
-                </div>
+                {visibleTimeline.length > 0 ? (
                 <div
                   className="seg crate-list-filter"
                   role="group"
@@ -2831,6 +2840,57 @@ export function SetBuilder() {
                     </Tip>
                   ))}
                 </div>
+                ) : null}
+                <p className="panel-inline-status builder-status">
+                  {roleFilter === "all"
+                    ? t(
+                        filledMs > targetMs * 1.05
+                          ? "builder.list.headAllLong"
+                          : "builder.list.headAll",
+                        {
+                          tracks: trackCount(visibleTimeline.length, t),
+                          duration: formatDuration(
+                            visibleTimeline.reduce(
+                              (sum, track) => sum + playedDurationMs(track.durationMs),
+                              0,
+                            ),
+                          ),
+                          minutes: draft.durationMinutes,
+                        },
+                      )
+                    : t("builder.list.headRole", {
+                        role: roleLabel(t, roleFilter),
+                        tracks: trackCount(visibleTimeline.length, t),
+                        duration: formatDuration(
+                          visibleTimeline.reduce((sum, track) => sum + track.durationMs, 0),
+                        ),
+                      })}
+                </p>
+                {visibleTimeline.length > 0 ? (
+                  <Tip text={t("builder.list.detailsTitle")} end>
+                    <button
+                      type="button"
+                      className="list-setting"
+                      aria-pressed={
+                        visibleTimeline.length > 0 &&
+                        visibleTimeline.every((track) => openDetails.has(track.id))
+                      }
+                      disabled={visibleTimeline.length === 0}
+                      onClick={() =>
+                        setOpenDetails((current) =>
+                          visibleTimeline.every((track) => current.has(track.id))
+                            ? new Set()
+                            : new Set(visibleTimeline.map((track) => track.id)),
+                        )
+                      }
+                    >
+                      {visibleTimeline.length > 0 &&
+                      visibleTimeline.every((track) => openDetails.has(track.id))
+                        ? t("builder.list.detailsClose")
+                        : t("builder.list.detailsOpen")}
+                    </button>
+                  </Tip>
+                ) : null}
               </div>
               {visibleTimeline.length === 0 ? (
                 <div className="empty">

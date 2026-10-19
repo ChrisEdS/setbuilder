@@ -223,6 +223,16 @@ test("the primary action falls back when a capability is missing", () => {
   );
 });
 
+test("on the import path, eject stays secondary when the stick is ready", () => {
+  const caps = { ...ALL, canRestore: false };
+  const health = { verdict: "ready" as const, libraryAside: false };
+  assert.equal(primaryStickAction(health, caps, { deprioritizeEject: true }), null);
+  assert.deepEqual(secondaryStickActions(health, caps, { deprioritizeEject: true }), [
+    "eject",
+    "openRekordbox",
+  ]);
+});
+
 test("secondary actions never repeat the primary and only restore when a backup exists", () => {
   const caps = { ...ALL, canRestore: true };
   assert.deepEqual(secondaryStickActions({ verdict: "ready", libraryAside: false }, caps), ["openRekordbox"]);

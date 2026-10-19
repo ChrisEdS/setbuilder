@@ -137,29 +137,32 @@ textarea {
 }
 
 .hero-manifesto {
-  margin: 1.15rem 0 0;
-  max-width: 38rem;
-  padding: 1.05rem 0 0;
-  border-top: 1px solid color-mix(in oklab, var(--line) 80%, transparent);
+  margin: 1rem 0 0;
+  max-width: 40ch;
+  padding: 0;
+  border-top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
 }
 
 .hero-manifesto p {
   margin: 0;
-  max-width: 46ch;
-  color: var(--muted);
-  font-size: 0.95rem;
-  line-height: 1.6;
+  max-width: 40ch;
+  color: #c8c8c8;
+  font-size: 0.98rem;
+  line-height: 1.5;
 }
 
 .hero-manifesto .hero-manifesto-lead {
-  margin: 1.35rem 0 !important;
-  max-width: 11em;
-  color: var(--ink) !important;
+  margin: 0.45rem 0 0 !important;
+  max-width: 16em;
+  color: #fff !important;
   font-family: var(--font-display), "Space Grotesk", sans-serif;
-  font-size: clamp(1.45rem, 2.4vw, 1.85rem) !important;
-  font-weight: 700;
+  font-size: 1.15rem !important;
+  font-weight: 650;
   letter-spacing: -0.03em;
-  line-height: 1.12 !important;
+  line-height: 1.25 !important;
 }
 
 .lede {
@@ -172,7 +175,10 @@ textarea {
 
 .hero-manifesto .lede {
   margin: 0;
-  max-width: 46ch;
+  max-width: 40ch;
+  color: #e4e4e4 !important;
+  font-size: 1.05rem !important;
+  line-height: 1.5 !important;
 }
 
 .hero-meta {
@@ -1863,7 +1869,7 @@ button {
 }
 
 .library-file {
-  min-width: 11rem;
+  min-width: 0;
   justify-content: center;
   text-align: center;
   cursor: pointer;
@@ -1921,7 +1927,7 @@ button {
 }
 
 .library-browser {
-  margin-top: 0.15rem;
+  margin-top: 0.875rem;
   border: 1px solid var(--line);
   background: #fff;
   padding: 0.85rem 0.9rem;
@@ -1930,7 +1936,7 @@ button {
 .library-browser-head {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.5rem 0.75rem;
   align-items: center;
   margin-bottom: 0.55rem;
   padding-bottom: 0.65rem;
@@ -1940,16 +1946,103 @@ button {
 .library-browser-head h3,
 .library-browser-title {
   margin: 0;
-  margin-right: auto;
+  flex: 0 1 auto;
+  min-width: 0;
   font-family: var(--font-display), "Space Grotesk", sans-serif;
   font-size: 1rem;
   font-weight: 600;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: flex-start !important;
-  gap: 0.15rem;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.5rem;
   line-height: 1.15;
   color: #fff;
+}
+
+.library-browser-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem 0.55rem;
+  flex: 1 1 14rem;
+  min-width: 0;
+  margin-left: auto;
+}
+
+.library-search-field {
+  flex: 1 1 10rem;
+  max-width: 20rem;
+  min-width: 0;
+}
+
+.library-search-field input {
+  width: 100%;
+  min-width: 0;
+}
+
+.library-browser-toolbar > .tip:last-child {
+  flex: 0 0 auto;
+}
+
+.library-source-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem 0.75rem;
+}
+
+.library-source-nav > .seg.crate-service-seg {
+  flex: 0 1 auto;
+  margin: 0;
+}
+
+.library-source-status,
+.panel-inline-status {
+  margin: 0;
+  flex: 0 1 auto;
+  max-width: min(100%, 36rem);
+  padding: 0.22rem 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #b8b8b8;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+}
+
+.crate-connect-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.75rem;
+}
+
+.crate-connect-row .import-actions {
+  flex: 0 1 auto;
+}
+
+.crate-connect-row .panel-inline-status {
+  margin-left: auto;
+}
+
+.crate-list-head .panel-inline-status {
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+
+.explain-fold.section-fold > .library-panel > .library-source-nav,
+.library-panel > .panel-head + .library-source-nav {
+  margin-top: 0 !important;
+}
+
+.library-panel > .library-source-nav + .rekordbox-stick-nested,
+.library-panel > .library-source-nav + .library-source-pane {
+  margin-top: 0.875rem !important;
 }
 
 .library-browser-heading {
@@ -2484,8 +2577,8 @@ button {
 .harmonic-path,
 .library-panel,
 .panel {
-  padding: 1.2rem 1.25rem 1.3rem !important;
-  margin-bottom: 1.1rem !important;
+  padding: 1rem 1.15rem 1.15rem !important;
+  margin-bottom: 1.125rem !important;
 }
 
 .panel-head h2,
@@ -3065,6 +3158,9 @@ body {
 .file-btn,
 .library-file,
 label.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 999px !important;
   min-height: 40px !important;
   font-weight: 700 !important;
@@ -3787,8 +3883,8 @@ body {
 .crate-source-bar,
 .empty,
 .explain-fold.nested {
-  background: #282828 !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
+  background: #242424 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 h1,
@@ -3832,7 +3928,8 @@ h3,
 .manual-extra input,
 .manual-meta select,
 .setup-field input,
-.setup-field select {
+.setup-field select,
+.set-switch select {
   background: #121212 !important;
   color: #fff !important;
   border: 1px solid rgba(255, 255, 255, 0.18) !important;
@@ -3943,7 +4040,6 @@ label.btn {
 
 .crate-card:hover,
 .crate-card.is-focused,
-.manual-row.focused,
 .result-list li:hover {
   background: rgba(255, 255, 255, 0.06) !important;
 }
@@ -3984,7 +4080,7 @@ label.btn {
   color: #1ed760 !important;
 }
 
-/* Manual Arrange */
+/* Manual Arrange — setlist rows share panel surface, focus bar inset */
 
 .manual-form {
   display: grid;
@@ -4050,12 +4146,23 @@ label.btn {
 }
 
 .manual-row {
+  box-sizing: border-box;
+  background: transparent !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 0.4rem 0 0.3rem;
+  border-left: 3px solid transparent;
+  border-radius: 0;
+  padding: 1.05rem 0.25rem 1.05rem 1.15rem;
   display: grid;
   grid-template-columns: 4.6rem minmax(0, 1fr);
-  column-gap: 0.85rem;
-  align-items: start;
+  column-gap: 1.35rem;
+  row-gap: 0;
+  align-items: center;
+}
+
+.manual-row.focused {
+  background: transparent !important;
+  border-left-color: #1ed760;
+  box-shadow: none;
 }
 
 .manual-index {
@@ -4155,7 +4262,7 @@ button.drag-handle:active i {
 
 .manual-body {
   display: grid;
-  gap: 0.15rem;
+  gap: 0.45rem;
   min-width: 0;
 }
 
@@ -4173,7 +4280,7 @@ button.drag-handle:active i {
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 0.25rem 0.4rem;
+  gap: 0.45rem 0.55rem;
   min-width: 0;
 }
 
@@ -4186,15 +4293,20 @@ button.drag-handle:active i {
 .manual-select {
   display: grid;
   grid-template-columns: 40px minmax(0, 1fr);
-  gap: 0.6rem;
+  gap: 0.85rem;
   align-items: center;
   border: 0;
   background: transparent;
   color: #fff;
   text-align: left;
-  padding: 0;
+  padding: 0.15rem 0;
   cursor: pointer;
   min-width: 0;
+}
+
+.manual-select:focus,
+.manual-select:focus-visible {
+  outline: none;
 }
 
 .manual-select-wrap .anchor-pills {
@@ -4205,7 +4317,7 @@ button.drag-handle:active i {
 .manual-select .art-fallback {
   width: 40px;
   height: 40px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
 }
 
 .manual-copy {
@@ -4552,10 +4664,10 @@ button.drag-handle:active i {
 
 .stick-import {
   display: grid;
-  gap: 0.85rem;
-  margin-bottom: 1.15rem;
-  padding-bottom: 1.15rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 0.875rem;
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
 }
 
 .stick-actions {
@@ -4563,43 +4675,6 @@ button.drag-handle:active i {
   flex-direction: column;
   gap: 0.45rem;
   align-items: stretch;
-}
-
-.stick-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.stick-list li {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.75rem;
-  align-items: center;
-  padding: 0.75rem 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.stick-list strong {
-  display: block;
-  font-size: 0.95rem;
-}
-
-.stick-list span {
-  display: block;
-  margin-top: 0.15rem;
-  color: #b3b3b3 !important;
-  font-size: 0.78rem;
-}
-
-.stick-list .btn {
-  min-width: 8.5rem;
-}
-
-@media (max-width: 720px) {
-  .stick-list li {
-    grid-template-columns: 1fr;
-  }
 }
 
 .preview-audio,
@@ -4833,19 +4908,29 @@ button.drag-handle:active i {
 }
 
 .head-meta {
-  margin: 0.35rem 0 0;
-  color: #8a8a8a;
+  margin: 0.875rem 0 0;
+  padding-left: 0.7rem;
+  border-left: 2px solid rgba(255, 255, 255, 0.18);
+  color: #8f8f8f;
   font-size: 0.75rem;
-  line-height: 1.4;
+  font-weight: 500;
+  line-height: 1.5;
   text-align: left;
+  max-width: 62ch;
 }
 
 .library-panel .panel-head,
 .harmonic-path .panel-head {
-  display: grid !important;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start !important;
-  column-gap: 1.5rem;
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.library-panel .panel-head h2,
+.harmonic-path .panel-head h2 {
+  margin-right: auto;
 }
 
 .stick-actions {
@@ -4879,19 +4964,12 @@ button.drag-handle:active i {
 }
 
 @media (max-width: 900px) {
-  .library-panel .panel-head,
-.harmonic-path .panel-head {
-    grid-template-columns: 1fr !important;
-  }
-
   .head-meta,
-.stick-actions {
+  .stick-actions {
     text-align: left;
     align-items: flex-start;
     justify-content: flex-start;
   }
-
-  
 }
 
 .curve .explain-fold.nested {
@@ -4974,7 +5052,7 @@ button.drag-handle:active i {
 }
 
 .explain-fold.section-fold {
-  margin-bottom: 1.1rem;
+  margin-bottom: 1.125rem;
 }
 
 .explain-fold.section-fold > .setups-bar {
@@ -5054,6 +5132,21 @@ button.drag-handle:active i {
   .phase-grid {
     grid-template-columns: minmax(0, 1fr) !important;
   }
+
+  .explain-fold.section-fold > summary {
+    flex-wrap: wrap;
+    row-gap: 0.2rem;
+  }
+
+  .explain-fold.section-fold > summary span {
+    flex: 1 0 auto;
+    white-space: nowrap;
+  }
+
+  .explain-fold.section-fold > summary em {
+    margin-left: auto;
+    text-align: right;
+  }
 }
 
 .crate-card[draggable="true"] {
@@ -5077,43 +5170,29 @@ button.drag-handle:active i {
   line-height: 1.5 !important;
 }
 
-.head-meta {
-  display: inline-flex !important;
-  align-items: center;
-  gap: 0.5rem;
-  width: fit-content;
-  margin: 0.7rem 0 0 !important;
-  padding: 0.22rem 0.7rem !important;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
-  color: #d9d9d9 !important;
-  font-size: 0.72rem !important;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  line-height: 1.4;
-}
-
-.head-meta::before {
-  content: "";
-  flex: none;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #8a8a8a;
-}
-
+.head-meta,
 .library-source-note,
 .section-note.library-source-note,
 .curve-note,
 .import-hint,
 .setups-connect-note {
-  padding-left: 0.7rem;
-  border-left: 2px solid rgba(255, 255, 255, 0.18);
+  display: block;
+  width: auto;
+  margin: 0.875rem 0 0 !important;
+  padding: 0 0 0 0.7rem !important;
+  border: 0 !important;
+  border-left: 2px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
   color: #8f8f8f !important;
   font-size: 0.75rem !important;
+  font-weight: 500;
   line-height: 1.5 !important;
   max-width: 62ch;
+}
+
+.head-meta::before {
+  content: none;
 }
 
 .curve-head > p {
@@ -5132,7 +5211,17 @@ button.drag-handle:active i {
   letter-spacing: 0.02em;
 }
 
-/* Spacing rhythm: 16px panel top, 14px between blocks and grid gaps, 19px panel bottom. */
+/*
+ * SETBUILDER spacing rhythm (keep sibling rules on 0.875rem / 14px):
+ * — Vertical stack inside panels: 0.875rem between sibling blocks
+ * — Major section folds: ~1.125rem (~18px) between sections
+ * — Panel padding: 1rem × 1.15rem horizontal, matched top/bottom (~1.15rem)
+ * — Head rows: title left (margin-right: auto), controls/search right; search max ~20rem
+ * — Inner cards (stick, sets, library, source): #242424, var(--radius), shared border
+ * — Nested folds (Collection, Musik hinzufügen): same summary padding + fold-toggle
+ * — Routine notes: muted copy or thin left rule — not full-bleed callout panels
+ * — Actions: primary white pill, secondary ghost outline; never full-width search
+ */
 .curve-note {
   margin: 0.875rem 0 0 !important;
 }
@@ -5153,8 +5242,25 @@ button.drag-handle:active i {
   margin: 0.875rem 0 0 !important;
 }
 
-.library-panel > .library-source-pane {
-  margin: 0.875rem 0 0 !important;
+.library-panel > .explain-fold.nested,
+.library-panel > .library-browser,
+.library-panel > .stick-status-pane,
+.library-panel > .rekordbox-stick-nested:not(.builder-stack) > .library-browser {
+  margin-top: 0.875rem !important;
+  margin-bottom: 0 !important;
+}
+
+.library-panel > .rekordbox-stick-nested.builder-stack > * {
+  margin-top: 0 !important;
+}
+
+.library-browser.stick-sets .library-browser-toolbar {
+  flex: 1 1 16rem;
+}
+
+.library-browser.stick-sets .library-search-field {
+  flex: 1 1 10rem;
+  max-width: 20rem;
 }
 
 .curve > .guide-line {
@@ -5444,6 +5550,13 @@ html[lang="en"] .energy-bars li.jump::before {
 }
 
 .crate-list-head > .crate-list-filter {
+  flex: 0 1 auto;
+  margin-left: 0;
+}
+
+.crate-list-head > .list-setting,
+.crate-list-head > .tip {
+  flex: 0 0 auto;
   margin-left: auto;
 }
 
@@ -5495,6 +5608,17 @@ html[data-frame="mac"] .crate-col-head-row {
   top: 46px;
 }
 
+html[data-frame="mac"] .set-shell,
+html[data-frame="mac"] .topbar,
+html[data-frame="mac"] .set-shell a,
+html[data-frame="mac"] .set-shell button,
+html[data-frame="mac"] .set-shell input,
+html[data-frame="mac"] .set-shell select,
+html[data-frame="mac"] .set-shell textarea,
+html[data-frame="mac"] .set-shell label.btn {
+  -webkit-app-region: no-drag;
+}
+
 /* Fields for manual entries inside the Crate. */
 .crate-add-body .manual-form input {
   width: 100%;
@@ -5529,7 +5653,6 @@ html[data-frame="mac"] .crate-col-head-row {
 }
 
 /* Long lists keep a scrollbar. At the top or bottom the wheel continues on the page. */
-.stick-list,
 .library-list,
 .crate-add .result-list {
   overflow-y: auto !important;
@@ -5538,21 +5661,16 @@ html[data-frame="mac"] .crate-col-head-row {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
 }
-.stick-list {
-  max-height: 24rem !important;
-}
 .library-list {
   max-height: 20rem !important;
 }
 .crate-add .result-list {
   max-height: 22rem;
 }
-.stick-list::-webkit-scrollbar,
 .library-list::-webkit-scrollbar,
 .crate-add .result-list::-webkit-scrollbar {
   width: 8px;
 }
-.stick-list::-webkit-scrollbar-thumb,
 .library-list::-webkit-scrollbar-thumb,
 .crate-add .result-list::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.24);
@@ -5694,18 +5812,18 @@ html[data-frame="mac"] .crate-col-head-row {
   color: #121212;
 }
 
-/* Library explainer: full width, visually separated from the list. */
+/* Library hints: same muted rail as panel notes, not full-bleed callouts. */
 .library-browser > .section-note {
-  max-width: none !important;
-  width: 100%;
-  margin: 0 0 0.75rem !important;
-  padding: 0.65rem 0.85rem !important;
+  max-width: 62ch !important;
+  width: auto;
+  margin: 0 0 0.65rem !important;
+  padding: 0 0 0 0.7rem !important;
   border: 0 !important;
-  border-left: 2px solid rgba(255, 255, 255, 0.22) !important;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
-  color: #c4c4c4 !important;
-  font-size: 0.8rem !important;
+  border-left: 2px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #8f8f8f !important;
+  font-size: 0.75rem !important;
   line-height: 1.5 !important;
 }
 
@@ -5930,7 +6048,7 @@ html[data-frame="mac"] .crate-col-head-row {
 
 /* Setliste: key, BPM, energy, transition and comment live in a per-track fold */
 .track-details {
-  margin-top: 0.05rem;
+  margin-top: 0.2rem;
   border-top: 1px solid var(--line);
 }
 .track-details > summary {
@@ -6821,11 +6939,89 @@ body {
 }
 
 
-/* Language switch */
+/* Language switch and the saved-set picker */
 .topbar {
   display: flex;
   justify-content: flex-end;
-  margin-bottom: 0.9rem;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.set-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.set-switch-pick {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.set-switch-pick span {
+  flex: none;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #b3b3b3;
+}
+
+.set-switch select {
+  flex: 0 1 18rem;
+  width: 18rem;
+  min-width: 14rem;
+  max-width: 24rem;
+  height: auto !important;
+  min-height: 42px;
+  padding: 0.55rem 2.1rem 0.62rem 0.85rem !important;
+  line-height: 1.45;
+  background-color: #121212;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='%23b3b3b3' d='M1.2 1.4 6 6.2 10.8 1.4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 12px 8px;
+}
+
+.set-switch select:focus {
+  border-color: #1ed760;
+  outline: none;
+}
+
+@media (max-width: 720px) {
+  .set-switch,
+  .set-switch-pick {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .set-switch select {
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+
+  .lang-switch {
+    margin-left: auto;
+  }
+}
+
+.set-switch .btn {
+  flex: none;
+  white-space: nowrap;
 }
 
 .lang-switch {
@@ -7291,4 +7487,459 @@ body {
 
 .harm-node.via-contrast {
   box-shadow: inset 0 0 0 1px color-mix(in oklab, #e0a15a 45%, transparent);
+}
+
+/* ===== Library panel: stick, index, collection as one surface ===== */
+.library-panel .library-browser,
+.library-panel .library-source-pane {
+  background: #242424 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  min-height: 0 !important;
+}
+
+.library-panel .library-browser-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.65rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.library-panel .library-browser-head .library-browser-title {
+  flex: 0 1 auto;
+  margin-right: 0;
+  min-width: 0;
+}
+
+.library-panel .library-browser-head .library-browser-toolbar {
+  flex: 1 1 16rem;
+}
+
+.library-panel .stick-import-head .stick-actions {
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  margin-left: auto;
+}
+
+.library-panel .stick-import-pane .library-path {
+  margin-top: 0 !important;
+}
+
+.library-panel .stick-import-pane .stick-import-lede {
+  margin: 0 0 0.35rem !important;
+}
+
+.library-panel .stick-import-pane .field-notice {
+  margin-top: 0.65rem !important;
+}
+
+.library-panel > .explain-fold.nested,
+.library-panel > .library-collection-fold {
+  margin: 0.875rem 0 0 !important;
+  background: #242424 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.library-panel .stick-status-pane:not(.builder-card) {
+  margin-top: 0.875rem !important;
+  padding: 0.65rem 0.75rem !important;
+  border: 1px dashed rgba(255, 255, 255, 0.12) !important;
+  border-radius: 12px !important;
+  background: transparent !important;
+}
+
+.library-panel .stick-status-pane .stick-strip {
+  margin: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+.library-panel .stick-status-pane .stick-strip-verdict {
+  color: #d9d9d9 !important;
+  font-size: 0.82rem !important;
+}
+
+.library-panel .stick-status-pane .stick-strip-actions .btn:not(.ghost) {
+  min-height: 36px !important;
+  font-size: 0.78rem !important;
+}
+
+@media (min-width: 901px) {
+  .library-panel .library-browser-head {
+    flex-wrap: nowrap;
+  }
+
+  .library-panel .library-browser-head .library-browser-title {
+    flex: 0 1 auto;
+    margin-right: 0.75rem;
+  }
+
+  .library-panel .library-browser-head .library-browser-toolbar {
+    flex: 1 1 0;
+    flex-wrap: nowrap;
+    min-width: 0;
+  }
+
+  .library-panel .library-browser-toolbar .library-search-field {
+    flex: 0 1 20rem;
+    max-width: 20rem;
+  }
+
+  .library-panel .library-browser-toolbar > .tip {
+    flex: 0 0 auto;
+  }
+
+  .library-panel .library-playlist-pick select {
+    min-width: 9rem;
+    max-width: 14rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .library-panel .library-browser-head .library-browser-toolbar {
+    flex: 1 1 100%;
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+
+  .library-panel .stick-import-head .stick-actions {
+    flex: 1 1 100%;
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+
+  .library-source-nav {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .library-source-status {
+    align-self: flex-start;
+  }
+}
+
+/* ===== Spacing polish (authoritative) ===== */
+.hero {
+  margin-bottom: 1.125rem !important;
+  padding-bottom: 1.125rem !important;
+}
+
+.explain-fold.section-fold > summary,
+.explain-fold.nested > summary {
+  box-sizing: border-box;
+  padding: 1rem 1.15rem !important;
+  align-items: center !important;
+}
+
+.explain-body {
+  box-sizing: border-box;
+  padding: 1rem 1.15rem 1.15rem !important;
+}
+
+.explain-fold.nested {
+  border-radius: var(--radius) !important;
+}
+
+.explain-fold.section-fold > .library-panel,
+.explain-fold.section-fold > .curve,
+.explain-fold.section-fold > .role-crates,
+.explain-fold.section-fold > .harmonic-path,
+.explain-fold.section-fold > .setups-bar,
+.explain-fold.section-fold > .crate-workspace {
+  padding: 1rem 1.15rem 1.15rem !important;
+}
+
+.library-panel > .library-source-nav {
+  margin-top: 0 !important;
+}
+
+.explain-fold.section-fold > .library-panel > .panel-head.library-head {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.library-source-pane,
+.library-panel .library-browser,
+.library-panel .library-source-pane.stick-import-pane {
+  padding: 1rem 1.15rem !important;
+  border-radius: var(--radius) !important;
+  background: #242424 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.library-panel .library-source-pane.stick-import-pane {
+  display: grid;
+  gap: 0.875rem;
+  min-height: 0;
+}
+
+.library-panel .stick-import-body,
+.library-source-pane .library-pane-grid,
+.library-source-pane .library-csv-pane {
+  display: grid;
+  gap: 0.875rem;
+  min-width: 0;
+}
+
+.library-panel .stick-import-body .library-path,
+.library-panel .stick-import-body .field-notice {
+  margin: 0 !important;
+}
+
+.library-source-pane .library-pane-grid {
+  gap: 0.875rem;
+}
+
+.library-source-pane .stick-actions {
+  justify-content: flex-start;
+}
+
+.library-panel .library-browser-head {
+  margin-bottom: 0 !important;
+}
+
+.library-panel .library-add-bar {
+  margin-top: 0.75rem !important;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.library-search,
+.search-row {
+  flex: 0 1 auto !important;
+  max-width: min(100%, 20rem) !important;
+}
+
+.library-search > .tip {
+  flex: 1 1 auto !important;
+  max-width: 20rem !important;
+  min-width: 0;
+}
+
+.search-row {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem !important;
+  margin-bottom: 0.875rem !important;
+}
+
+.search-row > .tip,
+.search-row input {
+  flex: 1 1 12rem !important;
+  max-width: 20rem !important;
+  min-width: 0;
+  width: auto !important;
+}
+
+.search-row > button {
+  flex: 0 0 auto;
+}
+
+.library-panel .panel-head.library-head {
+  margin-bottom: 0 !important;
+}
+
+.crate-add-body .head-meta,
+.crate-list-head .head-meta {
+  margin-top: 0 !important;
+}
+
+.library-path.stick-import-lede {
+  margin: 0 0 0.35rem !important;
+}
+
+.library-panel .stick-import-pane .library-path + .library-path {
+  margin-top: 0.35rem !important;
+}
+
+.setups-connect,
+.setups-services {
+  gap: 0.875rem !important;
+}
+
+.setup-card {
+  padding: 1rem 1.15rem !important;
+}
+
+/* ===== Builder UI system (authoritative — one look in set-shell) ===== */
+.builder-card {
+  padding: 1rem 1.15rem !important;
+  border-radius: var(--radius) !important;
+  background: #242424 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.builder-stack {
+  display: grid;
+  gap: 0.875rem;
+  min-width: 0;
+}
+
+.builder-section-stack > .library-source-nav + .rekordbox-stick-nested,
+.builder-section-stack > .library-source-nav + .library-source-pane,
+.builder-section-stack > .library-browser,
+.builder-section-stack > .explain-fold.nested,
+.builder-section-stack > .stick-status-pane {
+  margin-top: 0.875rem !important;
+}
+
+.builder-section-stack > .rekordbox-stick-nested.builder-stack > * {
+  margin-top: 0 !important;
+}
+
+.builder-status,
+.library-source-status,
+.panel-inline-status {
+  margin: 0 !important;
+  flex: 0 1 auto;
+  max-width: min(100%, 36rem);
+  padding: 0.22rem 0.65rem !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: #b8b8b8 !important;
+  font-size: 0.72rem !important;
+  font-weight: 600 !important;
+  line-height: 1.35 !important;
+  letter-spacing: 0.01em;
+}
+
+.builder-note,
+.set-shell .library-panel .library-path,
+.set-shell .library-panel .builder-note,
+.set-shell .crate-workspace .builder-note,
+.set-shell .crate-add-body .builder-note,
+.set-shell .crate-connect .builder-note,
+.set-shell .library-browser .builder-note {
+  display: block;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-left: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #b3b3b3 !important;
+  font-size: 0.82rem !important;
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+  max-width: 62ch;
+}
+
+.set-shell .library-panel .stick-status-pane.builder-card {
+  border-style: solid !important;
+  background: #242424 !important;
+}
+
+.set-shell .library-panel .stick-status-pane .stick-strip {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.set-shell .library-search-field {
+  flex: 0 1 20rem !important;
+  max-width: 20rem !important;
+  min-width: 0;
+}
+
+.set-shell .library-browser-toolbar {
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.set-shell .library-panel .library-browser.builder-card,
+.set-shell .library-panel .library-source-pane.builder-card {
+  display: grid;
+  gap: 0.875rem;
+  margin-top: 0.875rem !important;
+  padding: 1rem 1.15rem !important;
+}
+
+.set-shell .library-panel .stick-import-pane.builder-card {
+  margin-top: 0 !important;
+}
+
+.set-shell .library-panel .stick-import-pane .library-browser-head,
+.set-shell .library-panel .library-browser-head {
+  margin: 0 !important;
+  padding: 0 0 0.875rem !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.set-shell .library-browser-title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.set-shell .library-browser-heading,
+.set-shell .library-list strong,
+.set-shell .library-list span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.set-shell .library-browser-meta {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.set-shell .library-list li {
+  padding: 0.4375rem 0 !important;
+}
+
+.set-shell .library-list li > div {
+  min-width: 0;
+}
+
+.set-shell .library-list li:first-child {
+  padding-top: 0 !important;
+}
+
+.set-shell .library-list li:last-child {
+  padding-bottom: 0 !important;
+}
+
+.set-shell .library-panel .library-add-bar {
+  margin: 0.875rem 0 0 !important;
+  padding-top: 0.875rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.set-shell .crate-connect.builder-card {
+  gap: 0.875rem !important;
+}
+
+.set-shell .library-panel > .explain-fold.nested.library-collection-fold {
+  padding: 0 !important;
+  background: #242424 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: var(--radius) !important;
+}
+
+.set-shell .library-panel .library-source-pane .library-pane-grid,
+.set-shell .library-panel .library-source-pane .library-csv-pane,
+.set-shell .library-panel .stick-import-body {
+  gap: 0.875rem;
+}
+
+.explain-fold.section-fold + .explain-fold.section-fold {
+  margin-top: 1.125rem;
 }

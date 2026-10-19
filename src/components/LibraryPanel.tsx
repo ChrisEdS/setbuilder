@@ -19,7 +19,8 @@ import { energyStep } from "@/lib/energy";
 import { bpmDelta } from "@/lib/harmonic";
 import { sidePhrase } from "@/lib/replace-track";
 import { Tip } from "@/components/Hint";
-import { RekordboxStick } from "@/components/RekordboxStick";
+import { RekordboxStick, type StickStatusSlice } from "@/components/RekordboxStick";
+import { StickHealthCard } from "@/components/StickHealthCard";
 import { libraryTrackToSetTrack, type StickTrack } from "@/lib/rekordbox-stick";
 import { stickFileCount } from "@/lib/stick-audio";
 import { errorText, phaseLabel, roleLabel } from "@/lib/i18n";
@@ -128,6 +129,11 @@ export function LibraryPanel({
   const [tidalNote, setTidalNote] = useState<string | null>(null);
   const [tidalConfigured, setTidalConfigured] = useState<boolean | null>(null);
   const [source, setSource] = useState<SourceTab>("rekordbox");
+  const [stickStatus, setStickStatus] = useState<StickStatusSlice | null>(null);
+
+  useEffect(() => {
+    if (source !== "rekordbox") setStickStatus(null);
+  }, [source]);
 
   const keyStats = useMemo(() => {
     const main = performanceTracks(draft.tracks);
@@ -406,97 +412,51 @@ export function LibraryPanel({
       note: t("library.sources.csvNote"),
     },
   ];
-  const sourceNote = sources.find((item) => item.id === source)?.note ?? "";
 
   return (
-    <section className="library-panel" aria-label={t("library.panel.aria")}>
+    <section className="library-panel builder-section-stack" aria-label={t("library.panel.aria")}>
       <div className="panel-head library-head">
-        <div>
-          <h2>{t("library.panel.title")}</h2>
-          <p className="section-note">
-            {t("library.panel.intro")}
-          </p>
-          <p className="head-meta" aria-label={t("library.coverage.aria")}>
-            {statusLabel}
-          </p>
+        <h2>{t("library.panel.title")}</h2>
+      </div>
+
+      <div className="library-source-nav">
+        <div className="seg crate-service-seg" role="tablist" aria-label={t("library.sources.aria")}>
+          {sources.map((item, index) => (
+            <Tip
+              key={item.id}
+              text={item.note}
+              end={index === sources.length - 1}
+            >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={source === item.id}
+                className={source === item.id ? "seg-item active" : "seg-item"}
+                onClick={() => setSource(item.id)}
+              >
+                {item.label}
+              </button>
+            </Tip>
+          ))}
         </div>
+        <p className="library-source-status builder-status" aria-label={t("library.coverage.aria")}>
+          {statusLabel}
+        </p>
       </div>
-
-      <div className="seg crate-service-seg" role="tablist" aria-label={t("library.sources.aria")}>
-        {sources.map((item, index) => (
-          <Tip
-            key={item.id}
-            text={item.note}
-            end={index === sources.length - 1}
-          >
-            <button
-              type="button"
-              role="tab"
-              aria-selected={source === item.id}
-              className={source === item.id ? "seg-item active" : "seg-item"}
-              onClick={() => setSource(item.id)}
-            >
-              {item.label}
-            </button>
-          </Tip>
-        ))}
-      </div>
-      <p className="section-note library-source-note">{sourceNote}</p>
-
-      <div className="library-source-pane" role="tabpanel">
-        {source === "rekordbox" ? (
-          <>
-          <RekordboxStick
-            draft={draft}
-            busy={busy}
-            onApply={onApply}
-            onIndexed={(rows) => {
-              setLibraryRows(rows);
-              setLibraryCount(rows.length);
-            }}
-          />
-          <div className="library-pane-grid stick-collection">
-            <div>
-              <h3>{t("library.collection.title")}</h3>
-              <p>
-                {rich(t("library.collection.body"), { db: <code>master.db</code> })}
-              </p>
-              <p className="library-path">
-                {rich(t("library.collection.path"), {
-                  item: <strong>Export Collection in XML…</strong>,
-                })}
-                {libraryCount != null ? (
-                  <>
-                    {" "}
-                    {rich(t("library.collection.index"), {
-                      count: <strong>{libraryCount}</strong>,
-                    })}
-                  </>
-                ) : null}
-              </p>
-            </div>
-            <label
-              className={
-                "btn file-btn library-file" + (busy ? " is-busy" : "")
-              }
-            >
-              {busy ? t("library.loading") : t("library.collection.load")}
-              <input
-                type="file"
-                accept=".xml,.db,.sqlite,.csv,.txt,.tsv"
-                hidden
-                disabled={busy}
-                onChange={(event) => {
-                  void onRekordboxFile(event.target.files?.[0] ?? null);
-                  event.currentTarget.value = "";
-                }}
-              />
-            </label>
-          </div>
-          </>
-        ) : null}
-
-        {source === "tidal" ? (
+      {source === "rekordbox" ? (
+        <RekordboxStick
+          draft={draft}
+          busy={busy}
+          onApply={onApply}
+          onStickStatus={setStickStatus}
+          onIndexed={(rows) => {
+            setLibraryRows(rows);
+            setLibraryCount(rows.length);
+          }}
+        />
+      ) : (
+        <div className="library-source-pane builder-card" role="tabpanel">
+          {source === "tidal" ? (
           <div className="library-pane-grid">
             <div>
               <h3>{t("library.tidal.title")}</h3>
@@ -512,28 +472,30 @@ export function LibraryPanel({
                 <p className="library-inline-status">{tidalNote}</p>
               ) : null}
             </div>
-            <button
-              type="button"
-              className="btn library-file"
-              disabled={
-                busy || draft.tracks.length === 0 || tidalConfigured === false
-              }
-              onClick={() => void tryTidalEnrich()}
-            >
-              {busy ? t("library.loading") : t("library.tidal.fetch")}
-            </button>
+            <div className="stick-actions">
+              <button
+                type="button"
+                className={"btn" + (busy ? " is-busy" : "")}
+                disabled={
+                  busy || draft.tracks.length === 0 || tidalConfigured === false
+                }
+                onClick={() => void tryTidalEnrich()}
+              >
+                {busy ? t("library.loading") : t("library.tidal.fetch")}
+              </button>
+            </div>
           </div>
-        ) : null}
+          ) : null}
 
-        {source === "csv" ? (
+          {source === "csv" ? (
           <div className="library-csv-pane">
             <div>
               <h3>{t("library.csv.title")}</h3>
               <p>
                 {rich(t("library.csv.body"), {
-                  camelot: <code>8A</code>,
-                  minor: <code>Am</code>,
-                  major: <code>C</code>,
+                  camelot: <strong>8A</strong>,
+                  minor: <strong>Am</strong>,
+                  major: <strong>C</strong>,
                 })}
               </p>
             </div>
@@ -545,7 +507,7 @@ export function LibraryPanel({
               aria-label={t("library.csv.aria")}
             />
             {/* Actions sit under the field they act on; the primary one first. */}
-            <div className="library-inline-actions">
+            <div className="stick-actions">
               <button
                 type="button"
                 className="btn"
@@ -564,11 +526,12 @@ export function LibraryPanel({
               </button>
             </div>
           </div>
-        ) : null}
-      </div>
+          ) : null}
+        </div>
+      )}
 
       {libraryRows.length > 0 ? (
-        <div className="library-browser">
+        <div className="library-browser builder-card">
           <div className="library-browser-head">
             <h3 className="library-browser-title">
               <span className="library-browser-heading">
@@ -578,66 +541,58 @@ export function LibraryPanel({
                 {trackCount(libraryRows.length, t)}
               </span>
             </h3>
-            <div className="library-search">
-              <Tip text={t("library.browser.searchTip")}>
+            <div className="library-browser-toolbar">
+              <Tip text={t("library.browser.searchTip")} className="library-search-field">
                 <input
                   value={query}
-                  list={
-                    playlistOptions.length > 0 ? searchHintsId : undefined
-                  }
+                  list={playlistOptions.length > 0 ? searchHintsId : undefined}
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder={t("library.browser.searchPlaceholder")}
                   aria-label={t("library.browser.searchAria")}
                 />
               </Tip>
               {playlistOptions.length > 0 ? (
-                <>
-                  <datalist id={searchHintsId}>
-                    {playlistOptions.map((name) => (
-                      <option key={name} value={name} />
-                    ))}
-                  </datalist>
-                  <Tip text={t("library.browser.playlistPickTip")} end>
-                    <label className="library-playlist-pick">
-                      <span className="sr-only">
-                        {t("library.browser.playlistPick")}
-                      </span>
-                      <select
-                        value={playlistFilter}
-                        aria-label={t("library.browser.playlistPickAria")}
-                        onChange={(event) => setQuery(event.target.value)}
-                      >
-                        <option value="">
-                          {t("library.browser.playlistPickAll")}
-                        </option>
-                        {playlistOptions.map((name) => (
-                          <option key={name} value={name}>
-                            {name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </Tip>
-                </>
+                <datalist id={searchHintsId}>
+                  {playlistOptions.map((name) => (
+                    <option key={name} value={name} />
+                  ))}
+                </datalist>
               ) : null}
+              {playlistOptions.length > 0 ? (
+                <Tip text={t("library.browser.playlistPickTip")}>
+                  <label className="library-playlist-pick">
+                    <span className="sr-only">
+                      {t("library.browser.playlistPick")}
+                    </span>
+                    <select
+                      value={playlistFilter}
+                      aria-label={t("library.browser.playlistPickAria")}
+                      onChange={(event) => setQuery(event.target.value)}
+                    >
+                      <option value="">
+                        {t("library.browser.playlistPickAll")}
+                      </option>
+                      {playlistOptions.map((name) => (
+                        <option key={name} value={name}>
+                          {name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </Tip>
+              ) : null}
+              <Tip text={t("library.browser.rewriteTip")} end>
+                <button
+                  type="button"
+                  className="btn ghost"
+                  onClick={rematchFromLibrary}
+                  disabled={draft.tracks.length === 0}
+                >
+                  {t("library.browser.rewrite")}
+                </button>
+              </Tip>
             </div>
-            <Tip text={t("library.browser.rewriteTip")} end>
-              <button
-                type="button"
-                className="btn ghost"
-                onClick={rematchFromLibrary}
-                disabled={draft.tracks.length === 0}
-              >
-                {t("library.browser.rewrite")}
-              </button>
-            </Tip>
           </div>
-          <p className="section-note">
-            {t("library.browser.note", {
-              add: t("library.row.add"),
-              rewrite: t("library.browser.rewrite"),
-            })}
-          </p>
           {onAddTrack ? (
             <div className="library-add-bar">
               <span>{t("library.add.title")}</span>
@@ -762,10 +717,58 @@ export function LibraryPanel({
             </div>
           ) : null}
         </div>
-      ) : source === "rekordbox" ? (
-        <p className="section-note library-source-note">
-          {t("library.browser.empty")}
-        </p>
+      ) : null}
+
+      {source === "rekordbox" ? (
+        <details className="explain-fold nested library-collection-fold">
+          <summary>
+            <span>
+              {t("library.collection.title")}
+              {libraryCount != null
+                ? ` · ${t("library.collection.indexed", { count: libraryCount })}`
+                : ""}
+            </span>
+            <em className="fold-toggle" />
+          </summary>
+          <div className="explain-body">
+            <p>{t("library.collection.body")}</p>
+            <p className="library-path">
+              {rich(t("library.collection.path"), {
+                item: <strong>Export Collection in XML…</strong>,
+              })}
+            </p>
+            <div className="stick-actions">
+              <label className={"btn" + (busy ? " is-busy" : "")}>
+                {busy ? t("library.loading") : t("library.collection.load")}
+                <input
+                  type="file"
+                  accept=".xml,.db,.sqlite,.csv,.txt,.tsv"
+                  hidden
+                  disabled={busy}
+                  onChange={(event) => {
+                    void onRekordboxFile(event.target.files?.[0] ?? null);
+                    event.currentTarget.value = "";
+                  }}
+                />
+              </label>
+            </div>
+          </div>
+        </details>
+      ) : null}
+
+      {source === "rekordbox" && stickStatus ? (
+        <div className="stick-status-pane builder-card" aria-label={t("library.stick.statusTitle")}>
+          <StickHealthCard
+            health={stickStatus.health}
+            checking={stickStatus.checkingHealth}
+            canFix={Boolean(stickStatus.healthRoot)}
+            deprioritizeEject
+            onRecheck={() => void stickStatus.refreshHealth()}
+            onPrepare={stickStatus.onPrepare}
+            onRestoreLibrary={stickStatus.onRestoreLibrary}
+            onEject={stickStatus.onEject}
+          />
+        </div>
       ) : null}
     </section>
   );

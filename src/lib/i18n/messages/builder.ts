@@ -53,7 +53,7 @@ const de = {
   "builder.build.title": "Set bauen",
   "builder.build.summary": "{performance} Performance · {safety} Alternativen",
   "builder.build.note":
-    "Hier kommt Musik rein und bekommt eine Phase und eine Rolle. Danach ordnest du das Set von Hand oder lässt es nach Key sortieren.",
+    "Streaming-Lücken füllen — ein Track bekommt Phase und Rolle. Reihenfolge per Hand oder Sortieren.",
 
   // Add music
   "builder.add.title": "Musik hinzufügen",
@@ -352,6 +352,11 @@ const de = {
   "builder.setups.stored": "Gespeicherter Stand",
   "builder.setups.selectAria": "Gespeichertes Setup",
   "builder.setups.choose": "Wählen…",
+  "builder.setups.topAria": "Gespeicherte Sets",
+  "builder.setups.topLabel": "Sets",
+  "builder.setups.topChoose": "Set wählen…",
+  "builder.setups.topEmpty": "Noch kein gespeichertes Set",
+  "builder.setups.scratch": "Neu anfangen",
   "builder.setups.fileTitle": "Datei",
   "builder.setups.fileHint": "Als JSON sichern oder auf einem anderen Rechner öffnen.",
   "builder.setups.download": "Herunterladen",
@@ -383,6 +388,8 @@ const de = {
   "builder.status.noLink": "Kein sicherer Spotify-Treffer.",
   "builder.status.setupSaved": "„{name}“ gespeichert.",
   "builder.status.setupLoaded": "„{name}“ geladen.",
+  "builder.status.setupNeedsStick":
+    "„{name}“ geladen. Als Nächstes den Stick verbinden — Dateien, Energie und Schreiben brauchen ihn.",
   "builder.status.setupDeleted": "„{name}“ gelöscht.",
   "builder.status.setupFromFile": "„{name}“ aus Datei geladen.",
   "builder.status.fileDownloaded": "Einstellungsdatei heruntergeladen.",
@@ -543,7 +550,7 @@ const en: Record<keyof typeof de, string> = {
   "builder.build.title": "Build set",
   "builder.build.summary": "{performance} performance · {safety} alternatives",
   "builder.build.note":
-    "Music goes in here and gets a phase and a role. Then you arrange the set by hand or let it sort by key.",
+    "Fill streaming gaps — each track gets a phase and role. Arrange by hand or sort.",
 
   "builder.add.title": "Add music",
   "builder.add.target": "New tracks go to",
@@ -835,6 +842,11 @@ const en: Record<keyof typeof de, string> = {
   "builder.setups.stored": "Saved state",
   "builder.setups.selectAria": "Saved setup",
   "builder.setups.choose": "Choose…",
+  "builder.setups.topAria": "Saved sets",
+  "builder.setups.topLabel": "Sets",
+  "builder.setups.topChoose": "Choose a set…",
+  "builder.setups.topEmpty": "No saved set yet",
+  "builder.setups.scratch": "Start from scratch",
   "builder.setups.fileTitle": "File",
   "builder.setups.fileHint": "Save as JSON or open on another computer.",
   "builder.setups.download": "Download",
@@ -864,6 +876,8 @@ const en: Record<keyof typeof de, string> = {
   "builder.status.noLink": "No safe Spotify match.",
   "builder.status.setupSaved": "“{name}” saved.",
   "builder.status.setupLoaded": "“{name}” loaded.",
+  "builder.status.setupNeedsStick":
+    "“{name}” loaded. Connect the stick next — files, energy and writing need it.",
   "builder.status.setupDeleted": "“{name}” deleted.",
   "builder.status.setupFromFile": "“{name}” loaded from file.",
   "builder.status.fileDownloaded": "Settings file downloaded.",

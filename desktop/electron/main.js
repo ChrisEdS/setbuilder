@@ -476,6 +476,13 @@ function createWindow() {
   // No permission handler on purpose: Electron grants the File System Access API (used by
   // "Write to stick") by default, and a handler that denies other permissions could break
   // clipboard or playback features.
+  if (process.platform === "darwin") {
+    mainWindow.webContents.on("dom-ready", () => {
+      mainWindow?.webContents
+        .executeJavaScript('document.documentElement.dataset.frame="mac"')
+        .catch(() => {});
+    });
+  }
   mainWindow.loadURL(`http://${APP_HOST}:${PORT}/`);
 }
 

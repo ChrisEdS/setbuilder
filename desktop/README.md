@@ -19,6 +19,12 @@ npm start
 
 Zugangsdaten kommen aus `../.env.local`, solange du aus dem Repo startest. Die Vorlage ist `../.env.example`.
 
+### macOS-Fenster (Traffic Lights)
+
+Die App nutzt `titleBarStyle: hiddenInset`. Oben reserviert `html[data-frame="mac"]` Platz für die Traffic Lights (Preload setzt `setbuilderDesktop.platform`, `DesktopFrame.tsx` setzt `data-frame="mac"`, `main.js` nach `dom-ready` als Fallback).
+
+**Preload-Änderungen** (`desktop/electron/preload.js`) greifen erst nach einem **Neustart** von Electron — der Next-Dev-Server allein reicht nicht. CSS dazu: `src/app/globals.css` (`html[data-frame="mac"]`).
+
 ## Paket bauen
 
 ```bash

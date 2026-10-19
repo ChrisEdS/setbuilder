@@ -22,6 +22,8 @@ export type DesktopInfo = {
 };
 
 export type DesktopBridge = {
+  /** Set by the preload before the page paints. "darwin" on the Mac app. */
+  platform?: NodeJS.Platform;
   getInfo: () => Promise<DesktopInfo>;
   checkForUpdates: () => Promise<{ ok: boolean; message?: string; code?: string }>;
   downloadUpdate: () => Promise<{ ok: boolean; message?: string; code?: string }>;
