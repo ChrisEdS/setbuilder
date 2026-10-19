@@ -15,21 +15,21 @@ SETBUILDER ist der ruhige Raum vor dem Gig. Du nimmst einen rekordbox-Stick, leg
 
 ## Was du bekommst
 
-- **Ein Set mit Form.** Open, Lift, Peak, Release. Du siehst, wo die Nacht dünn ist und wo sie schon voll ist.
-- **Keys, denen du trauen kannst.** Camelot entlang des Sets, Clashes markiert, bevor du in der Kabine stehst.
-- **Energie, die zum Track gehört.** Aus den Dateien lesen, Fehlendes messen oder selbst setzen.
-- **Opener und Closer, die bleiben.** Jede Sortierung respektiert die Enden, die du gepinnt hast.
-- **Eine andere Nacht aus derselben Kiste.** Für denselben Brief eine neue Auswahl würfeln, wenn der erste Cast nicht trägt.
-- **Plan B.** Rollen und Alternativen für den Moment, in dem der Floor es sich anders überlegt.
-- **Ein Player, der nicht im Weg ist.** Eine kleine Karte, die du ziehen kannst. Schließen sitzt in der Ecke. Er bleibt erreichbar, während du einen Track ersetzt.
-- **Etwas zum Mitnehmen.** Der Stick für den Player, PDF oder Text für die Kabine, eine Datei für den Rechner.
+- 🎚️ **Ein Set mit Form.** Open, Lift, Peak, Release. Du siehst, wo die Nacht dünn ist und wo sie schon voll ist.
+- 🔑 **Keys, denen du trauen kannst.** Camelot entlang des Sets, Clashes markiert, bevor du in der Kabine stehst.
+- ⚡ **Energie, die zum Track gehört.** Aus den Dateien lesen, Fehlendes messen oder selbst setzen.
+- 📌 **Opener und Closer, die bleiben.** Jede Sortierung respektiert die Enden, die du gepinnt hast.
+- 🎲 **Eine andere Nacht aus derselben Kiste.** Für denselben Brief eine neue Auswahl würfeln, wenn der erste Cast nicht trägt.
+- 🛟 **Plan B.** Rollen und Alternativen für den Moment, in dem der Floor es sich anders überlegt.
+- 🎧 **Ein Player, der nicht im Weg ist.** Eine kleine Karte, die du ziehen kannst. Schließen sitzt in der Ecke. Er bleibt erreichbar, während du einen Track ersetzt.
+- 🎒 **Etwas zum Mitnehmen.** Der Stick für den Player, PDF oder Text für die Kabine, eine Datei für den Rechner.
 
 ## Vier Schritte
 
-1. **Brief** — Titel, Vibe, Raum, Slot, Länge
-2. **Laden** — Stick verbinden. Eine Collection kann Keys ergänzen; sie ersetzt das Set nicht.
-3. **Bauen** — mit einer Playlist starten, Musik hinzufügen oder beides. Dann Phase, Rolle und Reihenfolge.
-4. **Mitnehmen** — Stick schreiben, Kabinenzettel drucken oder eine Datei exportieren.
+1. 📝 **Brief** — Titel, Vibe, Raum, Slot, Länge
+2. 🔌 **Laden** — Stick verbinden. Eine Collection kann Keys ergänzen; sie ersetzt das Set nicht.
+3. 🎛️ **Bauen** — mit einer Playlist starten, Musik hinzufügen oder beides. Dann Phase, Rolle und Reihenfolge.
+4. 🎒 **Mitnehmen** — Stick schreiben, Kabinenzettel drucken oder eine Datei exportieren.
 
 📖 **Anleitung mit Screenshots:** [docs/GUIDE.de.md](docs/GUIDE.de.md)
 

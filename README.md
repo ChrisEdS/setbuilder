@@ -15,21 +15,21 @@ SETBUILDER is the quiet prep room before the gig. You bring a rekordbox stick, s
 
 ## What you get
 
-- **A set with a shape.** Open, lift, peak, release. You see where the night is thin and where it is already full.
-- **Keys you can trust.** Camelot along the set, with clashes marked before you are in the booth.
-- **Energy that belongs to the track.** Read it from your files, measure what is missing, or set it by hand.
-- **An opener and a closer that stay put.** Every sort respects the ends you pinned.
-- **Another night from the same crate.** Roll a different selection for the same brief when the first cast is not the one.
-- **Plan B.** Roles and alternatives for the moment the floor changes its mind.
-- **A player that stays out of the way.** A small card you can drag. Close sits in the corner. It stays reachable while you replace a track.
-- **Something to take with you.** The stick for the player, a PDF or a text list for the booth, a file for the computer.
+- 🎚️ **A set with a shape.** Open, lift, peak, release. You see where the night is thin and where it is already full.
+- 🔑 **Keys you can trust.** Camelot along the set, with clashes marked before you are in the booth.
+- ⚡ **Energy that belongs to the track.** Read it from your files, measure what is missing, or set it by hand.
+- 📌 **An opener and a closer that stay put.** Every sort respects the ends you pinned.
+- 🎲 **Another night from the same crate.** Roll a different selection for the same brief when the first cast is not the one.
+- 🛟 **Plan B.** Roles and alternatives for the moment the floor changes its mind.
+- 🎧 **A player that stays out of the way.** A small card you can drag. Close sits in the corner. It stays reachable while you replace a track.
+- 🎒 **Something to take with you.** The stick for the player, a PDF or a text list for the booth, a file for the computer.
 
 ## Four steps
 
-1. **Brief** — title, vibe, room, slot, length
-2. **Load** — connect the stick. A collection file can fill in keys; it does not replace the set.
-3. **Build** — start from a playlist, add music, or both. Then phase, role, and order.
-4. **Take it** — write the stick, print the booth sheet, or export a file.
+1. 📝 **Brief** — title, vibe, room, slot, length
+2. 🔌 **Load** — connect the stick. A collection file can fill in keys; it does not replace the set.
+3. 🎛️ **Build** — start from a playlist, add music, or both. Then phase, role, and order.
+4. 🎒 **Take it** — write the stick, print the booth sheet, or export a file.
 
 📖 **Walkthrough with screenshots:** [docs/GUIDE.md](docs/GUIDE.md)
 
