@@ -2,7 +2,9 @@ import { isGeneratedNote } from "@/lib/i18n";
 import { hasKnownEnergy, isMetadataComment, parseEnergyLevel, settledEnergy } from "@/lib/energy";
 import { sanitizeDraftImages } from "@/lib/media";
 import {
+  blendMsOf,
   DEFAULT_SET,
+  explicitOverlapMs,
   type SetDraft,
   type SetPhaseId,
   type SetSlotKind,
@@ -18,12 +20,18 @@ export const DRAFT_SCHEMA_VERSION = 1;
 const phases = new Set<SetPhaseId>(["open", "lift", "rise", "peak", "release"]);
 const roles = new Set<TrackRole>(["anchor", "bridge", "groove", "safety"]);
 const transitions = new Set<TransitionVerb>([
+  "cut",
+  "short-blend",
   "long-blend",
   "eq-swap",
   "echo-out",
-  "break-to-drop",
-  "stem-vocal",
+  "delay-throw",
+  "filter-out",
   "loop-filter",
+  "break-to-drop",
+  "double-drop",
+  "stem-vocal",
+  "backspin",
   "power-reset",
   "unset",
 ]);
@@ -103,11 +111,15 @@ export function normalizeDraftTrack(value: unknown): SetTrack | null {
       ? { ...base, energyLevel: fromComment, energySource: "tag" as const }
       : base;
   const settled = settledEnergy(tagged);
-  return {
+  const overlapMs = explicitOverlapMs(raw.overlapMs);
+  const track: SetTrack = {
     ...tagged,
     energyLevel: settled.energyLevel,
     energySource: settled.energySource,
   };
+  if (overlapMs === undefined) delete track.overlapMs;
+  else track.overlapMs = overlapMs;
+  return track;
 }
 
 /** Normalizes a bulk import and rejects duplicates both existing and earlier in the same batch. */
@@ -204,6 +216,7 @@ export function normalizeStoredDraft(value: unknown): SetDraft | null {
     gear: text(raw.gear, DEFAULT_SET.gear),
     notes: text(raw.notes),
     durationMinutes: finite(raw.durationMinutes, DEFAULT_SET.durationMinutes),
+    blendMs: blendMsOf(raw.blendMs),
     tracks,
     ...(sourcePool ? { sourcePool } : { sourcePool: undefined }),
   };

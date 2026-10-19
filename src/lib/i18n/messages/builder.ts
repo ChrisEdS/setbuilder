@@ -19,8 +19,9 @@ const de = {
   "builder.defaults.gear": "CDJs / USB",
 
   // Hero and brief form
-  "builder.hero.title": "Dramaturgie statt Playlist.",
-  "builder.hero.manifestoLead": "Ein gutes Set muss nicht perfekt sein.",
+  "builder.hero.title": "Raus aus der Playlist.",
+  "builder.hero.manifestoLead":
+    "Der Stick ist das Material. Du ziehst den Bogen, setzt Übergang und Länge und hörst, ob der Anschluss trägt.",
   "builder.hero.manifestoBody":
     "Musik lässt sich analysieren und planen – aber Gehör, Gefühl und Floor entscheiden. SETBUILDER gibt Orientierung, macht Übergänge sichtbar und liefert Ideen. Nutze es als Hilfe – und vertraue dann deinen Ohren.",
   "builder.hero.lede":
@@ -33,16 +34,44 @@ const de = {
   "builder.brief.audience": "Audience",
   "builder.brief.gear": "Gear",
   "builder.brief.duration": "Dauer (Min)",
+  "builder.brief.blend": "Blend-Zeit (Durchschnitt)",
+  "builder.brief.blendHint": "Durchschnittliche Zeit vom Ende jedes Tracks, die in den Übergang geht. Die Spielzeit im Slot folgt sofort.",
+  "builder.brief.blend.30000": "0:30 Quick",
+  "builder.brief.blend.60000": "1:00",
+  "builder.brief.blend.120000": "2:00 Standard",
+  "builder.brief.blend.240000": "4:00 Lang",
   "builder.brief.notes": "Notes",
   "builder.brief.notesPlaceholder": "Doors, Curfew, Promoter, Specials…",
+  "builder.brief.more": "Set-Info",
+  "builder.brief.moreHint":
+    "Notizen zum Gig: Vibe, Venue, Slot, Publikum, Gear — Dauer und Blend-Zeit bleiben oben.",
+
+  "builder.ready.title": "Vor dem Mitnehmen",
+  "builder.ready.intro": "Kurz prüfen, dann mitnehmen.",
+  "builder.ready.continue": "Trotzdem mitnehmen",
+  "builder.ready.close": "Zurück",
+  "builder.ready.block": "Hält diese Aktion auf",
+  "builder.ready.filesBlock": "{count} Tracks ohne Datei in dieser Sitzung. Stick schreiben braucht die Dateien.",
+  "builder.ready.filesAck": "{count} Tracks ohne Datei in dieser Sitzung.",
+  "builder.ready.keys": "{count} Tracks ohne Key.",
+  "builder.ready.energy": "{count} Tracks ohne Energie.",
+  "builder.ready.planB": "Plan B dünn: {phases}.",
+  "builder.ready.planBPhase": "{phase} {have}/{need}",
+  "builder.ready.player.broken": "Auf dem Stick liegt keine lesbare Bibliothek.",
+  "builder.ready.player.empty": "Auf dem Stick liegen noch keine Playlists.",
+  "builder.ready.player.needsRekordbox": "Die alte Player-Bibliothek verdeckt die Playlists. Vorher für den Player vorbereiten.",
+  "builder.ready.player.hiddenFolder": "Der Stick-Ordner ist versteckt. Viele Player finden ihn trotzdem.",
+  "builder.ready.player.incomplete": "Nur eine Datei gewählt. Für den Player den ganzen Stick wählen.",
+  "builder.ready.heard": "Den Stick am echten Player hören, bevor der Gig beginnt.",
+  "builder.row.rehearse": "Übergang vorhören",
+  "builder.row.rehearseTip": "Vorherigen, diesen und den nächsten Track nacheinander hören. Übergang und Notiz bleiben im Set.",
 
   // Folds
-  "builder.library.title": "Set laden & Keys",
+  "builder.library.title": "Stick laden & vorbereiten",
   "builder.library.keys": "{done}/{total} Keys",
   "builder.library.firstStep": "Erster Schritt",
-  "builder.stickReload.title": "Stick wieder wählen",
   "builder.stickReload.body":
-    "Das Set ist noch da. Cover und Vorhören vom Stick braucht denselben Ordner noch einmal — rekordbox bleibt unangetastet, das Set wird nicht ersetzt.",
+    "Für „{title}“ den Stick noch einmal wählen. Cover und Vorhören brauchen denselben Ordner, das Set bleibt.",
   "builder.stickReload.choose": "Stick wählen",
   "builder.stickReload.reconnect": "Stick verbinden",
   "builder.stickReload.busy": "Lese den Stick…",
@@ -52,13 +81,30 @@ const de = {
   "builder.stick.ready": "Stick gelesen.",
   "builder.build.title": "Set bauen",
   "builder.build.summary": "{performance} Performance · {safety} Alternativen",
-  "builder.build.note":
-    "Mit einer Playlist vom Stick starten, einzelne Tracks unter Musik hinzufügen, oder beides.",
+  "builder.guide.title": "So ist es gedacht",
+  "builder.guide.brief.title": "Brief",
+  "builder.guide.brief.body":
+    "Dauer und Blend-Zeit (Durchschnitt) gelten für den Slot. Set-Info (Vibe, Venue, Slot, Audience, Gear, Notes) sind nur Notizen zum Gig.",
+  "builder.guide.details.title": "Details",
+  "builder.guide.details.body":
+    "Key, BPM, Energie und Übergang in der Zeile sind die Mix-Marken für diesen Anschluss.",
+  "builder.guide.transition.title": "Übergang",
+  "builder.guide.transition.body":
+    "Ein Übergang markiert, wie du in den nächsten Track gehst (Cut, Short blend, Long blend, EQ swap, Echo-out und die übrigen) und wird nicht in die Audiodatei geschrieben. „—“ heißt: keine Marke.",
+  "builder.guide.length.title": "Länge",
+  "builder.guide.length.body":
+    "Die Länge daneben ist die Überlappung: diese Zeit geht von der Spielzeit ab, Slot-Zeile und Überlänge folgen ihr. Du wählst eine Länge oder tippst sie; lässt du sie leer, schlägt der Übergang eine Zeit vor, und „—“ behält die Blend-Zeit aus dem Brief.",
+  "builder.guide.rehearse.title": "Vorhören",
+  "builder.guide.rehearse.body":
+    "Vorhören im Player (Vorher / Jetzt / Danach) ist zum Hören dieses Anschlusses und zum Setzen derselben Marke und Länge.",
+  "builder.guide.note.title": "Set-Notiz",
+  "builder.guide.note.body":
+    "Die Set-Notiz ist für die Kabine (Cue, Floor). Sie wird nicht in die MP3 geschrieben.",
   "builder.playlist.title": "Mit einer Playlist starten",
   "builder.playlist.note":
     "Die Playlist wird die Basis des Sets. Einzelne Tracks danach unter Musik hinzufügen.",
   "builder.playlist.empty":
-    "Noch kein Stick. Oben unter „Set laden & Keys“ den Stick laden.",
+    "Noch kein Stick. Oben unter „Stick laden & vorbereiten“ den Stick laden.",
   "builder.playlist.confirmTitle": "Playlist „{name}“ laden?",
   "builder.playlist.confirmBody":
     "Im aktuellen Set stehen bereits Tracks. Ersetzen überschreibt die Setliste; Zusammenführen behält sie und hängt nur neue Tracks an.",
@@ -94,7 +140,7 @@ const de = {
   "builder.add.backupNote":
     "Für Tracks, die nicht in der Bibliothek stehen.",
   "builder.add.empty":
-    "Noch keine Bibliothek. Oben unter „Set laden & Keys“ den Stick laden.",
+    "Noch keine Bibliothek. Oben unter „Stick laden & vorbereiten“ den Stick laden.",
 
   "builder.search.placeholder": "Artist, Titel oder Genre",
   "builder.search.aria": "Spotify-Suche",
@@ -183,21 +229,38 @@ const de = {
     "Setliste aus dem Playlist-Pool ({pool} Tracks) neu setzen? Brief und Opener/Closer bleiben — Reihenfolge, Rollen und Notizen werden ersetzt.",
   "builder.tool.reshuffleConfirmStick":
     "Setliste aus den {pool} Tracks auf dem Stick neu setzen? Brief und Opener/Closer bleiben — Reihenfolge, Rollen und Notizen werden ersetzt.",
+  "builder.pool.different": "Andere Tracks",
+  "builder.pool.differentHint":
+    "Neue Performance aus dem Playlist-Pool ({count} Tracks). Brief und Pins bleiben.",
+  "builder.pool.differentStickHint":
+    "Neue Performance aus der Stick-Bibliothek ({count} Tracks). Brief und Pins bleiben.",
+  "builder.pool.differentMissing": "Kein größerer Pool geladen.",
+  "builder.pool.differentSmall": "Der Pool hat nicht mehr Tracks als das Set.",
+  "builder.pool.playlist": "Aus der Playlist",
+  "builder.pool.playlistHint":
+    "{count} Tracks der Playlist, aus der das Set kommt. Brief und Pins bleiben.",
+  "builder.pool.playlistMissing": "Keine Playlist hinter diesem Set.",
+  "builder.pool.playlistSmall": "Die Playlist hat nicht mehr Tracks als das Set.",
+  "builder.pool.collection": "Aus der Collection",
+  "builder.pool.collectionHint":
+    "{count} Tracks aus der geladenen Collection. Brief und Pins bleiben.",
+  "builder.pool.collectionMissing": "Collection ist nicht geladen.",
+  "builder.pool.collectionSmall": "Die Collection hat nicht mehr Tracks als das Set.",
+  "builder.pool.collectionConfirm":
+    "Setliste aus den {pool} Tracks der Collection neu setzen? Brief und Opener/Closer bleiben — Reihenfolge, Rollen und Notizen werden ersetzt.",
+  "builder.pool.history": "Aus der History",
+  "builder.pool.historyHint":
+    "{count} gespielte Tracks. Brief und Pins bleiben.",
+  "builder.pool.historyMissing": "Keine History geladen.",
+  "builder.pool.historySmall": "Die History hat nicht mehr Tracks als das Set.",
+  "builder.pool.historyConfirm":
+    "Setliste aus den {pool} gespielten Tracks neu setzen? Brief und Opener/Closer bleiben — Reihenfolge, Rollen und Notizen werden ersetzt.",
   "builder.tool.energy": "Energie aus Dateien",
-  "builder.tool.energyTip":
-    "Tags lesen, fehlende oder alle Tracks im Hintergrund messen, oder gesetzte Level in die MP3 schreiben.",
   "builder.tool.energyBusy": "Energie…",
-  "builder.energy.confirm":
-    "Energie aus Stick-Dateien berechnen und in die MP3 auf dem Stick schreiben? Das Audio bleibt unverändert; Key und BPM werden nicht überschrieben. Chrome, Edge oder Desktop nötig.",
-  "builder.energy.confirmMissing":
-    "OK = nur die {missing} Tracks ohne Energie. Abbrechen = alle {total} mit Datei neu berechnen.",
-  "builder.energy.confirmAll":
-    "Alle Tracks haben schon Energie. Alle {total} mit Datei neu berechnen und schreiben?",
   "builder.energy.noStick":
-    "Kein Stick verbunden. Unter „Set laden & Keys“ den Stick wählen (Chrome / Edge / Desktop).",
+    "Kein Stick verbunden. Unter „Stick laden & vorbereiten“ den Stick wählen (Chrome / Edge / Desktop).",
   "builder.energy.noFile":
     "Keine Tracks mit Stick-Pfad. Set vom Stick laden, damit die Dateien gefunden werden.",
-  "builder.energy.notMp3": "Kein MP3 — nur Draft",
   "builder.energy.measureFailed": "Messung fehlgeschlagen",
   "builder.energy.one": "Energie {level} · {name}",
   "builder.energy.oneWritten": "Energie {level} · {name} · MP3 geschrieben",
@@ -266,20 +329,23 @@ const de = {
     "Pro Phase: im Peak wechseln Groove und Impact (Anchor); sonst Low/High-Energie. Davor steigt die Energie, danach fällt sie. Opener/Closer bleiben.",
   "builder.tool.fit": "Auf Slot kürzen",
   "builder.tool.fitTip":
-    "Kürzt auf die Spielzeit im Brief. Zwei Minuten pro Track gehen an den Blend, deshalb bleibt mehr Dateilänge im Set. Der Rest wandert unter Alternativen.",
+    "Kürzt auf die Spielzeit im Brief. {mix} pro Track gehen an den Blend, deshalb bleibt mehr Dateilänge im Set. Der Rest wandert unter Alternativen.",
+  "builder.tool.fitTipPlan":
+    "Kürzt auf die Spielzeit im Brief. Ein gesetzter Übergang zählt mit seiner Zeit, sonst der Blend {mix}. Der Rest wandert unter Alternativen.",
   "builder.tool.assign": "Rollen verteilen",
   "builder.tool.assignTip":
     "Setzt Anchor, Bridge und Groove neu nach Phase, Key und BPM. Die Reihenfolge bleibt.",
 
   // Setlist
   "builder.list.headAll":
-    "Performance-Set · {tracks} · {duration} Spielzeit / {minutes}:00 Slot",
+    "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit / {minutes}:00 Slot",
   "builder.list.headAllBlend":
-    "Performance-Set · {tracks} · {duration} Spielzeit · {over} Überlänge / {minutes}:00 Slot",
+    "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit · {over} Überlänge / {minutes}:00 Slot",
   "builder.list.headAllLong":
-    "Performance-Set · {tracks} · {duration} Spielzeit / {minutes}:00 Slot · zu lang",
+    "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit / {minutes}:00 Slot · zu lang",
   "builder.list.headAllLongBlend":
-    "Performance-Set · {tracks} · {duration} Spielzeit · {over} Überlänge / {minutes}:00 Slot · zu lang",
+    "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit · {over} Überlänge / {minutes}:00 Slot · zu lang",
+  "builder.list.mixPlanned": "nach Plan",
   "builder.list.headRole": "{role} · {tracks} · {duration}",
   "builder.list.detailsClose": "Details aus",
   "builder.list.detailsOpen": "Details ein",
@@ -337,8 +403,8 @@ const de = {
   "builder.row.keyOpen": "Key offen",
   "builder.row.bpmOpen": "BPM offen",
   "builder.row.energy": "Energie {level}",
-  "builder.row.setNoteTag": "Set-Notiz",
-  "builder.row.setNote": "Set-Notiz",
+  "builder.row.setNoteTag": "Set/Mix-Notiz",
+  "builder.row.setNote": "Set/Mix-Notiz",
   "builder.row.setNotePlaceholder": "Cue, Vocal rein, Floor-Notiz…",
   "builder.row.setNoteTip":
     "Nur für dieses Set in SETBUILDER. Wird nicht in die MP3-Tags geschrieben — anders als der Kommentar in rekordbox.",
@@ -361,6 +427,8 @@ const de = {
   "builder.row.transitionHint":
     "Wie du in den nächsten Track gehst: Long Blend weich, EQ oder Break bei Clash, Reset wenn die Energie fällt.",
   "builder.row.transitionAria": "Übergang für {name}",
+  "builder.row.length": "Länge",
+  "builder.row.overlapHint": "Überlappung für die Spielzeit. Frei oder aus der Liste.",
 
   // Arc view
   "builder.curve.aria": "Phasen im Slot",
@@ -378,7 +446,9 @@ const de = {
   "builder.curve.phaseClick": "{label}. Klick legt neue Tracks in diese Phase.",
   "builder.curve.phaseTime": "{actual} / ~{minutes} min",
   "builder.curve.note":
-    "Die Breite ist der Anteil am Brief, die Füllung die Spielzeit: pro Track zählen zwei Minuten weniger, weil der Blend das Ende frisst. Gelb heißt, die Phase liegt über ihrem Fenster.",
+    "Die Breite ist der Anteil am Brief, die Füllung die Spielzeit: pro Track zählen {mix} weniger, weil der Blend das Ende frisst. Gelb heißt, die Phase liegt über ihrem Fenster.",
+  "builder.curve.notePlan":
+    "Die Breite ist der Anteil am Brief, die Füllung die Spielzeit. Ein gesetzter Übergang ersetzt den Blend {mix} für diesen Track, — bleibt beim Durchschnitt. Gelb heißt, die Phase liegt über ihrem Fenster.",
 
   // Connections & setups panel
   "builder.settings.title": "Verbindungen & Setups",
@@ -494,7 +564,11 @@ const de = {
   "builder.status.fitStuck":
     "Nicht weiter kürzbar: der erste und der letzte Track und ein Track pro Phase bleiben immer. Lange Tracks von Hand auf Alternativen setzen.",
   "builder.status.trimmed":
-    "Auf Slot gekürzt: {before} → {after} · {kept} bleiben, {moved} liegen unter Alternativen.",
+    "Slot gekürzt, {before} auf {after}. {kept} bleiben, {moved} bei den Alternativen.",
+  "builder.trim.undoBody": "{tracks} liegen bei den Alternativen.",
+  "builder.trim.undo": "Zurückholen",
+  "builder.trim.dismiss": "Lassen",
+  "builder.trim.undoDone": "Wieder im Slot.",
   "builder.status.roles":
     "Rollen verteilt: Anchor auf Peak und Schluss, Bridge bei Phasenwechsel, Key-Clash, BPM- oder Energie-Sprung, sonst Groove.",
   "builder.status.noHits": "Keine Treffer — anderen Artist oder Track versuchen.",
@@ -563,8 +637,10 @@ const de = {
     "Der Browser-Speicher ist voll oder blockiert. Stattdessen „Herunterladen“ nutzen.",
 
   // Destructive actions and storage
-  "builder.reset.confirm":
-    "{tracks} aus dem Set entfernen und zum Beispiel-Brief zurück? Das lässt sich nicht rückgängig machen. Gespeicherte Setups bleiben.",
+  "builder.reset.title": "Set zurücksetzen?",
+  "builder.reset.body": "Das aktuelle Set wird geleert.",
+  "builder.reset.confirm": "Zurücksetzen",
+  "builder.reset.cancel": "Abbrechen",
   "builder.storage.blocked":
     "Dieser Browser speichert das Set gerade nicht (Speicher voll oder blockiert). Änderungen gelten nur bis zum Neuladen — unter „Verbindungen & Setups“ als Datei sichern.",
 } as const;
@@ -586,8 +662,9 @@ const en: Record<keyof typeof de, string> = {
   "builder.defaults.audience": "Locals, floor already warm",
   "builder.defaults.gear": "CDJs / USB",
 
-  "builder.hero.title": "Dramaturgy, not a playlist.",
-  "builder.hero.manifestoLead": "A good set does not have to be perfect.",
+  "builder.hero.title": "Out of the playlist.",
+  "builder.hero.manifestoLead":
+    "The stick is the material. You draw the arc, set the join and its length, and hear if it holds.",
   "builder.hero.manifestoBody":
     "Music can be analyzed and planned — but your ears, your feel and the floor decide. SETBUILDER orients you, shows transitions and sparks ideas. Use it as help — then trust your ears.",
   "builder.hero.lede":
@@ -600,15 +677,43 @@ const en: Record<keyof typeof de, string> = {
   "builder.brief.audience": "Audience",
   "builder.brief.gear": "Gear",
   "builder.brief.duration": "Duration (min)",
+  "builder.brief.blend": "Blend time (average)",
+  "builder.brief.blendHint": "Average time from the end of each track that goes into the blend. Playing time in the slot follows at once.",
+  "builder.brief.blend.30000": "0:30 Quick",
+  "builder.brief.blend.60000": "1:00",
+  "builder.brief.blend.120000": "2:00 Standard",
+  "builder.brief.blend.240000": "4:00 Long",
   "builder.brief.notes": "Notes",
   "builder.brief.notesPlaceholder": "Doors, curfew, promoter, specials…",
+  "builder.brief.more": "Set info",
+  "builder.brief.moreHint":
+    "Notes for the gig: vibe, venue, slot, audience, gear — duration and blend time stay above.",
 
-  "builder.library.title": "Load set & keys",
+  "builder.ready.title": "Before you take it",
+  "builder.ready.intro": "A short check, then take it with you.",
+  "builder.ready.continue": "Take it anyway",
+  "builder.ready.close": "Back",
+  "builder.ready.block": "Stops this action",
+  "builder.ready.filesBlock": "{count} tracks have no file in this session. Writing the stick needs those files.",
+  "builder.ready.filesAck": "{count} tracks have no file in this session.",
+  "builder.ready.keys": "{count} tracks have no key.",
+  "builder.ready.energy": "{count} tracks have no energy.",
+  "builder.ready.planB": "Plan B is thin: {phases}.",
+  "builder.ready.planBPhase": "{phase} {have}/{need}",
+  "builder.ready.player.broken": "This stick has no readable library.",
+  "builder.ready.player.empty": "This stick has no playlists yet.",
+  "builder.ready.player.needsRekordbox": "The old player library is hiding the playlists. Prepare it for the player first.",
+  "builder.ready.player.hiddenFolder": "The stick folder is hidden. Many players still find it.",
+  "builder.ready.player.incomplete": "Only one file was picked. Choose the whole stick for the player.",
+  "builder.ready.heard": "Play the stick on the actual player before the gig.",
+  "builder.row.rehearse": "Rehearse the transition",
+  "builder.row.rehearseTip": "Hear the previous, this and the next track in order. The transition and the note stay in the set.",
+
+  "builder.library.title": "Load stick & prepare",
   "builder.library.keys": "{done}/{total} keys",
   "builder.library.firstStep": "First step",
-  "builder.stickReload.title": "Choose the stick again",
   "builder.stickReload.body":
-    "The set is still here. Covers and stick preview need the same folder once more — rekordbox is left alone, the set is not replaced.",
+    "Choose the stick again for “{title}”. Covers and preview need the same folder, the set stays.",
   "builder.stickReload.choose": "Choose stick",
   "builder.stickReload.reconnect": "Reconnect stick",
   "builder.stickReload.busy": "Reading the stick…",
@@ -618,13 +723,30 @@ const en: Record<keyof typeof de, string> = {
   "builder.stick.ready": "Stick read.",
   "builder.build.title": "Build set",
   "builder.build.summary": "{performance} performance · {safety} alternatives",
-  "builder.build.note":
-    "Start with a playlist from the stick, add single tracks under Add music, or do both.",
+  "builder.guide.title": "How this works",
+  "builder.guide.brief.title": "Brief",
+  "builder.guide.brief.body":
+    "Duration and blend time (average) are what the slot uses. Set info (vibe, venue, slot, audience, gear, notes) is only notes about the gig.",
+  "builder.guide.details.title": "Details",
+  "builder.guide.details.body":
+    "Key, BPM, energy and the transition on the row are the mix marks for that join.",
+  "builder.guide.transition.title": "Transition",
+  "builder.guide.transition.body":
+    "A transition marks how you go into the next track (cut, short blend, long blend, EQ swap, echo-out, and the others) and is not written into the audio file. “—” means no mark.",
+  "builder.guide.length.title": "Length",
+  "builder.guide.length.body":
+    "The length next to it is the overlap: that time comes off the playing time, so the slot line and the overrun follow it. Pick a length or type one; if you leave it, the chosen transition suggests a time, and “—” keeps the blend time from the brief.",
+  "builder.guide.rehearse.title": "Rehearsal",
+  "builder.guide.rehearse.body":
+    "Rehearsing in the player (Before / Now / Next) is for hearing that join and setting the same mark and length.",
+  "builder.guide.note.title": "Set note",
+  "builder.guide.note.body":
+    "The set note is for the booth (cue, floor). It is not written to the MP3.",
   "builder.playlist.title": "Start with a playlist",
   "builder.playlist.note":
     "The playlist becomes the base of the set. Add single tracks afterwards under Add music.",
   "builder.playlist.empty":
-    "No stick yet. Load it above under “Load set & keys”.",
+    "No stick yet. Load it above under “Load stick & prepare”.",
   "builder.playlist.confirmTitle": "Load playlist “{name}”?",
   "builder.playlist.confirmBody":
     "The current set already has tracks. Replace overwrites the set list; Merge keeps it and appends only new tracks.",
@@ -657,7 +779,7 @@ const en: Record<keyof typeof de, string> = {
   "builder.add.backup": "Other sources",
   "builder.add.backupNote": "For tracks that are not in the library.",
   "builder.add.empty":
-    "No library yet. Load the stick above under “Load set & keys”.",
+    "No library yet. Load the stick above under “Load stick & prepare”.",
 
   "builder.search.placeholder": "Artist, title or genre",
   "builder.search.aria": "Spotify search",
@@ -744,21 +866,38 @@ const en: Record<keyof typeof de, string> = {
     "Rebuild the setlist from the playlist pool ({pool} tracks)? Brief and opener/closer stay — order, roles and notes are replaced.",
   "builder.tool.reshuffleConfirmStick":
     "Rebuild the setlist from the {pool} tracks on the stick? Brief and opener/closer stay — order, roles and notes are replaced.",
+  "builder.pool.different": "Different songs",
+  "builder.pool.differentHint":
+    "A new performance from the playlist pool ({count} tracks). Brief and pins stay.",
+  "builder.pool.differentStickHint":
+    "A new performance from the stick library ({count} tracks). Brief and pins stay.",
+  "builder.pool.differentMissing": "No larger pool loaded.",
+  "builder.pool.differentSmall": "The pool has no more tracks than the set.",
+  "builder.pool.playlist": "From the playlist",
+  "builder.pool.playlistHint":
+    "{count} tracks from the playlist that built this set. Brief and pins stay.",
+  "builder.pool.playlistMissing": "No playlist stored with this set.",
+  "builder.pool.playlistSmall": "The playlist has no more tracks than the set.",
+  "builder.pool.collection": "From the collection",
+  "builder.pool.collectionHint":
+    "{count} tracks from the loaded collection. Brief and pins stay.",
+  "builder.pool.collectionMissing": "Collection is not loaded.",
+  "builder.pool.collectionSmall": "The collection has no more tracks than the set.",
+  "builder.pool.collectionConfirm":
+    "Rebuild the setlist from the {pool} collection tracks? Brief and opener/closer stay — order, roles and notes are replaced.",
+  "builder.pool.history": "From history",
+  "builder.pool.historyHint":
+    "{count} played tracks. Brief and pins stay.",
+  "builder.pool.historyMissing": "No history loaded.",
+  "builder.pool.historySmall": "History has no more tracks than the set.",
+  "builder.pool.historyConfirm":
+    "Rebuild the setlist from the {pool} played tracks? Brief and opener/closer stay — order, roles and notes are replaced.",
   "builder.tool.energy": "Energy from files",
-  "builder.tool.energyTip":
-    "Read tags, measure missing or all tracks in the background, or write set levels into the MP3s.",
   "builder.tool.energyBusy": "Energy…",
-  "builder.energy.confirm":
-    "Compute energy from stick files and write it into the MP3s on the stick? Audio stays unchanged; key and BPM are not overwritten. Needs Chrome, Edge or desktop.",
-  "builder.energy.confirmMissing":
-    "OK = only the {missing} tracks without energy. Cancel = recompute all {total} with a file.",
-  "builder.energy.confirmAll":
-    "Every track already has energy. Recompute and write all {total} with a file?",
   "builder.energy.noStick":
-    "No stick connected. Choose the stick under “Load set & keys” (Chrome / Edge / desktop).",
+    "No stick connected. Choose the stick under “Load stick & prepare” (Chrome / Edge / desktop).",
   "builder.energy.noFile":
     "No tracks with a stick path. Load the set from the stick so the files can be found.",
-  "builder.energy.notMp3": "Not MP3 — draft only",
   "builder.energy.measureFailed": "Measurement failed",
   "builder.energy.one": "Energy {level} · {name}",
   "builder.energy.oneWritten": "Energy {level} · {name} · written to MP3",
@@ -827,19 +966,22 @@ const en: Record<keyof typeof de, string> = {
     "Per phase: in Peak, groove and impact (anchor) alternate; else low/high energy. Before that energy rises, after that it falls. Opener/closer stay.",
   "builder.tool.fit": "Trim to slot",
   "builder.tool.fitTip":
-    "Trims to the playing time in the brief. Two minutes per track go to the blend, so more file length stays in the set. The rest moves to Alternatives.",
+    "Trims to the playing time in the brief. {mix} per track go to the blend, so more file length stays in the set. The rest moves to Alternatives.",
+  "builder.tool.fitTipPlan":
+    "Trims to the playing time in the brief. A chosen transition counts with its own time, otherwise the {mix} blend. The rest moves to Alternatives.",
   "builder.tool.assign": "Assign roles",
   "builder.tool.assignTip":
     "Re-sets Anchor, Bridge and Groove by phase, key and BPM. The order stays.",
 
   "builder.list.headAll":
-    "Performance set · {tracks} · {duration} playing / {minutes}:00 slot",
+    "Performance set · {tracks} · blend {mix} · {duration} playing / {minutes}:00 slot",
   "builder.list.headAllBlend":
-    "Performance set · {tracks} · {duration} playing · {over} blend / {minutes}:00 slot",
+    "Performance set · {tracks} · blend {mix} · {duration} playing · {over} overlap / {minutes}:00 slot",
   "builder.list.headAllLong":
-    "Performance set · {tracks} · {duration} playing / {minutes}:00 slot · too long",
+    "Performance set · {tracks} · blend {mix} · {duration} playing / {minutes}:00 slot · too long",
   "builder.list.headAllLongBlend":
-    "Performance set · {tracks} · {duration} playing · {over} blend / {minutes}:00 slot · too long",
+    "Performance set · {tracks} · blend {mix} · {duration} playing · {over} overlap / {minutes}:00 slot · too long",
+  "builder.list.mixPlanned": "as planned",
   "builder.list.headRole": "{role} · {tracks} · {duration}",
   "builder.list.detailsClose": "Details off",
   "builder.list.detailsOpen": "Details on",
@@ -897,8 +1039,8 @@ const en: Record<keyof typeof de, string> = {
   "builder.row.keyOpen": "Key open",
   "builder.row.bpmOpen": "BPM open",
   "builder.row.energy": "Energy {level}",
-  "builder.row.setNoteTag": "Set note",
-  "builder.row.setNote": "Set note",
+  "builder.row.setNoteTag": "Set/Mix note",
+  "builder.row.setNote": "Set/Mix note",
   "builder.row.setNotePlaceholder": "Cue, vocal in, floor note…",
   "builder.row.setNoteTip":
     "Only for this set in SETBUILDER. Not written to MP3 tags — unlike the comment in rekordbox.",
@@ -921,6 +1063,8 @@ const en: Record<keyof typeof de, string> = {
   "builder.row.transitionHint":
     "How you go into the next track: long blend when it's smooth, EQ or a break on a clash, a reset when energy drops.",
   "builder.row.transitionAria": "Transition for {name}",
+  "builder.row.length": "Length",
+  "builder.row.overlapHint": "Overlap used for playing time. Free or from the list.",
 
   "builder.curve.aria": "Phases in the slot",
   "builder.curve.title": "Phases in the slot",
@@ -937,7 +1081,9 @@ const en: Record<keyof typeof de, string> = {
   "builder.curve.phaseClick": "{label}. Click to put new tracks in this phase.",
   "builder.curve.phaseTime": "{actual} / ~{minutes} min",
   "builder.curve.note":
-    "The width is the share of the brief, the fill is playing time: each track counts two minutes less, because the blend eats the end. Yellow means the phase runs over its window.",
+    "The width is the share of the brief, the fill is playing time: each track counts {mix} less, because the blend eats the end. Yellow means the phase runs over its window.",
+  "builder.curve.notePlan":
+    "The width is the share of the brief, the fill is playing time. A chosen transition replaces the {mix} blend on that track, — stays on the average. Yellow means the phase runs over its window.",
 
   "builder.settings.title": "Connections & setups",
   "builder.settings.default": "Save · Connect",
@@ -1050,7 +1196,11 @@ const en: Record<keyof typeof de, string> = {
   "builder.status.fitStuck":
     "Cannot trim further: the first and last track and one track per phase always stay. Move long tracks to Alternatives by hand.",
   "builder.status.trimmed":
-    "Trimmed to slot: {before} → {after} · keeping {kept}, {moved} moved to Alternatives.",
+    "Slot trimmed, {before} down to {after}. {kept} stay, {moved} with the alternatives.",
+  "builder.trim.undoBody": "{tracks} are with the alternatives.",
+  "builder.trim.undo": "Bring back",
+  "builder.trim.dismiss": "Leave them",
+  "builder.trim.undoDone": "Back in the slot.",
   "builder.status.roles":
     "Roles assigned: Anchor on the peak and the close, Bridge at a phase change, key clash, BPM or energy jump, otherwise Groove.",
   "builder.status.noHits": "No results — try another artist or track.",
@@ -1112,8 +1262,10 @@ const en: Record<keyof typeof de, string> = {
   "builder.fail.setupStorageHint":
     "Browser storage is full or blocked. Use “Download” instead.",
 
-  "builder.reset.confirm":
-    "Remove {tracks} from the set and return to the sample brief? This cannot be undone. Saved setups stay.",
+  "builder.reset.title": "Reset the set?",
+  "builder.reset.body": "The current set is cleared.",
+  "builder.reset.confirm": "Reset",
+  "builder.reset.cancel": "Cancel",
   "builder.storage.blocked":
     "This browser is not saving the set right now (storage full or blocked). Changes last until reload — save it as a file under “Connections & setups”.",
 };

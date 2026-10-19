@@ -161,7 +161,6 @@ const de = {
   "analysis.harmonic.titleEmbedded": "Key-Verlauf",
   "analysis.harmonic.note":
     "Camelot entlang der gespielten Reihenfolge. Karten ziehen zum Umsortieren; unter Sortieren: Perfekt, Harmonisch, Ein-Schritt, Energie, Doppel-Peak, Tempo, BPM-Kette, Camelot-Reise oder Wellen. Opener und Closer bleiben (Pin oder aktuelle Enden). Ein Clash vor dem Peak bleibt erlaubt.",
-  "analysis.harmonic.harmonize": "Sortieren",
   "analysis.harmonic.statKeys": "Keys gesetzt",
   "analysis.harmonic.statKeysHint":
     "Anteil der Performance-Tracks mit Camelot-Key. Ohne Key zählt der Übergang nicht im Mix-Score. In der Setliste setzen.",
@@ -194,7 +193,7 @@ const de = {
   "analysis.harmonic.explain2":
     "Der Key ist ein Startpunkt, kein Freifahrtschein. Er zählt vor allem, wenn Melodien überlappen, und die Analyse liegt bei etwa 89 %. Bei einem Clash lohnt der Blick auf den relativen Dur- oder Moll-Key.",
   "analysis.harmonic.explain3":
-    "Farben folgen dem Camelot Wheel (1–12). **A** = Moll (kräftiger), **B** = Dur (heller). Keys im Bereich „Set laden & Keys“ importieren oder in der Setliste setzen, dann „Harmonisch sortieren“.",
+    "Farben folgen dem Camelot Wheel (1–12). **A** = Moll (kräftiger), **B** = Dur (heller). Keys im Bereich „Stick laden & vorbereiten“ importieren oder in der Setliste setzen, dann „Harmonisch sortieren“.",
   "analysis.harmonic.legendLabel": "Camelot Farben",
 } as const;
 
@@ -352,7 +351,6 @@ const en: Record<keyof typeof de, string> = {
   "analysis.harmonic.titleEmbedded": "Key path",
   "analysis.harmonic.note":
     "Camelot along the played order. Drag cards to reorder; under Sort: Perfect, Harmonic, One-step, Energy, Twin peak, Tempo, BPM chain, Camelot journey or Waves. Opener and closer stay (pin or current ends). A clash before the peak stays allowed.",
-  "analysis.harmonic.harmonize": "Sort",
   "analysis.harmonic.statKeys": "Keys set",
   "analysis.harmonic.statKeysHint":
     "Share of performance tracks that have a Camelot key. Without a key the transition does not count in the mix score. Set it in the setlist.",
@@ -385,7 +383,7 @@ const en: Record<keyof typeof de, string> = {
   "analysis.harmonic.explain2":
     "The key is a starting point, not a free pass. It matters mostly when melodies overlap, and the analysis is accurate about 89 % of the time. With a clash it is worth trying the relative major or minor key.",
   "analysis.harmonic.explain3":
-    "Colors follow the Camelot Wheel (1–12). **A** = minor (stronger), **B** = major (lighter). Import keys in the “Load set & keys” section or set them in the setlist, then “Sort harmonically”.",
+    "Colors follow the Camelot Wheel (1–12). **A** = minor (stronger), **B** = major (lighter). Import keys in the “Load stick & prepare” section or set them in the setlist, then “Sort harmonically”.",
   "analysis.harmonic.legendLabel": "Camelot colors",
 };
 

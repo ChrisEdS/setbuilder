@@ -29,7 +29,15 @@ import {
   subscribePreviewTransport,
 } from "@/lib/preview-transport";
 import { resolveTrackAudio } from "@/lib/stick-file";
-import { performanceTracks, type SetTrack } from "@/lib/set";
+import { OverlapField } from "@/components/OverlapField";
+import {
+  BLEND_MS,
+  TRANSITIONS,
+  performanceTracks,
+  type SetTrack,
+  type TransitionVerb,
+} from "@/lib/set";
+import { transitionHint, transitionLabel } from "@/lib/i18n/domain";
 
 function useIsClient() {
   return useSyncExternalStore(
@@ -52,13 +60,36 @@ function formatTime(seconds: number): string {
 }
 
 type PlayTrack = PlayableTrack &
-  Partial<Pick<SetTrack, "filePath" | "note" | "uri" | "source" | "keyCamelot" | "bpm" | "role">>;
+  Partial<
+    Pick<
+      SetTrack,
+      | "filePath"
+      | "note"
+      | "comment"
+      | "transition"
+      | "uri"
+      | "source"
+      | "keyCamelot"
+      | "bpm"
+      | "role"
+      | "overlapMs"
+      | "durationMs"
+    >
+  >;
+
+type Rehearsal = {
+  onTransition: (id: string, value: TransitionVerb) => void;
+  onOverlap: (id: string, overlapMs: number) => void;
+  onNote: (id: string, value: string) => void;
+};
 
 type Props = {
   tracks: PlayTrack[];
   currentId: string | null;
   onChange: (id: string) => void;
   onClose: () => void;
+  blendMs?: number;
+  rehearsal?: Rehearsal | null;
 };
 
 type LocalIssue = "missing" | "unsupported" | "error" | null;
@@ -66,6 +97,7 @@ type LocalIssue = "missing" | "unsupported" | "error" | null;
 type PlayerPlace = { x: number; y: number };
 
 const PLAYER_MARGIN = 8;
+const MIN_PLAYER_H = 220;
 
 function clampPlace(x: number, y: number, width: number, height: number): PlayerPlace {
   const maxX = Math.max(PLAYER_MARGIN, window.innerWidth - width - PLAYER_MARGIN);
@@ -92,22 +124,38 @@ function PreviewDock({
   tracks,
   stickEpoch,
   place,
+  width,
+  height,
+  blendMs,
   onPlace,
+  onWidth,
+  onHeight,
   onChange,
   onClose,
+  rehearsal,
 }: {
   track: PlayTrack;
   tracks: PlayTrack[];
   stickEpoch: number;
   place: PlayerPlace | null;
+  width: number | null;
+  height: number | null;
+  blendMs: number;
   onPlace: (place: PlayerPlace) => void;
+  onWidth: (width: number) => void;
+  onHeight: (height: number) => void;
   onChange: (id: string) => void;
   onClose: () => void;
+  rehearsal?: Rehearsal | null;
 }) {
   const { t } = useI18n();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const cardRef = useRef<HTMLElement | null>(null);
   const dragRef = useRef<{ id: number; dx: number; dy: number } | null>(null);
+  const resizeRef = useRef<{ id: number; startX: number; startW: number } | null>(null);
+  const resizeYRef = useRef<{ id: number; startY: number; startH: number; top: number } | null>(
+    null,
+  );
   const [dragging, setDragging] = useState(false);
   const seekId = useId();
   const filePath = trackFilePath(track);
@@ -277,6 +325,69 @@ function PreviewDock({
     }
   }
 
+  function onResizeStart(event: ReactPointerEvent<HTMLDivElement>) {
+    if (event.button !== 0) return;
+    const card = cardRef.current;
+    if (!card) return;
+    resizeRef.current = {
+      id: event.pointerId,
+      startX: event.clientX,
+      startW: card.getBoundingClientRect().width,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.stopPropagation();
+    event.preventDefault();
+  }
+
+  function onResizeMove(event: ReactPointerEvent<HTMLDivElement>) {
+    const resize = resizeRef.current;
+    if (!resize || resize.id !== event.pointerId) return;
+    const max = window.innerWidth - PLAYER_MARGIN * 2;
+    const next = resize.startW + (event.clientX - resize.startX);
+    onWidth(Math.round(Math.min(max, Math.max(22 * 16, next))));
+  }
+
+  function onResizeEnd(event: ReactPointerEvent<HTMLDivElement>) {
+    if (resizeRef.current?.id !== event.pointerId) return;
+    resizeRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  }
+
+  function onResizeYStart(event: ReactPointerEvent<HTMLDivElement>) {
+    if (event.button !== 0) return;
+    const card = cardRef.current;
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    resizeYRef.current = {
+      id: event.pointerId,
+      startY: event.clientY,
+      startH: rect.height,
+      top: rect.top,
+    };
+    if (!place) onPlace(clampPlace(rect.left, rect.top, rect.width, rect.height));
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.stopPropagation();
+    event.preventDefault();
+  }
+
+  function onResizeYMove(event: ReactPointerEvent<HTMLDivElement>) {
+    const resize = resizeYRef.current;
+    if (!resize || resize.id !== event.pointerId) return;
+    const max = Math.max(MIN_PLAYER_H, window.innerHeight - resize.top - PLAYER_MARGIN);
+    const next = resize.startH + (event.clientY - resize.startY);
+    onHeight(Math.round(Math.min(max, Math.max(MIN_PLAYER_H, next))));
+  }
+
+  function onResizeYEnd(event: ReactPointerEvent<HTMLDivElement>) {
+    if (resizeYRef.current?.id !== event.pointerId) return;
+    resizeYRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  }
+
   function togglePlay() {
     const audio = audioRef.current;
     if (!audio || !src) return;
@@ -294,14 +405,18 @@ function PreviewDock({
     }
   }
 
-  const placed = place
-    ? ({
-        "--player-x": `${place.x}px`,
-        "--player-y": `${place.y}px`,
-        "--player-bottom": "auto",
-        "--player-right": "auto",
-      } as CSSProperties)
-    : undefined;
+  const placed = {
+    ...(place
+      ? {
+          "--player-x": `${place.x}px`,
+          "--player-y": `${place.y}px`,
+          "--player-bottom": "auto",
+          "--player-right": "auto",
+        }
+      : {}),
+    ...(width ? { "--player-w": `${width}px` } : {}),
+    ...(height ? { "--player-h": `${height}px` } : {}),
+  } as CSSProperties;
 
   return (
     <aside
@@ -311,6 +426,7 @@ function PreviewDock({
       aria-label={t("crates.player.ariaLabel")}
     >
       <div className="preview-dock">
+        <div className="preview-body">
         <Tip className="preview-close-slot" text={t("crates.player.closeTip")} end>
           <button
             type="button"
@@ -342,7 +458,7 @@ function PreviewDock({
                 {track.bpm ? ` · ${track.bpm}` : ""}
                 {hasStickLabel ? " · Stick" : embed ? ` · ${embed.label}` : ""}
               </span>
-              {nextJoin ? (
+              {nextJoin && !rehearsal ? (
                 <em className={`mix-join harm-${nextJoin.relation}`}>
                   {t("crates.player.then", { join: nextJoin.label })}
                 </em>
@@ -460,15 +576,125 @@ function PreviewDock({
             ) : null}
           </p>
         )}
+        {rehearsal && sequence === lane ? (
+          <div className="preview-rehearse">
+            <div className="preview-join">
+              {(
+                [
+                  ["before", prev, t("crates.player.joinBefore")],
+                  ["now", track, t("crates.player.joinNow")],
+                  ["after", next, t("crates.player.joinAfter")],
+                ] as const
+              ).map(([role, item, label]) => {
+                const meta = item
+                  ? [item.keyCamelot, item.bpm].filter(Boolean).join(" · ")
+                  : "";
+                return (
+                  <button
+                    key={role}
+                    type="button"
+                    className={role === "now" ? "preview-join-card is-now" : "preview-join-card"}
+                    disabled={!item || role === "now"}
+                    aria-current={role === "now" ? "true" : undefined}
+                    onClick={() => item && role !== "now" && onChange(item.id)}
+                  >
+                    <small>{label}</small>
+                    <strong>{item?.name || t("crates.player.rehearseEdge")}</strong>
+                    <em>{meta || t("crates.player.rehearseEdge")}</em>
+                    {role === "after" && nextJoin ? (
+                      <b className={`mix-join harm-${nextJoin.relation}`}>{nextJoin.label}</b>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="preview-plan">
+              <span>{t("crates.player.planned")}</span>
+              <div className="preview-transitions" role="group" aria-label={t("crates.player.transition")}>
+                {TRANSITIONS.map((item) => {
+                  const on = (track.transition ?? "unset") === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className={on ? "is-on" : undefined}
+                      aria-pressed={on}
+                      title={transitionHint(t, item.id)}
+                      onClick={() => {
+                        if ((track.transition ?? "unset") === item.id) return;
+                        rehearsal.onTransition(track.id, item.id);
+                      }}
+                    >
+                      {transitionLabel(t, item.id)}
+                    </button>
+                  );
+                })}
+              </div>
+              <label className="preview-length">
+                <span>{t("crates.player.length")}</span>
+                <OverlapField
+                  className="preview-overlap"
+                  transition={track.transition}
+                  overlapMs={track.overlapMs}
+                  blendMs={blendMs}
+                  durationMs={track.durationMs}
+                  title={t("crates.player.overlapTitle")}
+                  ariaLabel={t("crates.player.length")}
+                  onCommit={(ms) => rehearsal.onOverlap(track.id, ms)}
+                />
+              </label>
+            </div>
+            <label className="preview-note-field">
+              <span>{t("crates.player.note")}</span>
+              <input
+                className="preview-note"
+                type="text"
+                value={track.comment || ""}
+                placeholder={t("crates.player.notePlaceholder")}
+                onChange={(event) => rehearsal.onNote(track.id, event.currentTarget.value)}
+              />
+            </label>
+          </div>
+        ) : null}
+        </div>
+        <div
+          className="preview-resize"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label={t("crates.player.resize")}
+          onPointerDown={onResizeStart}
+          onPointerMove={onResizeMove}
+          onPointerUp={onResizeEnd}
+          onPointerCancel={onResizeEnd}
+        />
+        <div
+          className="preview-resize-y"
+          role="separator"
+          aria-orientation="horizontal"
+          aria-label={t("crates.player.resizeHeight")}
+          onPointerDown={onResizeYStart}
+          onPointerMove={onResizeYMove}
+          onPointerUp={onResizeYEnd}
+          onPointerCancel={onResizeYEnd}
+        />
       </div>
     </aside>
   );
 }
 
-export function PreviewPlayer({ tracks, currentId, onChange, onClose }: Props) {
+export function PreviewPlayer({
+  tracks,
+  currentId,
+  onChange,
+  onClose,
+  blendMs = BLEND_MS,
+  rehearsal,
+}: Props) {
   const isClient = useIsClient();
   const stickEpoch = useStickFilesEpoch();
   const [place, setPlace] = useState<PlayerPlace | null>(null);
+  const [width, setWidth] = useState<number | null>(null);
+  const [height, setHeight] = useState<number | null>(null);
   const track = tracks.find((item) => item.id === currentId) ?? null;
   if (!isClient || !track) return null;
 
@@ -479,9 +705,15 @@ export function PreviewPlayer({ tracks, currentId, onChange, onClose }: Props) {
       tracks={tracks}
       stickEpoch={stickEpoch}
       place={place}
+      width={width}
+      height={height}
+      blendMs={blendMs}
       onPlace={setPlace}
+      onWidth={setWidth}
+      onHeight={setHeight}
       onChange={onChange}
       onClose={onClose}
+      rehearsal={rehearsal}
     />,
     document.body,
   );

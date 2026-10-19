@@ -302,22 +302,6 @@ export function stickLibraryRows(
   }));
 }
 
-/** The stick set behind a library playlist label. A playlist wins over history. */
-export function stickSetByLabel(
-  sets: RekordboxStickSet[],
-  label: string,
-): RekordboxStickSet | null {
-  const trimmed = label.trim();
-  if (!trimmed) return null;
-  const matches = sets.filter(
-    (set) =>
-      set.name === trimmed ||
-      set.path === trimmed ||
-      set.path.endsWith(` / ${trimmed}`),
-  );
-  return matches.find((set) => set.kind === "playlist") ?? matches[0] ?? null;
-}
-
 type StickLibraryRow = {
   artist: string;
   title: string;

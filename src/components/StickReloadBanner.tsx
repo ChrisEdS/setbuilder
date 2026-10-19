@@ -101,15 +101,12 @@ export function StickReloadBanner({
 
   return (
     <div className="stick-reload" role="status">
-      <div>
-        <strong>{t("builder.stickReload.title")}</strong>
-        <p>{t("builder.stickReload.body")}</p>
-        {error ? (
-          <p className="stick-warn" role="alert">
-            {error}
-          </p>
-        ) : null}
-      </div>
+      <p>{t("builder.stickReload.body", { title: draft.title.trim() })}</p>
+      {error ? (
+        <p className="stick-warn" role="alert">
+          {error}
+        </p>
+      ) : null}
       <div className="stick-reload-actions">
         {canPick ? (
           <button type="button" className="btn" disabled={busy} onClick={() => void reconnect()}>

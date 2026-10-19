@@ -1,6 +1,4 @@
 import {
-  BRAND,
-  BRAND_LEGACY,
   BRAND_PLAYLIST_PREFIX,
   BRAND_PLAYLIST_PREFIX_LEGACY,
 } from "@/lib/brand";
@@ -60,7 +58,3 @@ export function existingStickPlaylistName(
   }
   return null;
 }
-
-/** @deprecated use BRAND from brand.ts — kept for greps in comments */
-export const STICK_BRAND = BRAND;
-export const STICK_BRAND_LEGACY = BRAND_LEGACY;

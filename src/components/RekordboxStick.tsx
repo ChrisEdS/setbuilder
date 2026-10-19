@@ -504,10 +504,25 @@ export function RekordboxStick({
         }
         role="tabpanel"
       >
-        <div className={"library-browser-head stick-import-head" + (health ? " has-status" : "")}>
+        <div
+          className={
+            "library-browser-head stick-import-head" +
+            (health ? " has-status" : "") +
+            (live ? " has-live" : "")
+          }
+        >
           <h3 className="library-browser-title">
             <span className="library-browser-heading">{t("library.stick.title")}</span>
           </h3>
+          {live ? (
+            <p className="stick-head-live" role="status">
+              <span className="stick-strip-dot" aria-hidden="true" />
+              <span className="stick-head-live-text">
+                {live.text}
+                <span className="stick-head-live-hint">{live.hint}</span>
+              </span>
+            </p>
+          ) : null}
           {health ? (
             <StickHealthCard
               placement="header"
@@ -556,14 +571,7 @@ export function RekordboxStick({
                     dotPioneer: <code>.PIONEER</code>,
                   })}
             </p>
-            {live ? (
-              <p className="field-notice" role="status">
-                <strong>{live.text}</strong>
-                <span>{live.hint}</span>
-              </p>
-            ) : (
-              <FieldNoticeView notice={notice} />
-            )}
+            <FieldNoticeView notice={live ? null : notice} />
           </div>
         ) : null}
       </div>

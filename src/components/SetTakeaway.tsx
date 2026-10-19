@@ -3,6 +3,7 @@
 import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import { ActionIcon } from "@/components/ActionIcon";
 import { Tip } from "@/components/Hint";
+import type { MessageKey } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n/react";
 import { energyMenuGate } from "@/lib/energy-menu";
 import { SET_SORTS } from "@/lib/sort-set";
@@ -49,6 +50,87 @@ function Menu({
     return () => {
       document.removeEventListener("pointerdown", close);
       document.removeEventListener("keydown", close);
+    };
+  }, []);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node?.classList.contains("sort-menu")) return;
+
+    const margin = 12;
+
+    function place() {
+      if (!node?.open) return;
+      const summary = node.querySelector("summary");
+      const panel = node.querySelector<HTMLElement>(".menu-panel");
+      if (!summary || !panel) return;
+      const rect = summary.getBoundingClientRect();
+      const below = window.innerHeight - rect.bottom - margin;
+      const above = rect.top - margin;
+      const openUp = below < 160 && above > below;
+      node.classList.toggle("opens-up", openUp);
+      const room = Math.max(0, openUp ? above : below);
+      const roomX = node.closest(".set-tools")
+        ? window.innerWidth - rect.left - margin
+        : rect.right - margin;
+      panel.style.setProperty("--sort-room", `${room}px`);
+      panel.style.setProperty("--sort-room-x", `${Math.max(0, roomX)}px`);
+    }
+
+    let frame = 0;
+    function schedule() {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(place);
+    }
+
+    node.addEventListener("toggle", schedule);
+    window.addEventListener("resize", schedule);
+    window.addEventListener("scroll", schedule, true);
+    schedule();
+    return () => {
+      cancelAnimationFrame(frame);
+      node.removeEventListener("toggle", schedule);
+      window.removeEventListener("resize", schedule);
+      window.removeEventListener("scroll", schedule, true);
+    };
+  }, []);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node?.classList.contains("reshuffle-menu")) return;
+
+    const margin = 12;
+
+    function place() {
+      if (!node?.open) return;
+      const summary = node.querySelector("summary");
+      const panel = node.querySelector<HTMLElement>(".menu-panel");
+      if (!summary || !panel) return;
+      const rect = summary.getBoundingClientRect();
+      const below = window.innerHeight - rect.bottom - margin;
+      const above = rect.top - margin;
+      node.classList.toggle("opens-up", below < 280 && above > below);
+      panel.style.setProperty(
+        "--reshuffle-room-x",
+        `${Math.max(0, window.innerWidth - rect.left - margin)}px`,
+      );
+    }
+
+    let frame = 0;
+    function schedule() {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(place);
+    }
+
+    node.addEventListener("toggle", schedule);
+    window.addEventListener("resize", schedule);
+    window.addEventListener("scroll", schedule, true);
+    schedule();
+    return () => {
+      cancelAnimationFrame(frame);
+      node.removeEventListener("toggle", schedule);
+      window.removeEventListener("resize", schedule);
+      window.removeEventListener("scroll", schedule, true);
     };
   }, []);
 
@@ -306,6 +388,7 @@ export function SetSortMenu({
   const { t } = useI18n();
   return (
     <Menu
+      className="sort-menu"
       label={
         <>
           {t("builder.tool.sort")} <span aria-hidden="true">▾</span>
@@ -320,6 +403,121 @@ export function SetSortMenu({
           hint={t(`builder.sort.${id}Hint`)}
           disabled={disabled}
           onClick={() => onSort(id)}
+        />
+      ))}
+    </Menu>
+  );
+}
+
+export type ReshuffleSource = "different" | "playlist" | "collection" | "history";
+
+export type PoolOffer =
+  | { ready: true; count: number; fromStick?: boolean }
+  | { ready: false; reason: "missing" | "small" };
+
+/** Andere Songs: pick which already-loaded pool rebuilds the set. */
+export function SetReshuffleMenu({
+  different,
+  playlist,
+  collection,
+  history,
+  onPick,
+}: {
+  different: PoolOffer;
+  playlist: PoolOffer;
+  collection: PoolOffer;
+  history: PoolOffer;
+  onPick: (source: ReshuffleSource) => void;
+}) {
+  const { t } = useI18n();
+
+  function hint(
+    offer: PoolOffer,
+    readyKey: MessageKey,
+    missingKey: MessageKey,
+    smallKey: MessageKey,
+  ) {
+    if (!offer.ready) return t(offer.reason === "small" ? smallKey : missingKey);
+    return t(readyKey, { count: offer.count });
+  }
+
+  const differentHint = !different.ready
+    ? t(
+        different.reason === "small"
+          ? "builder.pool.differentSmall"
+          : "builder.pool.differentMissing",
+      )
+    : t(
+        different.fromStick
+          ? "builder.pool.differentStickHint"
+          : "builder.pool.differentHint",
+        { count: different.count },
+      );
+
+  const rows: Array<{
+    id: ReshuffleSource;
+    title: string;
+    hint: string;
+    offer: PoolOffer;
+  }> = [
+    {
+      id: "different",
+      title: t("builder.pool.different"),
+      hint: differentHint,
+      offer: different,
+    },
+    {
+      id: "playlist",
+      title: t("builder.pool.playlist"),
+      hint: hint(
+        playlist,
+        "builder.pool.playlistHint",
+        "builder.pool.playlistMissing",
+        "builder.pool.playlistSmall",
+      ),
+      offer: playlist,
+    },
+    {
+      id: "collection",
+      title: t("builder.pool.collection"),
+      hint: hint(
+        collection,
+        "builder.pool.collectionHint",
+        "builder.pool.collectionMissing",
+        "builder.pool.collectionSmall",
+      ),
+      offer: collection,
+    },
+    {
+      id: "history",
+      title: t("builder.pool.history"),
+      hint: hint(
+        history,
+        "builder.pool.historyHint",
+        "builder.pool.historyMissing",
+        "builder.pool.historySmall",
+      ),
+      offer: history,
+    },
+  ];
+
+  return (
+    <Menu
+      className="reshuffle-menu"
+      label={
+        <>
+          {t("builder.tool.reshuffle")} <span aria-hidden="true">▾</span>
+        </>
+      }
+      ariaLabel={t("builder.tool.reshuffle")}
+    >
+      {rows.map((row) => (
+        <MenuItem
+          key={row.id}
+          title={row.title}
+          hint={row.hint}
+          disabled={!row.offer.ready}
+          onClick={row.offer.ready ? () => onPick(row.id) : undefined}
         />
       ))}
     </Menu>
@@ -366,6 +564,7 @@ export function SetTools({
 
 type MenusProps = {
   canExport: boolean;
+  onSaveSet?: () => void;
   onExportPdf?: () => void;
   onExportM3u?: () => void;
   onExportRekordbox?: () => void;
@@ -376,6 +575,7 @@ type MenusProps = {
 /** Export actions tucked into a menu at the top right. */
 export function SetMenus({
   canExport,
+  onSaveSet,
   onExportPdf,
   onExportM3u,
   onExportRekordbox,
@@ -386,6 +586,13 @@ export function SetMenus({
   return (
     <div className="set-menus">
       <Menu label={<>{t("library.menu.take")} <span aria-hidden="true">▾</span></>} primary disabled={!canExport}>
+        <MenuGroup label={t("library.menu.groupHere")} />
+        <MenuItem
+          title={t("library.menu.saveSet")}
+          hint={t("library.menu.saveSetHint")}
+          disabled={!canExport}
+          onClick={onSaveSet}
+        />
         <MenuGroup label={t("library.menu.groupPlayer")} />
         <MenuItem
           title={t("library.menu.stick")}

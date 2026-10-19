@@ -10,6 +10,7 @@ export async function POST(request: Request) {
     const body = (await request.json()) as {
       url?: string;
       durationMinutes?: number;
+      blendMs?: number;
       title?: string;
       vibe?: string;
       venue?: string;
@@ -29,6 +30,7 @@ export async function POST(request: Request) {
     const playlist = await fetchTidalPlaylist(playlistId);
     const draft = extractSetFromPlaylist(playlist.tracks, playlist.name, {
       durationMinutes: body.durationMinutes || 60,
+      blendMs: body.blendMs,
       title: body.title,
       vibe: body.vibe,
       venue: body.venue,

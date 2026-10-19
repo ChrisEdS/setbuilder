@@ -372,17 +372,3 @@ export function applyCoverUrls(
   if (!changed) return draft;
   return { ...draft, tracks, sourcePool };
 }
-
-/**
- * Fill missing energyLevel from MP3 ID3 tags on the stick.
- * SETBUILDER writes Energy into the files, not into export.pdb — so a stick reload
- * would otherwise lose energy until rekordbox refreshes tags.
- */
-export async function enrichDraftEnergyFromFiles(
-  draft: SetDraft,
-  root?: DirLike | null,
-  onProgress?: EnergyReadProgress,
-): Promise<SetDraft> {
-  const levels = await missingEnergyFromFiles(draft.tracks, root, onProgress);
-  return applyEnergyLevels(draft, levels);
-}

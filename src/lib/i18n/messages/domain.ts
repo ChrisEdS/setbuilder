@@ -30,9 +30,12 @@ const de = {
   "domain.role.safety.label": "Alternativen",
   "domain.role.safety.hint": "Plan B, wenn der Floor dreht",
 
-  "domain.transition.unset": "Übergang wählen…",
-  "domain.transition.unset.hint":
-    "Noch kein Übergang gewählt. Sagt, wie du in den nächsten Track gehst.",
+  "domain.transition.unset": "—",
+  "domain.transition.unset.hint": "Kein Übergang. Der Mix bleibt unmarkiert.",
+  "domain.transition.cut": "Cut",
+  "domain.transition.cut.hint": "Hart auf der Eins, ohne Blend.",
+  "domain.transition.short-blend": "Short blend",
+  "domain.transition.short-blend.hint": "Kurzer Blend, 4–8 Takte.",
   "domain.transition.long-blend": "Long blend",
   "domain.transition.long-blend.hint":
     "Langer Überblend, 16–32 Takte. Für gleichen oder nahen Key, Energie ±1.",
@@ -42,15 +45,23 @@ const de = {
   "domain.transition.echo-out": "Echo-out",
   "domain.transition.echo-out.hint":
     "Track ausklingen lassen, dann neu starten. Reset, wenn Energie oder Key springt.",
-  "domain.transition.break-to-drop": "Break → drop",
-  "domain.transition.break-to-drop.hint":
-    "Im Break wechseln, auf den Drop des Nächsten. Für Energy Boost oder Peak.",
-  "domain.transition.stem-vocal": "Stem vocal overlay",
-  "domain.transition.stem-vocal.hint":
-    "Vocal über den nächsten Track legen. Braucht Platz im Mix, nicht bei Clash.",
+  "domain.transition.delay-throw": "Delay throw",
+  "domain.transition.delay-throw.hint": "Ein Delay auf die letzte Phrase, dann der nächste Track.",
+  "domain.transition.filter-out": "Filter out",
+  "domain.transition.filter-out.hint": "Outgoing mit High-Pass ausdünnen, bis der nächste da ist.",
   "domain.transition.loop-filter": "Loop + filter rise",
   "domain.transition.loop-filter.hint":
     "Loop plus Filter hoch. Baut Spannung, überbrückt BPM- oder Key-Abstand.",
+  "domain.transition.break-to-drop": "Break → drop",
+  "domain.transition.break-to-drop.hint":
+    "Im Break wechseln, auf den Drop des Nächsten. Für Energy Boost oder Peak.",
+  "domain.transition.double-drop": "Double drop",
+  "domain.transition.double-drop.hint": "Beide Drops zusammen, dann einer bleibt.",
+  "domain.transition.stem-vocal": "Stem vocal overlay",
+  "domain.transition.stem-vocal.hint":
+    "Vocal über den nächsten Track legen. Braucht Platz im Mix, nicht bei Clash.",
+  "domain.transition.backspin": "Backspin",
+  "domain.transition.backspin.hint": "Platte zurück, dann der nächste Track.",
   "domain.transition.power-reset": "Power-down reset",
   "domain.transition.power-reset.hint":
     "Hart raus, Stille, neu rein. Wenn Energie um 3+ fällt oder der Floor dreht.",
@@ -86,9 +97,12 @@ const en: Record<keyof typeof de, string> = {
   "domain.role.safety.label": "Alternatives",
   "domain.role.safety.hint": "Plan B when the floor turns",
 
-  "domain.transition.unset": "Choose transition…",
-  "domain.transition.unset.hint":
-    "No transition chosen yet. This is how you go into the next track.",
+  "domain.transition.unset": "—",
+  "domain.transition.unset.hint": "No transition. The mix stays unmarked.",
+  "domain.transition.cut": "Cut",
+  "domain.transition.cut.hint": "Hard on the one, no blend.",
+  "domain.transition.short-blend": "Short blend",
+  "domain.transition.short-blend.hint": "Short blend, 4–8 bars.",
   "domain.transition.long-blend": "Long blend",
   "domain.transition.long-blend.hint":
     "Long blend, 16–32 bars. For the same or a nearby key, energy ±1.",
@@ -98,15 +112,23 @@ const en: Record<keyof typeof de, string> = {
   "domain.transition.echo-out": "Echo-out",
   "domain.transition.echo-out.hint":
     "Let the track ring out, then start fresh. A reset when energy or key jumps.",
-  "domain.transition.break-to-drop": "Break → drop",
-  "domain.transition.break-to-drop.hint":
-    "Switch in the break, onto the next drop. For an Energy Boost or the peak.",
-  "domain.transition.stem-vocal": "Stem vocal overlay",
-  "domain.transition.stem-vocal.hint":
-    "Lay a vocal over the next track. Needs space in the mix, not on a clash.",
+  "domain.transition.delay-throw": "Delay throw",
+  "domain.transition.delay-throw.hint": "A delay on the last phrase, then the next track.",
+  "domain.transition.filter-out": "Filter out",
+  "domain.transition.filter-out.hint": "Thin the outgoing track with a high-pass until the next one is in.",
   "domain.transition.loop-filter": "Loop + filter rise",
   "domain.transition.loop-filter.hint":
     "Loop plus a rising filter. Builds tension, bridges a BPM or key gap.",
+  "domain.transition.break-to-drop": "Break → drop",
+  "domain.transition.break-to-drop.hint":
+    "Switch in the break, onto the next drop. For an Energy Boost or the peak.",
+  "domain.transition.double-drop": "Double drop",
+  "domain.transition.double-drop.hint": "Both drops together, then one stays.",
+  "domain.transition.stem-vocal": "Stem vocal overlay",
+  "domain.transition.stem-vocal.hint":
+    "Lay a vocal over the next track. Needs space in the mix, not on a clash.",
+  "domain.transition.backspin": "Backspin",
+  "domain.transition.backspin.hint": "Spin the record back, then the next track.",
   "domain.transition.power-reset": "Power-down reset",
   "domain.transition.power-reset.hint":
     "Hard out, silence, back in. When energy drops 3+ or the floor turns.",

@@ -36,6 +36,46 @@ test("migrates an older draft, normalizes tracks and preserves user text", () =>
   assert.equal(draft.tracks[0].energyLevel, 7);
   assert.equal(draft.tracks[0].energySource, "tag");
   assert.equal(draft.tracks[0].role, "groove");
+  assert.equal(draft.blendMs, 120_000);
+});
+
+test("keeps a finite overlap and drops a missing or nonsense length", () => {
+  const kept = normalizeStoredDraft({
+    title: "Overlap",
+    tracks: [
+      { id: "t", name: "One", overlapMs: 90_000 },
+      { id: "u", name: "Two", overlapMs: 0 },
+    ],
+  });
+  const dropped = normalizeStoredDraft({
+    title: "Overlap",
+    tracks: [
+      { id: "t", name: "One" },
+      { id: "u", name: "Two", overlapMs: -5 },
+      { id: "v", name: "Three", overlapMs: "90" },
+    ],
+  });
+  assert.equal(kept?.tracks[0].overlapMs, 90_000);
+  assert.equal(kept?.tracks[1].overlapMs, 0);
+  assert.equal(dropped?.tracks[0].overlapMs, undefined);
+  assert.equal(dropped?.tracks[1].overlapMs, undefined);
+  assert.equal(dropped?.tracks[2].overlapMs, undefined);
+  assert.equal(kept?.schemaVersion, DRAFT_SCHEMA_VERSION);
+});
+
+test("keeps a known mix time and falls back when the field is missing or unknown", () => {
+  const quick = normalizeStoredDraft({
+    title: "Quick",
+    blendMs: 30_000,
+    tracks: [{ id: "t", name: "One" }],
+  });
+  const odd = normalizeStoredDraft({
+    title: "Odd",
+    blendMs: 90_000,
+    tracks: [{ id: "t", name: "One" }],
+  });
+  assert.equal(quick?.blendMs, 30_000);
+  assert.equal(odd?.blendMs, 120_000);
 });
 
 test("drops generated notes and migrates a legacy rekordbox path", () => {

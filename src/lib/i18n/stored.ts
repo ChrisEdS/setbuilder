@@ -40,8 +40,6 @@ export const WHY_KEYS = [
   "exports.stick.whyPlaylist",
 ] as const satisfies readonly MessageKey[];
 
-export type WhyKey = (typeof WHY_KEYS)[number];
-
 type Template = { key: MessageKey; regex: RegExp; names: string[] };
 
 function escapeRegex(text: string): string {

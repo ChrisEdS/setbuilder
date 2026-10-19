@@ -3,6 +3,8 @@
 **Candidate date:** 2026-10-19  
 **Status:** Tagged **v4.0.0**. The read path was checked on a real stick. The write path, players, and streaming accounts below are still open.
 
+**4.1.0** follows this candidate. Each join can carry its own transition and length; the brief blend time is the fallback when a join is unmarked. The fixed two-minute model in the scope section describes 4.0.0 only.
+
 ## Scope
 
 This candidate reorganizes the workflow around **Load set & keys**, **Build set**, **Add music**, and **Take with you**. A set can start from a stick playlist, added music, or both. Collection XML/CSV/DB enriches and indexes an existing set/library; it does not create or replace a set by itself.

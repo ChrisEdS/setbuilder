@@ -4,7 +4,7 @@
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
 
-**Version 4.0.0** · Dramaturgie statt Playlist.
+**Version 4.1.0** · Dramaturgie statt Playlist.
 
 > Ein gutes Set muss nicht perfekt sein.  
 > Musik lässt sich analysieren, sortieren und planen – aber am Ende entscheiden dein Gehör, dein Gefühl und der Moment auf dem Dancefloor. Kein Score und kein Algorithmus kann ersetzen, was du als DJ wahrnimmst.
@@ -22,7 +22,7 @@ SETBUILDER ist der ruhige Raum vor dem Gig. Du nimmst einen rekordbox-Stick, leg
 - 🎲 **Eine andere Nacht aus derselben Kiste.** Für denselben Brief eine neue Auswahl würfeln, wenn der erste Cast nicht trägt.
 - 🛟 **Plan B.** Rollen und Alternativen für den Moment, in dem der Floor es sich anders überlegt.
 - 🎧 **Ein Player, der nicht im Weg ist.** Eine kleine Karte, die du ziehen kannst. Schließen sitzt in der Ecke. Er bleibt erreichbar, während du einen Track ersetzt.
-- 🎒 **Etwas zum Mitnehmen.** Der Stick für den Player, PDF oder Text für die Kabine, eine Datei für den Rechner.
+- 🎒 **Etwas zum Mitnehmen.** Der Stick für den Player, PDF oder Text für die Kabine, eine Datei für den Rechner. Eine Checkliste vor dem Gehen, der Übergang im Player, und eine durchschnittliche Blend-Zeit, der der Slot sofort folgt.
 
 ## Vier Schritte
 

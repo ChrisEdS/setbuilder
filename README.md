@@ -4,7 +4,7 @@
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
 
-**Version 4.0.0** · Dramaturgy, not a playlist.
+**Version 4.1.0** · Dramaturgy, not a playlist.
 
 > A good set does not have to be perfect.  
 > Music can be analyzed, sorted and planned — but in the end your ears, your feel and the moment on the dancefloor decide. No score and no algorithm can replace what you perceive as a DJ.
@@ -22,7 +22,7 @@ SETBUILDER is the quiet prep room before the gig. You bring a rekordbox stick, s
 - 🎲 **Another night from the same crate.** Roll a different selection for the same brief when the first cast is not the one.
 - 🛟 **Plan B.** Roles and alternatives for the moment the floor changes its mind.
 - 🎧 **A player that stays out of the way.** A small card you can drag. Close sits in the corner. It stays reachable while you replace a track.
-- 🎒 **Something to take with you.** The stick for the player, a PDF or a text list for the booth, a file for the computer.
+- 🎒 **Something to take with you.** The stick for the player, a PDF or a text list for the booth, a file for the computer. A checklist before you leave, the join in the player, and an average blend time the slot follows at once.
 
 ## Four steps
 

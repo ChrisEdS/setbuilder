@@ -14,8 +14,8 @@ import {
   phaseWindowLabel,
   formatDuration,
   performanceTracks,
-  playedDurationMs,
   playedTotalMs,
+  trackPlayedMs,
   type SetDraft,
   type SetPhaseId,
   type SetTrack,
@@ -71,7 +71,7 @@ export function buildSetPrintHtml(draft: SetDraft, t: Translate = tDe): string {
   const locale = t("exports.locale");
   const main = performanceTracks(draft.tracks);
   const alternatives = draft.tracks.filter((track) => track.role === "safety");
-  const filledMs = playedTotalMs(draft.tracks);
+  const filledMs = playedTotalMs(draft.tracks, draft.blendMs);
   const targetMs = draft.durationMinutes * 60_000;
   const over = filledMs > targetMs;
   const slotKind = SLOT_KINDS.find((slot) => slot.id === draft.slotKind);
@@ -86,7 +86,7 @@ export function buildSetPrintHtml(draft: SetDraft, t: Translate = tDe): string {
       const phaseChanged = track.phase !== lastPhase;
       lastPhase = track.phase;
       const start = formatDuration(clock);
-      clock += playedDurationMs(track.durationMs);
+      clock += trackPlayedMs(track, draft.blendMs);
       const banner = phaseChanged
         ? `<tr class="phase-row">
             <td colspan="6">

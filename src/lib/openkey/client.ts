@@ -224,11 +224,6 @@ export async function decodeEnergyWindow(
   throw new Error("Could not isolate the energy window in this file");
 }
 
-export async function analyzeFile(file: File): Promise<Analysis> {
-  const decoded = await decodeAudio(file);
-  return analyzeSamples(decoded.samples, decoded.sampleRate);
-}
-
 /** Energy Level 1–10 from a stick file (Essentia in a worker). */
 export async function analyzeFileEnergy(file: File): Promise<number> {
   const decoded = await decodeEnergyWindow(file);

@@ -22,7 +22,8 @@ import { energyStep } from "@/lib/energy";
 import { bpmDelta } from "@/lib/harmonic";
 import { sidePhrase } from "@/lib/replace-track";
 import { Tip } from "@/components/Hint";
-import { RekordboxStick } from "@/components/RekordboxStick";
+import { RekordboxStick, type StickStatusSlice } from "@/components/RekordboxStick";
+import { StickReloadBanner } from "@/components/StickReloadBanner";
 import type { RekordboxStickSet } from "@/lib/rekordbox-stick";
 import { libraryRowTrackId, libraryTrackToSetTrack, type StickTrack } from "@/lib/rekordbox-stick";
 import { stickFileCount } from "@/lib/stick-audio";
@@ -49,6 +50,7 @@ type Props = {
   onStickSets?: (sets: RekordboxStickSet[]) => void;
   /** Parent asks this panel to run the existing stick picker. */
   chooseStick?: RefObject<(() => void) | null>;
+  onStickStatus?: (status: StickStatusSlice | null) => void;
 };
 
 export type LibraryRow = {
@@ -417,6 +419,7 @@ export function LibraryPanel({
   onRows: setLibraryRows,
   onStickSets,
   chooseStick: chooseStickRef,
+  onStickStatus,
 }: Props) {
   const { t } = useI18n();
   const [text, setText] = useState("");
@@ -643,6 +646,13 @@ export function LibraryPanel({
         <h2>{t("library.panel.title")}</h2>
       </div>
 
+      {libraryRows.length === 0 ? (
+        <StickReloadBanner
+          draft={draft}
+          onLoaded={(rows) => setLibraryRows(rows)}
+        />
+      ) : null}
+
       <div className="library-source-nav">
         <div className="seg crate-service-seg" role="tablist" aria-label={t("library.sources.aria")}>
           {sources.map((item, index) => (
@@ -685,6 +695,7 @@ export function LibraryPanel({
             setLibraryCount(rows.length);
           }}
           onSets={onStickSets}
+          onStickStatus={onStickStatus}
           chooseStick={stickChoose}
         />
       ) : (

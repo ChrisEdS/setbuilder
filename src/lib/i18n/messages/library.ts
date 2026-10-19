@@ -4,10 +4,8 @@ const de = {
   "library.loading": "Lade…",
 
   // Library panel: header and status
-  "library.panel.aria": "Set laden und Keys",
-  "library.panel.title": "Set laden & Keys",
-  "library.panel.intro":
-    "Set vom Stick laden oder Keys aus Collection, Tidal und CSV auf bestehende Tracks legen.",
+  "library.panel.aria": "Stick laden und vorbereiten",
+  "library.panel.title": "Stick laden & vorbereiten",
   "library.coverage.aria": "Key-Abdeckung",
   "library.status.noSet": "Noch kein Set — Stick-Playlist laden oder Set bauen",
   "library.status.noKeys": "Keys fehlen noch",
@@ -24,7 +22,6 @@ const de = {
 
   // Library panel: rekordbox collection
   "library.collection.title": "rekordbox Collection",
-  "library.collection.summary": "Keys ohne Stick",
   "library.collection.indexed": "Index {count}",
   "library.collection.body":
     "Ohne Stick: Collection als XML exportieren. Keys und BPM werden per Artist und Titel aufs bestehende Set gematcht. Unverschlüsselte master.db und CSV gehen auch.",
@@ -77,10 +74,6 @@ const de = {
   "library.browser.rewrite": "Keys & BPM neu schreiben",
   "library.browser.rewriteTip":
     "Schreibt Key und BPM aus dieser Liste in die Tracks deiner Setliste. Gefunden wird über Artist und Titel. Vorhandene Werte werden überschrieben. Tracks ohne Treffer und leere Felder in der Liste lassen den alten Wert stehen.",
-  "library.browser.note":
-    "Alle Tracks aus der geladenen Rekordbox-Datenbank. Suche nach Artist, Titel, Key oder Playlist — rechts eine Playlist wählen filtert genau darauf. Mit ▶ hörst du rein, mit „{add}“ legst du einen Track in Phase und Rolle. „{rewrite}“ gleicht die Setliste ab.",
-  "library.browser.empty":
-    "Noch kein Index. Nach dem Collection-Import kannst du hier suchen und erneut matchen.",
   "library.add.title": "Beim Hinzufügen",
   "library.add.phase": "Phase",
   "library.add.role": "Rolle",
@@ -107,9 +100,6 @@ const de = {
   "library.stick.found": "Gefunden: {label}",
   "library.stick.fold": "Zuklappen",
   "library.stick.unfold": "Aufklappen",
-  "library.stick.statusTitle": "Stick-Status",
-  "library.stick.statusHint":
-    "Lesbarkeit und Player-Tauglichkeit — Probleme hier beheben. Auswerfen nach „Auf Stick schreiben“ unter Zum Gig.",
   "library.stick.choose": "Stick wählen",
   "library.stick.chooseFolder": "Ordner wählen",
   "library.stick.choosePdb": "export.pdb",
@@ -129,8 +119,6 @@ const de = {
   "library.stick.emptyPick.text": "Kein Stick erkannt.",
   "library.stick.emptyPick.hint":
     "Den ganzen Stick wählen, nicht einen leeren Ordner. Oder die Datei export.pdb.",
-  "library.stick.setsTitle": "Sets vom Stick",
-  "library.stick.setsNote": "Als ganzes Set laden — keine einzelnen Tracks hinzufügen.",
   "library.stick.setsCount": "{shown} von {total}",
   "library.stick.filterPlaceholder": "Name oder Ordner filtern…",
   "library.stick.filterAria": "Sets vom Stick filtern",
@@ -178,14 +166,9 @@ const de = {
   "library.connection.spotifyOpen": "Developer Dashboard",
   "library.connection.spotifyHelp":
     "App anlegen, Redirect URI exakt eintragen, dann ID und Secret hier speichern.",
-  "library.connection.spotifyStep2": "App anlegen und die Redirect URI exakt eintragen.",
-  "library.connection.spotifyStep3": "Client ID und Secret hier einfügen.",
   "library.connection.tidalOpen": "Tidal Developer",
   "library.connection.tidalHelp":
     "Scopes {read} und {playlists} einschalten, dieselbe Redirect URI eintragen, dann ID und Secret speichern.",
-  "library.connection.tidalScopes": "Scopes {read} und {playlists} einschalten.",
-  "library.connection.tidalStep3":
-    "Dieselbe Redirect URI eintragen, dann ID und Secret hier einfügen.",
   "library.connection.redirectLabel": "Redirect URI",
   "library.connection.stored": "Gespeichert",
   "library.connection.saving": "Speichere…",
@@ -203,7 +186,10 @@ const de = {
     "Zum Vorhören: sucht bei Spotify zu jedem Track ohne Link einen Treffer und hängt ihn an, damit du ihn im Set anspielen kannst. Titel und Artist müssen passen. Dein rekordbox-Export ändert sich dadurch nicht. Braucht die Spotify-Zugangsdaten in .env.local.",
   "library.tools.searching": "Suche…",
   "library.tools.matchLinks": "Spotify-Links suchen",
-  "library.menu.take": "Zum Gig",
+  "library.menu.take": "Exportieren",
+  "library.menu.groupHere": "Im Setbuilder",
+  "library.menu.saveSet": "Set speichern",
+  "library.menu.saveSetHint": "Speichert dieses Set im Setbuilder.",
   "library.menu.groupPlayer": "Für den Player",
   "library.menu.groupBooth": "Für die Kabine",
   "library.menu.groupDesk": "Für den Rechner",
@@ -338,7 +324,6 @@ const de = {
   "library.stickHealth.prepare.opening": "Öffne rekordbox…",
   "library.stickHealth.prepare.opened": "rekordbox läuft. Dort den Stick auswerfen, dann hier erneut prüfen.",
   "library.stickHealth.prepare.failed": "rekordbox ließ sich nicht öffnen.",
-  "library.menu.more": "Weitere Aktionen",
   "library.menu.reset": "Zurücksetzen",
   "library.menu.resetHint":
     "Set leeren und zum Beispiel-Brief zurück. Gespeicherte Setups bleiben.",
@@ -349,10 +334,8 @@ const en: Record<keyof typeof de, string> = {
   "library.loading": "Loading…",
 
   // Library panel: header and status
-  "library.panel.aria": "Load set and keys",
-  "library.panel.title": "Load set & keys",
-  "library.panel.intro":
-    "Load a set from the stick, or put keys from collection, Tidal and CSV onto tracks already in the set.",
+  "library.panel.aria": "Load stick and prepare",
+  "library.panel.title": "Load stick & prepare",
   "library.coverage.aria": "Key coverage",
   "library.status.noSet": "No set yet — load a stick playlist or build a set",
   "library.status.noKeys": "Keys still missing",
@@ -369,7 +352,6 @@ const en: Record<keyof typeof de, string> = {
 
   // Library panel: rekordbox collection
   "library.collection.title": "rekordbox Collection",
-  "library.collection.summary": "Keys without a stick",
   "library.collection.indexed": "Index {count}",
   "library.collection.body":
     "Without a stick: export the collection as XML. Key and BPM are matched onto the existing set by artist and title. An unencrypted master.db and CSV work too.",
@@ -422,10 +404,6 @@ const en: Record<keyof typeof de, string> = {
   "library.browser.rewrite": "Rewrite keys & BPM",
   "library.browser.rewriteTip":
     "Writes key and BPM from this list into the tracks of your setlist. Tracks are found by artist and title. Existing values are overwritten. Tracks without a match and empty fields in the list keep their old value.",
-  "library.browser.note":
-    "All tracks from the loaded rekordbox database. Search by artist, title, key or playlist — pick a playlist on the right to filter to it exactly. Use ▶ to preview, “{add}” to put a track into phase and role. “{rewrite}” syncs the setlist.",
-  "library.browser.empty":
-    "No index yet. After importing the collection you can search here and match again.",
   "library.add.title": "When adding",
   "library.add.phase": "Phase",
   "library.add.role": "Role",
@@ -452,9 +430,6 @@ const en: Record<keyof typeof de, string> = {
   "library.stick.found": "Found: {label}",
   "library.stick.fold": "Collapse",
   "library.stick.unfold": "Expand",
-  "library.stick.statusTitle": "Stick status",
-  "library.stick.statusHint":
-    "Readability and player readiness — fix issues here. Eject after “Write to stick” under Take to the gig.",
   "library.stick.choose": "Choose stick",
   "library.stick.chooseFolder": "Choose folder",
   "library.stick.choosePdb": "export.pdb",
@@ -474,8 +449,6 @@ const en: Record<keyof typeof de, string> = {
   "library.stick.emptyPick.text": "No stick found.",
   "library.stick.emptyPick.hint":
     "Choose the whole stick, not an empty folder. Or the export.pdb file.",
-  "library.stick.setsTitle": "Sets on the stick",
-  "library.stick.setsNote": "Load as a full set — does not add single tracks.",
   "library.stick.setsCount": "{shown} of {total}",
   "library.stick.filterPlaceholder": "Filter by name or folder…",
   "library.stick.filterAria": "Filter sets on the stick",
@@ -523,14 +496,9 @@ const en: Record<keyof typeof de, string> = {
   "library.connection.spotifyOpen": "Developer Dashboard",
   "library.connection.spotifyHelp":
     "Create an app, enter the redirect URI exactly, then save ID and secret here.",
-  "library.connection.spotifyStep2": "Create an app and enter the redirect URI exactly.",
-  "library.connection.spotifyStep3": "Paste client ID and secret here.",
   "library.connection.tidalOpen": "Tidal Developer",
   "library.connection.tidalHelp":
     "Enable scopes {read} and {playlists}, enter the same redirect URI, then save ID and secret.",
-  "library.connection.tidalScopes": "Enable the scopes {read} and {playlists}.",
-  "library.connection.tidalStep3":
-    "Enter the same redirect URI, then paste ID and secret here.",
   "library.connection.redirectLabel": "Redirect URI",
   "library.connection.stored": "Saved",
   "library.connection.saving": "Saving…",
@@ -548,7 +516,10 @@ const en: Record<keyof typeof de, string> = {
     "For previewing: looks up each track without a link on Spotify and attaches the match, so you can play it in the set. Title and artist have to match. Your rekordbox export doesn't change. Needs the Spotify credentials in .env.local.",
   "library.tools.searching": "Searching…",
   "library.tools.matchLinks": "Find Spotify links",
-  "library.menu.take": "Take to the gig",
+  "library.menu.take": "Export",
+  "library.menu.groupHere": "In SETBUILDER",
+  "library.menu.saveSet": "Save set",
+  "library.menu.saveSetHint": "Saves this set in SETBUILDER.",
   "library.menu.groupPlayer": "For the player",
   "library.menu.groupBooth": "For the booth",
   "library.menu.groupDesk": "For the computer",
@@ -683,7 +654,6 @@ const en: Record<keyof typeof de, string> = {
   "library.stickHealth.prepare.opening": "Opening rekordbox…",
   "library.stickHealth.prepare.opened": "rekordbox is running. Eject the stick there, then check again here.",
   "library.stickHealth.prepare.failed": "rekordbox could not be opened.",
-  "library.menu.more": "More actions",
   "library.menu.reset": "Reset",
   "library.menu.resetHint":
     "Clear the set and return to the sample brief. Saved setups stay.",

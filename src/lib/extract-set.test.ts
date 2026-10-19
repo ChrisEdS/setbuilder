@@ -5,10 +5,11 @@ import {
   distributeRoles,
   extractSetFromPlaylist,
   fitToSlot,
+  undoTrimToSlot,
   reshuffleDraftFromPool,
 } from "./extract-set.ts";
 import { tEn } from "./i18n/core.ts";
-import { DEFAULT_SET, playedDurationMs } from "./set.ts";
+import { DEFAULT_SET, playedDurationMs, playedTotalMs, trackPlayedMs } from "./set.ts";
 import type { SpotifyTrack } from "./spotify.ts";
 
 const mk = (i: number, phase: string, energy?: number) => ({
@@ -20,6 +21,31 @@ test("played time keeps two minutes of every track for the blend", () => {
   assert.equal(playedDurationMs(6 * 60_000), 4 * 60_000);
   assert.equal(playedDurationMs(20_000), 20_000);
   assert.equal(playedDurationMs(90_000), 30_000);
+});
+
+test("a shorter mix leaves more of the file in the slot", () => {
+  assert.equal(playedDurationMs(6 * 60_000, 30_000), 5.5 * 60_000);
+  assert.equal(playedDurationMs(6 * 60_000, 99_000), 4 * 60_000);
+});
+
+test("an explicit overlap is the length the clock subtracts", () => {
+  const file = 6 * 60_000;
+  assert.equal(
+    trackPlayedMs({ durationMs: file, transition: "unset", overlapMs: 90_000 }, 120_000),
+    4.5 * 60_000,
+  );
+  assert.equal(trackPlayedMs({ durationMs: file, transition: "unset" }, 120_000), 4 * 60_000);
+  assert.equal(trackPlayedMs({ durationMs: file, transition: "cut" }, 120_000), file);
+});
+
+test("a planned transition replaces the average blend on that track", () => {
+  const file = 6 * 60_000;
+  assert.equal(trackPlayedMs({ durationMs: file, transition: "unset" }, 120_000), 4 * 60_000);
+  assert.equal(trackPlayedMs({ durationMs: file, transition: "cut" }, 120_000), file);
+  assert.equal(trackPlayedMs({ durationMs: file, transition: "short-blend" }, 120_000), file - 15_000);
+  assert.equal(trackPlayedMs({ durationMs: file, transition: "long-blend" }, 120_000), file - 60_000);
+  const tracks = [mk(0, "open"), { ...mk(1, "lift"), transition: "cut" as const }];
+  assert.equal(playedTotalMs(tracks, 120_000), 10 * 60_000);
 });
 
 test("slot fit trims to the brief and prefers tracks in the phase band", () => {
@@ -43,6 +69,58 @@ test("slot fit trims to the brief and prefers tracks in the phase band", () => {
     "peak prefers the phase band",
   );
   assert.equal(r.moved, r.draft.tracks.filter((t:any)=>t.role==="safety").length);
+});
+
+test("undo trim restores moved tracks and keeps later notes and reorders", () => {
+  const energies = [3,5,4, 5,6,5, 6,7,8,6, 7,9,5,9,8,4, 5,4,6];
+  const phases = ["open","open","open","lift","lift","lift","rise","rise","rise","rise","peak","peak","peak","peak","peak","peak","release","release","release"];
+  const tracks = energies.map((e, i) => mk(i, phases[i], e));
+  const draft: any = { ...DEFAULT_SET, durationMinutes: 60, tracks };
+  const fitted = fitToSlot(draft);
+  assert.ok(fitted.restore.length > 0);
+  assert.equal(fitted.restore.length, fitted.moved);
+  const movedIds = new Set(fitted.restore.map((move) => move.id));
+  for (const move of fitted.restore) {
+    const before = tracks.find((track) => track.id === move.id);
+    assert.ok(before);
+    assert.equal(move.role, before.role);
+    assert.equal(move.phase, before.phase);
+    assert.equal(move.index, tracks.findIndex((track) => track.id === move.id));
+    assert.equal(fitted.draft.tracks.find((track) => track.id === move.id)?.role, "safety");
+  }
+
+  const kept = fitted.draft.tracks.filter((track) => !movedIds.has(track.id));
+  assert.ok(kept.length >= 2);
+  const noteId = kept[0].id;
+  const swapA = kept[kept.length - 2].id;
+  const swapB = kept[kept.length - 1].id;
+  const movedNoteId = fitted.restore[0].id;
+  const edited = fitted.draft.tracks.map((track) => {
+    if (track.id === noteId) return { ...track, note: "floor cue", role: "anchor" as const };
+    if (track.id === movedNoteId) return { ...track, note: "booth cue" };
+    return track;
+  });
+  const swapFrom = edited.findIndex((track) => track.id === swapA);
+  const swapTo = edited.findIndex((track) => track.id === swapB);
+  const swapped = [...edited];
+  [swapped[swapFrom], swapped[swapTo]] = [swapped[swapTo], swapped[swapFrom]];
+
+  const undone = undoTrimToSlot({ ...fitted.draft, tracks: swapped }, fitted.restore);
+  for (const move of fitted.restore) {
+    const track = undone.tracks.find((item) => item.id === move.id);
+    assert.ok(track);
+    assert.equal(track.role, move.role);
+    assert.equal(track.phase, move.phase);
+    assert.equal(track.why ?? "", move.why ?? "");
+    assert.equal(undone.tracks[move.index]?.id, move.id);
+  }
+  const noted = undone.tracks.find((track) => track.id === noteId);
+  assert.equal(noted?.note, "floor cue");
+  assert.equal(noted?.role, "anchor");
+  assert.equal(undone.tracks.find((track) => track.id === movedNoteId)?.note, "booth cue");
+  const pos = (id: string) => undone.tracks.findIndex((track) => track.id === id);
+  assert.ok(pos(swapB) < pos(swapA));
+  assert.equal(undoTrimToSlot(fitted.draft, []), fitted.draft);
 });
 
 test("roles name the phase pivot with labels, and drop legacy machine notes", () => {

@@ -124,6 +124,20 @@ const de = {
     "Dieses Format spielt der Browser nicht ab (z. B. AIFF). MP3 oder M4A auf dem Stick nutzen — oder in der Quelle öffnen.",
   "crates.player.loadFailed": "Datei gefunden, aber Abspielen hat nicht geklappt. Stick noch verbunden?",
   "crates.player.openSource": "In der Quelle öffnen",
+  "crates.player.rehearseEdge": "—",
+  "crates.player.joinBefore": "Vorher",
+  "crates.player.joinNow": "Jetzt",
+  "crates.player.joinAfter": "Danach",
+  "crates.player.resize": "Player in der Breite ziehen",
+  "crates.player.resizeHeight": "Player nach unten ziehen",
+  "crates.player.planned": "Geplanter Übergang",
+  "crates.player.length": "Länge",
+  "crates.player.overlap": "{time} weniger Spielzeit",
+  "crates.player.overlapAverage": "Blend {time}",
+  "crates.player.overlapTitle": "Überlappung für die Spielzeit. Frei oder aus der Liste.",
+  "crates.player.transition": "Übergang",
+  "crates.player.note": "Set/Mix-Notiz",
+  "crates.player.notePlaceholder": "Cue, Floor, wie du rübergehst…",
 } as const;
 
 const en: Record<keyof typeof de, string> = {
@@ -243,6 +257,20 @@ const en: Record<keyof typeof de, string> = {
     "This browser cannot play this format (e.g. AIFF). Use MP3 or M4A on the stick — or open in the source.",
   "crates.player.loadFailed": "File found, but playback failed. Is the stick still connected?",
   "crates.player.openSource": "Open in source",
+  "crates.player.rehearseEdge": "—",
+  "crates.player.joinBefore": "Before",
+  "crates.player.joinNow": "Now",
+  "crates.player.joinAfter": "Next",
+  "crates.player.resize": "Drag to resize the player",
+  "crates.player.resizeHeight": "Drag the player downward",
+  "crates.player.planned": "Planned transition",
+  "crates.player.length": "Length",
+  "crates.player.overlap": "{time} less playing time",
+  "crates.player.overlapAverage": "Blend {time}",
+  "crates.player.overlapTitle": "Overlap used for playing time. Free or from the list.",
+  "crates.player.transition": "Transition",
+  "crates.player.note": "Set/Mix note",
+  "crates.player.notePlaceholder": "Cue, floor, how you go across…",
 };
 
 export const crates = { de, en };

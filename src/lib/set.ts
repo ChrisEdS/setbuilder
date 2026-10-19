@@ -11,12 +11,18 @@ export type SetPhaseId =
 export type TrackRole = "anchor" | "bridge" | "groove" | "safety";
 
 export type TransitionVerb =
+  | "cut"
+  | "short-blend"
   | "long-blend"
   | "eq-swap"
   | "echo-out"
-  | "break-to-drop"
-  | "stem-vocal"
+  | "delay-throw"
+  | "filter-out"
   | "loop-filter"
+  | "break-to-drop"
+  | "double-drop"
+  | "stem-vocal"
+  | "backspin"
   | "power-reset"
   | "unset";
 
@@ -81,6 +87,12 @@ export type SetTrack = {
     | "contrast"
     | "clash"
     | "unknown";
+  /**
+   * Explicit overlap subtracted from playing time, in milliseconds.
+   * Missing means the verb default, or the brief blend when the verb is unset.
+   * 0 is an explicit length and wins over the verb.
+   */
+  overlapMs?: number;
 };
 
 export type SetSlotKind = "warmup" | "support" | "peaktime" | "closing";
@@ -131,6 +143,8 @@ export type SetDraft = {
   /** Performance track that must stay last (Release). */
   closerId?: string | null;
   durationMinutes: number;
+  /** How much of each track's end is the blend into the next one. */
+  blendMs: number;
   tracks: SetTrack[];
   /** Playlist pool from the last extract (max ~120). Enables reshuffle. */
   sourcePool?: SourcePoolTrack[];
@@ -214,13 +228,19 @@ export const TRACK_ROLES: { id: TrackRole; label: string; hint: string }[] = [
 ];
 
 export const TRANSITIONS: { id: TransitionVerb; label: string }[] = [
-  { id: "unset", label: "Übergang wählen…" },
+  { id: "unset", label: "—" },
+  { id: "cut", label: "Cut" },
+  { id: "short-blend", label: "Short blend" },
   { id: "long-blend", label: "Long blend" },
   { id: "eq-swap", label: "EQ swap" },
   { id: "echo-out", label: "Echo-out" },
-  { id: "break-to-drop", label: "Break → drop" },
-  { id: "stem-vocal", label: "Stem vocal overlay" },
+  { id: "delay-throw", label: "Delay throw" },
+  { id: "filter-out", label: "Filter out" },
   { id: "loop-filter", label: "Loop + filter rise" },
+  { id: "break-to-drop", label: "Break → drop" },
+  { id: "double-drop", label: "Double drop" },
+  { id: "stem-vocal", label: "Stem vocal overlay" },
+  { id: "backspin", label: "Backspin" },
   { id: "power-reset", label: "Power-down reset" },
 ];
 
@@ -234,6 +254,7 @@ export const DEFAULT_SET: SetDraft = {
   gear: "CDJs / USB",
   notes: "",
   durationMinutes: 60,
+  blendMs: 120_000,
   tracks: [],
 };
 
@@ -377,40 +398,147 @@ export function performanceTracks(tracks: SetTrack[]): SetTrack[] {
   return tracks.filter((track) => track.role !== "safety");
 }
 
-export function totalDurationMs(tracks: SetTrack[]): number {
-  return performanceTracks(tracks).reduce(
-    (sum, track) => sum + track.durationMs,
-    0,
-  );
-}
-
 /** Outro (and the blend into the next track) that is not played out. */
-export const BLEND_MS = 2 * 60_000;
+export const BLEND_MS = 120_000;
+
+export const BLEND_PRESETS = [30_000, 60_000, 120_000, 240_000] as const;
+
+/** A stored mix time is one of the four presets. Anything else stays at two minutes. */
+export function blendMsOf(value: unknown): number {
+  const ms = typeof value === "number" ? value : Number(value);
+  return (BLEND_PRESETS as readonly number[]).includes(ms) ? ms : BLEND_MS;
+}
 
 /**
- * Floor time of one track. Two minutes go to the blend; a short file still
- * counts for up to 30 seconds so it does not disappear from the slot.
+ * Overlap a planned transition takes off the outgoing track.
+ * Unset keeps the set's average blend. Times follow the mark: a cut is no
+ * overlap, a long blend is about a minute (16–32 bars), not the 2:00 average.
  */
-export function playedDurationMs(durationMs: number): number {
-  if (durationMs <= 0) return 0;
-  return Math.min(durationMs, Math.max(durationMs - BLEND_MS, 30_000));
+export const TRANSITION_OVERLAP_MS: Record<Exclude<TransitionVerb, "unset">, number> = {
+  cut: 0,
+  "short-blend": 15_000,
+  "long-blend": 60_000,
+  "eq-swap": 30_000,
+  "echo-out": 8_000,
+  "delay-throw": 8_000,
+  "filter-out": 30_000,
+  "loop-filter": 45_000,
+  "break-to-drop": 30_000,
+  "double-drop": 30_000,
+  "stem-vocal": 45_000,
+  backspin: 2_000,
+  "power-reset": 0,
+};
+
+export function overlapMs(transition: TransitionVerb | undefined, fallbackMs: number): number {
+  if (!transition || transition === "unset") return blendMsOf(fallbackMs);
+  return TRANSITION_OVERLAP_MS[transition];
 }
 
-/** Playing time of the performance: file lengths minus the blend on each track. */
-export function playedTotalMs(tracks: SetTrack[]): number {
-  return performanceTracks(tracks).reduce(
-    (sum, track) => sum + playedDurationMs(track.durationMs),
-    0,
-  );
+/** Lengths the overlap control offers. A verb default outside this list is added beside them. */
+export const OVERLAP_CHOICE_MS = [0, 15_000, 30_000, 60_000, 120_000, 240_000] as const;
+
+const OVERLAP_FREE_FLOOR_MS = 10 * 60_000;
+
+/** A stored length is a finite number of milliseconds, including 0. Anything else is absent. */
+export function explicitOverlapMs(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : undefined;
+}
+
+/** Explicit length wins. Otherwise the verb default, or the brief blend when the verb is unset. */
+export function resolvedOverlapMs(
+  track: Pick<SetTrack, "transition" | "overlapMs">,
+  blendMs = BLEND_MS,
+): number {
+  const explicit = explicitOverlapMs(track.overlapMs);
+  if (explicit !== undefined) return explicit;
+  return overlapMs(track.transition, blendMs);
+}
+
+export function overlapChoicesMs(transition: TransitionVerb | undefined): number[] {
+  const choices: number[] = [...OVERLAP_CHOICE_MS];
+  if (transition && transition !== "unset") {
+    const verb = TRANSITION_OVERLAP_MS[transition];
+    if (!choices.includes(verb)) choices.push(verb);
+  }
+  choices.sort((a, b) => a - b);
+  return choices;
+}
+
+/** A typed overlap stays within the file, and at least within ten minutes. */
+export function overlapLimitMs(durationMs: number | undefined): number {
+  const duration =
+    typeof durationMs === "number" && Number.isFinite(durationMs) && durationMs > 0
+      ? durationMs
+      : 0;
+  return Math.max(duration, OVERLAP_FREE_FLOOR_MS);
+}
+
+/** mm:ss, or a plain number of seconds. Null when the text is not a length. Above the limit, clamps. */
+export function parseOverlapInput(raw: string, limitMs: number): number | null {
+  const text = raw.trim();
+  if (!text || text.startsWith("-")) return null;
+  let seconds: number;
+  if (text.includes(":")) {
+    const match = /^(\d+):(\d{1,2})$/.exec(text);
+    if (!match) return null;
+    const secs = Number(match[2]);
+    if (secs >= 60) return null;
+    seconds = Number(match[1]) * 60 + secs;
+  } else if (/^\d+$/.test(text)) {
+    seconds = Number(text);
+  } else {
+    return null;
+  }
+  if (!Number.isFinite(seconds) || seconds < 0) return null;
+  const limit = Number.isFinite(limitMs) && limitMs >= 0 ? limitMs : OVERLAP_FREE_FLOOR_MS;
+  return Math.min(seconds * 1000, limit);
+}
+
+/** Changing the mark writes that verb's length. Unset clears the explicit length so the brief blend applies. */
+export function transitionOverlapPatch(
+  verb: TransitionVerb,
+): Pick<SetTrack, "transition" | "overlapMs"> {
+  if (verb === "unset") return { transition: "unset", overlapMs: undefined };
+  return { transition: verb, overlapMs: TRANSITION_OVERLAP_MS[verb] };
+}
+
+/** Playing time after a known overlap. A short file still counts, down to 30 seconds. */
+export function playedSpanMs(durationMs: number, overlapMs: number): number {
+  if (durationMs <= 0) return 0;
+  const overlap = Number.isFinite(overlapMs) && overlapMs > 0 ? overlapMs : 0;
+  return Math.min(durationMs, Math.max(durationMs - overlap, Math.min(durationMs, 30_000)));
+}
+
+export function trackPlayedMs(
+  track: Pick<SetTrack, "durationMs" | "transition" | "overlapMs">,
+  blendMs = BLEND_MS,
+): number {
+  return playedSpanMs(track.durationMs, resolvedOverlapMs(track, blendMs));
+}
+
+/**
+ * Floor time of one track. The mix time comes off the file; a short file still
+ * counts for up to 30 seconds so it does not disappear from the slot.
+ */
+export function playedDurationMs(durationMs: number, blendMs = BLEND_MS): number {
+  if (durationMs <= 0) return 0;
+  return playedSpanMs(durationMs, blendMsOf(blendMs));
+}
+
+/** Playing time of the performance. A planned transition replaces the average blend. */
+export function playedTotalMs(tracks: SetTrack[], blendMs = BLEND_MS): number {
+  return performanceTracks(tracks).reduce((sum, track) => sum + trackPlayedMs(track, blendMs), 0);
 }
 
 export function phaseDurationMs(
   tracks: SetTrack[],
   phase: SetPhaseId,
+  blendMs = BLEND_MS,
 ): number {
   return tracks
     .filter((track) => track.phase === phase && track.role !== "safety")
-    .reduce((sum, track) => sum + playedDurationMs(track.durationMs), 0);
+    .reduce((sum, track) => sum + trackPlayedMs(track, blendMs), 0);
 }
 
 export function tracksByRole(tracks: SetTrack[], role: TrackRole): SetTrack[] {
@@ -444,7 +572,7 @@ export function exportSetText(draft: SetDraft, t: Translate = tDe): string {
       .join(" · "),
     t("exports.text.target", {
       target: draft.durationMinutes,
-      actual: formatDuration(playedTotalMs(draft.tracks)),
+      actual: formatDuration(playedTotalMs(draft.tracks, draft.blendMs)),
     }),
     ...(draft.notes?.trim() ? [draft.notes.trim(), ""] : [""]),
   ];

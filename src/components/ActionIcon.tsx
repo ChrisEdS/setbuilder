@@ -9,6 +9,7 @@ type ActionIconName =
   | "replace"
   | "opener"
   | "closer"
+  | "rehearse"
   | "remove";
 
 const svgProps: SVGProps<SVGSVGElement> = {
@@ -62,6 +63,14 @@ export function ActionIcon({ name }: { name: ActionIconName }) {
         <path d="M7 4h12v8H7z" />
         <path d="M7 4h6v4H7z" fill="currentColor" stroke="none" />
         <path d="M13 8h6v4h-6z" fill="currentColor" stroke="none" />
+      </>
+    ),
+    rehearse: (
+      <>
+        <path d="M5 8h5" />
+        <path d="M9.5 12h5" />
+        <path d="M14 16h5" />
+        <path d="M10 8v4M14 12v4" />
       </>
     ),
     remove: (

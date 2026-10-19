@@ -4,7 +4,7 @@
 
 So bereitest du ein Set mit rekordbox vor: Bibliothek verbinden und verstehen → bauen → exportieren. Die Screenshots zeigen ein in der App geöffnetes Set.
 
-Die ausgelieferte App ist die Desktop-App (Port **4317**). Die Browser-Entwicklung nutzt Port **4327**. Dieses Dokument beschreibt **4.0.0**. Stick-Schreiben, Player und Streaming-Konten sind weiter ungeprüft.
+Die ausgelieferte App ist die Desktop-App (Port **4317**). Die Browser-Entwicklung nutzt Port **4327**. Dieses Dokument beschreibt **4.1.0**. Stick-Schreiben, Player und Streaming-Konten sind weiter ungeprüft.
 
 > **Vor dem Gig:** Stick immer am echten Player testen (Playlist sichtbar, Tracks spielbar). Backup behalten — SETBUILDER schreibt in `export.pdb` und legt Kopien unter `SETBUILDER-Backup/` ab, für deine Medien bist du selbst verantwortlich. Keine Garantie. Works on my machine. :)
 
@@ -13,7 +13,7 @@ Die ausgelieferte App ist die Desktop-App (Port **4317**). Die Browser-Entwicklu
 1. **Brief:** Titel, Vibe, Venue, Slot-Art und Dauer.
 2. **Set laden & Keys:** Stick verbinden und das aktuelle Set/die Bibliothek optional aus Collection-XML, CSV oder unverschlüsselter Datenbank anreichern.
 3. **Set bauen:** mit Stick-Playlist starten, Musik hinzufügen oder beides kombinieren; dann Phasen, Rollen und Reihenfolge prüfen.
-4. **Mitnehmen:** Stick-Playlist aktualisieren, Kabinen-PDF/Text erstellen oder XML/M3U exportieren.
+4. **Exportieren:** Stick-Playlist aktualisieren, Kabinen-PDF/Text erstellen oder XML/M3U exportieren.
 
 ## 1. Set laden & Keys
 
@@ -94,7 +94,7 @@ Titel lassen sich zwischen den Spalten ziehen. **Plan B** verlangt pro Phase min
 
 ![Bogen und Camelot-Key-Verlauf](screenshots/de/04-arc-key-path-v400.png)
 
-Der Bogen zeigt, wie die Phasen den Slot füllen (aktive Phase hervorgehoben; gelb heißt über dem Fenster) und wie die Energie jedes Tracks zum Zielband der Phase steht. Sprünge ab drei Stufen werden markiert. Die Zeit folgt einer festen Schätzung: Jeder Performance-Track zählt mit Dateidauer minus zwei Minuten Überblendung, mindestens jedoch 30 Sekunden. Cue-Punkte, Übergangslänge und Live-Entscheidungen kennt das Modell nicht; Slot-Fit ist deshalb nur Orientierung.
+Der Bogen zeigt, wie die Phasen den Slot füllen (aktive Phase hervorgehoben; gelb heißt über dem Fenster) und wie die Energie jedes Tracks zum Zielband der Phase steht. Sprünge ab drei Stufen werden markiert. Die Spielzeit folgt der durchschnittlichen Blend-Zeit im Brief: 30 Sekunden, eine Minute, zwei Minuten oder vier Minuten weniger pro Track, und nie unter 30 Sekunden einer kurzen Datei. Ein gesetzter Übergang und seine Länge ersetzen diesen Durchschnitt an diesem Track. Cue-Punkte und was du live tust, bleiben bei dir.
 
 **Key-Verlauf** zeigt Camelot entlang der gespielten Reihenfolge. Jede Karte hat ein kurzes Relationen-Badge (Gleich, ±1, Clash, …), den Key, Energie wenn bekannt und BPM. Karten ziehen zum Umsortieren; **Sortieren** für die Techniken oben. Drei Kacheln mit **?** erklären die Zahlen:
 - **Keys gesetzt** — Anteil der Performance-Tracks mit Camelot-Key
@@ -111,11 +111,13 @@ Sortieren (besonders **Perfekt · Max Score**), Ziehen oder Key/Energie in der S
 | Peak | 8–10 |
 | Release | 4–6 |
 
-## 5. Mitnehmen
+## 5. Exportieren
 
 ![Set zum Player und in die Kabine mitnehmen](screenshots/de/05-take-to-gig-v400.png)
 
-Das Menü **Mitnehmen** ist nach Ziel gruppiert:
+Bevor etwas mitgeht, fragt eine Checkliste nach fehlenden Dateien, Keys, Energie, einem dünnen Plan B und ob du das Set am Player gehört hast. Nur eine Lücke, die diese Aktion zur Lüge machen würde, hält sie auf. Im Player hörst du den Übergang vor: vorher, dieser Track, nächster, die Übergangsmarkierung und die Set-Notiz.
+
+Das Menü **Exportieren** ist nach Ziel gruppiert:
 
 ### Für den Player
 

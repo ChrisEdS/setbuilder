@@ -22,7 +22,9 @@ import type { SpotifyTrack } from "@/lib/spotify";
 import {
   DEFAULT_SET,
   PHASES,
+  blendMsOf,
   playedDurationMs,
+  trackPlayedMs,
   type SetDraft,
   type SetPhaseId,
   type SetTrack,
@@ -46,6 +48,7 @@ export type ExtractOptions = {
   notes?: string;
   /** Prefer Camelot-compatible order inside each phase */
   harmonize?: boolean;
+  blendMs?: number;
 };
 
 type Enriched = SpotifyTrack & {
@@ -164,6 +167,7 @@ export function reshuffleDraftFromPool(
       gear: draft.gear,
       notes: draft.notes,
       harmonize: true,
+      blendMs: draft.blendMs,
     },
     t,
     {
@@ -238,13 +242,14 @@ function buildDraftFromPool(
   pins: { openerId?: string | null; closerId?: string | null } = {},
 ): SetDraft {
   const durationMinutes = Math.max(20, options.durationMinutes || 60);
+  const blendMs = blendMsOf(options.blendMs);
   const targetMs = durationMinutes * 60_000;
   const harmonize = options.harmonize !== false;
   const openerId = pins.openerId?.trim() || null;
   const closerId = pins.closerId?.trim() || null;
 
   const selected = ensurePinsInPack(
-    packTracks(pool, targetMs),
+    packTracks(pool, targetMs, blendMs),
     pool,
     openerId,
     closerId,
@@ -296,6 +301,7 @@ function buildDraftFromPool(
     gear: options.gear ?? DEFAULT_SET.gear,
     notes: options.notes ?? DEFAULT_SET.notes ?? "",
     durationMinutes,
+    blendMs,
     tracks: withSafety,
     openerId,
     closerId,
@@ -404,14 +410,14 @@ function sortByEnergy(
   return sorted;
 }
 
-function packTracks(pool: Enriched[], targetMs: number): Enriched[] {
+function packTracks(pool: Enriched[], targetMs: number, blendMs: number): Enriched[] {
   const selected: Enriched[] = [];
   let played = 0;
   const softCap = targetMs * 1.06;
 
   for (const track of pool) {
     if (selected.length >= 60) break;
-    const span = playedDurationMs(track.durationMs);
+    const span = playedDurationMs(track.durationMs, blendMs);
     if (played >= targetMs && selected.length >= 8) break;
     if (played + span > softCap && selected.length >= 8) continue;
     selected.push(track);
@@ -655,11 +661,6 @@ function appendSafetyCrates(
   return [...withAlts, ...safetyTracks];
 }
 
-/** Re-run Camelot path per phase on an existing draft (after keys/BPM filled). */
-export function reharmonizeDraft(draft: SetDraft): SetDraft {
-  return reorderDraft(draft, "harmonic");
-}
-
 /** Reorder the performance inside each phase. Alternativen stay at the end. */
 export function reorderDraft(draft: SetDraft, technique: SetSortTechnique): SetDraft {
   const performance = draft.tracks.filter((track) => track.role !== "safety");
@@ -763,30 +764,49 @@ export function distributeRoles(draft: SetDraft, t: Translate = tDe): SetDraft {
   };
 }
 
+/** One moved track, as it stood in the list just before this trim. */
+export type TrimRestore = {
+  id: string;
+  role: TrackRole;
+  phase: SetPhaseId;
+  index: number;
+  why?: string;
+};
+
 export type SlotFitResult = {
   draft: SetDraft;
   kept: number;
   moved: number;
   beforeMs: number;
   afterMs: number;
+  /** Tracks moved to Alternativen, with the role, phase and place to restore. */
+  restore: TrimRestore[];
 };
 
 /**
  * Trims a set whose playing time is longer than the slot. Each track gives
- * two minutes to the blend, so the file lengths that stay are longer than
+ * its mix time to the blend, so the file lengths that stay are longer than
  * the brief. Per phase the tracks are spread evenly (first of the opener and
  * last of the closer always stay) until that phase's share of the slot is
  * filled. Everything else moves to Alternativen.
  */
 export function fitToSlot(draft: SetDraft, t: Translate = tDe): SlotFitResult {
   const targetMs = draft.durationMinutes * 60_000;
+  const blendMs = blendMsOf(draft.blendMs);
   const performance = draft.tracks.filter((track) => track.role !== "safety");
   const fallbackMs = 5 * 60_000;
-  const spanOf = (track: { durationMs: number }) =>
-    playedDurationMs(track.durationMs || fallbackMs);
+  const spanOf = (track: SetTrack) =>
+    trackPlayedMs(
+      {
+        durationMs: track.durationMs || fallbackMs,
+        transition: track.transition,
+        overlapMs: track.overlapMs,
+      },
+      blendMs,
+    );
   const beforeMs = performance.reduce((sum, track) => sum + spanOf(track), 0);
   if (!performance.length || beforeMs <= targetMs * 1.05) {
-    return { draft, kept: performance.length, moved: 0, beforeMs, afterMs: beforeMs };
+    return { draft, kept: performance.length, moved: 0, beforeMs, afterMs: beforeMs, restore: [] };
   }
 
   const moveIds = new Set<string>();
@@ -866,27 +886,114 @@ export function fitToSlot(draft: SetDraft, t: Translate = tDe): SlotFitResult {
     moveIds.add(pick.id);
   }
 
-  const remaining = draft.tracks.filter((track) => !moveIds.has(track.id));
-  const trimmed: SetDraft = {
-    ...draft,
-    tracks: draft.tracks.map((track) =>
-      moveIds.has(track.id)
-        ? {
-            ...track,
-            role: "safety" as TrackRole,
-            phase: bestPhaseFor(track, remaining),
-            why: t("analysis.why.trimmed"),
-          }
-        : track,
-    ),
+  const placed = (ids: Set<string>): SetDraft => {
+    const remaining = draft.tracks.filter((track) => !ids.has(track.id));
+    return distributeRoles(
+      {
+        ...draft,
+        tracks: draft.tracks.map((track) =>
+          ids.has(track.id)
+            ? {
+                ...track,
+                role: "safety" as TrackRole,
+                phase: bestPhaseFor(track, remaining),
+                why: t("analysis.why.trimmed"),
+              }
+            : track,
+        ),
+      },
+      t,
+    );
   };
-  const next = distributeRoles(trimmed, t);
+  const playingMs = (set: SetDraft) =>
+    set.tracks
+      .filter((track) => track.role !== "safety")
+      .reduce((sum, track) => sum + spanOf(track), 0);
+
+  let next = placed(moveIds);
+  // Role assignment gives each join its own overlap, which can put time back.
+  // Keep moving until the clock that the slot actually uses is inside the brief.
+  for (let guard = 0; playingMs(next) > targetMs * 1.05 && guard < performance.length; guard++) {
+    const kept = next.tracks.filter((track) => track.role !== "safety");
+    let pick: SetTrack | null = null;
+    let worst = 0;
+    for (const phase of PHASES) {
+      const group = kept.filter((track) => track.phase === phase.id);
+      if (group.length < 2) continue;
+      const ratio =
+        group.reduce((sum, track) => sum + spanOf(track), 0) / (targetMs * phase.share);
+      if (ratio <= worst) continue;
+      const band = PHASE_ENERGY[phase.id];
+      const removable = group.filter(
+        (track) =>
+          track.id !== performance[0].id &&
+          track.id !== performance[performance.length - 1].id,
+      );
+      if (!removable.length) continue;
+      const gapOf = (track: SetTrack) =>
+        track.energyLevel == null
+          ? 0
+          : Math.max(0, band.min - track.energyLevel, track.energyLevel - band.max);
+      pick = [...removable].sort(
+        (a, b) =>
+          gapOf(b) - gapOf(a) ||
+          Math.abs(group.indexOf(a) - (group.length - 1) / 2) -
+            Math.abs(group.indexOf(b) - (group.length - 1) / 2),
+      )[0];
+      worst = ratio;
+    }
+    if (!pick) break;
+    moveIds.add(pick.id);
+    next = placed(moveIds);
+  }
+
   const keptTracks = next.tracks.filter((track) => track.role !== "safety");
+  const restore: TrimRestore[] = [];
+  draft.tracks.forEach((track, index) => {
+    if (!moveIds.has(track.id)) return;
+    restore.push({
+      id: track.id,
+      role: track.role,
+      phase: track.phase,
+      index,
+      why: track.why,
+    });
+  });
   return {
     draft: next,
     kept: keptTracks.length,
     moved: moveIds.size,
     beforeMs,
-    afterMs: keptTracks.reduce((sum, track) => sum + spanOf(track), 0),
+    afterMs: playingMs(next),
+    restore,
   };
+}
+
+/**
+ * Puts tracks from one trim back at the role, phase and index they had just
+ * before it. Notes, and any later reorder of the other tracks, stay as they
+ * are on the current draft. A second trim replaces the snapshot; this applies
+ * only the one it is given.
+ */
+export function undoTrimToSlot(draft: SetDraft, restore: readonly TrimRestore[]): SetDraft {
+  const present = new Set(draft.tracks.map((track) => track.id));
+  const moves = restore.filter((item) => present.has(item.id));
+  if (!moves.length) return draft;
+
+  const previous = new Map(moves.map((item) => [item.id, item]));
+  const patched = draft.tracks.map((track) => {
+    const prev = previous.get(track.id);
+    if (!prev) return track;
+    return { ...track, role: prev.role, phase: prev.phase, why: prev.why };
+  });
+
+  const moving = new Set(moves.map((item) => item.id));
+  const ordered = patched.filter((track) => !moving.has(track.id));
+  for (const move of [...moves].sort((a, b) => a.index - b.index)) {
+    const track = patched.find((item) => item.id === move.id);
+    if (!track) continue;
+    ordered.splice(Math.max(0, Math.min(move.index, ordered.length)), 0, track);
+  }
+
+  return { ...draft, tracks: ordered };
 }

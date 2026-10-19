@@ -4,7 +4,7 @@
 
 How to prepare a set with rekordbox: connect and understand the library → build → export. Screenshots show a set open in the app.
 
-The shipping client is the desktop app (port **4317**). Browser development uses port **4327**. This document describes **4.0.0**. Stick write, players, and streaming accounts are still unverified.
+The shipping client is the desktop app (port **4317**). Browser development uses port **4327**. This document describes **4.1.0**. Stick write, players, and streaming accounts are still unverified.
 
 > **Before the gig:** Always test the stick on the actual player (playlist visible, tracks playable). Keep a backup — SETBUILDER writes to `export.pdb` and keeps copies under `SETBUILDER-Backup/`, but you are responsible for your media. No warranty. Works on my machine. :)
 
@@ -13,7 +13,7 @@ The shipping client is the desktop app (port **4317**). Browser development uses
 1. **Brief:** title, vibe, venue, slot type and duration.
 2. **Load set & keys:** connect the stick and optionally enrich the current set/library from collection XML, CSV or an unencrypted database.
 3. **Build set:** start with a stick playlist, add music, or do both; then check phases, roles and order.
-4. **Take with you:** update the stick playlist, make booth PDF/text, or export XML/M3U.
+4. **Export:** update the stick playlist, make booth PDF/text, or export XML/M3U.
 
 ## 1. Load set & keys
 
@@ -94,7 +94,7 @@ Drag titles between the columns. **Plan B** asks for at least two fitting altern
 
 ![Arc and Camelot key path](screenshots/en/04-arc-key-path-v400.png)
 
-The arc shows how the phases fill the slot (active phase is highlighted; yellow means over the window) and how each track's energy sits against the phase's target band. Jumps of three levels or more are marked. Timing uses one fixed estimate: every performance track contributes its file duration minus two minutes of overlap, with a minimum contribution of 30 seconds. It does not know cue points, transition length or live choices, so treat slot fit as guidance.
+The arc shows how the phases fill the slot (active phase is highlighted; yellow means over the window) and how each track's energy sits against the phase's target band. Jumps of three levels or more are marked. Playing time follows the average blend time in the brief: 30 seconds, one minute, two minutes or four minutes off each track, and never less than 30 seconds of a short file. A marked join and its length replace that average on that track. Cue points and what you do live stay yours.
 
 **Key path** shows Camelot along the played order. Each card has a short relation badge (Same, ±1, Clash, …), the key, energy when known, and BPM. Drag cards to reorder; use **Sort** for the techniques above. Three stats with a **?** explain the numbers:
 - **Keys set** — share of performance tracks with a Camelot key
@@ -111,11 +111,13 @@ Sort (especially **Perfect · Max score**), drag, or change key/energy in the se
 | Peak | 8–10 |
 | Release | 4–6 |
 
-## 5. Take with you
+## 5. Export
 
 ![Take the set to the player and booth](screenshots/en/05-take-to-gig-v400.png)
 
-The **Take with you** menu is grouped by where the set goes next:
+Before anything leaves, a checklist asks about missing files, keys, energy, a thin Plan B, and whether you have heard the set on the player. Only a gap that would make that action a lie blocks it. In the player, rehearse the join: previous, this track, next, the transition mark and the set note.
+
+The **Export** menu is grouped by where the set goes next:
 
 ### For the player
 

@@ -18,6 +18,7 @@ import {
 } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n/react";
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -27,12 +28,15 @@ import {
 } from "react";
 import { ConnectionSetup } from "@/components/ConnectionSetup";
 import { FieldNoticeView, type FieldNotice } from "@/components/FieldNotice";
-import { Tip } from "@/components/Hint";
+import { Hint, Tip } from "@/components/Hint";
 import { EnergyPath } from "@/components/EnergyPath";
 import { HarmonicPath } from "@/components/HarmonicPath";
 import { LibraryBrowser, LibraryPanel } from "@/components/LibraryPanel";
-import { StickSetList } from "@/components/RekordboxStick";
+import { StickSetList, type StickStatusSlice } from "@/components/RekordboxStick";
+import { GigReadyDialog } from "@/components/GigReadyDialog";
+import { ResetSetDialog } from "@/components/ResetSetDialog";
 import { AppUpdateCard } from "@/components/AppUpdateCard";
+import { OverlapField } from "@/components/OverlapField";
 import { PreviewPlayer } from "@/components/PreviewPlayer";
 import {
   getPreviewTransportSnapshot,
@@ -41,11 +45,13 @@ import {
   subscribePreviewTransport,
 } from "@/lib/preview-transport";
 import { ReplaceMenu } from "@/components/ReplaceMenu";
+import { SetGuideDrawer } from "@/components/SetGuideDrawer";
 import type { LibraryRow } from "@/components/LibraryPanel";
 import {
   libraryTrackToSetTrack,
   mediaPathsForDraft,
   rehydrateStickCovers,
+  sourcePoolFromStickLibrary,
   stickLibraryRows,
   type RekordboxStickSet,
   type StickTrack,
@@ -87,9 +93,17 @@ import {
 } from "@/lib/draft-codec";
 import { ActionIcon } from "@/components/ActionIcon";
 import { TrackArt } from "@/components/TrackArt";
-import { StickReloadBanner } from "@/components/StickReloadBanner";
 import { bestPhaseFor } from "@/lib/plan-b";
-import { SetEnergyMenu, SetMenus, SetSortMenu, SetTools, TrackEnergyMenu } from "@/components/SetTakeaway";
+import {
+  SetEnergyMenu,
+  SetMenus,
+  SetReshuffleMenu,
+  SetSortMenu,
+  SetTools,
+  TrackEnergyMenu,
+  type PoolOffer,
+  type ReshuffleSource,
+} from "@/components/SetTakeaway";
 import { StickWriteDialog } from "@/components/StickWriteDialog";
 import { RoleCrates } from "@/components/RoleCrates";
 import {
@@ -107,6 +121,8 @@ import {
   fitToSlot,
   reorderDraft,
   reshuffleDraftFromPool,
+  undoTrimToSlot,
+  type TrimRestore,
 } from "@/lib/extract-set";
 import { reshufflePoolForDraft } from "@/lib/rekordbox-stick";
 import {
@@ -117,6 +133,9 @@ import {
   pinOpener,
 } from "@/lib/set-anchors";
 import { energyStatusLine, hasKnownEnergy } from "@/lib/energy";
+import { assessGigReady } from "@/lib/gig-ready";
+import { stickFileInSession } from "@/lib/stick-audio";
+import type { StickHealth } from "@/lib/stick-health";
 import type { SetSortTechnique } from "@/lib/sort-set";
 import { looksLikeMusicLink, sourceLabel } from "@/lib/music-link";
 import {
@@ -134,14 +153,17 @@ import {
   type SetTrack,
   type TrackRole,
   type TransitionVerb,
+  BLEND_PRESETS,
   artistLine,
+  blendMsOf,
   exportSetText,
   formatDuration,
   performanceTracks,
+  transitionOverlapPatch,
   phaseDurationMs,
   phaseWindowLabel,
-  playedDurationMs,
   playedTotalMs,
+  trackPlayedMs,
   setPositionById,
   trackCount,
 } from "@/lib/set";
@@ -390,6 +412,30 @@ function shouldPaint(stamp: { at: number }, final: boolean): boolean {
   return true;
 }
 
+function historyLibraryRows(sets: RekordboxStickSet[]): LibraryRow[] {
+  const rows: LibraryRow[] = [];
+  for (const set of sets) {
+    if (set.kind !== "history") continue;
+    for (const track of set.tracks) {
+      rows.push({
+        artist: track.artist,
+        title: track.title,
+        key: track.keyCamelot || track.keyRaw,
+        bpm: track.bpm,
+        energy: track.energyLevel,
+        stick: track,
+      });
+    }
+  }
+  return rows;
+}
+
+function poolOffer(count: number, performanceCount: number): PoolOffer {
+  if (count < 2) return { ready: false, reason: "missing" };
+  if (count <= performanceCount) return { ready: false, reason: "small" };
+  return { ready: true, count };
+}
+
 export function SetBuilder() {
   const { t, lang } = useI18n();
   const storedDraft = useSyncExternalStore(
@@ -407,6 +453,12 @@ export function SetBuilder() {
   );
   const [crateView, setCrateView] = useState<"list" | "roles" | "keys">("list");
   const [stickOpen, setStickOpen] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [rehearsal, setRehearsal] = useState(false);
+  const [stickHealth, setStickHealth] = useState<StickHealth | null>(null);
+  const [pendingTake, setPendingTake] = useState<"stick" | "pdf" | "copy" | "xml" | "m3u" | null>(
+    null,
+  );
   const [manualTitle, setManualTitle] = useState("");
   const [manualArtist, setManualArtist] = useState("");
   const [manualLink, setManualLink] = useState("");
@@ -455,11 +507,14 @@ export function SetBuilder() {
   const [statusHeld, setStatusHeld] = useState(false);
   const stickJob = useRef(0);
   const energyJob = useRef(0);
+  const saveSetupAnchor = useRef<HTMLLabelElement>(null);
   const [pendingStickSet, setPendingStickSet] = useState<RekordboxStickSet | null>(
     null,
   );
   const [replaceUndo, setReplaceUndo] = useState<SetDraft | null>(null);
+  const [trimUndo, setTrimUndo] = useState<TrimRestore[] | null>(null);
   const [replaceFor, setReplaceFor] = useState<string | null>(null);
+  const [guideOpen, setGuideOpen] = useState(false);
   /** Setliste: tracks whose key, BPM, energy and comment fields are open */
   const [openDetails, setOpenDetails] = useState<Set<string>>(() => new Set());
   const [dragId, setDragId] = useState<string | null>(null);
@@ -963,6 +1018,7 @@ export function SetBuilder() {
         body: JSON.stringify({
           url,
           durationMinutes: draft.durationMinutes,
+          blendMs: draft.blendMs,
           title: draft.title,
           vibe: draft.vibe,
           venue: draft.venue,
@@ -1048,7 +1104,10 @@ export function SetBuilder() {
     () => performanceTracks(draft.tracks),
     [draft.tracks],
   );
-  const filledMs = playedTotalMs(draft.tracks);
+  const blendMs = blendMsOf(draft.blendMs);
+  const filledMs = playedTotalMs(draft.tracks, blendMs);
+  const plannedJoins = mainTracks.some((track) => track.transition && track.transition !== "unset");
+  const mixLabel = plannedJoins ? t("builder.list.mixPlanned") : formatDuration(blendMs);
   const targetMs = draft.durationMinutes * 60_000;
   const activeGuide = arcGuideFor(t).find((item) => item.phase === activePhase);
 
@@ -1058,10 +1117,28 @@ export function SetBuilder() {
     return draft.tracks.filter((track) => track.role === roleFilter);
   }, [draft.tracks, mainTracks, roleFilter]);
 
-  const reshuffleChoice = useMemo(
-    () => reshufflePoolForDraft(draft, libraryRows),
-    [draft, libraryRows],
-  );
+  const reshuffleOffers = useMemo(() => {
+    const performance = performanceTracks(draft.tracks);
+    const playlistCount = draft.sourcePool?.length ?? 0;
+    const collectionCount = sourcePoolFromStickLibrary(libraryRows, performance).length;
+    const historyCount = sourcePoolFromStickLibrary(
+      historyLibraryRows(stickSets),
+      performance,
+    ).length;
+    const different = reshufflePoolForDraft(draft, libraryRows);
+    return {
+      different: different
+        ? {
+            ready: true as const,
+            count: different.pool.length,
+            fromStick: different.fromStick,
+          }
+        : poolOffer(Math.max(playlistCount, collectionCount), performance.length),
+      playlist: poolOffer(playlistCount, performance.length),
+      collection: poolOffer(collectionCount, performance.length),
+      history: poolOffer(historyCount, performance.length),
+    };
+  }, [draft, libraryRows, stickSets]);
 
   const positions = useMemo(
     () => setPositionById(draft.tracks),
@@ -1521,6 +1598,11 @@ export function SetBuilder() {
     setFocusTrackId(track.id);
   }
 
+  function rehearseTrack(track: SetTrack) {
+    setRehearsal(true);
+    setFocusTrackId(track.id);
+  }
+
   function patchTrack(id: string, patch: Partial<SetTrack>) {
     setDraft((current) => {
       const tracks = current.tracks.map((track) =>
@@ -1627,6 +1709,41 @@ export function SetBuilder() {
     );
     setStatus(t("builder.status.rekordbox"));
   }
+
+  const onStickStatus = useCallback((status: StickStatusSlice | null) => {
+    setStickHealth((current) => {
+      const next = status?.health ?? null;
+      if (!next) return current ? null : current;
+      if (
+        current &&
+        current.verdict === next.verdict &&
+        current.pioneer === next.pioneer &&
+        current.libraryAside === next.libraryAside
+      ) {
+        return current;
+      }
+      return next;
+    });
+  }, []);
+
+  function confirmTake() {
+    const kind = pendingTake;
+    setPendingTake(null);
+    if (kind === "stick") setStickOpen(true);
+    else if (kind === "pdf") exportPdf();
+    else if (kind === "copy") void copyExport();
+    else if (kind === "xml") exportRekordbox();
+    else if (kind === "m3u") exportM3u();
+  }
+
+  const pendingChecks = pendingTake
+    ? assessGigReady({
+        tracks: draft.tracks,
+        action: pendingTake === "stick" ? "stick" : pendingTake === "xml" || pendingTake === "m3u" ? "desk" : "booth",
+        fileInSession: stickFileInSession,
+        health: stickHealth,
+      })
+    : [];
 
   function replaceTrack(targetId: string, replacementId: string) {
     setDraft((current) => {
@@ -1769,6 +1886,15 @@ export function SetBuilder() {
     }
   }
 
+  function openSaveSetup() {
+    setSettingsOpen(true);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        saveSetupAnchor.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    });
+  }
+
   function saveSetup() {
     const name = draft.title.trim() || t("builder.setups.fallbackName");
     if (name !== draft.title) {
@@ -1883,12 +2009,11 @@ export function SetBuilder() {
   }
 
   function resetSet() {
-    if (
-      draft.tracks.length > 0 &&
-      !window.confirm(t("builder.reset.confirm", { tracks: trackCount(draft.tracks.length, t) }))
-    ) {
-      return;
-    }
+    setResetOpen(true);
+  }
+
+  function confirmReset() {
+    setResetOpen(false);
     setDraft(DEFAULT_SET);
     setFocusTrackId(null);
     setSelectedSetup("");
@@ -1916,19 +2041,34 @@ export function SetBuilder() {
     }, 0);
   }
 
-  function reshuffleSongs() {
+  function reshuffleFrom(source: ReshuffleSource) {
     const current = readStoredDraft();
-    const choice = reshufflePoolForDraft(current, libraryRows);
+    const performance = performanceTracks(current.tracks);
+    const choice = (() => {
+      if (source === "different") return reshufflePoolForDraft(current, libraryRows);
+      const pool =
+        source === "playlist"
+          ? (current.sourcePool ?? [])
+          : sourcePoolFromStickLibrary(
+              source === "history" ? historyLibraryRows(stickSets) : libraryRows,
+              performance,
+            );
+      if (pool.length < 2 || pool.length <= performance.length) return null;
+      return { pool, fromStick: source !== "playlist" };
+    })();
     if (!choice) {
       setStatus(t("builder.status.reshuffle.unavailable"));
       return;
     }
-    if (!window.confirm(t(
-      choice.fromStick
-        ? "builder.tool.reshuffleConfirmStick"
-        : "builder.tool.reshuffleConfirm",
-      { pool: choice.pool.length },
-    ))) {
+    const confirmKey =
+      source === "history"
+        ? "builder.pool.historyConfirm"
+        : source === "collection"
+          ? "builder.pool.collectionConfirm"
+          : choice.fromStick
+            ? "builder.tool.reshuffleConfirmStick"
+            : "builder.tool.reshuffleConfirm";
+    if (!window.confirm(t(confirmKey, { pool: choice.pool.length }))) {
       return;
     }
     beginWork(t("builder.status.reshuffling"));
@@ -2343,6 +2483,7 @@ export function SetBuilder() {
         );
         return current;
       }
+      setTrimUndo(result.restore);
       setStatus(
         t("builder.status.trimmed", {
           before: formatDuration(result.beforeMs),
@@ -2353,6 +2494,14 @@ export function SetBuilder() {
       );
       return result.draft;
     });
+  }
+
+  function undoTrim() {
+    const snapshot = trimUndo;
+    if (!snapshot?.length) return;
+    setDraft((current) => undoTrimToSlot(current, snapshot));
+    setTrimUndo(null);
+    setStatus(t("builder.trim.undoDone"));
   }
 
   function assignRoles() {
@@ -2379,7 +2528,7 @@ export function SetBuilder() {
         <div className="setups-zone">
           <h3 className="setups-zone-title">{t("builder.setups.sectionBrief")}</h3>
           <div className="setups-toolbar">
-            <label className="setup-field setups-toolbar-name">
+            <label ref={saveSetupAnchor} className="setup-field setups-toolbar-name">
               <span>{t("builder.setups.name")}</span>
               <div className="setups-inline">
                 <input
@@ -2544,127 +2693,75 @@ export function SetBuilder() {
     return body;
   }
 
+  const trimUndoLive =
+    trimUndo?.filter((item) => draft.tracks.some((track) => track.id === item.id)) ?? [];
+
   return (
     <div className="set-shell">
       {authNote ? <p className="banner status">{authNote}</p> : null}
-      <div className="topbar">
-        <div className="set-switch" role="group" aria-label={t("builder.setups.topAria")}>
-          <label className="set-switch-pick">
-            <span>{t("builder.setups.topLabel")}</span>
-            <select
-              value={selectedSetup}
-              onChange={(event) => {
-                const id = event.target.value;
-                setSelectedSetup(id);
-                if (id) loadSetup(id);
-              }}
-              aria-label={t("builder.setups.selectAria")}
-              disabled={setups.length === 0}
-            >
-              <option value="">
-                {setups.length === 0
-                  ? t("builder.setups.topEmpty")
-                  : t("builder.setups.topChoose")}
-              </option>
-              {setups.map((setup) => (
-                <option key={setup.id} value={setup.id}>
-                  {setup.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
-            type="button"
-            className="btn ghost"
-            title={t("library.menu.resetHint")}
-            onClick={resetSet}
-          >
-            {t("builder.setups.scratch")}
-          </button>
-        </div>
-        <LanguageSwitch />
-      </div>
       <header className="hero">
-        <div className="hero-copy">
+        <div className="hero-bar">
           <p className="brand">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               className="brand-mark"
               src="/logo.svg"
               alt=""
-              width={60}
-              height={60}
+              width={36}
+              height={36}
             />
             SETBUILDER
           </p>
-          <h1>{t("builder.hero.title")}</h1>
-          <div className="hero-manifesto">
-            <p className="lede">{t("builder.hero.lede")}</p>
-            <p className="hero-manifesto-lead">
-              {t("builder.hero.manifestoLead")}
-            </p>
-            <p>{t("builder.hero.manifestoBody")}</p>
+          <div className="topbar">
+            <div className="set-switch" role="group" aria-label={t("builder.setups.topAria")}>
+              <label className="set-switch-pick">
+                <span>{t("builder.setups.topLabel")}</span>
+                <select
+                  value={selectedSetup}
+                  onChange={(event) => {
+                    const id = event.target.value;
+                    setSelectedSetup(id);
+                    if (id) loadSetup(id);
+                  }}
+                  aria-label={t("builder.setups.selectAria")}
+                  disabled={setups.length === 0}
+                >
+                  <option value="">
+                    {setups.length === 0
+                      ? t("builder.setups.topEmpty")
+                      : t("builder.setups.topChoose")}
+                  </option>
+                  {setups.map((setup) => (
+                    <option key={setup.id} value={setup.id}>
+                      {setup.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                className="btn ghost"
+                title={t("library.menu.resetHint")}
+                onClick={resetSet}
+              >
+                {t("builder.setups.scratch")}
+              </button>
+            </div>
+            <LanguageSwitch />
           </div>
         </div>
+        <div className="hero-work">
+        <div className="hero-copy">
+          <h1>{t("builder.hero.title")}</h1>
+          <p className="hero-manifesto-lead">{t("builder.hero.manifestoLead")}</p>
+        </div>
         <div className="hero-meta" aria-label={t("builder.brief.aria")}>
-          <label>
+          <label className="hero-meta-title">
             <span>{t("builder.brief.title")}</span>
             <input
               value={draft.title}
               onChange={(e) =>
                 setDraft((c) => ({ ...c, title: e.target.value }))
-              }
-            />
-          </label>
-          <label>
-            <span>{t("builder.brief.vibe")}</span>
-            <input
-              value={draft.vibe}
-              onChange={(e) =>
-                setDraft((c) => ({ ...c, vibe: e.target.value }))
-              }
-            />
-          </label>
-          <label>
-            <span>{t("builder.brief.venue")}</span>
-            <input
-              value={draft.venue}
-              onChange={(e) =>
-                setDraft((c) => ({ ...c, venue: e.target.value }))
-              }
-            />
-          </label>
-          <label>
-            <span>{t("builder.brief.slotKind")}</span>
-            <select
-              value={draft.slotKind ?? "peaktime"}
-              onChange={(e) => {
-                const slotKind = e.target.value as SetSlotKind;
-                setDraft((c) => ({ ...c, slotKind }));
-              }}
-            >
-              {SLOT_KINDS.map((kind) => (
-                <option key={kind.id} value={kind.id} title={slotHint(t, kind.id)}>
-                  {slotLabel(t, kind.id)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span>{t("builder.brief.audience")}</span>
-            <input
-              value={draft.audience}
-              onChange={(e) =>
-                setDraft((c) => ({ ...c, audience: e.target.value }))
-              }
-            />
-          </label>
-          <label>
-            <span>{t("builder.brief.gear")}</span>
-            <input
-              value={draft.gear}
-              onChange={(e) =>
-                setDraft((c) => ({ ...c, gear: e.target.value }))
               }
             />
           </label>
@@ -2697,17 +2794,101 @@ export function SetBuilder() {
               }}
             />
           </label>
-          <label className="hero-meta-notes">
-            <span>{t("builder.brief.notes")}</span>
-            <textarea
-              rows={2}
-              value={draft.notes ?? ""}
-              placeholder={t("builder.brief.notesPlaceholder")}
-              onChange={(e) =>
-                setDraft((c) => ({ ...c, notes: e.target.value }))
-              }
-            />
+          <label>
+            <span>{t("builder.brief.blend")}</span>
+            <select
+              value={blendMs}
+              title={t("builder.brief.blendHint")}
+              onChange={(event) => {
+                const next = blendMsOf(Number(event.target.value));
+                setDraft((current) => ({ ...current, blendMs: next }));
+              }}
+            >
+              {BLEND_PRESETS.map((ms) => (
+                <option key={ms} value={ms}>
+                  {ms === 30_000
+                    ? t("builder.brief.blend.30000")
+                    : ms === 60_000
+                      ? t("builder.brief.blend.60000")
+                      : ms === 240_000
+                        ? t("builder.brief.blend.240000")
+                        : t("builder.brief.blend.120000")}
+                </option>
+              ))}
+            </select>
           </label>
+          <details className="hero-meta-more">
+            <summary>
+              <span className="hero-meta-more-label">{t("builder.brief.more")}</span>
+              <Hint className="hero-meta-more-hint" text={t("builder.brief.moreHint")} />
+            </summary>
+            <div className="hero-meta-more-grid">
+              <label>
+                <span>{t("builder.brief.vibe")}</span>
+                <input
+                  value={draft.vibe}
+                  onChange={(e) =>
+                    setDraft((c) => ({ ...c, vibe: e.target.value }))
+                  }
+                />
+              </label>
+              <label>
+                <span>{t("builder.brief.venue")}</span>
+                <input
+                  value={draft.venue}
+                  onChange={(e) =>
+                    setDraft((c) => ({ ...c, venue: e.target.value }))
+                  }
+                />
+              </label>
+              <label>
+                <span>{t("builder.brief.slotKind")}</span>
+                <select
+                  value={draft.slotKind ?? "peaktime"}
+                  onChange={(e) => {
+                    const slotKind = e.target.value as SetSlotKind;
+                    setDraft((c) => ({ ...c, slotKind }));
+                  }}
+                >
+                  {SLOT_KINDS.map((kind) => (
+                    <option key={kind.id} value={kind.id} title={slotHint(t, kind.id)}>
+                      {slotLabel(t, kind.id)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>{t("builder.brief.audience")}</span>
+                <input
+                  value={draft.audience}
+                  onChange={(e) =>
+                    setDraft((c) => ({ ...c, audience: e.target.value }))
+                  }
+                />
+              </label>
+              <label>
+                <span>{t("builder.brief.gear")}</span>
+                <input
+                  value={draft.gear}
+                  onChange={(e) =>
+                    setDraft((c) => ({ ...c, gear: e.target.value }))
+                  }
+                />
+              </label>
+              <label className="hero-meta-notes">
+                <span>{t("builder.brief.notes")}</span>
+                <textarea
+                  rows={2}
+                  value={draft.notes ?? ""}
+                  placeholder={t("builder.brief.notesPlaceholder")}
+                  onChange={(e) =>
+                    setDraft((c) => ({ ...c, notes: e.target.value }))
+                  }
+                />
+              </label>
+            </div>
+          </details>
+        </div>
         </div>
       </header>
 
@@ -2786,17 +2967,6 @@ export function SetBuilder() {
         </div>
       ) : null}
 
-      {libraryRows.length === 0 ? (
-        <StickReloadBanner
-          draft={draft}
-          onLoaded={(rows) => {
-            setLibraryRows(rows);
-            const library = rows.flatMap((row) => (row.stick ? [row.stick] : []));
-            showStickMerge(library, t("builder.stick.ready"));
-          }}
-        />
-      ) : null}
-
       <details id="library-section" className="explain-fold section-fold" open>
         <summary>
           <span>{t("builder.library.title")}</span>
@@ -2824,13 +2994,35 @@ export function SetBuilder() {
             showStickMerge(library, message);
           }}
           onStickSets={setStickSets}
+          onStickStatus={onStickStatus}
           chooseStick={chooseStickRef}
         />
       </details>
 
       <details className="explain-fold section-fold" open>
-        <summary>
-          <span>{t("builder.build.title")}</span>
+        <summary
+          onClick={(event) => {
+            if (event.target instanceof Element && event.target.closest("button")) {
+              event.preventDefault();
+            }
+          }}
+        >
+          <span className="build-section-title">
+            {t("builder.build.title")}
+            <button
+              type="button"
+              className="build-guide-open"
+              aria-expanded={guideOpen}
+              aria-controls="set-guide"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setGuideOpen(true);
+              }}
+            >
+              {t("builder.guide.title")}
+            </button>
+          </span>
           <em>
             {t("builder.build.summary", {
               performance: mainTracks.length,
@@ -2838,11 +3030,11 @@ export function SetBuilder() {
             })}
           </em>
         </summary>
+        {guideOpen ? <SetGuideDrawer onClose={() => setGuideOpen(false)} /> : null}
         <section className="crate-workspace" aria-label={t("builder.build.title")}>
           <div className="panel-head">
             <div>
               <h2>{t("builder.build.title")}</h2>
-              <p className="builder-note">{t("builder.build.note")}</p>
             </div>
           </div>
 
@@ -3242,18 +3434,43 @@ export function SetBuilder() {
                 </Tip>
               ))}
             </div>
-            <SetMenus
-              canExport={draft.tracks.length > 0}
-              onExportPdf={exportPdf}
-              onExportM3u={exportM3u}
-              onExportRekordbox={exportRekordbox}
-              onWriteStick={() => setStickOpen(true)}
-              onCopyText={() => void copyExport()}
+            <div className="set-bar-end">
+              <SetMenus
+                canExport={draft.tracks.length > 0}
+                onSaveSet={openSaveSetup}
+                onExportPdf={() => setPendingTake("pdf")}
+                onExportM3u={() => setPendingTake("m3u")}
+                onExportRekordbox={() => setPendingTake("xml")}
+                onWriteStick={() => setPendingTake("stick")}
+                onCopyText={() => setPendingTake("copy")}
+              />
+              {draft.tracks.length > 0 ? (
+                <Tip text={t("library.menu.resetHint")} end>
+                  <button
+                    type="button"
+                    className="btn ghost danger"
+                    onClick={resetSet}
+                  >
+                    {t("library.menu.reset")}
+                  </button>
+                </Tip>
+              ) : null}
+            </div>
+            <GigReadyDialog
+              open={pendingTake !== null}
+              checks={pendingChecks}
+              onClose={() => setPendingTake(null)}
+              onContinue={confirmTake}
             />
             <StickWriteDialog
               open={stickOpen}
               onClose={() => setStickOpen(false)}
               draft={draft}
+            />
+            <ResetSetDialog
+              open={resetOpen}
+              onClose={() => setResetOpen(false)}
+              onConfirm={confirmReset}
             />
           </div>
           {draft.tracks.length > 0 ? (
@@ -3261,45 +3478,18 @@ export function SetBuilder() {
             canMatch={draft.tracks.length > 0}
             matchingLinks={matchingLinks}
             onMatchLinks={() => void matchStreamingLinks()}
-            trailing={
-              <Tip text={t("library.menu.resetHint")} end className="set-tools-reset">
-                <button
-                  type="button"
-                  className="btn ghost danger"
-                  onClick={resetSet}
-                >
-                  {t("library.menu.reset")}
-                </button>
-              </Tip>
-            }
           >
             <SetSortMenu
               disabled={mainTracks.length < 2}
               onSort={sortSet}
             />
-            <Tip
-              text={
-                reshuffleChoice
-                  ? t(
-                      reshuffleChoice.fromStick
-                        ? "builder.tool.reshuffleTipStick"
-                        : "builder.tool.reshuffleTip",
-                      { pool: reshuffleChoice.pool.length },
-                    )
-                  : t("builder.tool.reshuffleDisabledTip")
-              }
-              disabled={!reshuffleChoice}
-            >
-              <button
-                type="button"
-                className="btn ghost"
-                onClick={reshuffleSongs}
-                disabled={!reshuffleChoice}
-                aria-label={t("builder.tool.reshuffle")}
-              >
-                {t("builder.tool.reshuffle")}
-              </button>
-            </Tip>
+            <SetReshuffleMenu
+              different={reshuffleOffers.different}
+              playlist={reshuffleOffers.playlist}
+              collection={reshuffleOffers.collection}
+              history={reshuffleOffers.history}
+              onPick={reshuffleFrom}
+            />
             <SetEnergyMenu
               busy={energyBusy}
               stickReady={stickReady}
@@ -3319,7 +3509,9 @@ export function SetBuilder() {
               onWrite={() => void writeEnergyToFiles()}
             />
             <Tip
-              text={t("builder.tool.fitTip")}
+              text={t(plannedJoins ? "builder.tool.fitTipPlan" : "builder.tool.fitTip", {
+                mix: formatDuration(blendMs),
+              })}
               disabled={filledMs <= targetMs * 1.05}
             >
               <button
@@ -3348,6 +3540,28 @@ export function SetBuilder() {
           ) : null}
           <FieldNoticeView notice={localNotice("library")} />
           <FieldNoticeView notice={localNotice("export")} />
+
+          {trimUndoLive.length > 0 ? (
+            <div className="stick-reload" role="status">
+              <p>
+                {t("builder.trim.undoBody", {
+                  tracks: trackCount(trimUndoLive.length, t),
+                })}
+              </p>
+              <div className="stick-reload-actions">
+                <button type="button" className="btn" onClick={undoTrim}>
+                  {t("builder.trim.undo")}
+                </button>
+                <button
+                  type="button"
+                  className="btn ghost"
+                  onClick={() => setTrimUndo(null)}
+                >
+                  {t("builder.trim.dismiss")}
+                </button>
+              </div>
+            </div>
+          ) : null}
 
           {crateView === "list" ? (
             <div id="set-view-list" className="crate-view crate-list" role="tabpanel">
@@ -3390,12 +3604,12 @@ export function SetBuilder() {
                   {roleFilter === "all"
                     ? (() => {
                         const playingMs = visibleTimeline.reduce(
-                          (sum, track) => sum + playedDurationMs(track.durationMs),
+                          (sum, track) => sum + trackPlayedMs(track, blendMs),
                           0,
                         );
                         const overMs = visibleTimeline.reduce(
                           (sum, track) =>
-                            sum + Math.max(0, track.durationMs - playedDurationMs(track.durationMs)),
+                            sum + Math.max(0, track.durationMs - trackPlayedMs(track, blendMs)),
                           0,
                         );
                         const tooLong = filledMs > targetMs * 1.05;
@@ -3412,6 +3626,7 @@ export function SetBuilder() {
                             tracks: trackCount(visibleTimeline.length, t),
                             duration: formatDuration(playingMs),
                             over: formatDuration(overMs),
+                            mix: mixLabel,
                             minutes: draft.durationMinutes,
                           },
                         );
@@ -3516,7 +3731,7 @@ export function SetBuilder() {
                         <i />
                       </button>
                     </Tip>
-                    <em>{positions.get(track.id) ?? "—"}</em>
+                    <em className="set-pos">{positions.get(track.id) ?? "—"}</em>
                   </span>
                   <div className="manual-body">
                     <div className="manual-row-main">
@@ -3654,6 +3869,23 @@ export function SetBuilder() {
                               )}
                             </button>
                           </Tip>
+                          {track.role !== "safety" ? (
+                            <Tip text={t("builder.row.rehearseTip")}>
+                              <button
+                                type="button"
+                                className={
+                                  rehearsal && focusTrackId === track.id
+                                    ? "icon-action is-playing"
+                                    : "icon-action"
+                                }
+                                onClick={() => rehearseTrack(track)}
+                                aria-label={t("builder.row.rehearse")}
+                                aria-pressed={rehearsal && focusTrackId === track.id}
+                              >
+                                <ActionIcon name="rehearse" />
+                              </button>
+                            </Tip>
+                          ) : null}
                           <Tip text={t("builder.row.moveUpTip")}>
                             <button
                               type="button"
@@ -3903,26 +4135,42 @@ export function SetBuilder() {
                           </option>
                         ))}
                       </select>
-                      <select
-                        value={track.transition}
-                        onChange={(e) =>
-                          patchTrack(track.id, {
-                            transition: e.target.value as TransitionVerb,
-                          })
-                        }
-                        aria-label={t("builder.row.transitionAria", { name: track.name })}
-                        title={t("builder.row.transitionHint")}
-                      >
-                        {TRANSITIONS.map((item) => (
-                          <option
-                            key={item.id}
-                            value={item.id}
-                            title={transitionHint(t, item.id)}
-                          >
-                            {transitionLabel(t, item.id)}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="manual-transition">
+                        <select
+                          value={track.transition}
+                          onChange={(e) =>
+                            patchTrack(
+                              track.id,
+                              transitionOverlapPatch(e.target.value as TransitionVerb),
+                            )
+                          }
+                          aria-label={t("builder.row.transitionAria", { name: track.name })}
+                          title={t("builder.row.transitionHint")}
+                        >
+                          {TRANSITIONS.map((item) => (
+                            <option
+                              key={item.id}
+                              value={item.id}
+                              title={transitionHint(t, item.id)}
+                            >
+                              {transitionLabel(t, item.id)}
+                            </option>
+                          ))}
+                        </select>
+                        <label className="manual-length">
+                          <span>{t("builder.row.length")}</span>
+                          <OverlapField
+                            className="manual-overlap"
+                            transition={track.transition}
+                            overlapMs={track.overlapMs}
+                            blendMs={blendMs}
+                            durationMs={track.durationMs}
+                            title={t("builder.row.overlapHint")}
+                            ariaLabel={t("builder.row.length")}
+                            onCommit={(ms) => patchTrack(track.id, { overlapMs: ms })}
+                          />
+                        </label>
+                      </div>
                     </div>
                     </details>
                   </div>
@@ -4033,7 +4281,7 @@ export function SetBuilder() {
         </details>
         <div className="phase-grid">
           {PHASES.map((phase) => {
-            const actual = phaseDurationMs(draft.tracks, phase.id);
+            const actual = phaseDurationMs(draft.tracks, phase.id, blendMs);
             const target = targetMs * phase.share;
             const ratio = target > 0 ? actual / target : 0;
             const minutes = Math.round(target / 60000);
@@ -4089,7 +4337,11 @@ export function SetBuilder() {
             );
           })}
         </div>
-        <p className="curve-note">{t("builder.curve.note")}</p>
+        <p className="curve-note">
+          {t(plannedJoins ? "builder.curve.notePlan" : "builder.curve.note", {
+            mix: formatDuration(blendMs),
+          })}
+        </p>
         {activeGuide ? (
           <p className="guide-line">
             <strong>
@@ -4131,7 +4383,20 @@ export function SetBuilder() {
         }
         currentId={focusTrackId}
         onChange={(id) => setFocusTrackId(id)}
-        onClose={() => setFocusTrackId(null)}
+        onClose={() => {
+          setFocusTrackId(null);
+          setRehearsal(false);
+        }}
+        blendMs={blendMs}
+        rehearsal={
+          rehearsal
+            ? {
+                onTransition: (id, value) => patchTrack(id, transitionOverlapPatch(value)),
+                onOverlap: (id, overlapMs) => patchTrack(id, { overlapMs }),
+                onNote: (id, value) => patchTrack(id, { comment: value }),
+              }
+            : null
+        }
       />
     </div>
   );

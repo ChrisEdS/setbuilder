@@ -102,6 +102,13 @@ export function stickFileCount(): number {
   return stickFiles.length;
 }
 
+/** True when the current stick session still holds this rekordbox path. */
+export function stickFileInSession(filePath: string): boolean {
+  const path = filePath.trim();
+  if (!path || !stickFiles.length) return false;
+  return Boolean(matchStickFile(rememberedRefs(), path, stickAudioBaseName(path)));
+}
+
 function rememberedRefs(): StickFileRef[] {
   return stickFiles.map((file) => ({
     name: file.name,
