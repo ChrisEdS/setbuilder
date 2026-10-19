@@ -31,7 +31,8 @@ import { FieldNoticeView, type FieldNotice } from "@/components/FieldNotice";
 import { Tip } from "@/components/Hint";
 import { EnergyPath } from "@/components/EnergyPath";
 import { HarmonicPath } from "@/components/HarmonicPath";
-import { LibraryPanel } from "@/components/LibraryPanel";
+import { LibraryBrowser, LibraryPanel } from "@/components/LibraryPanel";
+import { StickSetList } from "@/components/RekordboxStick";
 import { AppUpdateCard } from "@/components/AppUpdateCard";
 import { PreviewPlayer } from "@/components/PreviewPlayer";
 import {
@@ -43,10 +44,12 @@ import {
 import { ReplaceMenu } from "@/components/ReplaceMenu";
 import type { LibraryRow } from "@/components/LibraryPanel";
 import {
+  applyStickSet,
   libraryTrackToSetTrack,
   mediaPathsForDraft,
   rehydrateStickCovers,
   stickLibraryRows,
+  type RekordboxStickSet,
   type StickTrack,
 } from "@/lib/rekordbox-stick";
 import {
@@ -58,19 +61,22 @@ import {
 import { stickFileCount } from "@/lib/stick-audio";
 import {
   applyEnergyLevels,
+  applyRereadEnergyLevels,
   ensureStickWriteAccess,
+  energyTagFromFile,
   missingEnergyFromFiles,
   isWritableMp3,
   resolveTrackAudio,
   writeStickFileBytes,
 } from "@/lib/stick-file";
 import { analyzeFileEnergy } from "@/lib/openkey/client";
+import { enqueueWork, workQueueDepth, yieldToUi } from "@/lib/work-queue";
 import { writeEnergy } from "@/lib/openkey/writeEnergy";
 import { sanitizeDraftImages } from "@/lib/media";
 import { TrackArt } from "@/components/TrackArt";
 import { StickReloadBanner } from "@/components/StickReloadBanner";
 import { bestPhaseFor } from "@/lib/plan-b";
-import { SetMenus, SetSortMenu, SetTools } from "@/components/SetTakeaway";
+import { SetEnergyMenu, SetMenus, SetSortMenu, SetTools, TrackEnergyMenu } from "@/components/SetTakeaway";
 import { StickWriteDialog } from "@/components/StickWriteDialog";
 import { RoleCrates } from "@/components/RoleCrates";
 import {
@@ -97,7 +103,7 @@ import {
   pinCloser,
   pinOpener,
 } from "@/lib/set-anchors";
-import { isMetadataComment, parseEnergyLevel } from "@/lib/energy";
+import { energyStatusLine, hasKnownEnergy, isMetadataComment, parseEnergyLevel, settledEnergy } from "@/lib/energy";
 import type { SetSortTechnique } from "@/lib/sort-set";
 import { looksLikeMusicLink, sourceLabel } from "@/lib/music-link";
 import {
@@ -183,17 +189,23 @@ let draftPersisted = true;
 
 function normalizeTrack(track: SetTrack): SetTrack {
   const rawComment = track.comment ?? "";
-  const energyLevel = track.energyLevel ?? parseEnergyLevel(rawComment);
+  const fromComment = parseEnergyLevel(rawComment);
+  const tagged =
+    fromComment != null && !hasKnownEnergy(track)
+      ? { ...track, energyLevel: fromComment, energySource: "tag" as const }
+      : track;
+  const settled = settledEnergy(tagged);
   // Older drafts stored MP3 Energy tokens in comment — strip those; keep real set notes.
   const comment = isMetadataComment(rawComment) ? "" : rawComment;
   return {
-    ...track,
+    ...tagged,
     comment,
-    source: track.source ?? "spotify",
+    source: tagged.source ?? "spotify",
     // Machine notes from earlier versions ("open/groove · Übergang: long-blend") are noise.
-    note: isGeneratedNote(track.note) ? "" : (track.note ?? ""),
-    safetyAlt: track.safetyAlt ?? "",
-    energyLevel,
+    note: isGeneratedNote(tagged.note) ? "" : (tagged.note ?? ""),
+    safetyAlt: tagged.safetyAlt ?? "",
+    energyLevel: settled.energyLevel,
+    energySource: settled.energySource,
   };
 }
 
@@ -259,6 +271,20 @@ function readStoredDraft(): SetDraft {
       ...parsed,
       slotKind: parsed.slotKind ?? "peaktime",
       tracks: (parsed.tracks ?? []).map(normalizeTrack),
+      sourcePool: parsed.sourcePool?.map((track) => {
+        const settled = settledEnergy(track);
+        if (
+          track.energyLevel === settled.energyLevel &&
+          track.energySource === settled.energySource
+        ) {
+          return track;
+        }
+        return {
+          ...track,
+          energyLevel: settled.energyLevel,
+          energySource: settled.energySource,
+        };
+      }),
     });
     const cleanRaw = JSON.stringify(cachedDraft);
     if (cleanRaw !== raw) {
@@ -380,6 +406,14 @@ type NoticeScope =
   | "beatport"
   | "export";
 
+/** Skip status paints that would redraw the whole page on every file. */
+function shouldPaint(stamp: { at: number }, final: boolean): boolean {
+  const now = Date.now();
+  if (!final && now - stamp.at < 400) return false;
+  stamp.at = now;
+  return true;
+}
+
 export function SetBuilder() {
   const { t, lang } = useI18n();
   const storedDraft = useSyncExternalStore(
@@ -429,14 +463,17 @@ export function SetBuilder() {
   );
   const [libraryPreview, setLibraryPreview] = useState<SetTrack | null>(null);
   const [libraryRows, setLibraryRows] = useState<LibraryRow[]>([]);
+  const [stickSets, setStickSets] = useState<RekordboxStickSet[]>([]);
   const devLibraryLoaded = useRef(false);
   const [matchingLinks, setMatchingLinks] = useState(false);
   const [analyzingEnergy, setAnalyzingEnergy] = useState(false);
+  const [energyTrackId, setEnergyTrackId] = useState<string | null>(null);
   const [stickReady, setStickReady] = useState(false);
   // Long work (stick read, tag scan, sort) keeps the status line up until it finishes.
   const statusHold = useRef(0);
   const [statusHeld, setStatusHeld] = useState(false);
   const stickJob = useRef(0);
+  const energyJob = useRef(0);
   const [replaceFor, setReplaceFor] = useState<string | null>(null);
   /** Setliste: tracks whose key, BPM, energy and comment fields are open */
   const [openDetails, setOpenDetails] = useState<Set<string>>(() => new Set());
@@ -616,7 +653,7 @@ export function SetBuilder() {
       if (cancelled || stickJob.current !== job) cancelWork();
       else endWork(message);
     }
-    void (async () => {
+    void queueHeavy(async () => {
       const handle = await loadPersistedStickHandle();
       if (!handle || cancelled) return;
       if (!(await stickPermission(handle, "read", false))) return;
@@ -636,14 +673,33 @@ export function SetBuilder() {
             setStatus(t("builder.stick.tags", { done, total }));
           }
         });
-        if (!cancelled && stickJob.current === job) setStickReady(true);
-        finish(stickJob.current === job ? t("builder.stick.ready") : null);
+        if (cancelled || stickJob.current !== job) {
+          finish(null);
+          return;
+        }
+        setStickReady(true);
+        const targets = readStoredDraft().tracks.filter(
+          (track) => Boolean(track.filePath?.trim()) && !hasKnownEnergy(track),
+        );
+        if (targets.length) {
+          finish(null);
+          await runEnergyScan(targets, {
+            write: false,
+            writeRoot: null,
+            reuseTags: true,
+            root: handle,
+            active: () => !cancelled && stickJob.current === job,
+          });
+        } else {
+          finish(t("builder.stick.ready"));
+        }
       } catch {
         finish(null);
       }
-    })();
+    });
     return () => {
       cancelled = true;
+      energyJob.current += 1;
       finish(null);
     };
     // Once on launch: reconnect a stick this browser already allowed.
@@ -662,6 +718,12 @@ export function SetBuilder() {
       })
       .catch(() => undefined);
   }, [libraryRows.length]);
+
+  function queueHeavy(run: () => Promise<void>): Promise<void> {
+    const ahead = workQueueDepth();
+    if (ahead > 0) setStatus(t("builder.work.queued", { count: ahead }));
+    return enqueueWork(run);
+  }
 
   function beginWork(message: string) {
     statusHold.current += 1;
@@ -709,7 +771,7 @@ export function SetBuilder() {
   function showStickMerge(library: StickTrack[], done: string | null) {
     const job = ++stickJob.current;
     beginWork(t("builder.stick.reading"));
-    void (async () => {
+    void queueHeavy(async () => {
       const current = () => stickJob.current === job;
       try {
         await mergeStickFilesIntoDraft(library, (doneCount, total) => {
@@ -717,13 +779,30 @@ export function SetBuilder() {
             setStatus(t("builder.stick.tags", { done: doneCount, total }));
           }
         });
-        if (!current()) cancelWork();
-        else endWork(done);
+        if (!current()) {
+          cancelWork();
+          return;
+        }
+        const targets = readStoredDraft().tracks.filter(
+          (track) => Boolean(track.filePath?.trim()) && !hasKnownEnergy(track),
+        );
+        if (targets.length) {
+          cancelWork();
+          await runEnergyScan(targets, {
+            write: false,
+            writeRoot: null,
+            reuseTags: true,
+            root: null,
+            active: current,
+          });
+        } else {
+          endWork(done);
+        }
       } catch {
         if (!current()) cancelWork();
         else endWork(done);
       }
-    })();
+    });
   }
 
   function setDraft(updater: SetDraft | ((current: SetDraft) => SetDraft)) {
@@ -1348,7 +1427,35 @@ export function SetBuilder() {
   }
 
   function playLibraryTrack(track: SetTrack) {
+    if (previewTransport.trackId === track.id && previewTransport.playing) {
+      requestPreviewPause();
+      return;
+    }
+    if (
+      focusTrackId === track.id &&
+      previewTransport.trackId === track.id &&
+      !previewTransport.playing
+    ) {
+      requestPreviewResume();
+      return;
+    }
     setLibraryPreview(track);
+    setFocusTrackId(track.id);
+  }
+
+  function toggleTrackPreview(track: SetTrack) {
+    if (previewTransport.trackId === track.id && previewTransport.playing) {
+      requestPreviewPause();
+      return;
+    }
+    if (
+      focusTrackId === track.id &&
+      previewTransport.trackId === track.id &&
+      !previewTransport.playing
+    ) {
+      requestPreviewResume();
+      return;
+    }
     setFocusTrackId(track.id);
   }
 
@@ -1357,12 +1464,28 @@ export function SetBuilder() {
       const tracks = current.tracks.map((track) =>
         track.id === id ? { ...track, ...patch } : track,
       );
+      const stampsEnergy = "energyLevel" in patch || "energySource" in patch;
+      const filePath = stampsEnergy
+        ? current.tracks.find((track) => track.id === id)?.filePath?.trim() || ""
+        : "";
+      const sourcePool = stampsEnergy
+        ? current.sourcePool?.map((track) =>
+            track.id === id || (filePath && track.filePath?.trim() === filePath)
+              ? {
+                  ...track,
+                  energyLevel: "energyLevel" in patch ? patch.energyLevel : track.energyLevel,
+                  energySource: "energySource" in patch ? patch.energySource : track.energySource,
+                }
+              : track,
+          )
+        : current.sourcePool;
       const demoted = patch.role === "safety";
       return {
         ...current,
         openerId: demoted && current.openerId === id ? null : current.openerId,
         closerId: demoted && current.closerId === id ? null : current.closerId,
         tracks,
+        sourcePool,
       };
     });
   }
@@ -1769,118 +1892,349 @@ export function SetBuilder() {
     }, 0);
   }
 
-  async function energyFromFiles() {
-    const current = readStoredDraft();
-    const withPath = current.tracks.filter((track) => track.filePath?.trim());
-    if (!withPath.length) {
-      setStatus(t("builder.energy.noFile"));
-      return;
-    }
-    const stick = await loadPersistedStickHandle().catch(() => null);
-    if (!stick && stickFileCount() === 0) {
-      setStatus(t("builder.energy.noStick"));
-      return;
-    }
-    if (!window.confirm(t("builder.energy.confirm"))) return;
-
-    const missing = withPath.filter((track) => track.energyLevel == null);
-    let targets = withPath;
-    if (missing.length === 0) {
-      if (!window.confirm(t("builder.energy.confirmAll", { total: withPath.length }))) {
-        return;
-      }
-    } else if (missing.length < withPath.length) {
-      const onlyMissing = window.confirm(
-        t("builder.energy.confirmMissing", {
-          missing: missing.length,
-          total: withPath.length,
-        }),
-      );
-      targets = onlyMissing ? missing : withPath;
-    } else {
-      targets = missing;
-    }
-
-    const writeRoot = stick
-      ? await ensureStickWriteAccess(stick)
-      : null;
-    if (stick && !writeRoot) {
-      setStatus(t("builder.energy.denied"));
-    }
-
+  async function runEnergyScan(
+    targets: SetTrack[],
+    options: {
+      /** Write the level into the MP3. Background scans only update the draft. */
+      write: boolean;
+      /** Directory with write permission. Null keeps the draft update and counts a skip. */
+      writeRoot: Awaited<ReturnType<typeof loadPersistedStickHandle>>;
+      /** Read root. Falls back to the remembered stick when null. */
+      root: Awaited<ReturnType<typeof loadPersistedStickHandle>>;
+      reuseTags: boolean;
+      active?: () => boolean;
+    },
+  ) {
+    const job = ++energyJob.current;
     setAnalyzingEnergy(true);
     let done = 0;
     let skipped = 0;
     let errors = 0;
     let setCount = 0;
     let written = 0;
-    let lastError = "";
+    let lastLevel: number | null = null;
+    const reasons = new Map<string, number>();
     const total = targets.length;
+    const alive = () => energyJob.current === job && (options.active?.() ?? true);
+    // Declared before `line`: the first paint reads it immediately.
+    const paint = { at: 0 };
 
-    const progress = () =>
-      setStatus(
-        t("builder.energy.progress", {
-          done,
-          total,
-          skipped,
-          errors,
-        }),
-      );
-    progress();
+    const line = (final: boolean) => {
+      if (!alive() || !shouldPaint(paint, final)) return;
+      if (final && total === 1 && lastLevel != null && errors === 0) {
+        setStatus(
+          t(written > 0 ? "builder.energy.oneWritten" : "builder.energy.one", {
+            name: targets[0]?.name ?? "",
+            level: lastLevel,
+          }),
+        );
+        return;
+      }
+      const base = final
+        ? t(options.write ? "builder.energy.done" : "builder.energy.measured", {
+            set: setCount,
+            written,
+            skipped,
+            errors,
+          })
+        : t("builder.energy.progress", { done, total, skipped, errors });
+      setStatus(energyStatusLine(base, reasons));
+    };
+    line(false);
+
+    const pending = new Map<
+      string,
+      { energy: number; source: "tag" | "measured"; filePath: string }
+    >();
+    const batchSize = total === 1 ? 1 : total > 24 ? 16 : 8;
+
+    function flush(force: boolean) {
+      if (!alive() || pending.size === 0) return;
+      if (!force && pending.size < batchSize) return;
+      const batch = new Map(pending);
+      pending.clear();
+      const latest = readStoredDraft();
+      const stamp = <T extends { id: string; filePath?: string; energyLevel?: number; energySource?: SetTrack["energySource"] }>(
+        item: T,
+      ): T => {
+        const byId = batch.get(item.id);
+        if (byId) return { ...item, energyLevel: byId.energy, energySource: byId.source };
+        const path = item.filePath?.trim();
+        if (!path) return item;
+        for (const entry of batch.values()) {
+          if (entry.filePath === path) {
+            return { ...item, energyLevel: entry.energy, energySource: entry.source };
+          }
+        }
+        return item;
+      };
+      setDraft({
+        ...latest,
+        tracks: latest.tracks.map(stamp),
+        sourcePool: latest.sourcePool?.map(stamp),
+      });
+    }
+
+    const remember = (
+      id: string,
+      energy: number,
+      source: "tag" | "measured",
+      filePath: string,
+    ) => {
+      lastLevel = energy;
+      pending.set(id, { energy, source, filePath });
+      flush(false);
+    };
 
     try {
       for (const track of targets) {
+        if (!alive()) return;
         const path = track.filePath!.trim();
         try {
-          const resolved = await resolveTrackAudio(path, writeRoot ?? stick);
+          const resolved = await resolveTrackAudio(path, options.writeRoot ?? options.root);
+          if (!alive()) return;
           if (!resolved) {
             skipped += 1;
             done += 1;
-            progress();
+            line(false);
+            await yieldToUi();
             continue;
           }
-          const energy = await analyzeFileEnergy(resolved.file);
 
-          // Always patch from storage so Sortieren / other edits don't race.
-          // Set-Notiz (comment) stays untouched — Energy goes to energyLevel + MP3 tags.
-          const latest = readStoredDraft();
-          setDraft({
-            ...latest,
-            tracks: latest.tracks.map((item) =>
-              item.id === track.id ? { ...item, energyLevel: energy } : item,
-            ),
-          });
+          const latest = readStoredDraft().tracks.find((item) => item.id === track.id);
+          if (options.reuseTags && latest && hasKnownEnergy(latest)) {
+            done += 1;
+            line(false);
+            await yieldToUi();
+            continue;
+          }
+
+          if (options.reuseTags && isWritableMp3(resolved.file, path)) {
+            const tagged = await energyTagFromFile(resolved.file);
+            if (!alive()) return;
+            if (tagged != null) {
+              remember(track.id, tagged, "tag", path);
+              setCount += 1;
+              done += 1;
+              line(false);
+              await yieldToUi();
+              continue;
+            }
+          }
+
+          const energy = await analyzeFileEnergy(resolved.file);
+          if (!alive()) return;
+          remember(track.id, energy, "measured", path);
           setCount += 1;
 
-          if (isWritableMp3(resolved.file, path) && resolved.handle && writeRoot) {
+          if (options.write && isWritableMp3(resolved.file, path) && resolved.handle && options.writeRoot) {
             const bytes = new Uint8Array(await resolved.file.arrayBuffer());
             const tagged = writeEnergy(bytes, energy);
             await writeStickFileBytes(resolved.handle, tagged);
+            if (!alive()) return;
             written += 1;
-          } else if (!isWritableMp3(resolved.file, path)) {
-            // Draft updated; non-MP3 has no ID3 write in v1.
-            skipped += 1;
-          } else if (!resolved.handle || !writeRoot) {
+          } else if (options.write) {
             skipped += 1;
           }
         } catch (error) {
           errors += 1;
-          lastError = error instanceof Error ? error.message : String(error);
-          console.error("[energy]", track.name, lastError);
+          const raw = error instanceof Error ? error.message : String(error);
+          const message =
+            !raw.trim() ||
+            raw.includes("Exception catching is disabled") ||
+            raw === "Could not measure energy from this file"
+              ? t("builder.energy.measureFailed")
+              : raw.trim();
+          reasons.set(message, (reasons.get(message) ?? 0) + 1);
         }
         done += 1;
-        progress();
+        line(false);
+        await yieldToUi();
       }
-      const summary = t("builder.energy.done", {
-        set: setCount,
-        written,
-        skipped,
-        errors,
-      });
-      setStatus(errors && lastError ? `${summary} · ${lastError}` : summary);
+      flush(true);
+      line(true);
     } finally {
-      setAnalyzingEnergy(false);
+      flush(true);
+      if (energyJob.current === job) setAnalyzingEnergy(false);
     }
+  }
+
+  function energyTargets() {
+    const withPath = readStoredDraft().tracks.filter((track) => track.filePath?.trim());
+    return {
+      withPath,
+      missing: withPath.filter((track) => !hasKnownEnergy(track)),
+      known: withPath.filter((track) => hasKnownEnergy(track)),
+    };
+  }
+
+  async function stickForEnergy() {
+    const stick = await loadPersistedStickHandle().catch(() => null);
+    if (!stick && stickFileCount() === 0) {
+      setStatus(t("builder.energy.noStick"));
+      return undefined;
+    }
+    return stick;
+  }
+
+  async function readEnergyTags() {
+    const { withPath } = energyTargets();
+    if (!withPath.length) {
+      setStatus(t("builder.energy.noFile"));
+      return;
+    }
+    await queueHeavy(() => readEnergyTagsNow(withPath));
+  }
+
+  async function readEnergyTagsNow(withPath: SetTrack[]) {
+    const job = ++energyJob.current;
+    setAnalyzingEnergy(true);
+    const alive = () => energyJob.current === job;
+    try {
+      const stick = await stickForEnergy();
+      if (stick === undefined) return;
+      const levels = new Map<string, number>();
+      let done = 0;
+      const paint = { at: 0 };
+      setStatus(t("builder.energy.tags", { done: 0, total: withPath.length }));
+      for (const track of withPath) {
+        if (!alive()) return;
+        const path = track.filePath!.trim();
+        try {
+          const resolved = await resolveTrackAudio(path, stick);
+          if (resolved && isWritableMp3(resolved.file, path)) {
+            const energy = await energyTagFromFile(resolved.file);
+            if (energy != null) levels.set(track.id, energy);
+          }
+        } catch {
+          // An unreadable file keeps the level already in the set.
+        }
+        done += 1;
+        if (alive() && shouldPaint(paint, done === withPath.length)) {
+          setStatus(t("builder.energy.tags", { done, total: withPath.length }));
+        }
+        await yieldToUi();
+      }
+      if (!alive()) return;
+      setDraft(applyRereadEnergyLevels(readStoredDraft(), levels));
+      setStatus(t("builder.energy.tagsDone", { found: levels.size, total: withPath.length }));
+    } finally {
+      if (alive()) setAnalyzingEnergy(false);
+    }
+  }
+
+  async function measureEnergy(mode: "missing" | "all") {
+    const { withPath, missing } = energyTargets();
+    if (!withPath.length) {
+      setStatus(t("builder.energy.noFile"));
+      return;
+    }
+    const targets = mode === "missing" ? missing : withPath;
+    if (!targets.length) {
+      setStatus(t("builder.energy.noneMissing"));
+      return;
+    }
+    const stick = await stickForEnergy();
+    if (stick === undefined) return;
+    await queueHeavy(() =>
+      runEnergyScan(targets, {
+        write: false,
+        writeRoot: null,
+        reuseTags: mode === "missing",
+        root: stick,
+      }),
+    );
+  }
+
+  async function writeEnergyToFiles() {
+    const { known } = energyTargets();
+    if (!known.length) {
+      setStatus(t("builder.energy.noneKnown"));
+      return;
+    }
+    const stick = await stickForEnergy();
+    if (stick === undefined || !stick) {
+      setStatus(t("builder.energy.noStick"));
+      return;
+    }
+    const writeRoot = await ensureStickWriteAccess(stick);
+    if (!writeRoot) {
+      setStatus(t("builder.energy.denied"));
+      return;
+    }
+    await queueHeavy(() => writeEnergyNow(known, writeRoot));
+  }
+
+  async function writeEnergyNow(
+    known: SetTrack[],
+    writeRoot: NonNullable<Awaited<ReturnType<typeof loadPersistedStickHandle>>>,
+  ) {
+    const job = ++energyJob.current;
+    setAnalyzingEnergy(true);
+    const alive = () => energyJob.current === job;
+    let written = 0;
+    let skipped = 0;
+    try {
+      let done = 0;
+      const paint = { at: 0 };
+      setStatus(t("builder.energy.writeProgress", { done: 0, total: known.length, written: 0 }));
+      for (const track of known) {
+        if (!alive()) return;
+        const path = track.filePath!.trim();
+        const level = track.energyLevel;
+        try {
+          const resolved = await resolveTrackAudio(path, writeRoot);
+          if (
+            resolved?.handle &&
+            level != null &&
+            isWritableMp3(resolved.file, path)
+          ) {
+            const bytes = new Uint8Array(await resolved.file.arrayBuffer());
+            await writeStickFileBytes(resolved.handle, writeEnergy(bytes, level));
+            written += 1;
+          } else {
+            skipped += 1;
+          }
+        } catch {
+          skipped += 1;
+        }
+        done += 1;
+        if (alive() && shouldPaint(paint, done === known.length)) {
+          setStatus(t("builder.energy.writeProgress", { done, total: known.length, written }));
+        }
+        await yieldToUi();
+      }
+      if (alive()) setStatus(t("builder.energy.writeDone", { written, skipped }));
+    } finally {
+      if (alive()) setAnalyzingEnergy(false);
+    }
+  }
+
+  async function recalculateTrackEnergy(track: SetTrack) {
+    if (!track.filePath?.trim() || energyTrackId === track.id) return;
+    await queueHeavy(async () => {
+      setEnergyTrackId(track.id);
+      let started = false;
+      try {
+        const stick = await loadPersistedStickHandle().catch(() => null);
+        if (!stick && stickFileCount() === 0) {
+          setStatus(t("builder.energy.noStick"));
+          return;
+        }
+        const writeRoot =
+          stick && (await stickPermission(stick, "readwrite", false)) ? stick : null;
+        started = true;
+        await runEnergyScan([track], {
+          write: writeRoot != null,
+          writeRoot,
+          reuseTags: false,
+          root: stick,
+        });
+      } finally {
+        if (!started) setAnalyzingEnergy(false);
+        setEnergyTrackId((current) => (current === track.id ? null : current));
+      }
+    });
   }
 
   function fitSlot() {
@@ -2312,6 +2666,7 @@ export function SetBuilder() {
             const library = libraryRows.flatMap((row) => (row.stick ? [row.stick] : []));
             showStickMerge(library, message);
           }}
+          onStickSets={setStickSets}
         />
       </details>
 
@@ -2333,12 +2688,69 @@ export function SetBuilder() {
             </div>
           </div>
 
+          <div className="library-panel stick-sets-host">
+            {stickSets.length > 0 ? (
+              <StickSetList
+                sets={stickSets}
+                onTake={(set) => {
+                  if (!set.tracks.length) return;
+                  const next = applyStickSet(draft, set, t);
+                  const keyed = set.tracks.filter((track) => track.keyCamelot).length;
+                  const minutes = set.tracks.reduce((sum, track) => sum + track.durationMs, 0);
+                  const kind = t(
+                    set.kind === "history" ? "library.stick.history" : "library.stick.playlist",
+                  );
+                  const message =
+                    t("library.stick.applied", {
+                      kind,
+                      name: set.name,
+                      tracks: trackCount(set.tracks.length, t),
+                    }) +
+                    (keyed ? ` · ${t("library.stick.withKey", { count: keyed })}` : "") +
+                    (minutes ? ` · ${formatDuration(minutes)}` : "") +
+                    (set.missing
+                      ? ` · ${t("library.stick.unmatched", { count: set.missing })}`
+                      : "");
+                  setDraft(next);
+                  clearNotice();
+                  const library = libraryRows.flatMap((row) => (row.stick ? [row.stick] : []));
+                  showStickMerge(library, message);
+                }}
+              />
+            ) : (
+              <section className="library-browser stick-sets builder-card" aria-label={t("builder.playlist.title")}>
+                <h3 className="library-browser-title">
+                  <span className="library-browser-heading">{t("builder.playlist.title")}</span>
+                </h3>
+                <p className="builder-note">{t("builder.playlist.empty")}</p>
+              </section>
+            )}
+          </div>
+
           <details className="explain-fold nested crate-add">
             <summary>
               <span>{t("builder.add.title")}</span>
               <em className="fold-toggle" />
             </summary>
             <div className="explain-body crate-add-body">
+              {libraryRows.length > 0 ? (
+                <LibraryBrowser
+                  draft={draft}
+                  rows={libraryRows}
+                  onAddTrack={addLibraryTrack}
+                  onPlayTrack={playLibraryTrack}
+                  playingId={previewTransport.playing ? previewTransport.trackId : null}
+                />
+              ) : (
+                <p className="builder-note">{t("builder.add.empty")}</p>
+              )}
+              <details className="explain-fold nested crate-add-backup">
+                <summary>
+                  <span>{t("builder.add.backup")}</span>
+                  <em className="fold-toggle" />
+                </summary>
+                <div className="explain-body">
+                  <p className="builder-note">{t("builder.add.backupNote")}</p>
               {addTab === "auto" ? null : (
                 <div className="add-target">
                   <span className="add-target-label">{t("builder.add.target")}</span>
@@ -2669,6 +3081,8 @@ export function SetBuilder() {
                   </details>
                 </>
               ) : null}
+                </div>
+              </details>
             </div>
           </details>
 
@@ -2750,29 +3164,23 @@ export function SetBuilder() {
                 {t("builder.tool.reshuffle")}
               </button>
             </Tip>
-            <Tip
-              text={t("builder.tool.energyTip")}
-              disabled={
-                analyzingEnergy ||
-                !stickReady ||
-                !draft.tracks.some((track) => track.filePath?.trim())
+            <SetEnergyMenu
+              disabled={!stickReady || !draft.tracks.some((track) => track.filePath?.trim())}
+              busy={analyzingEnergy}
+              fileCount={draft.tracks.filter((track) => track.filePath?.trim()).length}
+              missingCount={
+                draft.tracks.filter((track) => track.filePath?.trim() && !hasKnownEnergy(track))
+                  .length
               }
-            >
-              <button
-                type="button"
-                className="btn ghost"
-                onClick={() => void energyFromFiles()}
-                disabled={
-                  analyzingEnergy ||
-                  !stickReady ||
-                  !draft.tracks.some((track) => track.filePath?.trim())
-                }
-              >
-                {analyzingEnergy
-                  ? t("builder.tool.energyBusy")
-                  : t("builder.tool.energy")}
-              </button>
-            </Tip>
+              knownCount={
+                draft.tracks.filter((track) => track.filePath?.trim() && hasKnownEnergy(track))
+                  .length
+              }
+              onReadTags={() => void readEnergyTags()}
+              onMeasureMissing={() => void measureEnergy("missing")}
+              onMeasureAll={() => void measureEnergy("all")}
+              onWrite={() => void writeEnergyToFiles()}
+            />
             <Tip
               text={t("builder.tool.fitTip")}
               disabled={filledMs <= targetMs * 1.05}
@@ -2843,21 +3251,34 @@ export function SetBuilder() {
                 ) : null}
                 <p className="panel-inline-status builder-status">
                   {roleFilter === "all"
-                    ? t(
-                        filledMs > targetMs * 1.05
-                          ? "builder.list.headAllLong"
-                          : "builder.list.headAll",
-                        {
-                          tracks: trackCount(visibleTimeline.length, t),
-                          duration: formatDuration(
-                            visibleTimeline.reduce(
-                              (sum, track) => sum + playedDurationMs(track.durationMs),
-                              0,
-                            ),
-                          ),
-                          minutes: draft.durationMinutes,
-                        },
-                      )
+                    ? (() => {
+                        const playingMs = visibleTimeline.reduce(
+                          (sum, track) => sum + playedDurationMs(track.durationMs),
+                          0,
+                        );
+                        const overMs = visibleTimeline.reduce(
+                          (sum, track) =>
+                            sum + Math.max(0, track.durationMs - playedDurationMs(track.durationMs)),
+                          0,
+                        );
+                        const tooLong = filledMs > targetMs * 1.05;
+                        const withBlend = overMs >= 1000;
+                        return t(
+                          tooLong
+                            ? withBlend
+                              ? "builder.list.headAllLongBlend"
+                              : "builder.list.headAllLong"
+                            : withBlend
+                              ? "builder.list.headAllBlend"
+                              : "builder.list.headAll",
+                          {
+                            tracks: trackCount(visibleTimeline.length, t),
+                            duration: formatDuration(playingMs),
+                            over: formatDuration(overMs),
+                            minutes: draft.durationMinutes,
+                          },
+                        );
+                      })()
                     : t("builder.list.headRole", {
                         role: roleLabel(t, roleFilter),
                         tracks: trackCount(visibleTimeline.length, t),
@@ -3076,24 +3497,7 @@ export function SetBuilder() {
                                   ? "is-playing"
                                   : undefined
                               }
-                              onClick={() => {
-                                if (
-                                  previewTransport.trackId === track.id &&
-                                  previewTransport.playing
-                                ) {
-                                  requestPreviewPause();
-                                  return;
-                                }
-                                if (
-                                  focusTrackId === track.id &&
-                                  previewTransport.trackId === track.id &&
-                                  !previewTransport.playing
-                                ) {
-                                  requestPreviewResume();
-                                  return;
-                                }
-                                setFocusTrackId(track.id);
-                              }}
+                              onClick={() => toggleTrackPreview(track)}
                               aria-label={
                                 previewTransport.trackId === track.id &&
                                 previewTransport.playing
@@ -3129,6 +3533,20 @@ export function SetBuilder() {
                               ↓
                             </button>
                           </Tip>
+                          {track.filePath?.trim() ? (
+                            <TrackEnergyMenu
+                              name={track.name}
+                              busy={energyTrackId === track.id}
+                              level={hasKnownEnergy(track) ? track.energyLevel : undefined}
+                              onMeasure={() => void recalculateTrackEnergy(track)}
+                              onSetLevel={(level) =>
+                                patchTrack(track.id, {
+                                  energyLevel: level,
+                                  energySource: "manual",
+                                })
+                              }
+                            />
+                          ) : null}
                           {track.role !== "safety" ? (
                             <Tip text={t("builder.row.replaceTitle")}>
                               <button
@@ -3241,6 +3659,10 @@ export function SetBuilder() {
                         library={libraryRows}
                         onReplaceFromLibrary={replaceFromLibrary}
                         onPlayRow={playLibraryRow}
+                        onPlayTrack={toggleTrackPreview}
+                        playingId={
+                          previewTransport.playing ? previewTransport.trackId : null
+                        }
                       />
                     ) : null}
                     <details
@@ -3263,8 +3685,8 @@ export function SetBuilder() {
                           {[
                             track.keyCamelot || t("builder.row.keyOpen"),
                             track.bpm ? `${track.bpm} BPM` : t("builder.row.bpmOpen"),
-                            track.energyLevel != null
-                              ? t("builder.row.energy", { level: track.energyLevel })
+                            hasKnownEnergy(track)
+                              ? t("builder.row.energy", { level: track.energyLevel ?? 0 })
                               : null,
                             track.transition !== "unset"
                               ? transitionLabel(t, track.transition)
@@ -3315,10 +3737,11 @@ export function SetBuilder() {
                         ))}
                       </select>
                       <select
-                        value={track.energyLevel ?? ""}
+                        value={hasKnownEnergy(track) ? (track.energyLevel ?? "") : ""}
                         onChange={(e) =>
                           patchTrack(track.id, {
                             energyLevel: e.target.value ? Number(e.target.value) : undefined,
+                            energySource: e.target.value ? "manual" : undefined,
                           })
                         }
                         aria-label={t("builder.row.energyAria", { name: track.name })}

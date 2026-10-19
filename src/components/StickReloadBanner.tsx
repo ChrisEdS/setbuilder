@@ -10,6 +10,7 @@ import {
   stickLibraryRows,
 } from "@/lib/rekordbox-stick";
 import { rememberStickFiles, stickFileCount } from "@/lib/stick-audio";
+import { enqueueWork } from "@/lib/work-queue";
 import {
   hydrateStickMedia,
   loadPersistedStickHandle,
@@ -51,9 +52,11 @@ export function StickReloadBanner({
           ? existing
           : await pickAndRememberStick("read");
       if (!handle) return;
-      const stick = await readStickFromHandle(handle);
-      await hydrateStickMedia(handle, mediaPathsForDraft(draft, stick.library));
-      await finish(stickLibraryRows(stick.library, stick.sets));
+      await enqueueWork(async () => {
+        const stick = await readStickFromHandle(handle);
+        await hydrateStickMedia(handle, mediaPathsForDraft(draft, stick.library));
+        await finish(stickLibraryRows(stick.library, stick.sets));
+      });
     } catch (caught) {
       setError(errorText(caught, t));
     } finally {

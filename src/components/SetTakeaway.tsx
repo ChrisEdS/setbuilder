@@ -12,12 +12,17 @@ function Menu({
   ariaLabel,
   primary,
   disabled,
+  className,
+  plain,
   children,
 }: {
   label: ReactNode;
   ariaLabel?: string;
   primary?: boolean;
   disabled?: boolean;
+  className?: string;
+  /** Row pills, not the large toolbar button. */
+  plain?: boolean;
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDetailsElement>(null);
@@ -66,14 +71,16 @@ function Menu({
   return (
     <details
       ref={ref}
-      className={disabled ? "menu menu-disabled" : "menu"}
+      className={["menu", disabled ? "menu-disabled" : "", className].filter(Boolean).join(" ")}
       onKeyDown={onKeyDown}
       onClick={(event) => {
         if (disabled) event.preventDefault();
       }}
     >
       <summary
-        className={primary ? "btn menu-trigger" : "btn ghost menu-trigger"}
+        className={
+          plain ? "menu-trigger" : primary ? "btn menu-trigger" : "btn ghost menu-trigger"
+        }
         aria-label={ariaLabel}
         aria-haspopup="menu"
         aria-disabled={disabled}
@@ -135,6 +142,115 @@ function MenuGroup({ label }: { label: string }) {
     <p className="menu-group" role="presentation">
       {label}
     </p>
+  );
+}
+
+export function SetEnergyMenu({
+  disabled,
+  busy,
+  fileCount,
+  missingCount,
+  knownCount,
+  onReadTags,
+  onMeasureMissing,
+  onMeasureAll,
+  onWrite,
+}: {
+  disabled?: boolean;
+  busy?: boolean;
+  fileCount: number;
+  missingCount: number;
+  knownCount: number;
+  onReadTags: () => void;
+  onMeasureMissing: () => void;
+  onMeasureAll: () => void;
+  onWrite: () => void;
+}) {
+  const { t } = useI18n();
+  const locked = Boolean(disabled);
+  return (
+    <Menu
+      label={
+        <>
+          {busy ? t("builder.tool.energyBusy") : t("builder.tool.energy")}{" "}
+          <span aria-hidden="true">▾</span>
+        </>
+      }
+      ariaLabel={t("builder.tool.energy")}
+      disabled={locked}
+    >
+      <MenuItem
+        title={t("builder.energy.menu.read")}
+        hint={t("builder.energy.menu.readHint", { count: fileCount })}
+        disabled={locked || fileCount === 0}
+        onClick={onReadTags}
+      />
+      <MenuItem
+        title={t("builder.energy.menu.missing")}
+        hint={t("builder.energy.menu.missingHint", { count: missingCount })}
+        disabled={locked || missingCount === 0}
+        onClick={onMeasureMissing}
+      />
+      <MenuItem
+        title={t("builder.energy.menu.all")}
+        hint={t("builder.energy.menu.allHint", { count: fileCount })}
+        disabled={locked || fileCount === 0}
+        onClick={onMeasureAll}
+      />
+      <MenuItem
+        title={t("builder.energy.menu.write")}
+        hint={t("builder.energy.menu.writeHint", { count: knownCount })}
+        disabled={locked || knownCount === 0}
+        onClick={onWrite}
+      />
+    </Menu>
+  );
+}
+
+/** Per-track control: measure the file again, or set the level by hand. */
+export function TrackEnergyMenu({
+  name,
+  busy,
+  level,
+  onMeasure,
+  onSetLevel,
+}: {
+  name: string;
+  busy?: boolean;
+  level?: number;
+  onMeasure: () => void;
+  onSetLevel: (level: number) => void;
+}) {
+  const { t } = useI18n();
+  return (
+    <Menu
+      className="track-energy"
+      plain
+      label={t("builder.row.energyRedo")}
+      ariaLabel={t("builder.row.energyRedoAria", { name })}
+    >
+      <MenuItem
+        title={t("builder.row.energyMenu.measure")}
+        hint={t("builder.row.energyRedoTip")}
+        disabled={busy}
+        onClick={onMeasure}
+      />
+      <MenuGroup label={t("builder.row.energyMenu.set")} />
+      <div className="energy-level-pick" role="presentation">
+        {Array.from({ length: 10 }, (_, index) => index + 1).map((value) => (
+          <button
+            key={value}
+            type="button"
+            role="menuitem"
+            aria-pressed={level === value}
+            aria-label={t("builder.row.energy", { level: value })}
+            onClick={() => onSetLevel(value)}
+          >
+            {value}
+          </button>
+        ))}
+      </div>
+    </Menu>
   );
 }
 

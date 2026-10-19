@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import { Tip } from "@/components/Hint";
 import { useI18n } from "@/lib/i18n/react";
 import type { MessageKey, Translate } from "@/lib/i18n/core";
@@ -188,6 +188,8 @@ export function StickHealthCard({
   onEject,
   canFix,
   deprioritizeEject,
+  placement = "card",
+  trailing,
 }: {
   health: StickHealth;
   onRecheck?: () => void | Promise<void>;
@@ -199,6 +201,9 @@ export function StickHealthCard({
   canFix?: boolean;
   /** Stick-Status after import: eject stays available but not as the main action. */
   deprioritizeEject?: boolean;
+  /** `header` sits in the Rekordbox-stick bar: verdict in the middle, actions on the right. */
+  placement?: "card" | "header";
+  trailing?: ReactNode;
 }) {
   const { t } = useI18n();
   const detailsId = useId();
@@ -311,55 +316,14 @@ export function StickHealthCard({
     }
   }
 
-  return (
-    <section
-      className={`stick-strip is-${tone}`}
-      aria-label={t("library.stickHealth.title")}
-      role={tone === "bad" ? "alert" : "status"}
-    >
-      <div className="stick-strip-row">
-        <span className="stick-strip-dot" aria-hidden="true" />
-        <span className="stick-strip-verdict">{t(verdictKey(health, caps.canPrepare))}</span>
-        <div className="stick-strip-actions">
-          {primary ? (
-            <Tip text={tip(primary)} disabled={busy !== null}>
-              <button
-                type="button"
-                className={"btn" + (busy === primary ? " is-busy" : "")}
-                disabled={busy !== null}
-                onClick={() => void run(primary)}
-              >
-                {label(primary)}
-              </button>
-            </Tip>
-          ) : null}
-          <Tip
-            text={t(
-              open
-                ? "library.stickHealth.lessTip"
-                : "library.stickHealth.detailsTip",
-            )}
-            end
-          >
-            <button
-              type="button"
-              className="btn ghost stick-strip-toggle"
-              aria-expanded={open}
-              aria-controls={detailsId}
-              onClick={() => setUserOpen(!open)}
-            >
-              {t(open ? "library.stickHealth.less" : "library.stickHealth.details")}
-            </button>
-          </Tip>
-        </div>
-      </div>
-      {note ? (
-        <p className={"stick-strip-note" + (noteOk ? " is-ok" : " is-bad")}>{t(note)}</p>
-      ) : primary ? (
-        <p className="stick-strip-next">{t(nextKey(primary))}</p>
-      ) : null}
-      {open ? (
-        <div className="stick-strip-details" id={detailsId}>
+  const verdict = t(verdictKey(health, caps.canPrepare));
+  const followUp = note ? (
+    <p className={"stick-strip-note" + (noteOk ? " is-ok" : " is-bad")}>{t(note)}</p>
+  ) : primary ? (
+    <p className="stick-strip-next">{t(nextKey(primary))}</p>
+  ) : null;
+  const details = open ? (
+    <div className="stick-strip-details" id={detailsId}>
           <p className="stick-strip-meaning">{t(meaningKey(health, caps.canPrepare))}</p>
           <dl className="stick-strip-facts">
             {facts(health, t).map((fact) => (
@@ -400,7 +364,71 @@ export function StickHealthCard({
             ))}
           </div>
         </div>
+      ) : null;
+
+  const actions = (
+    <div className={placement === "header" ? "stick-strip-actions stick-actions" : "stick-strip-actions"}>
+      {primary ? (
+        <Tip text={tip(primary)} disabled={busy !== null}>
+          <button
+            type="button"
+            className={"btn" + (busy === primary ? " is-busy" : "")}
+            disabled={busy !== null}
+            onClick={() => void run(primary)}
+          >
+            {label(primary)}
+          </button>
+        </Tip>
       ) : null}
+      <Tip
+        text={t(open ? "library.stickHealth.lessTip" : "library.stickHealth.detailsTip")}
+        end={!trailing}
+      >
+        <button
+          type="button"
+          className="btn ghost stick-strip-toggle"
+          aria-expanded={open}
+          aria-controls={detailsId}
+          onClick={() => setUserOpen(!open)}
+        >
+          {t(open ? "library.stickHealth.less" : "library.stickHealth.details")}
+        </button>
+      </Tip>
+      {trailing}
+    </div>
+  );
+
+  if (placement === "header") {
+    return (
+      <div className={`stick-head-cluster is-${tone}`}>
+        <p className="stick-head-verdict" role={tone === "bad" ? "alert" : "status"}>
+          <span className="stick-strip-dot" aria-hidden="true" />
+          <span className="stick-strip-verdict">{verdict}</span>
+        </p>
+        {actions}
+        {followUp || details ? (
+          <div className="stick-head-more">
+            {followUp}
+            {details}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <section
+      className={`stick-strip is-${tone}`}
+      aria-label={t("library.stickHealth.title")}
+      role={tone === "bad" ? "alert" : "status"}
+    >
+      <div className="stick-strip-row">
+        <span className="stick-strip-dot" aria-hidden="true" />
+        <span className="stick-strip-verdict">{verdict}</span>
+        {actions}
+      </div>
+      {followUp}
+      {details}
     </section>
   );
 }

@@ -106,6 +106,33 @@ export function rankReplacements(
     .sort((a, b) => b.score - a.score);
 }
 
+export type ReplacementOrigin = {
+  kind: "history" | "playlist" | "folder";
+  name: string;
+};
+
+/** Where a library candidate lives: history, a playlist path, or the file folder. */
+export function replacementOrigin(row: {
+  playlists?: string[];
+  stick?: { filePath?: string };
+}): ReplacementOrigin | null {
+  const labels = (row.playlists ?? []).map((label) => label.trim()).filter(Boolean);
+  const history = labels.find((label) => /^history\s*\//i.test(label));
+  if (history) {
+    const name = history.replace(/^history\s*\/\s*/i, "").trim();
+    return { kind: "history", name: name || history };
+  }
+  const path = labels.find((label) => label.includes(" / "));
+  if (path) return { kind: "playlist", name: path };
+  if (labels[0]) return { kind: "playlist", name: labels[0] };
+  const file = row.stick?.filePath?.replaceAll("\\", "/").trim();
+  if (!file) return null;
+  const parts = file.split("/").filter(Boolean);
+  parts.pop();
+  const folder = parts.slice(-2).join(" / ");
+  return folder ? { kind: "folder", name: folder } : null;
+}
+
 export type LibraryReplacement<T> = {
   row: T;
   detail: string;

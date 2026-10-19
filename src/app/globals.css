@@ -3711,6 +3711,11 @@ label.btn:hover {
   color: #121212 !important;
 }
 
+.timeline-tools button.is-busy {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
 .timeline-tools button.is-anchor {
   background: color-mix(in oklab, var(--mint) 70%, #fff) !important;
   color: var(--espresso) !important;
@@ -4692,52 +4697,128 @@ button.drag-handle:active i {
 }
 
 .replace-menu {
-  margin: 0.35rem 0 0.15rem;
-  padding: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
-  background: #121212;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin: 0.75rem 0 0;
+  padding: 0.85rem 0.85rem 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: #181818;
+  min-width: 0;
 }
 
 .replace-menu-head {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.75rem;
-  margin-bottom: 0.55rem;
+  margin: 0;
 }
 
-.replace-menu p,
-.replace-menu em,
-.replace-menu span {
-  color: #b3b3b3;
-  font-size: 0.78rem;
+.replace-menu-head p,
+.replace-empty {
+  margin: 0.2rem 0 0;
+  color: #8f8f8f;
+  font-size: 0.75rem;
+  line-height: 1.4;
 }
 
-.replace-menu ul {
+.replace-list {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: grid;
-  gap: 0.55rem;
+  max-height: 20rem;
+  overflow: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
 }
 
-.replace-menu li {
+.replace-list li {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 0.75rem;
   align-items: center;
+  min-width: 0;
+  padding: 0.45rem 0.15rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.replace-menu strong,
-.replace-menu span,
-.replace-menu em {
+.replace-list li:last-child {
+  border-bottom: 0;
+}
+
+.replace-list li.replace-kicker {
   display: block;
+  padding: 0.7rem 0.15rem 0.15rem;
+  border-bottom: 0;
+  color: #8f8f8f;
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
-.replace-menu em {
+.replace-list li.replace-kicker:first-child {
+  padding-top: 0.1rem;
+}
+
+.replace-copy {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.replace-play {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+}
+
+.replace-copy strong,
+.replace-copy span {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.replace-copy span,
+.replace-origin {
+  color: #8f8f8f;
+  font-size: 0.75rem;
   font-style: normal;
-  margin-top: 0.15rem;
+}
+
+.replace-meta {
+  font-style: normal;
+  color: #d0d0d0;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  justify-self: end;
+}
+
+.replace-list li .lib-add {
+  width: auto;
+  justify-self: end;
+}
+
+.replace-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+  padding-top: 0.15rem;
+}
+
+.replace-foot .replace-count {
+  color: #8f8f8f;
+  font-size: 0.75rem;
 }
 
 .safety-swap {
@@ -5662,7 +5743,7 @@ html[data-frame="mac"] .set-shell label.btn {
   scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
 }
 .library-list {
-  max-height: 20rem !important;
+  max-height: min(36rem, 58vh) !important;
 }
 .crate-add .result-list {
   max-height: 22rem;
@@ -5755,6 +5836,11 @@ html[data-frame="mac"] .set-shell label.btn {
   opacity: 0.35;
   cursor: not-allowed;
 }
+.lib-play.is-playing {
+  background: #fff;
+  color: #121212;
+  padding: 0;
+}
 .lib-add {
   padding: 0.3rem 0.75rem;
   font-size: 0.8rem;
@@ -5840,12 +5926,12 @@ html[data-frame="mac"] .set-shell label.btn {
 
 /* Ersatz menu: groups and play/replace actions. */
 .replace-group {
-  margin: 0.6rem 0 0.25rem;
-  color: #c4c4c4;
+  margin: 0 0 0.25rem;
+  color: #8f8f8f;
   font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
 }
 .replace-actions {
   display: inline-flex;
@@ -6401,6 +6487,99 @@ body {
 
 .menu-item.danger strong {
   color: #ff8a8a;
+}
+
+/* Row Energy menu sits in the pill toolbar. Lift the open row so the panel
+   is not painted under the next track, and keep the trigger the same size
+   as the neighbouring move and replace buttons. */
+.timeline-tools .track-energy {
+  position: relative;
+  display: inline-flex;
+}
+
+.manual-row:has(.track-energy[open]) {
+  position: relative;
+  z-index: 40;
+}
+
+.timeline-tools .track-energy > summary.menu-trigger {
+  border: 0 !important;
+  background: #242424 !important;
+  color: #fff !important;
+  border-radius: 999px !important;
+  padding: 0 0.55rem !important;
+  min-width: 2rem;
+  min-height: 32px !important;
+  height: 32px !important;
+  font-size: 0.85rem !important;
+  font-weight: 500 !important;
+  line-height: 32px;
+  opacity: 0.85;
+  transform: none !important;
+}
+
+.manual-row:hover .timeline-tools .track-energy > summary.menu-trigger,
+.timeline-tools .track-energy > summary.menu-trigger:hover,
+.timeline-tools .track-energy[open] > summary.menu-trigger {
+  opacity: 1;
+  background: #2a2a2a !important;
+  color: #fff !important;
+  border: 0 !important;
+}
+
+.timeline-tools .track-energy .menu-panel {
+  z-index: 41;
+  width: min(280px, calc(100vw - 24px));
+  max-height: min(320px, 70vh);
+  overflow: auto;
+}
+
+.timeline-tools .menu-panel .menu-item {
+  opacity: 1;
+  min-width: 0;
+  min-height: 0;
+  background: transparent !important;
+  color: #fff !important;
+  border-radius: 12px !important;
+}
+
+.timeline-tools .menu-panel .menu-item:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.energy-level-pick {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+  padding: 0.15rem 0.2rem 0.35rem;
+}
+
+.timeline-tools .energy-level-pick button {
+  opacity: 1;
+  min-width: 0;
+  min-height: 2rem;
+  padding: 0.2rem 0 !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: #2a2a2a !important;
+  color: #fff !important;
+  font-size: 0.85rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.timeline-tools .energy-level-pick button[aria-pressed="true"] {
+  background: #1ed760 !important;
+  color: #121212 !important;
+}
+
+.timeline-tools .energy-level-pick button:hover {
+  background: #3a3a3a !important;
+}
+
+.timeline-tools .energy-level-pick button[aria-pressed="true"]:hover {
+  background: #1ed760 !important;
+  color: #121212 !important;
 }
 
 /* The list header sits right above the tracks and only belongs to the Setliste. */
@@ -7514,7 +7693,20 @@ body {
 }
 
 .library-panel .library-browser-head .library-browser-toolbar {
-  flex: 1 1 16rem;
+  flex: 0 1 auto;
+  margin-left: 0;
+}
+
+.library-panel .library-browser-head .library-add-bar {
+  flex: 0 1 auto;
+  margin: 0 0 0 auto;
+  justify-content: flex-end;
+  align-items: center;
+  align-self: center;
+}
+
+.library-panel .library-browser-head .library-add-bar label:last-child select {
+  max-width: 16rem;
 }
 
 .library-panel .stick-import-head .stick-actions {
@@ -7522,6 +7714,124 @@ body {
   justify-content: flex-end;
   gap: 0.45rem;
   margin-left: auto;
+}
+
+/* Stick status lives in the Rekordbox-stick header. The cluster dissolves
+   so title, verdict and buttons share one row; facts span the row below. */
+.library-panel .stick-import-head.has-status {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.55rem 0.85rem;
+}
+
+.stick-head-cluster {
+  display: contents;
+}
+
+.library-panel .stick-import-head.has-status > .library-browser-title {
+  grid-column: 1;
+  grid-row: 1;
+  margin-right: 0;
+}
+
+.library-source-pane p.stick-head-verdict,
+.stick-head-verdict {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  max-width: none;
+  margin: 0;
+  color: #d9d9d9;
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.library-panel .stick-import-head.has-status > .library-browser-title,
+.library-panel .stick-import-head.has-status .library-browser-heading {
+  align-self: center;
+  margin: 0;
+}
+
+.stick-head-verdict .stick-strip-verdict {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #d9d9d9;
+  font-size: 0.86rem;
+}
+
+.library-panel .stick-import-head.has-status .stick-head-cluster > .stick-actions {
+  grid-column: 3;
+  grid-row: 1;
+  flex: 0 0 auto;
+  margin-left: 0;
+}
+
+.stick-head-more {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  min-width: 0;
+}
+
+.stick-head-cluster.is-ok .stick-strip-dot {
+  background: var(--ok);
+}
+
+.stick-head-cluster.is-warn .stick-strip-dot {
+  background: #fbbf24;
+}
+
+.stick-head-cluster.is-bad .stick-strip-dot {
+  background: var(--danger);
+}
+
+.stick-head-more .stick-strip-note,
+.stick-head-more .stick-strip-next,
+.stick-head-more .stick-strip-meaning {
+  margin: 0.35rem 0 0;
+  max-width: 64ch;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.stick-head-more .stick-strip-note.is-ok {
+  color: var(--ok);
+}
+
+.stick-head-more .stick-strip-note.is-bad {
+  color: var(--danger);
+}
+
+.stick-head-more .stick-strip-details {
+  margin-left: 0;
+}
+
+.set-shell .library-panel .stick-import-pane.is-folded .stick-import-head {
+  padding-bottom: 0 !important;
+  border-bottom: 0 !important;
+}
+
+@media (max-width: 720px) {
+  .library-panel .stick-import-head.has-status {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .library-panel .stick-import-head.has-status > .library-browser-title,
+  .stick-head-verdict,
+  .stick-head-cluster > .stick-actions {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .stick-head-cluster > .stick-actions {
+    justify-content: flex-start;
+  }
 }
 
 .library-panel .stick-import-pane .library-path {
@@ -7863,12 +8173,80 @@ body {
   min-width: 0;
 }
 
+.crate-add-body > .library-panel,
+.crate-workspace > .stick-sets-host {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.crate-add-body > .library-panel > .library-browser.builder-card {
+  margin-top: 0 !important;
+}
+
 .set-shell .library-panel .library-browser.builder-card,
 .set-shell .library-panel .library-source-pane.builder-card {
   display: grid;
   gap: 0.875rem;
   margin-top: 0.875rem !important;
   padding: 1rem 1.15rem !important;
+}
+
+.set-shell .crate-workspace > .stick-sets-host > .library-browser.builder-card {
+  margin-top: 0 !important;
+}
+
+/* Playlist fold: same summary chrome as Add music, title + count stay on the row. */
+.set-shell .crate-workspace > .stick-sets-host > .stick-sets-fold {
+  margin: 0 !important;
+}
+
+.set-shell .stick-sets-fold > summary .library-browser-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+}
+
+.set-shell .stick-sets-fold > summary .library-browser-heading {
+  flex: 0 1 auto;
+}
+
+.set-shell .stick-sets-fold > .stick-sets-body {
+  display: grid;
+  gap: 0.875rem;
+}
+
+.set-shell .stick-sets-fold .library-browser-toolbar {
+  flex: none !important;
+  width: 100%;
+  margin-left: 0 !important;
+  justify-content: flex-start !important;
+}
+
+.set-shell .stick-sets-fold .library-search-field {
+  flex: 1 1 10rem;
+  max-width: 20rem;
+}
+
+.set-shell .stick-sets-fold .library-search-field input {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 0.65rem 0.85rem !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 8px !important;
+  background: #121212 !important;
+  color: #fff !important;
+}
+
+.set-shell .stick-sets-fold .library-search-field input:focus {
+  border-color: transparent !important;
+  background: #2a2a2a !important;
+  box-shadow: 0 0 0 2px rgba(30, 215, 96, 0.55) !important;
+  outline: none !important;
 }
 
 .set-shell .library-panel .stick-import-pane.builder-card {
@@ -7943,3 +8321,5 @@ body {
 .explain-fold.section-fold + .explain-fold.section-fold {
   margin-top: 1.125rem;
 }
+
+/* add-music library host: no second card around the browser */

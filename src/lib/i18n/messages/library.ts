@@ -105,6 +105,8 @@ const de = {
   "library.stick.path":
     "Im Dialog den ganzen Stick wählen, nicht einen Unterordner. Die Datenbank liegt im Ordner {pioneer} oder {dotPioneer} (mit Punkt, je nach rekordbox-Version). Der Ordner ist versteckt und wird von selbst gefunden.",
   "library.stick.found": "Gefunden: {label}",
+  "library.stick.fold": "Zuklappen",
+  "library.stick.unfold": "Aufklappen",
   "library.stick.statusTitle": "Stick-Status",
   "library.stick.statusHint":
     "Lesbarkeit und Player-Tauglichkeit — Probleme hier beheben. Auswerfen nach „Auf Stick schreiben“ unter Zum Gig.",
@@ -448,6 +450,8 @@ const en: Record<keyof typeof de, string> = {
   "library.stick.path":
     "In the dialog, choose the whole stick, not a subfolder. The database lives in the {pioneer} or {dotPioneer} folder (with a dot, depending on the rekordbox version). The folder is hidden and found automatically.",
   "library.stick.found": "Found: {label}",
+  "library.stick.fold": "Collapse",
+  "library.stick.unfold": "Expand",
   "library.stick.statusTitle": "Stick status",
   "library.stick.statusHint":
     "Readability and player readiness — fix issues here. Eject after “Write to stick” under Take to the gig.",

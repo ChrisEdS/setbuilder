@@ -53,7 +53,12 @@ const de = {
   "builder.build.title": "Set bauen",
   "builder.build.summary": "{performance} Performance · {safety} Alternativen",
   "builder.build.note":
-    "Streaming-Lücken füllen — ein Track bekommt Phase und Rolle. Reihenfolge per Hand oder Sortieren.",
+    "Mit einer Playlist vom Stick starten, einzelne Tracks unter Musik hinzufügen, oder beides.",
+  "builder.playlist.title": "Mit einer Playlist starten",
+  "builder.playlist.note":
+    "Die Playlist wird die Basis des Sets. Einzelne Tracks danach unter Musik hinzufügen.",
+  "builder.playlist.empty":
+    "Noch kein Stick. Oben unter „Set laden & Keys“ den Stick laden.",
 
   // Add music
   "builder.add.title": "Musik hinzufügen",
@@ -72,6 +77,11 @@ const de = {
   "builder.add.tab.auto.label": "Automatisch",
   "builder.add.tab.auto.hint":
     "Eine ganze Playlist als fertiges Set verteilen lassen.",
+  "builder.add.backup": "Andere Quellen",
+  "builder.add.backupNote":
+    "Für Tracks, die nicht in der Bibliothek stehen.",
+  "builder.add.empty":
+    "Noch keine Bibliothek. Oben unter „Set laden & Keys“ den Stick laden.",
 
   "builder.search.placeholder": "Artist, Titel oder Genre",
   "builder.search.aria": "Spotify-Suche",
@@ -162,7 +172,7 @@ const de = {
     "Setliste aus den {pool} Tracks auf dem Stick neu setzen? Brief und Opener/Closer bleiben — Reihenfolge, Rollen und Notizen werden ersetzt.",
   "builder.tool.energy": "Energie aus Dateien",
   "builder.tool.energyTip":
-    "Berechnet Energy Level 1–10 aus den Stick-Dateien (Essentia), setzt es im Draft und schreibt es in die MP3-Tags. Die Set-Notiz bleibt unangetastet; Key und BPM auch.",
+    "Tags lesen, fehlende oder alle Tracks im Hintergrund messen, oder gesetzte Level in die MP3 schreiben.",
   "builder.tool.energyBusy": "Energie…",
   "builder.energy.confirm":
     "Energie aus Stick-Dateien berechnen und in die MP3 auf dem Stick schreiben? Das Audio bleibt unverändert; Key und BPM werden nicht überschrieben. Chrome, Edge oder Desktop nötig.",
@@ -175,11 +185,34 @@ const de = {
   "builder.energy.noFile":
     "Keine Tracks mit Stick-Pfad. Set vom Stick laden, damit die Dateien gefunden werden.",
   "builder.energy.notMp3": "Kein MP3 — nur Draft",
+  "builder.energy.measureFailed": "Messung fehlgeschlagen",
+  "builder.energy.one": "Energie {level} · {name}",
+  "builder.energy.oneWritten": "Energie {level} · {name} · MP3 geschrieben",
   "builder.energy.progress": "{done}/{total} · {skipped} übersprungen · {errors} Fehler",
+  "builder.work.queued": "Wartet · noch {count} davor",
   "builder.energy.done":
     "Fertig: {set} gesetzt, {written} in MP3 geschrieben · {skipped} übersprungen · {errors} Fehler",
   "builder.energy.denied":
     "Kein Schreibzugriff auf den Stick. Im Dialog erlauben, sonst wird nur der Draft aktualisiert.",
+  "builder.energy.measured": "Gemessen: {set} · {skipped} übersprungen · {errors} Fehler",
+  "builder.energy.tags": "Tags {done}/{total}",
+  "builder.energy.tagsDone": "{found} von {total} aus Tags gelesen",
+  "builder.energy.noneMissing": "Alle Tracks mit Datei haben schon Energie.",
+  "builder.energy.noneKnown": "Noch keine Energie zum Schreiben.",
+  "builder.energy.writeProgress": "Schreibe {done}/{total} · {written} geschrieben",
+  "builder.energy.writeDone": "{written} MP3 geschrieben · {skipped} übersprungen",
+  "builder.energy.menu.read": "Aus Tags lesen",
+  "builder.energy.menu.readHint":
+    "{count} Dateien, ohne Audio zu dekodieren. Der Tag ersetzt den Level im Set.",
+  "builder.energy.menu.missing": "Fehlende messen",
+  "builder.energy.menu.missingHint":
+    "{count} Tracks ohne Energie im Hintergrund messen. Die Datei wird nicht geschrieben.",
+  "builder.energy.menu.all": "Alle neu berechnen",
+  "builder.energy.menu.allHint":
+    "{count} Dateien im Hintergrund neu messen. Die Datei bleibt unverändert.",
+  "builder.energy.menu.write": "In MP3 schreiben",
+  "builder.energy.menu.writeHint":
+    "{count} gesetzte Level in die Dateien schreiben. Key, BPM und Audio bleiben.",
   "builder.sort.perfect": "Perfekt · Max Score",
   "builder.sort.perfectHint":
     "Ganzes Set: exakter Camelot-TSP (Held-Karp ≤18, sonst NN+2-opt/Or-opt). Clashes zuerst killen, dann Mix-Score. Opener/Closer bleiben. Phasen danach neu.",
@@ -217,8 +250,12 @@ const de = {
   // Setlist
   "builder.list.headAll":
     "Performance-Set · {tracks} · {duration} Spielzeit / {minutes}:00 Slot",
+  "builder.list.headAllBlend":
+    "Performance-Set · {tracks} · {duration} Spielzeit · {over} Überlänge / {minutes}:00 Slot",
   "builder.list.headAllLong":
     "Performance-Set · {tracks} · {duration} Spielzeit / {minutes}:00 Slot · zu lang",
+  "builder.list.headAllLongBlend":
+    "Performance-Set · {tracks} · {duration} Spielzeit · {over} Überlänge / {minutes}:00 Slot · zu lang",
   "builder.list.headRole": "{role} · {tracks} · {duration}",
   "builder.list.detailsClose": "Details aus",
   "builder.list.detailsOpen": "Details ein",
@@ -228,7 +265,7 @@ const de = {
   "builder.list.filterSetTitle": "Performance-Reihenfolge, ohne die Alternativen.",
   "builder.list.empty": "Noch kein Set.",
   "builder.list.emptyHint":
-    "Oben Musik hinzufügen oder unter „Set laden & Keys“ eine Playlist vom Stick laden.",
+    "Unter „Set bauen“ mit einer Playlist starten oder oben den Stick laden.",
 
   "builder.row.dragAria": "{name} verschieben",
   "builder.row.dragTitle": "Hier ziehen",
@@ -246,6 +283,12 @@ const de = {
   "builder.row.removeAria": "{name} entfernen",
   "builder.row.sourceTip":
     "Quelle des Tracks: Stick/rekordbox, Spotify, Tidal oder manuell hinzugefügt.",
+  "builder.row.energyRedo": "Energie",
+  "builder.row.energyRedoTip":
+    "Energie neu aus der Datei messen. Die MP3 wird mitgeschrieben, wenn der Stick schon Schreibrecht hat.",
+  "builder.row.energyRedoAria": "Energie für {name} neu messen",
+  "builder.row.energyMenu.measure": "Neu messen",
+  "builder.row.energyMenu.set": "Energie setzen",
   "builder.row.replace": "Ersatz",
   "builder.row.replaceTitle":
     "Ersatz aus deinen Alternativen oder aus der Bibliothek, passend zu Vorgänger und Nachfolger",
@@ -550,7 +593,12 @@ const en: Record<keyof typeof de, string> = {
   "builder.build.title": "Build set",
   "builder.build.summary": "{performance} performance · {safety} alternatives",
   "builder.build.note":
-    "Fill streaming gaps — each track gets a phase and role. Arrange by hand or sort.",
+    "Start with a playlist from the stick, add single tracks under Add music, or do both.",
+  "builder.playlist.title": "Start with a playlist",
+  "builder.playlist.note":
+    "The playlist becomes the base of the set. Add single tracks afterwards under Add music.",
+  "builder.playlist.empty":
+    "No stick yet. Load it above under “Load set & keys”.",
 
   "builder.add.title": "Add music",
   "builder.add.target": "New tracks go to",
@@ -567,6 +615,10 @@ const en: Record<keyof typeof de, string> = {
   "builder.add.tab.manual.hint": "Enter title and artist yourself.",
   "builder.add.tab.auto.label": "Automatic",
   "builder.add.tab.auto.hint": "Turn a whole playlist into a ready-made set.",
+  "builder.add.backup": "Other sources",
+  "builder.add.backupNote": "For tracks that are not in the library.",
+  "builder.add.empty":
+    "No library yet. Load the stick above under “Load set & keys”.",
 
   "builder.search.placeholder": "Artist, title or genre",
   "builder.search.aria": "Spotify search",
@@ -655,7 +707,7 @@ const en: Record<keyof typeof de, string> = {
     "Rebuild the setlist from the {pool} tracks on the stick? Brief and opener/closer stay — order, roles and notes are replaced.",
   "builder.tool.energy": "Energy from files",
   "builder.tool.energyTip":
-    "Computes Energy Level 1–10 from stick files (Essentia), sets it in the draft, and writes it into MP3 tags. The set note stays untouched; so do key and BPM.",
+    "Read tags, measure missing or all tracks in the background, or write set levels into the MP3s.",
   "builder.tool.energyBusy": "Energy…",
   "builder.energy.confirm":
     "Compute energy from stick files and write it into the MP3s on the stick? Audio stays unchanged; key and BPM are not overwritten. Needs Chrome, Edge or desktop.",
@@ -668,11 +720,34 @@ const en: Record<keyof typeof de, string> = {
   "builder.energy.noFile":
     "No tracks with a stick path. Load the set from the stick so the files can be found.",
   "builder.energy.notMp3": "Not MP3 — draft only",
+  "builder.energy.measureFailed": "Measurement failed",
+  "builder.energy.one": "Energy {level} · {name}",
+  "builder.energy.oneWritten": "Energy {level} · {name} · written to MP3",
   "builder.energy.progress": "{done}/{total} · {skipped} skipped · {errors} errors",
+  "builder.work.queued": "Waiting · {count} ahead",
   "builder.energy.done":
     "Done: {set} set, {written} written to MP3 · {skipped} skipped · {errors} errors",
   "builder.energy.denied":
     "No write access to the stick. Allow it in the dialog, otherwise only the draft is updated.",
+  "builder.energy.measured": "Measured: {set} · {skipped} skipped · {errors} errors",
+  "builder.energy.tags": "Tags {done}/{total}",
+  "builder.energy.tagsDone": "{found} of {total} read from tags",
+  "builder.energy.noneMissing": "Every track with a file already has energy.",
+  "builder.energy.noneKnown": "No energy to write yet.",
+  "builder.energy.writeProgress": "Writing {done}/{total} · {written} written",
+  "builder.energy.writeDone": "{written} MP3s written · {skipped} skipped",
+  "builder.energy.menu.read": "Read from tags",
+  "builder.energy.menu.readHint":
+    "{count} files, without decoding audio. The tag replaces the level in the set.",
+  "builder.energy.menu.missing": "Measure missing",
+  "builder.energy.menu.missingHint":
+    "Measure {count} tracks without energy in the background. The file is not written.",
+  "builder.energy.menu.all": "Recalculate all",
+  "builder.energy.menu.allHint":
+    "Measure {count} files again in the background. The file stays unchanged.",
+  "builder.energy.menu.write": "Write to MP3",
+  "builder.energy.menu.writeHint":
+    "Write {count} set levels into the files. Key, BPM and audio stay.",
   "builder.sort.perfect": "Perfect · Max score",
   "builder.sort.perfectHint":
     "Whole set: exact Camelot TSP (Held-Karp ≤18, else NN+2-opt/Or-opt). Kill clashes first, then max mix score. Opener/closer stay. Phases re-laid after.",
@@ -709,8 +784,12 @@ const en: Record<keyof typeof de, string> = {
 
   "builder.list.headAll":
     "Performance set · {tracks} · {duration} playing / {minutes}:00 slot",
+  "builder.list.headAllBlend":
+    "Performance set · {tracks} · {duration} playing · {over} blend / {minutes}:00 slot",
   "builder.list.headAllLong":
     "Performance set · {tracks} · {duration} playing / {minutes}:00 slot · too long",
+  "builder.list.headAllLongBlend":
+    "Performance set · {tracks} · {duration} playing · {over} blend / {minutes}:00 slot · too long",
   "builder.list.headRole": "{role} · {tracks} · {duration}",
   "builder.list.detailsClose": "Details off",
   "builder.list.detailsOpen": "Details on",
@@ -720,7 +799,7 @@ const en: Record<keyof typeof de, string> = {
   "builder.list.filterSetTitle": "Performance order, without the alternatives.",
   "builder.list.empty": "No set yet.",
   "builder.list.emptyHint":
-    "Add music above or load a playlist from the stick under “Load set & keys”.",
+    "Start with a playlist under “Build set”, or load the stick above.",
 
   "builder.row.dragAria": "Move {name}",
   "builder.row.dragTitle": "Drag here",
@@ -738,6 +817,12 @@ const en: Record<keyof typeof de, string> = {
   "builder.row.removeAria": "Remove {name}",
   "builder.row.sourceTip":
     "Where the track came from: stick/rekordbox, Spotify, Tidal, or added by hand.",
+  "builder.row.energyRedo": "Energy",
+  "builder.row.energyRedoTip":
+    "Measure energy again from the file. The MP3 is updated when the stick already allows writing.",
+  "builder.row.energyRedoAria": "Measure energy again for {name}",
+  "builder.row.energyMenu.measure": "Measure again",
+  "builder.row.energyMenu.set": "Set energy",
   "builder.row.replace": "Replace",
   "builder.row.replaceTitle":
     "Replacement from your Alternatives or the library, matched to the previous and next track",

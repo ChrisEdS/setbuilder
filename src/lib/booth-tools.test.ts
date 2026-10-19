@@ -3,7 +3,7 @@ import test from "node:test";
 import { buildM3u, buildRekordboxXml } from "./export-booth.ts";
 import { tEn } from "./i18n/core.ts";
 import { pickStreamingMatch } from "./match-link.ts";
-import { rankReplacements, swapIntoSlot } from "./replace-track.ts";
+import { rankReplacements, replacementOrigin, swapIntoSlot } from "./replace-track.ts";
 import { artistLine, type SetDraft, type SetTrack } from "./set.ts";
 import { matchStickFile } from "./stick-audio.ts";
 
@@ -116,6 +116,21 @@ test("replacement ranking prefers the closer key and bpm", () => {
   assert.equal(swapped[1]?.id, "close");
   assert.equal(swapped[1]?.role, "groove");
   assert.equal(swapped.find((item) => item.id === "slot")?.role, "safety");
+});
+
+test("replacement origin prefers history, then playlist path, then the file folder", () => {
+  assert.deepEqual(
+    replacementOrigin({ playlists: ["HISTORY 001", "History / HISTORY 001"] }),
+    { kind: "history", name: "HISTORY 001" },
+  );
+  assert.deepEqual(
+    replacementOrigin({ playlists: ["Freitag", "Sets / Freitag"] }),
+    { kind: "playlist", name: "Sets / Freitag" },
+  );
+  assert.deepEqual(
+    replacementOrigin({ stick: { filePath: "Contents/House/Night Drive.mp3" } }),
+    { kind: "folder", name: "Contents / House" },
+  );
 });
 
 test("streaming match requires the title and prefers the artist", () => {

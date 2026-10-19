@@ -15,13 +15,14 @@ import {
   type KeyImportRow,
 } from "@/lib/key-import";
 import { parseRekordboxFile } from "@/lib/rekordbox";
+import { enqueueWork } from "@/lib/work-queue";
 import { energyStep } from "@/lib/energy";
 import { bpmDelta } from "@/lib/harmonic";
 import { sidePhrase } from "@/lib/replace-track";
 import { Tip } from "@/components/Hint";
-import { RekordboxStick, type StickStatusSlice } from "@/components/RekordboxStick";
-import { StickHealthCard } from "@/components/StickHealthCard";
-import { libraryTrackToSetTrack, type StickTrack } from "@/lib/rekordbox-stick";
+import { RekordboxStick } from "@/components/RekordboxStick";
+import type { RekordboxStickSet } from "@/lib/rekordbox-stick";
+import { libraryRowTrackId, libraryTrackToSetTrack, type StickTrack } from "@/lib/rekordbox-stick";
 import { stickFileCount } from "@/lib/stick-audio";
 import { errorText, phaseLabel, roleLabel } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n/react";
@@ -46,6 +47,8 @@ type Props = {
   /** Library lives in the parent so other views (Ersatz) can use it. */
   rows: LibraryRow[];
   onRows: (rows: LibraryRow[]) => void;
+  /** Stick playlists and history, for starting the set. */
+  onStickSets?: (sets: RekordboxStickSet[]) => void;
 };
 
 export type LibraryRow = {
@@ -109,39 +112,26 @@ function playlistPickerLabels(rows: LibraryRow[]): string[] {
     .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
 }
 
-export function LibraryPanel({
+export function LibraryBrowser({
   draft,
-  onApply,
+  rows,
   onAddTrack,
   onPlayTrack,
-  rows: libraryRows,
-  onRows: setLibraryRows,
-}: Props) {
+  playingId = null,
+}: {
+  draft: SetDraft;
+  rows: LibraryRow[];
+  onAddTrack?: (track: SetTrack) => void;
+  onPlayTrack?: (track: SetTrack) => void;
+  playingId?: string | null;
+}) {
   const { t } = useI18n();
   const [fitTo, setFitTo] = useState("");
   const [fitPage, setFitPage] = useState(0);
   const [addPhase, setAddPhase] = useState<SetPhaseId>("open");
   const [addRole, setAddRole] = useState<TrackRole>("groove");
-  const [text, setText] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [libraryCount, setLibraryCount] = useState<number | null>(null);
   const [query, setQuery] = useState("");
-  const [tidalNote, setTidalNote] = useState<string | null>(null);
-  const [tidalConfigured, setTidalConfigured] = useState<boolean | null>(null);
-  const [source, setSource] = useState<SourceTab>("rekordbox");
-  const [stickStatus, setStickStatus] = useState<StickStatusSlice | null>(null);
-
-  useEffect(() => {
-    if (source !== "rekordbox") setStickStatus(null);
-  }, [source]);
-
-  const keyStats = useMemo(() => {
-    const main = performanceTracks(draft.tracks);
-    const keyed = main.filter((track) => track.keyCamelot).length;
-    const total = main.length;
-    const share = total ? Math.round((keyed / total) * 100) : 0;
-    return { keyed, total, share };
-  }, [draft.tracks]);
+  const searchHintsId = useId();
 
   const inSet = useMemo(
     () =>
@@ -150,52 +140,39 @@ export function LibraryPanel({
       ),
     [draft.tracks],
   );
-
-  const playlistOptions = useMemo(
-    () => playlistPickerLabels(libraryRows),
-    [libraryRows],
-  );
-  const playlistFilter =
-    playlistOptions.find((name) => name === query) ?? "";
-  const searchHintsId = useId();
-
+  const playlistOptions = useMemo(() => playlistPickerLabels(rows), [rows]);
+  const playlistFilter = playlistOptions.find((name) => name === query) ?? "";
   const fitReference = useMemo(
     () => draft.tracks.find((track) => track.id === fitTo) ?? null,
     [draft.tracks, fitTo],
   );
-
   const rankedLibrary = useMemo(() => {
     const trimmed = query.trim();
     const q = trimmed.toLowerCase();
     const exactPlaylist = playlistOptions.find((name) => name === trimmed);
-    let rows = libraryRows;
+    let list = rows;
     if (exactPlaylist) {
-      // Picker: only tracks that belong to that playlist (name or “… / name”).
-      rows = rows.filter((row) =>
+      list = list.filter((row) =>
         (row.playlists ?? []).some(
-          (name) =>
-            name === exactPlaylist || name.endsWith(` / ${exactPlaylist}`),
+          (name) => name === exactPlaylist || name.endsWith(` / ${exactPlaylist}`),
         ),
       );
     } else if (q) {
-      rows = rows.filter(
+      list = list.filter(
         (row) =>
           row.title.toLowerCase().includes(q) ||
           row.artist.toLowerCase().includes(q) ||
           row.key.toLowerCase().includes(q) ||
-          (row.playlists ?? []).some((name) =>
-            name.toLowerCase().includes(q),
-          ),
+          (row.playlists ?? []).some((name) => name.toLowerCase().includes(q)),
       );
     }
     if (fitReference) {
-      // Only tracks that can follow the chosen one: no clash, BPM within 6.
       const ref = {
         keyCamelot: fitReference.keyCamelot,
         bpm: fitReference.bpm,
         energyLevel: fitReference.energyLevel,
       };
-      rows = rows
+      return list
         .map((row) => {
           const side = sidePhrase(
             ref,
@@ -220,29 +197,227 @@ export function LibraryPanel({
         })
         .sort((a, b) => b.score - a.score)
         .map(({ row }) => row);
-      return rows;
     }
-    return rows.slice(0, LIBRARY_BROWSE_CAP);
-  }, [libraryRows, query, fitReference, t, playlistOptions]);
+    return list.slice(0, LIBRARY_BROWSE_CAP);
+  }, [rows, query, fitReference, t, playlistOptions]);
 
   const fitPageCount = fitReference
     ? Math.max(1, Math.ceil(rankedLibrary.length / FIT_PAGE_SIZE))
     : 1;
-  const safeFitPage = fitReference
-    ? Math.min(fitPage, fitPageCount - 1)
-    : 0;
+  const safeFitPage = fitReference ? Math.min(fitPage, fitPageCount - 1) : 0;
   const filteredLibrary = fitReference
     ? rankedLibrary.slice(
         safeFitPage * FIT_PAGE_SIZE,
         safeFitPage * FIT_PAGE_SIZE + FIT_PAGE_SIZE,
       )
     : rankedLibrary;
-  const canShowMoreMatches =
-    Boolean(fitReference) && rankedLibrary.length > FIT_PAGE_SIZE;
+  const canShowMoreMatches = Boolean(fitReference) && rankedLibrary.length > FIT_PAGE_SIZE;
 
   useEffect(() => {
     setFitPage(0);
-  }, [fitTo, query, libraryRows]);
+  }, [fitTo, query, rows]);
+
+  if (rows.length === 0) return null;
+
+  return (
+    <div className="library-panel">
+      <div className="library-browser builder-card">
+        <div className="library-browser-head">
+          <h3 className="library-browser-title">
+            <span className="library-browser-heading">{t("library.browser.title")}</span>
+            <span className="library-browser-meta">{trackCount(rows.length, t)}</span>
+          </h3>
+          <div className="library-browser-toolbar">
+            <Tip text={t("library.browser.searchTip")} className="library-search-field">
+              <input
+                value={query}
+                list={playlistOptions.length > 0 ? searchHintsId : undefined}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={t("library.browser.searchPlaceholder")}
+                aria-label={t("library.browser.searchAria")}
+              />
+            </Tip>
+            {playlistOptions.length > 0 ? (
+              <datalist id={searchHintsId}>
+                {playlistOptions.map((name) => (
+                  <option key={name} value={name} />
+                ))}
+              </datalist>
+            ) : null}
+            {playlistOptions.length > 0 ? (
+              <Tip text={t("library.browser.playlistPickTip")}>
+                <label className="library-playlist-pick">
+                  <span className="sr-only">{t("library.browser.playlistPick")}</span>
+                  <select
+                    value={playlistFilter}
+                    aria-label={t("library.browser.playlistPickAria")}
+                    onChange={(event) => setQuery(event.target.value)}
+                  >
+                    <option value="">{t("library.browser.playlistPickAll")}</option>
+                    {playlistOptions.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </Tip>
+            ) : null}
+          </div>
+          {onAddTrack ? (
+          <div className="library-add-bar">
+            <span>{t("library.add.title")}</span>
+            <label>
+              {t("library.add.phase")}
+              <select
+                value={addPhase}
+                onChange={(event) => setAddPhase(event.target.value as SetPhaseId)}
+              >
+                {PHASES.map((phase) => (
+                  <option key={phase.id} value={phase.id}>
+                    {phaseLabel(t, phase.id)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              {t("library.add.role")}
+              <select
+                value={addRole}
+                onChange={(event) => setAddRole(event.target.value as TrackRole)}
+              >
+                {TRACK_ROLES.map((role) => (
+                  <option key={role.id} value={role.id}>
+                    {roleLabel(t, role.id)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              {t("library.add.fits")}
+              <select value={fitTo} onChange={(event) => setFitTo(event.target.value)}>
+                <option value="">{t("library.add.allTracks")}</option>
+                {performanceTracks(draft.tracks).map((track, index) => (
+                  <option key={track.id} value={track.id}>
+                    {index + 1}. {track.name} ({track.keyCamelot || "—"} · {track.bpm || "—"}
+                    {track.energyLevel != null ? ` · E${track.energyLevel}` : ""})
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          ) : null}
+        </div>
+        <ul className="library-list">
+          {filteredLibrary.map((row, index) => {
+            const already = inSet.has(`${row.artist || "Unknown"}|${row.title}`.toLowerCase());
+            const canPlay =
+              Boolean(onPlayTrack) && Boolean(row.stick?.filePath) && stickFileCount() > 0;
+            const playing = playingId === libraryRowTrackId(row);
+            return (
+              <li key={`${row.artist}-${row.title}-${safeFitPage}-${index}`}>
+                {onPlayTrack ? (
+                  <button
+                    type="button"
+                    className={playing ? "lib-play is-playing" : "lib-play"}
+                    disabled={!canPlay}
+                    aria-label={
+                      playing
+                        ? t("crates.player.pause")
+                        : t("library.row.playAria", { title: row.title })
+                    }
+                    title={
+                      playing
+                        ? t("crates.player.pause")
+                        : canPlay
+                          ? t("library.row.play")
+                          : t("library.row.playDisabled")
+                    }
+                    onClick={() => onPlayTrack(libraryTrackToSetTrack(row, addPhase, addRole, t))}
+                  >
+                    {playing ? "❚❚" : "▶"}
+                  </button>
+                ) : null}
+                <div>
+                  <strong>{row.title}</strong>
+                  <span>{row.artist || t("common.unknown")}</span>
+                </div>
+                <em>
+                  {row.key || "—"}
+                  {row.bpm ? ` · ${row.bpm}` : ""}
+                  {row.energy != null ? ` · E${row.energy}` : ""}
+                </em>
+                {onAddTrack ? (
+                  <button
+                    type="button"
+                    className="btn ghost lib-add"
+                    disabled={already}
+                    onClick={() => onAddTrack(libraryTrackToSetTrack(row, addPhase, addRole, t))}
+                  >
+                    {already ? t("library.row.inSet") : t("library.row.add")}
+                  </button>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+        {fitReference && rankedLibrary.length > 0 ? (
+          <div className="library-more">
+            {canShowMoreMatches ? (
+              <Tip text={t("library.add.moreMatchesTip")}>
+                <button
+                  type="button"
+                  className="btn ghost library-more-btn"
+                  aria-label={t("library.add.moreMatchesAria", {
+                    page: safeFitPage + 1,
+                    pages: fitPageCount,
+                  })}
+                  onClick={() => setFitPage((page) => (page + 1) % fitPageCount)}
+                >
+                  <span className="library-more-icon" aria-hidden="true">
+                    ↻
+                  </span>
+                  {t("library.add.moreMatches")}
+                </button>
+              </Tip>
+            ) : null}
+            <span className="library-more-count">
+              {t("library.add.matchCount", {
+                shown: filteredLibrary.length,
+                total: rankedLibrary.length,
+              })}
+            </span>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+export function LibraryPanel({
+  draft,
+  onApply,
+  onAddTrack,
+  onPlayTrack,
+  rows: libraryRows,
+  onRows: setLibraryRows,
+  onStickSets,
+}: Props) {
+  const { t } = useI18n();
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [libraryCount, setLibraryCount] = useState<number | null>(null);
+  const [tidalNote, setTidalNote] = useState<string | null>(null);
+  const [tidalConfigured, setTidalConfigured] = useState<boolean | null>(null);
+  const [source, setSource] = useState<SourceTab>("rekordbox");
+
+  const keyStats = useMemo(() => {
+    const main = performanceTracks(draft.tracks);
+    const keyed = main.filter((track) => track.keyCamelot).length;
+    const total = main.length;
+    const share = total ? Math.round((keyed / total) * 100) : 0;
+    return { keyed, total, share };
+  }, [draft.tracks]);
 
   useEffect(() => {
     let cancelled = false;
@@ -286,7 +461,7 @@ export function LibraryPanel({
     if (!file) return;
     setBusy(true);
     try {
-      const parsed = await parseRekordboxFile(file, t);
+      const parsed = await enqueueWork(async () => parseRekordboxFile(file, t));
       const rows: LibraryRow[] = parsed.rows.map((row) => ({
         artist: row.artist,
         title: row.title,
@@ -442,17 +617,27 @@ export function LibraryPanel({
         <p className="library-source-status builder-status" aria-label={t("library.coverage.aria")}>
           {statusLabel}
         </p>
+        <Tip text={t("library.browser.rewriteTip")} end>
+          <button
+            type="button"
+            className="btn ghost"
+            onClick={rematchFromLibrary}
+            disabled={draft.tracks.length === 0 || libraryRows.length === 0}
+          >
+            {t("library.browser.rewrite")}
+          </button>
+        </Tip>
       </div>
       {source === "rekordbox" ? (
         <RekordboxStick
           draft={draft}
           busy={busy}
           onApply={onApply}
-          onStickStatus={setStickStatus}
           onIndexed={(rows) => {
             setLibraryRows(rows);
             setLibraryCount(rows.length);
           }}
+          onSets={onStickSets}
         />
       ) : (
         <div className="library-source-pane builder-card" role="tabpanel">
@@ -530,195 +715,6 @@ export function LibraryPanel({
         </div>
       )}
 
-      {libraryRows.length > 0 ? (
-        <div className="library-browser builder-card">
-          <div className="library-browser-head">
-            <h3 className="library-browser-title">
-              <span className="library-browser-heading">
-                {t("library.browser.title")}
-              </span>
-              <span className="library-browser-meta">
-                {trackCount(libraryRows.length, t)}
-              </span>
-            </h3>
-            <div className="library-browser-toolbar">
-              <Tip text={t("library.browser.searchTip")} className="library-search-field">
-                <input
-                  value={query}
-                  list={playlistOptions.length > 0 ? searchHintsId : undefined}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder={t("library.browser.searchPlaceholder")}
-                  aria-label={t("library.browser.searchAria")}
-                />
-              </Tip>
-              {playlistOptions.length > 0 ? (
-                <datalist id={searchHintsId}>
-                  {playlistOptions.map((name) => (
-                    <option key={name} value={name} />
-                  ))}
-                </datalist>
-              ) : null}
-              {playlistOptions.length > 0 ? (
-                <Tip text={t("library.browser.playlistPickTip")}>
-                  <label className="library-playlist-pick">
-                    <span className="sr-only">
-                      {t("library.browser.playlistPick")}
-                    </span>
-                    <select
-                      value={playlistFilter}
-                      aria-label={t("library.browser.playlistPickAria")}
-                      onChange={(event) => setQuery(event.target.value)}
-                    >
-                      <option value="">
-                        {t("library.browser.playlistPickAll")}
-                      </option>
-                      {playlistOptions.map((name) => (
-                        <option key={name} value={name}>
-                          {name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </Tip>
-              ) : null}
-              <Tip text={t("library.browser.rewriteTip")} end>
-                <button
-                  type="button"
-                  className="btn ghost"
-                  onClick={rematchFromLibrary}
-                  disabled={draft.tracks.length === 0}
-                >
-                  {t("library.browser.rewrite")}
-                </button>
-              </Tip>
-            </div>
-          </div>
-          {onAddTrack ? (
-            <div className="library-add-bar">
-              <span>{t("library.add.title")}</span>
-              <label>
-                {t("library.add.phase")}
-                <select
-                  value={addPhase}
-                  onChange={(event) => setAddPhase(event.target.value as SetPhaseId)}
-                >
-                  {PHASES.map((phase) => (
-                    <option key={phase.id} value={phase.id}>
-                      {phaseLabel(t, phase.id)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                {t("library.add.role")}
-                <select
-                  value={addRole}
-                  onChange={(event) => setAddRole(event.target.value as TrackRole)}
-                >
-                  {TRACK_ROLES.map((role) => (
-                    <option key={role.id} value={role.id}>
-                      {roleLabel(t, role.id)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                {t("library.add.fits")}
-                <select value={fitTo} onChange={(event) => setFitTo(event.target.value)}>
-                  <option value="">{t("library.add.allTracks")}</option>
-                  {performanceTracks(draft.tracks).map((track, index) => (
-                    <option key={track.id} value={track.id}>
-                      {index + 1}. {track.name} ({track.keyCamelot || "—"} · {track.bpm || "—"}
-                      {track.energyLevel != null ? ` · E${track.energyLevel}` : ""})
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-          ) : null}
-          <ul className="library-list">
-            {filteredLibrary.map((row, index) => {
-              const already = inSet.has(`${row.artist || "Unknown"}|${row.title}`.toLowerCase());
-              const canPlay =
-                Boolean(onPlayTrack) && Boolean(row.stick?.filePath) && stickFileCount() > 0;
-              return (
-                <li key={`${row.artist}-${row.title}-${safeFitPage}-${index}`}>
-                  {onPlayTrack ? (
-                    <button
-                      type="button"
-                      className="lib-play"
-                      disabled={!canPlay}
-                      aria-label={t("library.row.playAria", { title: row.title })}
-                      title={
-                        canPlay
-                          ? t("library.row.play")
-                          : t("library.row.playDisabled")
-                      }
-                      onClick={() =>
-                        onPlayTrack?.(libraryTrackToSetTrack(row, addPhase, addRole, t))
-                      }
-                    >
-                      ▶
-                    </button>
-                  ) : null}
-                  <div>
-                    <strong>{row.title}</strong>
-                    <span>{row.artist || t("common.unknown")}</span>
-                  </div>
-                  <em>
-                    {row.key || "—"}
-                    {row.bpm ? ` · ${row.bpm}` : ""}
-                    {row.energy != null ? ` · E${row.energy}` : ""}
-                  </em>
-                  {onAddTrack ? (
-                    <button
-                      type="button"
-                      className="btn ghost lib-add"
-                      disabled={already}
-                      onClick={() =>
-                        onAddTrack(libraryTrackToSetTrack(row, addPhase, addRole, t))
-                      }
-                    >
-                      {already ? t("library.row.inSet") : t("library.row.add")}
-                    </button>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ul>
-          {fitReference && rankedLibrary.length > 0 ? (
-            <div className="library-more">
-              {canShowMoreMatches ? (
-                <Tip text={t("library.add.moreMatchesTip")}>
-                  <button
-                    type="button"
-                    className="btn ghost library-more-btn"
-                    aria-label={t("library.add.moreMatchesAria", {
-                      page: safeFitPage + 1,
-                      pages: fitPageCount,
-                    })}
-                    onClick={() =>
-                      setFitPage((page) => (page + 1) % fitPageCount)
-                    }
-                  >
-                    <span className="library-more-icon" aria-hidden="true">
-                      ↻
-                    </span>
-                    {t("library.add.moreMatches")}
-                  </button>
-                </Tip>
-              ) : null}
-              <span className="library-more-count">
-                {t("library.add.matchCount", {
-                  shown: filteredLibrary.length,
-                  total: rankedLibrary.length,
-                })}
-              </span>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-
       {source === "rekordbox" ? (
         <details className="explain-fold nested library-collection-fold">
           <summary>
@@ -754,21 +750,6 @@ export function LibraryPanel({
             </div>
           </div>
         </details>
-      ) : null}
-
-      {source === "rekordbox" && stickStatus ? (
-        <div className="stick-status-pane builder-card" aria-label={t("library.stick.statusTitle")}>
-          <StickHealthCard
-            health={stickStatus.health}
-            checking={stickStatus.checkingHealth}
-            canFix={Boolean(stickStatus.healthRoot)}
-            deprioritizeEject
-            onRecheck={() => void stickStatus.refreshHealth()}
-            onPrepare={stickStatus.onPrepare}
-            onRestoreLibrary={stickStatus.onRestoreLibrary}
-            onEject={stickStatus.onEject}
-          />
-        </div>
       ) : null}
     </section>
   );
