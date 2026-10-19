@@ -113,7 +113,7 @@ export function applySetAnchors(draft: SetDraft): SetDraft {
     openerId && performance.some((track) => track.id === openerId)
       ? openerId
       : null;
-  let nextCloserId: string | null =
+  const nextCloserId: string | null =
     closerId && performance.some((track) => track.id === closerId)
       ? closerId
       : null;

@@ -2,38 +2,55 @@
 
 [Deutsch](GUIDE.de.md) · **English** · [README](../README.md)
 
-How to prepare a set with rekordbox: load → build → export. Screenshots use a sample set with made-up titles.
+How to prepare a set with rekordbox: connect and understand the library → build → export. Screenshots show a set open in the app.
+
+The shipping client is the desktop app (port **4317**). Browser development uses port **4327**. This document describes **4.0.0**. Stick write, players, and streaming accounts are still unverified.
 
 > **Before the gig:** Always test the stick on the actual player (playlist visible, tracks playable). Keep a backup — SETBUILDER writes to `export.pdb` and keeps copies under `SETBUILDER-Backup/`, but you are responsible for your media. No warranty. Works on my machine. :)
 
 ## How a set works with rekordbox
 
 1. **Brief:** title, vibe, venue, slot type and duration.
-2. **Load from rekordbox:** the stick (`export.pdb`) or a collection XML.
-3. **Build the set:** check phases and roles, change them by hand or let SETBUILDER assign them.
-4. **Back to rekordbox:** export as XML, with the performance and the alternatives as two playlists.
+2. **Load set & keys:** connect the stick and optionally enrich the current set/library from collection XML, CSV or an unencrypted database.
+3. **Build set:** start with a stick playlist, add music, or do both; then check phases, roles and order.
+4. **Take with you:** update the stick playlist, make booth PDF/text, or export XML/M3U.
 
-## 1. Load from rekordbox
+## 1. Load set & keys
 
-![Load a set: rekordbox stick and collection](screenshots/en/01-rekordbox-load-v302.png)
+![Stick setup and collection enrichment](screenshots/en/01-stick-setup-v400.png)
 
 **Rekordbox stick.** Prefer **Choose stick** (Chrome / Edge / desktop) for the volume root, or pick `PIONEER` / `PIONEER/rekordbox`. If the folder dialog fails or hangs, use **export.pdb** (`PIONEER/rekordbox/export.pdb` or `.PIONEER/…`) — the most reliable path. Avoid selecting the whole USB with every music file; that can stall. SETBUILDER finds the database itself, even in the hidden `PIONEER` or `.PIONEER` folder. It reads playlists and the played history. Order, key and BPM are kept; Energy Level is read from the rekordbox comment when Mixed In Key wrote it there. Files from the stick can be previewed directly. Status text shows while the dialog is open, while files are listed, and while the database is read.
 
+**Covers.** Art comes from `PIONEER/Artwork` on the stick (the larger `_m` file first, then the smaller JPEG). If that artwork file is missing, SETBUILDER reads the front cover from the MP3 ID3 APIC frame. Both paths need the stick folder in the current session.
+
 **Player check.** After a stick is chosen, a short strip shows one verdict and one primary action (prepare for player, eject, or open rekordbox). Details sit behind a toggle: green / amber / red dots mark real status (folder, database, player library); plain lines without a dot are info only (e.g. no SETBUILDER playlists yet). Green means Device Library players can use the stick; amber means a step is still needed — often *Prepare for player* so the old OneLibrary no longer hides your playlists, then *Eject*.
 
-**Collection without a stick.** In rekordbox, export via *File → Export Collection in XML…* and load the file. Key and BPM are matched onto the tracks in the set by artist and title. An unencrypted `master.db` and CSV work too. After the import, the **Library** searches by artist, title, key or stick **playlist** (picker + autocomplete). **Fits after** ranks tracks that can follow a chosen set track; **5 others** pages through more matches.
+**Collection enrichment.** In rekordbox, export via *File → Export Collection in XML…* and load the file. An unencrypted `master.db` and CSV work too. These sources index the library and match metadata such as key/BPM onto tracks already in the set; they do **not** start, replace or become the set by themselves. Playlist choice is under **Build set**. After import, the **Library** searches by artist, title or key. **Fits after** ranks tracks that can follow a chosen set track; **5 others** pages through more matches.
 
 **Energy.** The Energy Level (1–10) comes from Mixed In Key. SETBUILDER reads it from the rekordbox comment (for example `7A - Energy 6`, `Energie 6`), from Grouping / Label / Remixer in the collection XML or CSV (`Energy` / `Energie`), from a lone `6` or `E8` in those fields, or you set it by hand in the setlist. USB `export.pdb` has comments but not Grouping — reload tags in rekordbox and load the collection XML if energy stays empty.
 
-**Set note.** In the setlist details, **Set note** is only for this set in SETBUILDER (cue, floor). It is not the MP3/rekordbox comment and is not written back into ID3 tags.
+**Set note.** In setlist details, **Set note** is booth-only (cue, floor). It appears in PDF and copied text, never in rekordbox Comments or ID3 tags.
 
-**Energy from stick files.** Under **Edit set**, **Energy from files** analyzes tracks that have a stick path (Chrome / Edge / desktop). It sets `energyLevel` in the draft and, for MP3s, writes ID3 `TXXX EnergyLevel` plus `Energy N` in the file comment — audio bytes stay unchanged; key, BPM and the Set note stay untouched. When you load the set again with the stick connected, SETBUILDER re-reads missing energy from MP3 tags — `TXXX EnergyLevel` / `Energy`, comments with `Energy N`, and Grouping / Remixer / Label fields (export.pdb is not updated until rekordbox reloads tags). After writing, reload tags in rekordbox so the player and library see the new values. `master.db` on the computer is never touched. Analysis uses [essentia.js](https://github.com/MTG/essentia.js) (AGPL-3.0) in the browser only; see [THIRD_PARTY.md](../THIRD_PARTY.md).
+**Energy from files.** When stick files are present, the menu separates **Read from tags** (no audio decode), **Measure missing**, **Recalculate all** (measure without writing), and **Write to MP3**. If no stick is connected, the menu shows that one prerequisite and **Choose stick**, which opens the existing stick picker under Load set & keys. If the stick is connected but no track has a file path, it shows that prerequisite instead of four empty actions. MP3 writes add `TXXX EnergyLevel` plus `Energy N` in the file comment; each replacement is reopened and byte-verified, and the original is restored if verification fails. Key, BPM, set notes and audio bytes stay unchanged. Reload tags in rekordbox afterwards; `export.pdb` and computer `master.db` are not edited by this action. Analysis uses [essentia.js](https://github.com/MTG/essentia.js) (AGPL-3.0). Calibration on real media is not verified.
 
-## 2. Setlist
+## 2. Build set
 
-![Setlist with key, BPM, energy and transition](screenshots/en/02-setlist-v302.png)
+![Build a set from a playlist and added music](screenshots/en/02-build-set-v400.png)
 
-Each track shows its source (rekordbox), phase and role. Controls sit under the title: phase and role on one row, play / move / Replace / **Opener** / **Closer** / remove on the next. Hover any control for a short tip. Below are key, BPM and energy, the transition from the previous track (“Adjacent key (±1) · +1 BPM · Energy +1”) and the reasoning (“Why here”). Change the order by dragging or with the arrows; “Replace” swaps a title.
+Under **Build set**, choose **Start with a playlist** from the connected stick, use **Add music**, or combine both. Loading a playlist into a non-empty set asks:
+- **Replace** overwrites the current setlist and offers one **Undo** back to the previous setlist.
+- **Merge** keeps the current setlist and appends only tracks that are not already present.
+- **Cancel** makes no change.
+
+Collection XML/CSV/DB never triggers this choice because it only enriches metadata and the library.
+
+Each track shows its source (rekordbox), phase and role. Phase and role sit on one row. The next row is icon buttons: play, up, down, energy (lightning), replace, opener (flag), closer (checkered flag), and remove. Energy uses the same hover tip as the other icons. Below are key, BPM and energy, the transition from the previous track (“Adjacent key (±1) · +1 BPM · Energy +1”) and the reasoning (“Why here”). Change the order by dragging or with the arrows.
+
+**Replace** opens a drawer over the setlist, so the tracks below do not move. The header keeps the track name (“For «name»”). Focus moves into the drawer; Close or Escape returns it to the replace button. Play in that list is the same round play button as on the setlist row. Insert swaps the title.
+
+Preview plays in a compact floating card about 512px wide, not a bar across the window. Drag the title strip; the card stays inside the window. Close is at the top-right corner. Previous, play/pause and next stay together. The card floats above the Replace drawer, so the player stays reachable while Replace is open.
+
+![Preview player](screenshots/en/02-preview-player-v400.png)
 
 **Opener & closer.** Pin a performance track as **Opener** (stays first, phase Open) or **Closer** (stays last, phase Release). Extract suggests warm open / release pins; you can change or clear them anytime. Sorting keeps pinned ends — and without a pin, the current first and last performance tracks stay at the ends anyway.
 
@@ -53,14 +70,14 @@ Each track shows its source (rekordbox), phase and role. Controls sit under the 
   | **Waves** | Per phase: in Peak, groove ↔ impact (anchor); else low/high energy |
 
 - **Different songs:** between Sort and Energy. Picks a new performance for the same brief from the stick library (every playlist on the export stick) or, after an extract, from that playlist pool. Confirms first; opener/closer pins stay, notes are lost. Stays disabled when nothing larger than the set is loaded.
-- **Energy from files:** computes Energy Level from stick audio (Essentia), sets it in the draft, and writes ID3 energy tags into MP3s on the stick (Chrome / Edge / desktop). The Set note is not changed. Then reload tags in rekordbox.
+- **Energy from files:** with stick files present, read tags, measure missing, recalculate all, or explicitly write known levels to MP3. Measuring does not write files. Without a stick, the menu shows that prerequisite and **Choose stick**. Without file paths, it shows that prerequisite instead of four empty actions.
 - **Trim to slot:** keeps, per phase, the tracks whose energy fits the band; the rest moves to Alternatives
 - **Assign roles:** Anchor on the strongest Peak tracks and the closer, Bridge at a phase change, key clash, BPM or energy jump, otherwise Groove
 - **Find Spotify links:** looks up a Spotify match for tracks without a link so you can preview them in the set (needs the Spotify credentials, see [Setup in the README](../README.md#setup)). Your rekordbox export is unaffected.
 
 ## 3. Roles and Plan B
 
-![Roles: Anchor, Bridge, Groove and Alternatives](screenshots/en/03-roles-v302.png)
+![Setlist roles and alternatives](screenshots/en/03-setlist-roles-v400.png)
 
 Every track has a phase (Open → Lift → Rise → Peak → Release) and a role:
 
@@ -75,9 +92,9 @@ Drag titles between the columns. **Plan B** asks for at least two fitting altern
 
 ## 4. Arc
 
-![Arc: Key path with mix score, badges and drag reorder](screenshots/en/04-key-path-v302.png)
+![Arc and Camelot key path](screenshots/en/04-arc-key-path-v400.png)
 
-The arc shows how the phases fill the slot (active phase is highlighted; yellow means over the window) and how each track's energy sits against the phase's target band. Jumps of three levels or more are marked.
+The arc shows how the phases fill the slot (active phase is highlighted; yellow means over the window) and how each track's energy sits against the phase's target band. Jumps of three levels or more are marked. Timing uses one fixed estimate: every performance track contributes its file duration minus two minutes of overlap, with a minimum contribution of 30 seconds. It does not know cue points, transition length or live choices, so treat slot fit as guidance.
 
 **Key path** shows Camelot along the played order. Each card has a short relation badge (Same, ±1, Clash, …), the key, energy when known, and BPM. Drag cards to reorder; use **Sort** for the techniques above. Three stats with a **?** explain the numbers:
 - **Keys set** — share of performance tracks with a Camelot key
@@ -96,18 +113,18 @@ Sort (especially **Perfect · Max score**), drag, or change key/energy in the se
 
 ## 5. Take with you
 
-![Take with you: write to stick, PDF, XML, M3U, copy text](screenshots/en/05-export-v302.png)
+![Take the set to the player and booth](screenshots/en/05-take-to-gig-v400.png)
 
 The **Take with you** menu is grouped by where the set goes next:
 
 ### For the player
 
-- **Write to stick** (main path): playlist `SETBUILDER - <title>` plus alternatives as `SETBUILDER - <title> Alternatives` in `export.pdb`. Chrome, Edge or the desktop app. The stick is remembered — after a restart, *Reconnect stick* is enough. Only tracks already on the stick are written; near-matches (remix / original mix, or the same title listed more than once) show as one clear *Use this* choice. If the playlist is already there, *Update* replaces it (backup first). Every write copies the database to `SETBUILDER-Backup/` (keeps the three newest), then verifies; on failure the old state is restored. XML and M3U also land in the `SETBUILDER` folder on the stick. The health strip offers *Prepare for player* when a stale OneLibrary (`exportLibrary.db`) would hide playlists on CDJ-3000 / XDJ-XZ, and *Eject* before you unplug. CDJ-3000X, XDJ-AZ and OPUS-QUAD still need rekordbox for OneLibrary. The computer library (`master.db`) is never touched. Practice on a spare stick first; **never go to a gig with an untested stick**.
+- **Write to stick** (main path): playlist `SETBUILDER - <title>` plus alternatives as `SETBUILDER - <title> Alternatives` in the **current** `export.pdb`. Creating or updating those named playlists is targeted and transactional: unrelated database changes are preserved, a backup is made, the result is read back, and failure rolls back. Only tracks already on the stick are written; ambiguous near-matches require an explicit choice. XML and M3U also land in `SETBUILDER/`. The health strip can prepare older Device Library players and offers eject. CDJ-3000X, XDJ-AZ and OPUS-QUAD still need rekordbox for OneLibrary; behavior across CDJ/XDJ families must be checked on the actual hardware. The computer `master.db` is never touched.
 
 ### For the booth
 
-- **PDF:** print view with brief, order, key and BPM (save as PDF in the print dialog)
-- **Copy text:** set with brief and comments to the clipboard
+- **PDF:** print view with brief, order, key, BPM and booth-only set notes (save as PDF in the print dialog)
+- **Copy text:** set with brief and booth-only set notes to the clipboard
 
 ### For the computer
 
@@ -115,6 +132,12 @@ The **Take with you** menu is grouped by where the set goes next:
 - **M3U:** playlist file for devices that read M3U
 
 Under **Connections & setups** you can save the brief and the set as a setup, load it again, or back it up as JSON. The save name follows the set title from the brief.
+
+## Heavy work and verification boundaries
+
+Stick reconnect/import, collection import, energy tag reads, measurements and writes are named heavy jobs. They run in one queue: status shows the running job or queue position, and heavy operations never run in parallel. The rest of the UI remains available.
+
+Chrome and the installed desktop app have shown a real stick read-only (collection, playlists, history, a loaded set, covers). Stick write, CDJ/XDJ playback, Spotify/Tidal accounts, eject, and energy calibration on real media are not verified. SETBUILDER also cannot prove browser folder permissions, USB disconnect/full-disk handling, rekordbox import/tag reload, print/clipboard integration, or codec coverage. Verify the paths you rely on before a gig.
 
 ## More sources
 

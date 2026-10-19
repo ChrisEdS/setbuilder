@@ -298,14 +298,52 @@ test("keeps only the newest backups", async () => {
   assert.deepEqual(await pruneBackups(root, 1), names.slice(0, -1));
 });
 
-test("updating a set restores the backup and writes the current tracks", async () => {
+test("updating a set changes its entries and preserves unrelated current database changes", async () => {
   const { root, db } = stick();
   await writeSetToStick(root, tracks, "Friday", new Date(2026, 9, 14, 3, 10, 0));
+  await writeSetToStick(
+    root,
+    [{ name: "Morning Light", artists: ["Ada"], filePath: "" }],
+    "Current",
+    new Date(2026, 9, 14, 3, 10, 30),
+  );
+  const currentBytes = db.data.slice();
   const onlyDrive = [{ name: "Night Drive", artists: ["Ada"], filePath: "/Night Drive.mp3" }];
   const done = await rewriteSetToStick(root, onlyDrive, "Friday", new Date(2026, 9, 14, 3, 11, 0));
   assert.equal(done.playlistName, "SETBUILDER - Friday");
   const after = parseRekordboxPdb(db.data.slice().buffer as ArrayBuffer);
   assert.deepEqual(after.playlists.find((item) => item.name === "SETBUILDER - Friday")?.trackIds, [7]);
+  assert.deepEqual(after.playlists.find((item) => item.name === "SETBUILDER - Current")?.trackIds, [8]);
+  const backup = root.dirs.get(BACKUP_DIR)?.files.get(done.backupName);
+  assert.deepEqual(backup?.data, currentBytes);
+  assert.equal(after.playlists.filter((item) => item.name === "SETBUILDER - Friday").length, 1);
+});
+
+test("a failed targeted rewrite restores the immediate current bytes", async () => {
+  const behaviour: Behaviour = {};
+  const { root, db } = stick(behaviour);
+  await writeSetToStick(root, tracks, "Friday", new Date(2026, 9, 14, 4, 0, 0));
+  const before = db.data.slice();
+  let commits = 0;
+  behaviour.onCommit = (name, data) => {
+    if (name !== "export.pdb") return data;
+    commits += 1;
+    if (commits > 1) return data;
+    const broken = data.slice();
+    broken[4 * 4096 + 0x30] ^= 0xff;
+    return broken;
+  };
+  await assert.rejects(
+    rewriteSetToStick(
+      root,
+      [{ name: "Night Drive", artists: ["Ada"], filePath: "/Night Drive.mp3" }],
+      "Friday",
+      new Date(2026, 9, 14, 4, 1, 0),
+    ),
+    /wiederhergestellt/,
+  );
+  assert.deepEqual(db.data, before);
+  assert.equal(commits, 2);
 });
 
 test("writes XML and M3U next to the database", async () => {

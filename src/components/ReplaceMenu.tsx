@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { LibraryRow } from "@/components/LibraryPanel";
+import { ActionIcon } from "@/components/ActionIcon";
 import { Tip } from "@/components/Hint";
 import { useI18n } from "@/lib/i18n/react";
 import { parseKeyValue } from "@/lib/key-import";
@@ -34,6 +36,41 @@ function rowMeta(key: string, bpm: string, energy?: number): string {
   return [key || "—", bpm, energy != null ? `E${energy}` : ""].filter(Boolean).join(" · ");
 }
 
+/** Same round play control as a setlist row. */
+function ReplacePlayButton({
+  playing,
+  disabled,
+  playAria,
+  onPlay,
+}: {
+  playing: boolean;
+  disabled?: boolean;
+  playAria: string;
+  onPlay: () => void;
+}) {
+  const { t } = useI18n();
+  const tip = disabled
+    ? t("crates.replace.playNeedsStick")
+    : playing
+      ? t("builder.row.pauseTip")
+      : t("builder.row.playTip");
+  return (
+    <span className="replace-play">
+      <Tip text={tip} disabled={Boolean(disabled)}>
+        <button
+          type="button"
+          className={playing ? "icon-action is-playing" : "icon-action"}
+          disabled={disabled}
+          aria-label={playing ? t("crates.player.pause") : playAria}
+          onClick={onPlay}
+        >
+          <ActionIcon name={playing ? "pause" : "play"} />
+        </button>
+      </Tip>
+    </span>
+  );
+}
+
 export function ReplaceMenu({
   tracks,
   targetId,
@@ -46,6 +83,9 @@ export function ReplaceMenu({
   playingId = null,
 }: Props) {
   const { t } = useI18n();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
   const [pageIndex, setPageIndex] = useState(0);
   const options = rankReplacements(tracks, targetId, t);
   const byId = useMemo(() => new Map(tracks.map((track) => [track.id, track])), [tracks]);
@@ -68,10 +108,35 @@ export function ReplaceMenu({
   const page = pageIndex % pages;
   const visibleLibrary = fromLibrary.slice(page * PAGE, page * PAGE + PAGE);
   const mine = options.slice(0, PAGE);
+  const target = byId.get(targetId);
 
   useEffect(() => {
-    setPageIndex(0);
-  }, [targetId]);
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    returnFocusRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const frame = requestAnimationFrame(() => {
+      panelRef.current
+        ?.querySelector<HTMLElement>("[data-replace-primary], button")
+        ?.focus();
+    });
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      onCloseRef.current();
+    }
+    document.addEventListener("keydown", onKeyDown);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+      returnFocusRef.current?.focus();
+    };
+  }, []);
 
   function originLine(row: LibraryRow): string | null {
     const origin = replacementOrigin(row);
@@ -81,14 +146,30 @@ export function ReplaceMenu({
     return t("crates.replace.originPlaylist", { name: origin.name });
   }
 
-  return (
-    <div className="replace-menu" role="region" aria-label={t("crates.replace.ariaLabel")}>
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      className="replace-layer"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+    <div
+      ref={panelRef}
+      className="replace-menu"
+      role="dialog"
+      aria-modal="true"
+      aria-label={t("crates.replace.ariaLabel")}
+      onMouseDown={(event) => event.stopPropagation()}
+    >
       <div className="replace-menu-head">
         <div>
           <strong>{t("crates.replace.title")}</strong>
+          <h4>{t("crates.replace.target", { name: target?.name ?? "" })}</h4>
           {fromLibrary.length > 0 ? <p>{t("crates.replace.groupLibrary")}</p> : null}
         </div>
-        <button type="button" className="btn ghost" onClick={onClose}>
+        <button type="button" className="btn ghost replace-close" onClick={onClose}>
           {t("common.close")}
         </button>
       </div>
@@ -102,27 +183,15 @@ export function ReplaceMenu({
             return (
               <li key={option.id} title={option.detail}>
                 <div className="replace-copy">
-                  <span className="replace-play">
-                    {onPlayTrack && track ? (
-                      <button
-                        type="button"
-                        className={playingId === track.id ? "lib-play is-playing" : "lib-play"}
-                        aria-label={
-                          playingId === track.id
-                            ? t("crates.player.pause")
-                            : t("crates.replace.playAria", { title: option.title })
-                        }
-                        title={
-                          playingId === track.id
-                            ? t("crates.player.pause")
-                            : t("crates.replace.play")
-                        }
-                        onClick={() => onPlayTrack(track)}
-                      >
-                        {playingId === track.id ? "❚❚" : "▶"}
-                      </button>
-                    ) : null}
-                  </span>
+                  {onPlayTrack && track ? (
+                    <ReplacePlayButton
+                      playing={playingId === track.id}
+                      playAria={t("crates.replace.playAria", { title: option.title })}
+                      onPlay={() => onPlayTrack(track)}
+                    />
+                  ) : (
+                    <span className="replace-play" />
+                  )}
                   <div>
                     <strong>{option.title}</strong>
                     <span>{option.artist}</span>
@@ -134,6 +203,7 @@ export function ReplaceMenu({
                 <button
                   type="button"
                   className="btn ghost lib-add"
+                  data-replace-primary
                   onClick={() => {
                     onReplace(targetId, option.id);
                     onClose();
@@ -153,30 +223,16 @@ export function ReplaceMenu({
             return (
               <li key={`${row.artist}-${row.title}-${page}-${index}`} title={detail}>
                 <div className="replace-copy">
-                  <span className="replace-play">
-                    {onPlayRow ? (
-                      <button
-                        type="button"
-                        className={playing ? "lib-play is-playing" : "lib-play"}
-                        disabled={!row.stick?.filePath}
-                        aria-label={
-                          playing
-                            ? t("crates.player.pause")
-                            : t("crates.replace.playAria", { title: row.title })
-                        }
-                        title={
-                          !row.stick?.filePath
-                            ? t("crates.replace.playNeedsStick")
-                            : playing
-                              ? t("crates.player.pause")
-                              : t("crates.replace.play")
-                        }
-                        onClick={() => onPlayRow(row)}
-                      >
-                        {playing ? "❚❚" : "▶"}
-                      </button>
-                    ) : null}
-                  </span>
+                  {onPlayRow ? (
+                    <ReplacePlayButton
+                      playing={playing}
+                      disabled={!row.stick?.filePath}
+                      playAria={t("crates.replace.playAria", { title: row.title })}
+                      onPlay={() => onPlayRow(row)}
+                    />
+                  ) : (
+                    <span className="replace-play" />
+                  )}
                   <div>
                     <strong>{row.title}</strong>
                     <span>{row.artist || t("crates.replace.unknownArtist")}</span>
@@ -187,6 +243,7 @@ export function ReplaceMenu({
                 <button
                   type="button"
                   className="btn ghost lib-add"
+                  data-replace-primary
                   onClick={() => {
                     onReplaceFromLibrary?.(targetId, row);
                     onClose();
@@ -223,5 +280,7 @@ export function ReplaceMenu({
         </div>
       ) : null}
     </div>
+    </div>,
+    document.body,
   );
 }

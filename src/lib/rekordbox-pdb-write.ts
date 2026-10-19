@@ -47,6 +47,8 @@ export type AddPlaylistResult = {
   allocated: Allocation[];
 };
 
+export type ReplacePlaylistResult = AddPlaylistResult;
+
 type TableRef = { type: number; first: number; last: number; empty: number; at: number };
 
 type PageState = {
@@ -396,6 +398,31 @@ class Work {
     this.changed.add(page.index);
   }
 
+  markAbsent(page: PageState, slot: number) {
+    const group = Math.floor(slot / 16);
+    const bit = 1 << (slot % 16);
+    const flagsAt = presentAddress(this.pageLen, page.start, group);
+    if ((this.view.getUint16(flagsAt, true) & bit) === 0 || page.rows < 1) {
+      throw unsupported();
+    }
+    this.view.setUint16(flagsAt, this.view.getUint16(flagsAt, true) & ~bit, true);
+    this.view.setUint16(flagsAt + 2, this.view.getUint16(flagsAt + 2, true) | bit, true);
+    const rows = page.rows - 1;
+    const bitfield = page.slots | (rows << 13);
+    this.view.setUint8(page.start + 24, bitfield & 0xff);
+    this.view.setUint8(page.start + 25, (bitfield >> 8) & 0xff);
+    this.view.setUint8(page.start + 26, (bitfield >> 16) & 0xff);
+    if (page.rows > 0 && this.view.getUint16(page.start + 0x22, true) === page.rows - 1) {
+      this.view.setUint16(page.start + 0x22, Math.max(0, rows - 1), true);
+    }
+    if (page.sequence <= this.headerSequence) {
+      this.view.setUint32(page.start + 0x10, this.sequence, true);
+    }
+    page.rows = rows;
+    page.sequence = Math.max(page.sequence, this.sequence);
+    this.changed.add(page.index);
+  }
+
   /**
    * Takes the table's reserved empty page, the way rekordbox grows a table:
    * the last page already points to it; it becomes the new last page and a fresh
@@ -552,6 +579,79 @@ export function addPlaylistToPdb(source: ArrayBuffer, input: AddPlaylistInput): 
   return result;
 }
 
+/**
+ * Replaces only the entry rows of an existing playlist. The tree row (name,
+ * path and id), tracks, and every unrelated playlist remain unchanged.
+ */
+export function replacePlaylistInPdb(
+  source: ArrayBuffer,
+  input: { playlistId: number; trackIds: number[] },
+): ReplacePlaylistResult {
+  const library = parseRekordboxPdb(source.slice(0));
+  const playlist = library.playlists.find(
+    (item) => item.kind === "playlist" && item.id === input.playlistId,
+  );
+  const known = new Set(library.tracks.map((track) => track.id));
+  if (
+    !playlist ||
+    !input.trackIds.length ||
+    input.trackIds.some((trackId) => !known.has(trackId))
+  ) {
+    throw new PdbWriteError(
+      "exports.pdbWrite.unknownTracks",
+      undefined,
+      "Die Playlist oder ein Titel liegt nicht in dieser Stick-Datenbank.",
+    );
+  }
+
+  const work = new Work(source);
+  const { pageLen, tables } = readHeader(work.view);
+  const entries = tables.get(ENTRIES);
+  if (!entries) throw unsupported();
+  const entryChain = tableChain(work.view, pageLen, entries);
+  if (!entryChain.length || entryChain.at(-1) !== entries.last) throw unsupported();
+  const states = entryChain.map((index) => readPage(work.view, pageLen, index, ENTRIES));
+  if (states.some((state) => state === null)) throw unsupported();
+
+  for (const page of states as PageState[]) {
+    for (let slot = 0; slot < page.slots; slot++) {
+      const group = Math.floor(slot / 16);
+      const bit = 1 << (slot % 16);
+      if ((work.view.getUint16(presentAddress(pageLen, page.start, group), true) & bit) === 0) {
+        continue;
+      }
+      const offset = work.view.getUint16(slotAddress(pageLen, page.start, slot), true);
+      const row = page.start + HEAP + offset;
+      if (work.view.getUint32(row + 8, true) === input.playlistId) work.markAbsent(page, slot);
+    }
+  }
+
+  const rows = input.trackIds.map((trackId, index) => {
+    const row = new Uint8Array(12);
+    const view = new DataView(row.buffer);
+    view.setUint32(0, index + 1, true);
+    view.setUint32(4, trackId, true);
+    view.setUint32(8, input.playlistId, true);
+    return row;
+  });
+  const writableStates = (states as PageState[]).slice().reverse();
+  place(work, entries, writableStates, rows);
+  work.view.setUint32(0x14, work.sequence, true);
+  const result: ReplacePlaylistResult = {
+    buffer: work.bytes.buffer as ArrayBuffer,
+    playlistId: input.playlistId,
+    name: playlist.name,
+    changedPages: [...work.changed].sort((a, b) => a - b),
+    allocated: work.allocated,
+  };
+  verifyPdbReplacement(source, result.buffer, {
+    playlistId: input.playlistId,
+    name: playlist.name,
+    trackIds: input.trackIds,
+  });
+  return result;
+}
+
 export type ExpectedUpdate = {
   playlistId: number;
   name: string;
@@ -566,6 +666,48 @@ function failed(detail: string): PdbWriteError {
     { detail },
     `Die Prüfung der neuen Stick-Datenbank ist fehlgeschlagen (${detail}).`,
   );
+}
+
+export function verifyPdbReplacement(
+  before: ArrayBuffer,
+  after: ArrayBuffer,
+  expected: Pick<ExpectedUpdate, "playlistId" | "name" | "trackIds">,
+): void {
+  const headerBefore = readHeader(new DataView(before));
+  const headerAfter = readHeader(new DataView(after));
+  if (headerBefore.pageLen !== headerAfter.pageLen || after.byteLength < before.byteLength) {
+    throw failed("size");
+  }
+  const libBefore = parseRekordboxPdb(before.slice(0));
+  const libAfter = parseRekordboxPdb(after.slice(0));
+  if (JSON.stringify(libBefore.tracks) !== JSON.stringify(libAfter.tracks)) throw failed("tracks");
+  if (libBefore.playlists.length !== libAfter.playlists.length) throw failed("playlist count");
+
+  for (const old of libBefore.playlists) {
+    const current = libAfter.playlists.find(
+      (item) => item.kind === old.kind && item.id === old.id,
+    );
+    if (!current) throw failed("playlist identity");
+    if (old.kind === "playlist" && old.id === expected.playlistId) {
+      if (
+        current.name !== expected.name ||
+        current.path !== old.path ||
+        current.trackIds.length !== expected.trackIds.length ||
+        current.trackIds.some((id, index) => id !== expected.trackIds[index])
+      ) {
+        throw failed("replacement playlist");
+      }
+    } else if (JSON.stringify(current) !== JSON.stringify(old)) {
+      throw failed("unrelated playlist");
+    }
+  }
+  const sameNameBefore = libBefore.playlists.filter(
+    (item) => item.kind === "playlist" && item.name === expected.name,
+  ).length;
+  const sameNameAfter = libAfter.playlists.filter(
+    (item) => item.kind === "playlist" && item.name === expected.name,
+  ).length;
+  if (sameNameAfter !== sameNameBefore) throw failed("duplicate playlist");
 }
 
 /**

@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { rehydrateStickCovers, type StickTrack } from "./rekordbox-stick.ts";
+import { rememberStickFiles } from "./stick-audio.ts";
 import { DEFAULT_SET, type SetTrack } from "./set.ts";
 
 function track(partial: Partial<SetTrack> & Pick<SetTrack, "id" | "name">): SetTrack {
@@ -87,6 +88,38 @@ test("rehydrateStickCovers treats an anonymous Energy 1 as missing", () => {
   assert.equal(next.tracks[0].energySource, "tag");
   assert.equal(next.tracks[1].energyLevel, 1);
   assert.equal(next.tracks[1].energySource, "manual");
+});
+
+test("rehydrateStickCovers uses Collection artwork files, not the MP3 path", () => {
+  const jpeg = new File([new Uint8Array([0xff, 0xd8, 0xff])], "a1_m.jpg");
+  try {
+    Object.defineProperty(jpeg, "webkitRelativePath", {
+      value: "PIONEER/Artwork/00001/a1_m.jpg",
+      configurable: true,
+    });
+  } catch {
+    /* ignore */
+  }
+  rememberStickFiles([jpeg]);
+  const draft = {
+    ...DEFAULT_SET,
+    tracks: [
+      track({
+        id: "a",
+        name: "Night Drive",
+        filePath: "/Ada/Night Drive.mp3",
+      }),
+    ],
+  };
+  const next = rehydrateStickCovers(draft, [
+    stick({
+      id: "7",
+      title: "Night Drive",
+      artworkPath: "/PIONEER/Artwork/00001/a1.jpg",
+    }),
+  ]);
+  assert.ok(next.tracks[0].imageUrl?.startsWith("blob:"));
+  rememberStickFiles([]);
 });
 
 test("rehydrateStickCovers leaves unmatched tracks alone", () => {

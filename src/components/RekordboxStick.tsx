@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { FieldNoticeView, type FieldNotice } from "@/components/FieldNotice";
 import {
   readRekordboxStick,
@@ -11,7 +11,7 @@ import {
 import { errorText } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n/react";
 import { rememberStickFiles } from "@/lib/stick-audio";
-import { formatDuration, trackCount, type SetDraft } from "@/lib/set";
+import { formatDuration, trackCount } from "@/lib/set";
 import {
   isPickerBlocked,
   loadPersistedStickHandle,
@@ -37,9 +37,7 @@ export type StickStatusSlice = {
 };
 
 type Props = {
-  draft: SetDraft;
   busy: boolean;
-  onApply: (draft: SetDraft, message: string) => void;
   onIndexed: (
     rows: Array<{
       artist: string;
@@ -53,6 +51,8 @@ type Props = {
   onStickStatus?: (status: StickStatusSlice | null) => void;
   /** Playlists and history, so Build set can start from one. */
   onSets?: (sets: RekordboxStickSet[]) => void;
+  /** Filled with the existing folder picker. Null when this pane is unmounted. */
+  chooseStick?: RefObject<(() => void) | null>;
 };
 
 /** Fills `{name}` placeholders of a translated text with elements (code, strong …). */
@@ -171,7 +171,7 @@ export function StickSetList({
                   </em>
                   <button
                     type="button"
-                    className="btn ghost lib-add"
+                    className="btn ghost stick-set-load"
                     disabled={pending || set.tracks.length === 0}
                     onClick={() => onTake(set)}
                   >
@@ -194,12 +194,11 @@ export function StickSetList({
 }
 
 export function RekordboxStick({
-  draft,
   busy,
-  onApply,
   onIndexed,
   onStickStatus,
   onSets,
+  chooseStick,
 }: Props) {
   const { t } = useI18n();
   const [phase, setPhase] = useState<LoadPhase>("idle");
@@ -211,6 +210,7 @@ export function RekordboxStick({
   const [healthRoot, setHealthRoot] = useState<DirLike | null>(null);
   const [healthFiles, setHealthFiles] = useState<File[] | null>(null);
   const dirInput = useRef<HTMLInputElement>(null);
+  const chooseImpl = useRef<() => void>(() => {});
 
   function publishSets(next: RekordboxStickSet[]) {
     onSets?.(next);
@@ -281,6 +281,11 @@ export function RekordboxStick({
       } catch {
         setHealth(null);
       }
+    }, {
+      operation: "stick-read",
+      key: handle.name || "persisted-stick",
+      label: t("builder.work.stickReconnect"),
+      target: handle.name,
     });
   }
 
@@ -312,6 +317,11 @@ export function RekordboxStick({
         } catch {
           if (stillCurrent(token)) setHealth(null);
         }
+      }, {
+        operation: "stick-read",
+        key: files.map((file) => file.webkitRelativePath || file.name).join("|"),
+        label: t("builder.work.stickReconnect"),
+        target: files[0]?.webkitRelativePath.split("/")[0],
       });
     } catch (caught) {
       if (!stillCurrent(token)) return;
@@ -349,6 +359,19 @@ export function RekordboxStick({
       if (stillCurrent(token)) setPhase("idle");
     }
   }
+
+  chooseImpl.current = () => {
+    setFolded(false);
+    void chooseFolder();
+  };
+
+  useEffect(() => {
+    if (!chooseStick) return;
+    chooseStick.current = () => chooseImpl.current();
+    return () => {
+      chooseStick.current = null;
+    };
+  }, [chooseStick]);
 
   const locking = busy || phase === "listing" || phase === "reading";
   const pending = locking || phase === "picking";

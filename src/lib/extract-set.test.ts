@@ -81,10 +81,12 @@ test("extract stores the playlist pool for later reshuffle", () => {
   const crate = Array.from({ length: 40 }, (_, i) => spotifyTrack(i));
   const draft = extractSetFromPlaylist(crate, "Big Night", {
     durationMinutes: 60,
+    notes: "Doors 22:00 · curfew 04:00",
   });
   assert.ok(draft.sourcePool);
   assert.equal(draft.sourcePool?.length, 40);
   assert.ok(canReshuffleDraft(draft));
+  assert.equal(draft.notes, "Doors 22:00 · curfew 04:00");
   const performance = draft.tracks.filter((track) => track.role !== "safety");
   assert.ok(performance.length < 40);
   assert.ok(

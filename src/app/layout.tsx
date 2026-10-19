@@ -3,6 +3,7 @@ import { Manrope, Space_Grotesk } from "next/font/google";
 import { DesktopFrame } from "@/components/DesktopFrame";
 import { I18nProvider } from "@/lib/i18n/react";
 import "./globals.css";
+import "./ui-system.css";
 
 const display = Space_Grotesk({
   variable: "--font-display",

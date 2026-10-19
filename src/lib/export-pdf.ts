@@ -1,5 +1,4 @@
 import { mixJoin } from "@/lib/harmonic";
-import { trackFilePath } from "@/lib/export-booth";
 import { stickAlternativesPlaylistName } from "@/lib/stick-names";
 import { tDe, type Translate } from "@/lib/i18n/core";
 import {
@@ -50,10 +49,9 @@ function phaseLabel(phase: SetPhaseId, t: Translate): string {
 
 /** Only what the DJ wrote down on purpose: a cue note, or the plan-B hint. */
 function cueNote(track: SetTrack, t: Translate): string {
-  const note = track.note?.trim() || "";
-  const path = trackFilePath(track);
+  const note = track.comment?.trim() || "";
   const parts = [
-    note && note !== path ? note : "",
+    note,
     track.safetyAlt ? t("exports.pdf.backupNote", { text: track.safetyAlt }) : "",
   ].filter(Boolean);
   return parts.length ? `<div class="note">${escapeHtml(parts.join(" · "))}</div>` : "";

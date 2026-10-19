@@ -4,10 +4,10 @@
  */
 
 import { id3PrefixLength } from "@/lib/openkey/decode-window";
-import { energyLevelFromId3 } from "@/lib/openkey/writeEnergy";
+import { artworkFromId3, energyLevelFromId3 } from "@/lib/openkey/writeEnergy";
 import { hasKnownEnergy } from "@/lib/energy";
 import type { EnergySource, SetDraft } from "@/lib/set";
-import { lookupRememberedStickFile } from "@/lib/stick-audio";
+import { lookupRememberedStickFile, rememberArtworkBlob } from "@/lib/stick-audio";
 import type { DirLike, FileLike } from "@/lib/rekordbox-stick-write";
 import {
   loadPersistedStickHandle,
@@ -148,8 +148,11 @@ export async function ensureStickWriteAccess(
   return root;
 }
 
-/** Write bytes back through a File System Access handle. */
-export async function writeStickFileBytes(
+function sameBytes(left: Uint8Array, right: Uint8Array): boolean {
+  return left.byteLength === right.byteLength && left.every((byte, index) => byte === right[index]);
+}
+
+async function commitStickFileBytes(
   handle: FileLike,
   data: Uint8Array,
 ): Promise<void> {
@@ -162,6 +165,44 @@ export async function writeStickFileBytes(
     await writable.close();
   } catch (error) {
     await writable.abort?.().catch(() => undefined);
+    throw error;
+  }
+}
+
+async function readHandleBytes(handle: FileLike): Promise<Uint8Array> {
+  return new Uint8Array(await (await handle.getFile()).arrayBuffer());
+}
+
+/**
+ * Replace a stick file, verify the exact bytes by reopening it, and restore the
+ * captured original on every failed commit or mismatch.
+ */
+export async function writeVerifiedStickFileBytes(
+  handle: FileLike,
+  data: Uint8Array,
+): Promise<void> {
+  const original = (await readHandleBytes(handle)).slice();
+  const expected = data.slice();
+  try {
+    await commitStickFileBytes(handle, expected);
+    if (!sameBytes(await readHandleBytes(handle), expected)) {
+      throw new Error("The written stick file did not match the expected bytes.");
+    }
+  } catch (error) {
+    try {
+      const current = await readHandleBytes(handle).catch(() => null);
+      if (!current || !sameBytes(current, original)) {
+        await commitStickFileBytes(handle, original);
+        if (!sameBytes(await readHandleBytes(handle), original)) {
+          throw new Error("The original stick file could not be restored.");
+        }
+      }
+    } catch (restoreError) {
+      throw new AggregateError(
+        [error, restoreError],
+        "The stick file write failed and rollback could not be verified.",
+      );
+    }
     throw error;
   }
 }
@@ -259,6 +300,72 @@ function stampTaggedEnergy(
     if (track.energyLevel === level && track.energySource === "tag") return track;
     changed = true;
     return { ...track, energyLevel: level, energySource: "tag" as const };
+  };
+  const tracks = draft.tracks.map(stamp);
+  const sourcePool = draft.sourcePool?.map(stamp);
+  if (!changed) return draft;
+  return { ...draft, tracks, sourcePool };
+}
+
+/** ID3 APIC cover from the front of an MP3. Does not decode audio. */
+export async function artworkFromFile(
+  file: Blob,
+): Promise<{ mime: string; bytes: Uint8Array } | null> {
+  const header = new Uint8Array(
+    await file.slice(0, Math.min(file.size, 10)).arrayBuffer(),
+  );
+  const length = id3PrefixLength(header, file.size);
+  const bytes = new Uint8Array(await file.slice(0, length).arrayBuffer());
+  return artworkFromId3(bytes);
+}
+
+/**
+ * Embedded MP3 covers for tracks that still have no Artwork-folder JPEG.
+ * Keyed by track id. Callers merge into the latest draft so a slow read cannot
+ * replace a cover the stick JPEG already supplied.
+ */
+export async function missingCoversFromFiles(
+  tracks: Array<{ id: string; imageUrl: string | null; filePath?: string }>,
+  root?: DirLike | null,
+): Promise<Map<string, string>> {
+  const pending = tracks.filter(
+    (track) => !track.imageUrl?.trim() && Boolean(track.filePath?.trim()),
+  );
+  const covers = new Map<string, string>();
+  for (const track of pending) {
+    try {
+      const resolved = await resolveTrackAudio(track.filePath ?? "", root);
+      if (!resolved || !isWritableMp3(resolved.file, track.filePath)) continue;
+      const picture = await artworkFromFile(resolved.file);
+      if (!picture) continue;
+      const copy = new Uint8Array(picture.bytes);
+      const url = rememberArtworkBlob(
+        `id3:${track.filePath}`,
+        new Blob([copy], { type: picture.mime }),
+      );
+      if (url) covers.set(track.id, url);
+    } catch {
+      // Missing or unreadable files stay without a cover.
+    }
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 0);
+    });
+  }
+  return covers;
+}
+
+export function applyCoverUrls(
+  draft: SetDraft,
+  covers: ReadonlyMap<string, string>,
+): SetDraft {
+  if (covers.size === 0) return draft;
+  let changed = false;
+  const stamp = <T extends { id: string; imageUrl: string | null }>(track: T): T => {
+    if (track.imageUrl?.trim()) return track;
+    const url = covers.get(track.id);
+    if (!url) return track;
+    changed = true;
+    return { ...track, imageUrl: url };
   };
   const tracks = draft.tracks.map(stamp);
   const sourcePool = draft.sourcePool?.map(stamp);

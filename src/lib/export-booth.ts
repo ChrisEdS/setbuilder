@@ -51,12 +51,8 @@ function xmlTrack(track: SetTrack, id: number, t: Translate): string {
   const bpmValue = parseBpm(track.bpm);
   const bpm = bpmValue == null ? "" : bpmValue.toFixed(2);
   const location = locationFor(track);
-  const comment = [
-    track.comment?.trim(),
-    location ? "" : t("exports.booth.pathMissing"),
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  // Set notes are booth-only and must never overwrite rekordbox/MP3 Comments.
+  const comment = location ? "" : t("exports.booth.pathMissing");
   const attrs = [
     `TrackID="${id}"`,
     `Name="${escapeXml(track.name)}"`,

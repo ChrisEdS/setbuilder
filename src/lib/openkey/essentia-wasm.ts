@@ -16,7 +16,6 @@ type EssentiaFactory = (config?: {
 }) => Promise<unknown>;
 
 declare global {
-  // eslint-disable-next-line no-var
   var EssentiaWASM: EssentiaFactory | undefined;
 }
 
@@ -61,7 +60,6 @@ async function loadFactory(): Promise<EssentiaFactory> {
   );
 
   // Module workers cannot importScripts; evaluate UMD with web shims.
-  // eslint-disable-next-line no-new-func
   const factory = new Function(
     "workerGlobal",
     `

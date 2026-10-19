@@ -1,0 +1,1019 @@
+/*
+ * SETBUILDER UI system
+ *
+ * Loaded after the historical global stylesheet. Keep cross-feature visual
+ * rules here so spacing, controls and surfaces do not drift between panels.
+ */
+
+:root {
+  --ui-space-1: 0.25rem;
+  --ui-space-2: 0.5rem;
+  --ui-space-3: 0.75rem;
+  --ui-space-4: 1rem;
+  --ui-space-5: 1.25rem;
+  --ui-space-6: 1.5rem;
+  --ui-section-gap: 1.125rem;
+  --ui-panel-padding-x: clamp(1rem, 1.4vw, 1.25rem);
+  --ui-panel-padding-y: 1rem;
+  --ui-control-height: 2.625rem;
+  --ui-control-radius: 0.5rem;
+  --ui-card-radius: 0.75rem;
+  --ui-font-xs: 0.75rem;
+  --ui-font-sm: 0.8125rem;
+  --ui-font-body: 0.875rem;
+  --ui-font-title: 1rem;
+  --ui-surface: #181818;
+  --ui-surface-raised: #242424;
+  --ui-surface-hover: #2a2a2a;
+  --ui-border: rgba(255, 255, 255, 0.1);
+  --ui-border-strong: rgba(255, 255, 255, 0.2);
+  --ui-muted: #b3b3b3;
+  --ui-focus: #1ed760;
+  --ui-warning: #fbbf24;
+  --ui-warning-surface: rgba(251, 191, 36, 0.1);
+  --ui-touch-target: 2.75rem;
+  --ui-dock-safe: 0.75rem;
+  --ui-sticky-toolbar-z: 55;
+  --ui-sticky-status-z: 70;
+}
+
+/* Page rhythm */
+.set-shell {
+  width: min(1280px, calc(100% - 2rem));
+  padding-top: var(--ui-space-6);
+  padding-bottom: 2rem !important;
+}
+
+.set-shell .hero {
+  gap: var(--ui-space-6) !important;
+  margin-bottom: var(--ui-section-gap) !important;
+  padding-bottom: var(--ui-section-gap) !important;
+}
+
+.set-shell .explain-fold.section-fold {
+  margin: 0 !important;
+}
+
+.set-shell .explain-fold.section-fold + .explain-fold.section-fold {
+  margin-top: var(--ui-section-gap) !important;
+}
+
+.set-shell .builder-stack,
+.set-shell .builder-section-stack,
+.set-shell .stick-import-body,
+.set-shell .library-pane-grid,
+.set-shell .library-csv-pane {
+  gap: var(--ui-space-3) !important;
+}
+
+/* Surfaces */
+.set-shell :is(
+  .hero-meta,
+  .panel,
+  .curve,
+  .role-crates,
+  .harmonic-path,
+  .key-import,
+  .library-panel,
+  .crate-col,
+  .explain-fold.section-fold
+) {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--ui-card-radius) !important;
+}
+
+.set-shell :is(
+  .builder-card,
+  .library-source-pane,
+  .library-browser,
+  .stick-status-pane,
+  .explain-fold.nested
+) {
+  border-color: var(--ui-border) !important;
+  border-radius: var(--ui-card-radius) !important;
+}
+
+.set-shell :is(.builder-card, .library-source-pane, .library-browser) {
+  padding: var(--ui-panel-padding-y) var(--ui-panel-padding-x) !important;
+}
+
+/* Repeated headings share one baseline and one type hierarchy. */
+.set-shell :is(.panel-head, .library-browser-head, .crate-toolbar-head, .curve-head) {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-3) !important;
+  min-height: var(--ui-control-height);
+  margin: 0 0 var(--ui-space-3) !important;
+}
+
+.set-shell :is(.panel-head h2, .curve-head h2, .library-browser-heading) {
+  font-family: var(--font-display), "Space Grotesk", sans-serif;
+  font-size: var(--ui-font-title) !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.set-shell :is(.panel-head p, .curve-head p, .library-browser-meta, .head-meta) {
+  color: var(--ui-muted) !important;
+  font-size: var(--ui-font-xs) !important;
+  line-height: 1.35 !important;
+}
+
+/* All fold headers use the same hit area and inset. */
+.set-shell .explain-fold > summary {
+  min-height: 3.25rem;
+  padding: var(--ui-space-3) var(--ui-panel-padding-x) !important;
+  gap: var(--ui-space-3) !important;
+  line-height: 1.3;
+}
+
+.set-shell .explain-fold.nested > summary {
+  min-height: 3rem;
+}
+
+.set-shell .explain-body {
+  padding: var(--ui-space-3) var(--ui-panel-padding-x) var(--ui-panel-padding-y) !important;
+}
+
+/* One disclosure cue: the chevron carries the visual state. */
+.set-shell .fold-toggle {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+}
+
+.set-shell .fold-toggle::after {
+  content: none !important;
+}
+
+/* Controls */
+.set-shell :is(
+  .btn,
+  .button-link,
+  .file-btn,
+  label.btn,
+  .menu-trigger,
+  .seg-item,
+  .timeline-tools button,
+  .search-row > button,
+  .actions > button,
+  .result-list > li > button
+) {
+  min-height: var(--ui-control-height) !important;
+  padding: 0 var(--ui-space-4) !important;
+  gap: var(--ui-space-2);
+  border-radius: var(--radius-pill) !important;
+  font-size: var(--ui-font-sm) !important;
+  line-height: 1.2 !important;
+  white-space: nowrap;
+}
+
+.set-shell :is(
+  .crate-icon-btn,
+  .timeline-tools .icon-action,
+  .lib-play,
+  .preview-close
+) {
+  width: var(--ui-control-height);
+  min-width: var(--ui-control-height) !important;
+  height: var(--ui-control-height);
+  min-height: var(--ui-control-height) !important;
+  padding: 0 !important;
+  border-radius: var(--radius-pill) !important;
+}
+
+.set-shell .action-icon {
+  display: block;
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+.set-shell :where(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea
+) {
+  min-height: var(--ui-control-height);
+  padding: 0.625rem 0.85rem !important;
+  border: 1px solid var(--ui-border-strong) !important;
+  border-radius: var(--ui-control-radius) !important;
+  background: #121212 !important;
+  color: #fff !important;
+  font-size: var(--ui-font-body);
+  line-height: 1.35;
+}
+
+.set-shell textarea {
+  min-height: 4.75rem;
+  resize: vertical;
+}
+
+.set-shell :where(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea
+):hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.set-shell :is(.hero-meta label, .playlist-picker, .library-playlist-pick) {
+  gap: var(--ui-space-2) !important;
+}
+
+.set-shell :is(.hero-meta label > span, .playlist-picker > span) {
+  font-size: 0.6875rem !important;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0.055em;
+}
+
+/* Toolbars and action rows */
+.set-shell :is(
+  .actions,
+  .set-bar,
+  .set-menus,
+  .timeline-tools,
+  .library-browser-toolbar,
+  .library-add-bar,
+  .stick-actions,
+  .replace-foot
+) {
+  align-items: center;
+  gap: var(--ui-space-2) !important;
+}
+
+.set-shell .library-browser-head:has(.library-add-bar) {
+  flex-wrap: wrap !important;
+  align-items: center;
+}
+
+.set-shell .library-browser-head:has(.library-add-bar) .library-browser-toolbar {
+  flex: 1 1 28rem;
+  min-width: min(100%, 22rem);
+  flex-wrap: wrap;
+}
+
+.set-shell .library-browser-toolbar .library-search-field {
+  display: flex;
+  flex: 1 1 18rem !important;
+  min-width: min(100%, 16rem) !important;
+  max-width: none !important;
+}
+
+.set-shell .library-browser-toolbar .library-search-field input {
+  width: 100%;
+  min-width: 0;
+  text-overflow: ellipsis;
+}
+
+.set-shell .library-browser-head:has(.library-add-bar) .library-playlist-pick {
+  flex: 0 0 auto;
+}
+
+.set-shell .library-browser-head .library-add-bar {
+  flex: 1 0 100% !important;
+  width: 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: var(--ui-space-3) 0 0 !important;
+  padding-top: var(--ui-space-3);
+  justify-content: flex-start !important;
+  border-top: 1px solid var(--ui-border);
+  row-gap: var(--ui-space-2);
+}
+
+.set-shell .library-add-group {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ui-space-2);
+}
+
+.set-shell .library-add-bar label,
+.set-shell .library-add-fit {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-2);
+  flex: 0 0 auto;
+  min-width: max-content;
+  max-width: 100%;
+}
+
+.set-shell .library-add-fit {
+  flex: 1 1 16rem;
+  min-width: min(100%, 16rem);
+}
+
+.set-shell .library-add-fit select {
+  flex: 1 1 auto;
+  min-width: 9rem !important;
+  max-width: 100%;
+}
+
+.set-shell .library-browser-head:has(.library-add-bar) :is(
+  .library-playlist-pick select,
+  .library-add-bar select
+) {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  width: auto;
+  min-width: 7.5rem;
+  max-width: 100%;
+  height: var(--ui-control-height);
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  padding-left: 0.75rem !important;
+  padding-right: 2rem !important;
+  color: #fff !important;
+  background-color: #121212 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23b3b3b3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.65rem center !important;
+  background-size: 1rem !important;
+  text-overflow: ellipsis;
+}
+
+.set-shell .library-browser-head:has(.library-add-bar) .library-playlist-pick select {
+  min-width: 10.5rem;
+}
+
+.set-shell .set-bar {
+  min-height: 3.25rem;
+}
+
+.set-shell .seg {
+  gap: var(--ui-space-2) !important;
+}
+
+.set-shell .manual-row-main {
+  grid-template-columns: minmax(14rem, 1fr) auto;
+  column-gap: var(--ui-space-4);
+}
+
+.set-shell .manual-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: end;
+  gap: var(--ui-space-2) var(--ui-space-3);
+}
+
+.set-shell .manual-meta {
+  gap: var(--ui-space-2);
+}
+
+.set-shell .manual-meta .tip {
+  flex: 0 0 auto;
+}
+
+.set-shell .manual-controls .manual-meta select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  width: auto !important;
+  min-width: 8.25rem !important;
+  max-width: 11rem;
+  height: var(--ui-control-height) !important;
+  min-height: var(--ui-control-height) !important;
+  padding-top: 0 !important;
+  padding-right: 2rem !important;
+  padding-bottom: 0 !important;
+  padding-left: 0.75rem !important;
+  line-height: 1.2 !important;
+  text-overflow: ellipsis;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23b3b3b3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.75rem center !important;
+  background-size: 1rem !important;
+}
+
+.set-shell .manual-meta .source-pill {
+  min-height: 2rem;
+  padding-inline: var(--ui-space-3);
+}
+
+.set-shell .timeline-tools {
+  display: grid !important;
+  grid-auto-flow: column;
+  grid-auto-columns: var(--ui-control-height);
+  justify-content: end;
+  align-items: center;
+  gap: 0.375rem !important;
+}
+
+.set-shell .timeline-tools > .tip {
+  width: var(--ui-control-height);
+  min-width: var(--ui-control-height);
+  height: var(--ui-control-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+}
+
+.set-shell .timeline-tools .track-energy {
+  width: var(--ui-control-height);
+  height: var(--ui-control-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+}
+
+.set-shell .timeline-tools .icon-action,
+.set-shell .timeline-tools .track-energy > summary.menu-trigger {
+  box-sizing: border-box;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: var(--ui-control-height) !important;
+  min-width: var(--ui-control-height) !important;
+  height: var(--ui-control-height) !important;
+  min-height: var(--ui-control-height) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 1px solid transparent !important;
+}
+
+.set-shell .timeline-tools .icon-action.danger {
+  border-color: rgba(248, 113, 113, 0.45) !important;
+}
+
+/* Status, validation and waiting feedback follow the same compact card. */
+.set-shell :is(.banner, .field-notice) {
+  margin: 0 0 var(--ui-space-3) !important;
+  padding: var(--ui-space-3) var(--ui-space-4) !important;
+  border: 1px solid var(--ui-border) !important;
+  border-radius: var(--ui-control-radius) !important;
+  font-size: var(--ui-font-sm) !important;
+  line-height: 1.45 !important;
+}
+
+.set-shell :is(.builder-status, .library-source-status, .panel-inline-status) {
+  min-height: 1.75rem;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem var(--ui-space-3) !important;
+  font-size: var(--ui-font-xs) !important;
+}
+
+.set-shell :is(.menu-panel, .replace-menu) {
+  padding: var(--ui-space-2) !important;
+  border: 1px solid var(--ui-border-strong) !important;
+  border-radius: var(--ui-card-radius) !important;
+  background: var(--ui-surface) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+.set-shell .replace-menu {
+  overflow: auto;
+}
+
+.set-shell .replace-menu-head {
+  top: calc(-1 * var(--ui-space-2));
+  margin: calc(-1 * var(--ui-space-2)) calc(-1 * var(--ui-space-2)) 0;
+  padding: var(--ui-space-3);
+  background: var(--ui-surface) !important;
+}
+
+.set-shell .replace-menu-head > strong {
+  font-size: var(--ui-font-xs);
+  color: var(--ui-muted);
+}
+
+.set-shell .replace-menu-head h4 {
+  font-size: var(--ui-font-body);
+  line-height: 1.35;
+}
+
+.set-shell .replace-list {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.set-shell .stick-reload {
+  margin: 0 0 var(--ui-space-3) !important;
+  padding: var(--ui-space-3) var(--ui-space-4) !important;
+  gap: var(--ui-space-3) !important;
+  border: 1px solid var(--ui-border) !important;
+  border-radius: var(--ui-card-radius) !important;
+  background: var(--ui-surface-raised) !important;
+}
+
+.set-shell .banner.status {
+  z-index: var(--ui-sticky-status-z);
+}
+
+.set-shell .set-bar {
+  z-index: var(--ui-sticky-toolbar-z);
+}
+
+.set-shell .menu-prereq {
+  margin: 0;
+  padding: 0.65rem 0.8rem 0.35rem;
+  color: #f4f4f4;
+  font-size: var(--ui-font-sm);
+  line-height: 1.45;
+}
+
+.set-shell .menu-has-disabled-reason > summary {
+  cursor: help;
+  text-decoration: underline dotted rgba(255, 255, 255, 0.45);
+  text-underline-offset: 0.2rem;
+}
+
+/* Selection and warnings use one semantic color language. */
+.set-shell :is(
+  .timeline-tools .energy-level-pick button[aria-pressed="true"],
+  .timeline-tools .energy-level-pick button[aria-checked="true"]
+) {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #121212 !important;
+}
+
+.set-shell :is(.curve-overrun, .curve-overrun-warning, .phase-overrun) {
+  color: var(--ui-warning) !important;
+}
+
+.set-shell :is(.curve-seg.over i, .phase-slot .curve-seg.over i) {
+  background: var(--ui-warning) !important;
+}
+
+.set-shell .curve-head > p.curve-overrun {
+  border-color: color-mix(in srgb, var(--ui-warning) 45%, transparent) !important;
+  background: var(--ui-warning-surface) !important;
+}
+
+/* Dense track rows still align to the same 8px rhythm. */
+.set-shell :is(.manual-row, .library-list li, .result-list li, .replace-list li) {
+  column-gap: var(--ui-space-3) !important;
+}
+
+.set-shell .library-list li {
+  min-height: 3.5rem;
+  padding-block: var(--ui-space-2) !important;
+}
+
+.set-shell .stick-sets-fold .library-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--ui-space-3);
+}
+
+.set-shell .stick-sets-fold .library-list li > div {
+  min-width: 0;
+}
+
+.set-shell .stick-sets-fold .stick-set-load {
+  width: auto !important;
+  min-width: max-content !important;
+  height: var(--ui-control-height);
+  padding-inline: var(--ui-space-4) !important;
+}
+
+.set-shell :is(.builder-note, .library-path, .why, .artists) {
+  font-size: var(--ui-font-sm) !important;
+  line-height: 1.5 !important;
+}
+
+/* One keyboard treatment; fold headers use an inset ring so it cannot clip. */
+.set-shell :where(
+  button,
+  a[href],
+  input,
+  textarea,
+  select,
+  summary,
+  [role="tab"],
+  [role="menuitem"],
+  [role="menuitemradio"],
+  [draggable="true"]
+):focus-visible {
+  outline: 3px solid var(--ui-focus) !important;
+  outline-offset: 2px !important;
+  box-shadow: none !important;
+}
+
+.set-shell .explain-fold > summary:focus-visible {
+  outline: 0 !important;
+  box-shadow: inset 0 0 0 3px var(--ui-focus) !important;
+}
+
+@media (max-width: 900px) {
+  .set-shell {
+    width: min(100% - 1rem, 1280px);
+    padding-top: var(--ui-space-4);
+  }
+
+  .set-shell .hero {
+    gap: var(--ui-space-4) !important;
+  }
+
+  .set-shell .manual-row-main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .set-shell .manual-controls {
+    justify-content: flex-start;
+    justify-items: start;
+  }
+
+  .set-shell .timeline-tools {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 720px) {
+  :root {
+    --ui-control-height: var(--ui-touch-target);
+  }
+
+  .set-shell {
+    width: min(100% - 0.75rem, 1280px);
+  }
+
+  .set-shell :is(.panel-head, .library-browser-head, .crate-toolbar-head, .curve-head) {
+    align-items: flex-start;
+  }
+
+  .set-shell .manual-row {
+    grid-template-columns: var(--ui-touch-target) minmax(0, 1fr) !important;
+  }
+
+  .set-shell .manual-meta {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .set-shell .manual-meta .tip:has(> select) {
+    flex: 1 1 8.25rem;
+  }
+
+  .set-shell .manual-controls .manual-meta select {
+    width: 100% !important;
+    max-width: none;
+  }
+
+  .set-shell :is(.set-bar .seg-item, .set-menus .menu-trigger, .timeline-tools button) {
+    min-height: var(--ui-touch-target) !important;
+  }
+
+  .set-shell .library-browser-head .library-browser-toolbar {
+    flex: 1 1 100%;
+    min-width: 100%;
+    justify-content: flex-start;
+  }
+
+  .set-shell .library-browser-toolbar .library-search-field {
+    min-width: min(100%, 12rem) !important;
+  }
+}
+
+@media (max-width: 600px), (pointer: coarse) {
+  .set-shell :is(.set-menus, .timeline-tools) .menu-panel {
+    position: fixed !important;
+    inset: auto 0.75rem var(--ui-dock-safe) 0.75rem !important;
+    width: auto !important;
+    max-height: min(60vh, 28rem);
+  }
+
+  .set-shell .stick-sets-fold .library-list li {
+    grid-template:
+      "track action"
+      "meta action" / minmax(0, 1fr) auto;
+    row-gap: var(--ui-space-1);
+  }
+
+  .set-shell .stick-sets-fold .library-list li > div {
+    grid-area: track;
+  }
+
+  .set-shell .stick-sets-fold .library-list li > em {
+    grid-area: meta;
+    justify-self: start;
+  }
+
+  .set-shell .stick-sets-fold .stick-set-load {
+    grid-area: action;
+    align-self: center;
+  }
+}
+
+/* Playlist filter: field takes the leftover width, kind select sits on the right. */
+.set-shell .stick-sets-fold .library-browser-toolbar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  flex: none !important;
+  width: 100%;
+  margin-left: 0 !important;
+  justify-content: flex-start !important;
+  gap: var(--ui-space-3);
+}
+
+.set-shell .stick-sets-fold .library-browser-toolbar .library-search-field {
+  flex: 1 1 auto !important;
+  width: auto !important;
+  max-width: none !important;
+  min-width: 0 !important;
+}
+
+.set-shell .stick-sets-fold .library-playlist-pick {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.set-shell .stick-sets-fold .library-playlist-pick select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  width: auto;
+  min-width: 8.75rem;
+  max-width: 14rem;
+  padding-right: 2.1rem !important;
+  color: #fff !important;
+  background-color: #121212 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23b3b3b3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.7rem center !important;
+  background-size: 1rem !important;
+  text-overflow: ellipsis;
+}
+
+/* Replace opens as a drawer so the setlist underneath does not reflow.
+   The floating player sits above this layer, so the drawer can cover the viewport. */
+.replace-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(8, 8, 8, 0.62);
+}
+
+/* Compact floating preview. Position comes from --player-* so a drag can move it
+   without fighting the older full-width dock rules. */
+.preview-player {
+  position: fixed !important;
+  left: var(--player-x, 1rem) !important;
+  top: var(--player-y, auto) !important;
+  right: var(--player-right, auto) !important;
+  bottom: var(--player-bottom, 1rem) !important;
+  width: min(32rem, calc(100vw - 1.5rem)) !important;
+  max-width: calc(100vw - 1.5rem) !important;
+  height: auto !important;
+  z-index: 110 !important;
+  transform: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  pointer-events: none;
+}
+
+.preview-player .preview-dock {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  width: 100% !important;
+  min-height: 0;
+  padding: 0.65rem 0.7rem 0.7rem !important;
+  border: 1px solid var(--ui-border-strong) !important;
+  border-radius: var(--ui-card-radius) !important;
+  background: var(--ui-surface) !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45) !important;
+  pointer-events: auto;
+}
+
+.preview-player .preview-close-slot {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  z-index: 2;
+}
+
+.preview-player .preview-now {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.55rem;
+  align-items: center;
+  min-width: 0;
+  padding-right: 2.15rem;
+}
+
+.preview-player .preview-drag {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: center;
+  min-width: 0;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.preview-player.is-dragging .preview-drag {
+  cursor: grabbing;
+}
+
+.preview-player .preview-art,
+.preview-player .preview-art.fallback {
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+}
+
+.preview-player .preview-meta strong,
+.preview-player .preview-meta span,
+.preview-player .preview-meta em {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.preview-player .preview-transport {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+  grid-column: auto;
+  justify-content: flex-end;
+}
+
+.preview-player .player-skip,
+.preview-player .preview-close {
+  width: 2rem;
+  height: 2rem;
+  min-width: 2rem;
+  min-height: 2rem;
+}
+
+.preview-player .player-play {
+  width: 2.25rem;
+  height: 2.25rem;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+}
+
+.preview-player .preview-seek {
+  display: grid;
+  grid-template-columns: 2.4rem minmax(0, 1fr) 2.4rem;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.preview-player iframe {
+  width: 100%;
+  min-height: 0;
+  margin-top: 0;
+}
+
+.preview-player .player-fallback {
+  margin: 0;
+  font-size: var(--ui-font-xs);
+  line-height: 1.4;
+}
+
+@media (max-width: 720px), (pointer: coarse) {
+  .preview-player .player-skip,
+  .preview-player .player-play,
+  .preview-player .preview-close {
+    width: var(--ui-touch-target) !important;
+    height: var(--ui-touch-target) !important;
+    min-width: var(--ui-touch-target) !important;
+    min-height: var(--ui-touch-target) !important;
+  }
+}
+
+.replace-layer .replace-menu {
+  width: min(36rem, 100%);
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: var(--ui-space-4);
+  overflow: auto;
+  border: 0;
+  border-left: 1px solid var(--ui-border-strong);
+  border-radius: 0;
+  background: var(--ui-surface);
+  box-shadow: -18px 0 48px rgba(0, 0, 0, 0.45);
+  gap: var(--ui-space-3);
+}
+
+.replace-layer .replace-menu-head {
+  position: sticky;
+  top: calc(-1 * var(--ui-space-4));
+  z-index: 2;
+  margin: calc(-1 * var(--ui-space-4)) calc(-1 * var(--ui-space-4)) 0;
+  padding: var(--ui-space-4);
+  background: var(--ui-surface);
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.replace-layer .replace-menu-head > strong {
+  font-size: var(--ui-font-xs);
+  color: var(--ui-muted);
+}
+
+.replace-layer .replace-menu-head h4 {
+  margin: 0.2rem 0 0;
+  color: #fff;
+  font-size: var(--ui-font-body);
+  line-height: 1.35;
+}
+
+.replace-layer .replace-menu-head p,
+.replace-layer .replace-empty,
+.replace-layer .replace-origin,
+.replace-layer .replace-count {
+  color: var(--ui-muted);
+}
+
+.replace-layer .replace-copy strong {
+  color: #fff;
+}
+
+.replace-layer .replace-copy span {
+  color: #d0d0d0;
+}
+
+.replace-layer .replace-list {
+  max-height: none;
+  overflow: visible;
+}
+
+.replace-layer .replace-play .tip {
+  display: inline-flex;
+  width: var(--ui-control-height);
+  height: var(--ui-control-height);
+}
+
+.replace-layer .icon-action {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ui-control-height);
+  min-width: var(--ui-control-height);
+  height: var(--ui-control-height);
+  min-height: var(--ui-control-height);
+  margin: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: #242424;
+  color: #fff;
+  cursor: pointer;
+}
+
+.replace-layer .icon-action:hover:not(:disabled) {
+  background: #2a2a2a;
+}
+
+.replace-layer .icon-action.is-playing {
+  background: #1ed760;
+  color: #121212;
+}
+
+.replace-layer .icon-action:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.replace-layer .action-icon {
+  display: block;
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+.replace-layer :where(button, [role="menuitem"]):focus-visible {
+  outline: 3px solid var(--ui-focus);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+@media (max-width: 720px) {
+  .replace-layer .replace-menu {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .set-shell *,
+  .set-shell *::before,
+  .set-shell *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

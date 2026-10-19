@@ -11,6 +11,7 @@ import {
 export type AudioKind = "wav" | "aiff" | "mp3" | "other";
 
 export type WavLayout = {
+  format: "pcm" | "float";
   channels: number;
   sampleRate: number;
   bitsPerSample: number;
@@ -304,6 +305,7 @@ export function parseWavLayout(prefix: Uint8Array): WavLayout | null {
   let sampleRate = 0;
   let bitsPerSample = 0;
   let blockAlign = 0;
+  let format: "pcm" | "float" = "pcm";
   let dataOffset = 0;
   let dataSize = 0;
   let foundFmt = false;
@@ -312,14 +314,27 @@ export function parseWavLayout(prefix: Uint8Array): WavLayout | null {
     const id = ascii(prefix, offset, 4);
     const size = u32le(prefix, offset + 4);
     const body = offset + 8;
+    if (body > prefix.length || size > 0x7fffffff) return null;
     if (id === "fmt " && body + 16 <= prefix.length) {
-      const audioFormat = u16le(prefix, body);
+      let audioFormat = u16le(prefix, body);
       channels = u16le(prefix, body + 2);
       sampleRate = u32le(prefix, body + 4);
       blockAlign = u16le(prefix, body + 12);
       bitsPerSample = u16le(prefix, body + 14);
-      // PCM and IEEE float. Extensible (0xFFFE) is accepted when the PCM fields are set.
-      if (audioFormat !== 1 && audioFormat !== 3 && audioFormat !== 0xfffe) return null;
+      if (audioFormat === 0xfffe) {
+        // WAVE_FORMAT_EXTENSIBLE stores the real format at the start of SubFormat.
+        if (size < 40 || body + 40 > prefix.length) return null;
+        audioFormat = u16le(prefix, body + 24);
+      }
+      if (audioFormat !== 1 && audioFormat !== 3) return null;
+      if (
+        ![8, 16, 24, 32].includes(bitsPerSample) ||
+        (audioFormat === 3 && bitsPerSample !== 32) ||
+        blockAlign !== channels * (bitsPerSample / 8)
+      ) {
+        return null;
+      }
+      format = audioFormat === 3 ? "float" : "pcm";
       foundFmt = true;
     }
     if (id === "data") {
@@ -329,13 +344,24 @@ export function parseWavLayout(prefix: Uint8Array): WavLayout | null {
       break;
     }
     const step = size + (size % 2);
-    if (step < 0) return null;
-    offset = body + step;
+    const next = body + step;
+    if (!Number.isSafeInteger(next) || next <= offset || next > prefix.length) {
+      return null;
+    }
+    offset = next;
   }
   if (!foundFmt || !foundData || sampleRate <= 0 || channels <= 0 || blockAlign <= 0) {
     return null;
   }
-  return { channels, sampleRate, bitsPerSample, blockAlign, dataOffset, dataSize };
+  return {
+    format,
+    channels,
+    sampleRate,
+    bitsPerSample,
+    blockAlign,
+    dataOffset,
+    dataSize,
+  };
 }
 
 export function pcmWindowRange(
@@ -361,8 +387,9 @@ export function buildPcmWav(options: {
   sampleRate: number;
   bitsPerSample: number;
   pcm: Uint8Array;
+  format?: "pcm" | "float";
 }): Uint8Array {
-  const { channels, sampleRate, bitsPerSample, pcm } = options;
+  const { channels, sampleRate, bitsPerSample, pcm, format = "pcm" } = options;
   const blockAlign = Math.max(1, channels * Math.ceil(bitsPerSample / 8));
   const byteRate = sampleRate * blockAlign;
   const out = new Uint8Array(44 + pcm.length);
@@ -371,7 +398,7 @@ export function buildPcmWav(options: {
   writeAscii(out, 8, "WAVE");
   writeAscii(out, 12, "fmt ");
   writeU32le(out, 16, 16);
-  writeU16le(out, 20, bitsPerSample === 32 ? 3 : 1);
+  writeU16le(out, 20, format === "float" ? 3 : 1);
   writeU16le(out, 22, channels);
   writeU32le(out, 24, sampleRate);
   writeU32le(out, 28, byteRate);

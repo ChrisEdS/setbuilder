@@ -1,5 +1,6 @@
 import { distributeRoles } from "@/lib/extract-set";
-import { stickAudioUrl } from "@/lib/stick-audio";
+import { uniqueIncomingDraftTracks } from "@/lib/draft-codec";
+import { stickArtworkUrl } from "@/lib/stick-audio";
 import { energyFromRekordboxTags, hasKnownEnergy } from "@/lib/energy";
 import { tDe, type Translate } from "@/lib/i18n/core";
 import { LocalizedError } from "@/lib/i18n/error";
@@ -99,6 +100,28 @@ export function applyStickSet(
     title: set.name,
     tracks: set.tracks.map((track, index) => toSetTrack(track, set, index, totalMs, t)),
   });
+}
+
+export type StickSetLoadMode = "replace" | "merge";
+
+/** Applies a stick playlist without allowing duplicate normalized track IDs. */
+export function applyStickSetMode(
+  draft: SetDraft,
+  set: RekordboxStickSet,
+  mode: StickSetLoadMode,
+  t: Translate = tDe,
+): SetDraft {
+  const incoming = applyStickSet({ ...draft, tracks: [] }, set, t);
+  if (mode === "replace") return incoming;
+  const fresh = uniqueIncomingDraftTracks(
+    draft.tracks.map((track) => track.id),
+    incoming.tracks,
+  );
+  if (!fresh.length) return draft;
+  return {
+    ...draft,
+    tracks: [...draft.tracks, ...fresh],
+  };
 }
 
 function setsFromPdb(library: PdbLibrary): RekordboxStickSet[] {
@@ -225,7 +248,7 @@ function coverUrl(artworkPath: string | undefined): string | null {
   if (!artworkPath) return null;
   // Prefer the larger _m variant (a1_m.jpg), fall back to the 80px original.
   const large = artworkPath.replace(/(\.[a-z]+)$/i, "_m$1");
-  return stickAudioUrl(large) || stickAudioUrl(artworkPath);
+  return stickArtworkUrl(large) || stickArtworkUrl(artworkPath);
 }
 
 /** Audio and artwork paths the current set still needs from the stick. */

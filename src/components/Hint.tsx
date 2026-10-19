@@ -101,14 +101,43 @@ function PortalBubble({
  * parents and left-edge tabs never clip the text.
  */
 export function Tip({ text, disabled, children, className, end = false }: TipProps) {
-  const wrapRef = useRef<HTMLSpanElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
   const bubbleRef = useRef<HTMLSpanElement>(null);
+  const hideTimer = useRef<number | null>(null);
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<BubblePos | null>(null);
-  const [mounted, setMounted] = useState(false);
   const tipId = useId();
 
-  useEffect(() => setMounted(true), []);
+  const show = useCallback(() => {
+    if (hideTimer.current != null) {
+      window.clearTimeout(hideTimer.current);
+      hideTimer.current = null;
+    }
+    setOpen(true);
+  }, []);
+
+  const hide = useCallback((immediate = false) => {
+    if (hideTimer.current != null) {
+      window.clearTimeout(hideTimer.current);
+      hideTimer.current = null;
+    }
+    const close = () => {
+      setOpen(false);
+      setPos(null);
+      hideTimer.current = null;
+    };
+    if (immediate) {
+      close();
+      return;
+    }
+    hideTimer.current = window.setTimeout(close, 80);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (hideTimer.current != null) window.clearTimeout(hideTimer.current);
+    };
+  }, []);
 
   const update = useCallback(() => {
     const wrap = wrapRef.current;
@@ -127,10 +156,7 @@ export function Tip({ text, disabled, children, className, end = false }: TipPro
   }, [end]);
 
   useLayoutEffect(() => {
-    if (!open) {
-      setPos(null);
-      return;
-    }
+    if (!open) return;
     update();
     const frame = requestAnimationFrame(update);
     const onScroll = () => update();
@@ -155,27 +181,28 @@ export function Tip({ text, disabled, children, className, end = false }: TipPro
   if (!text.trim()) return <>{children}</>;
 
   return (
-    <span
+    <div
       ref={wrapRef}
       className={["tip", end ? "tip-end" : "", open ? "is-open" : "", className]
         .filter(Boolean)
         .join(" ")}
       tabIndex={disabled ? 0 : undefined}
       aria-describedby={open ? tipId : undefined}
-      onPointerEnter={() => setOpen(true)}
-      onPointerLeave={() => setOpen(false)}
-      onFocusCapture={() => setOpen(true)}
+      onPointerEnter={show}
+      onPointerLeave={() => hide()}
+      onPointerDownCapture={() => hide(true)}
+      onFocusCapture={show}
       onBlurCapture={(event) => {
         const next = event.relatedTarget;
         if (next instanceof Node && wrapRef.current?.contains(next)) return;
-        setOpen(false);
+        hide(true);
       }}
     >
       {children}
-      {mounted && open ? (
+      {open && pos ? (
         <PortalBubble id={tipId} text={text} pos={pos} bubbleRef={bubbleRef} />
       ) : null}
-    </span>
+    </div>
   );
 }
 
@@ -194,9 +221,6 @@ export function Hint({ text, children, className, mark = true }: Props) {
   const bubbleRef = useRef<HTMLSpanElement>(null);
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<BubblePos | null>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
 
   const update = useCallback(() => {
     const wrap = ref.current;
@@ -215,10 +239,7 @@ export function Hint({ text, children, className, mark = true }: Props) {
   }, []);
 
   useLayoutEffect(() => {
-    if (!open || !mark) {
-      setPos(null);
-      return;
-    }
+    if (!open || !mark) return;
     update();
     const frame = requestAnimationFrame(update);
     const onScroll = () => update();
@@ -236,9 +257,13 @@ export function Hint({ text, children, className, mark = true }: Props) {
     function onPointer(event: PointerEvent) {
       if (ref.current?.contains(event.target as Node)) return;
       setOpen(false);
+      setPos(null);
     }
     function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") {
+        setOpen(false);
+        setPos(null);
+      }
     }
     document.addEventListener("pointerdown", onPointer);
     document.addEventListener("keydown", onKey);
@@ -261,18 +286,19 @@ export function Hint({ text, children, className, mark = true }: Props) {
       <button
         type="button"
         className="hint-mark"
-        aria-label="?"
+        aria-label={text}
         aria-expanded={open}
         aria-describedby={open ? id : undefined}
         onClick={(event) => {
           event.preventDefault();
           event.stopPropagation();
-          setOpen((value) => !value);
+          if (open) setPos(null);
+          setOpen(!open);
         }}
       >
         ?
       </button>
-      {mounted && open ? (
+      {open && pos ? (
         <PortalBubble id={id} text={text} pos={pos} bubbleRef={bubbleRef} />
       ) : null}
     </span>

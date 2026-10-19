@@ -94,6 +94,68 @@ test("a long wav energy window is 45s starting a fifth of the way in", () => {
   assert.ok(range.end < wav.length);
 });
 
+test("32-bit integer PCM stays PCM while 32-bit float stays float", () => {
+  const pcm32 = buildPcmWav({
+    channels: 1,
+    sampleRate: 48000,
+    bitsPerSample: 32,
+    pcm: new Uint8Array(16),
+    format: "pcm",
+  });
+  const float32 = buildPcmWav({
+    channels: 1,
+    sampleRate: 48000,
+    bitsPerSample: 32,
+    pcm: new Uint8Array(16),
+    format: "float",
+  });
+  assert.equal(pcm32[20] | (pcm32[21] << 8), 1);
+  assert.equal(float32[20] | (float32[21] << 8), 3);
+  assert.equal(parseWavLayout(pcm32)?.format, "pcm");
+  assert.equal(parseWavLayout(float32)?.format, "float");
+});
+
+test("malformed WAV chunks are rejected instead of slicing arbitrary bytes", () => {
+  const malformed = new Uint8Array(24);
+  malformed.set([0x52, 0x49, 0x46, 0x46], 0); // RIFF
+  malformed.set([0x57, 0x41, 0x56, 0x45], 8); // WAVE
+  malformed.set([0x4a, 0x55, 0x4e, 0x4b], 12); // JUNK
+  malformed.set([0xff, 0xff, 0xff, 0x7f], 16);
+  assert.equal(parseWavLayout(malformed), null);
+
+  const invalidFloat = buildPcmWav({
+    channels: 1,
+    sampleRate: 44100,
+    bitsPerSample: 16,
+    pcm: new Uint8Array(8),
+  });
+  invalidFloat[20] = 3;
+  assert.equal(parseWavLayout(invalidFloat), null);
+});
+
+test("Xing metadata drives representative VBR duration and byte range", () => {
+  const first = cbrFrame();
+  first.set([0x58, 0x69, 0x6e, 0x67], 36); // Xing
+  first.set([0, 0, 0, 1], 40); // frame-count flag
+  const frames = 4000;
+  first.set(
+    [(frames >>> 24) & 0xff, (frames >>> 16) & 0xff, (frames >>> 8) & 0xff, frames & 0xff],
+    44,
+  );
+  const prefix = new Uint8Array(first.length * 2);
+  prefix.set(first);
+  prefix.set(cbrFrame(), first.length);
+  const fileSize = 2_000_000;
+  const probe = probeMp3(prefix, fileSize, 0);
+  assert.ok(probe);
+  assert.equal(probe.cbr, false);
+  assert.ok(Math.abs(probe.durationSeconds - (frames * 1152) / 44100) < 0.001);
+  const range = mp3WindowRange(probe, fileSize);
+  assert.ok(range);
+  assert.ok(range.start > 0);
+  assert.ok(range.end <= fileSize);
+});
+
 function frameBytes(probe: { frameBytes: number }): number {
   return probe.frameBytes;
 }

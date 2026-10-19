@@ -13,9 +13,14 @@ const PLAYABLE =
 /** Audio containers we recognize but cannot preview in this browser. */
 const AUDIO_KNOWN =
   /\.(mp3|mp4|m4a|aac|ogg|opus|wav|flac|webm|aiff|aif|caf|wma|alac)$/i;
+const IMAGE_KNOWN = /\.(jpe?g|png|webp|bmp|gif)$/i;
 
 export function isStickAudioPath(path: string): boolean {
   return AUDIO_KNOWN.test(path);
+}
+
+export function isStickImagePath(path: string): boolean {
+  return IMAGE_KNOWN.test(path);
 }
 
 export function isPlayableStickAudio(path: string): boolean {
@@ -64,17 +69,6 @@ export function matchStickFile(
   return byName;
 }
 
-/** Prefer real audio files so artwork paths from hydrate never win the preview. */
-function matchStickAudioFile(
-  files: StickFileRef[],
-  filePath: string,
-  filename: string,
-): StickFileRef | null {
-  const audio = files.filter((file) => isStickAudioPath(file.path || file.name));
-  if (!audio.length) return null;
-  return matchStickFile(audio, filePath, filename);
-}
-
 const urls = new Map<string, string>();
 let stickFiles: File[] = [];
 let stickEpoch = 0;
@@ -108,17 +102,21 @@ export function stickFileCount(): number {
   return stickFiles.length;
 }
 
-/** Look up a remembered stick File by rekordbox path (analyze-only fallback). */
-export function lookupRememberedStickFile(
+function rememberedRefs(): StickFileRef[] {
+  return stickFiles.map((file) => ({
+    name: file.name,
+    path: file.webkitRelativePath || file.name,
+  }));
+}
+
+function findRememberedFile(
   filePath: string,
-  filename = "",
+  filename: string,
+  allow: (path: string) => boolean,
 ): File | null {
   if (!stickFiles.length) return null;
-  const match = matchStickAudioFile(
-    stickFiles.map((file) => ({
-      name: file.name,
-      path: file.webkitRelativePath || file.name,
-    })),
+  const match = matchStickFile(
+    rememberedRefs().filter((file) => allow(file.path || file.name)),
     filePath,
     filename,
   );
@@ -127,6 +125,50 @@ export function lookupRememberedStickFile(
   return (
     stickFiles.find((item) => (item.webkitRelativePath || item.name) === key) ?? null
   );
+}
+
+function blobUrlFor(file: File, key: string): string | null {
+  if (typeof URL === "undefined" || typeof URL.createObjectURL !== "function") {
+    return null;
+  }
+  if (file.size <= 0) return null;
+  const existing = urls.get(key);
+  if (existing) return existing;
+  const url = URL.createObjectURL(file);
+  urls.set(key, url);
+  return url;
+}
+
+/** Look up a remembered stick File by rekordbox path (analyze-only fallback). */
+export function lookupRememberedStickFile(
+  filePath: string,
+  filename = "",
+): File | null {
+  return findRememberedFile(filePath, filename, isStickAudioPath);
+}
+
+/** Blob URL for a cover file on the stick (`PIONEER/Artwork/...`). */
+export function stickArtworkUrl(filePath: string, filename = ""): string | null {
+  const file = findRememberedFile(
+    filePath,
+    filename || stickAudioBaseName(filePath),
+    isStickImagePath,
+  );
+  if (!file) return null;
+  return blobUrlFor(file, file.webkitRelativePath || file.name);
+}
+
+/** Cache an extracted ID3 cover so TrackArt can show it like a stick JPEG. */
+export function rememberArtworkBlob(key: string, blob: Blob): string | null {
+  if (typeof URL === "undefined" || typeof URL.createObjectURL !== "function") {
+    return null;
+  }
+  if (!key.trim() || blob.size <= 0) return null;
+  const existing = urls.get(key);
+  if (existing) return existing;
+  const url = URL.createObjectURL(blob);
+  urls.set(key, url);
+  return url;
 }
 
 export type StickAudioLookup =
@@ -140,28 +182,18 @@ export function lookupStickAudio(
   filename = "",
 ): StickAudioLookup {
   if (typeof URL === "undefined" || !stickFiles.length) return { kind: "missing" };
-  const match = matchStickAudioFile(
-    stickFiles.map((file) => ({
-      name: file.name,
-      path: file.webkitRelativePath || file.name,
-    })),
+  const file = findRememberedFile(
     filePath,
     filename || stickAudioBaseName(filePath),
+    isStickAudioPath,
   );
-  if (!match) return { kind: "missing" };
-  const path = match.path || match.name;
+  if (!file) return { kind: "missing" };
+  const path = file.webkitRelativePath || file.name;
   if (!isPlayableStickAudio(path)) {
     return { kind: "unsupported", path };
   }
-  const key = path;
-  const existing = urls.get(key);
-  if (existing) return { kind: "url", url: existing };
-  const file = stickFiles.find(
-    (item) => (item.webkitRelativePath || item.name) === key,
-  );
-  if (!file || file.size <= 0) return { kind: "missing" };
-  const url = URL.createObjectURL(file);
-  urls.set(key, url);
+  const url = blobUrlFor(file, path);
+  if (!url) return { kind: "missing" };
   return { kind: "url", url };
 }
 

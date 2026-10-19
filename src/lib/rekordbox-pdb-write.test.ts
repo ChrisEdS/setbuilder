@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { parseRekordboxPdb } from "./rekordbox-pdb.ts";
-import { addPlaylistToPdb, verifyPdbUpdate, PdbWriteError } from "./rekordbox-pdb-write.ts";
+import {
+  addPlaylistToPdb,
+  replacePlaylistInPdb,
+  verifyPdbReplacement,
+  verifyPdbUpdate,
+  PdbWriteError,
+} from "./rekordbox-pdb-write.ts";
 import {
   ENTRY_LAST,
   ENTRY_RESERVED,
@@ -55,6 +61,30 @@ test("a name that already exists at the root gets a number", () => {
   assert.notEqual(second.playlistId, first.playlistId);
   const names = parseRekordboxPdb(second.buffer.slice(0)).playlists.map((item) => item.name);
   assert.ok(names.includes("Set") && names.includes("Set (2)"));
+});
+
+test("replaces an existing playlist in place and preserves every unrelated row", () => {
+  const source = addPlaylistToPdb(fixture(), {
+    name: "Unrelated current change",
+    trackIds: [8],
+  }).buffer;
+  const before = parseRekordboxPdb(source.slice(0));
+  const target = before.playlists.find((playlist) => playlist.name === "Freitag");
+  assert.ok(target);
+  const result = replacePlaylistInPdb(source, { playlistId: target.id, trackIds: [8, 7, 8] });
+  verifyPdbReplacement(source, result.buffer, {
+    playlistId: target.id,
+    name: target.name,
+    trackIds: [8, 7, 8],
+  });
+  const after = parseRekordboxPdb(result.buffer.slice(0));
+  assert.deepEqual(after.playlists.find((item) => item.id === target.id)?.trackIds, [8, 7, 8]);
+  assert.equal(after.playlists.filter((item) => item.name === "Freitag").length, 1);
+  assert.deepEqual(
+    after.playlists.find((item) => item.name === "Unrelated current change"),
+    before.playlists.find((item) => item.name === "Unrelated current change"),
+  );
+  assert.deepEqual(after.tracks, before.tracks);
 });
 
 test("writes names with umlauts as UTF-16", () => {

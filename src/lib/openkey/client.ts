@@ -70,8 +70,8 @@ export function analyzeSamples(
 }
 
 function asDecodeError(error: unknown): Error {
-  if (error instanceof Error && error.message.trim()) return error;
-  return new Error("Decoding failed");
+  const detail = error instanceof Error ? error.message.trim() : "";
+  return new Error(detail ? `Audio decoder failed: ${detail}` : "Audio decoder failed");
 }
 
 async function readBytes(file: Blob, start: number, end: number): Promise<Uint8Array> {
@@ -134,10 +134,8 @@ async function decodeWavWindow(
     layout = parseWavLayout(prefix);
   }
   if (!layout) return null;
-  const dataBytes =
-    layout.dataOffset + layout.dataSize <= file.size
-      ? layout.dataSize
-      : Math.max(0, file.size - layout.dataOffset);
+  if (layout.dataOffset + layout.dataSize > file.size) return null;
+  const dataBytes = layout.dataSize;
   const range = pcmWindowRange(layout.dataOffset, dataBytes, layout.sampleRate, layout.blockAlign);
   if (!range) return null;
   const pcm = await readBytes(file, range.start, range.end);
@@ -147,6 +145,7 @@ async function decodeWavWindow(
     sampleRate: layout.sampleRate,
     bitsPerSample: layout.bitsPerSample || layout.blockAlign * 8 / layout.channels,
     pcm,
+    format: layout.format,
   });
   const decoded = await decodeBuffer(wav);
   return { ...decoded, positioned: range.positioned };

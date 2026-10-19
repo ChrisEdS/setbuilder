@@ -5,8 +5,10 @@ import {
   useEffect,
   useId,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
+  type RefObject,
 } from "react";
 import {
   applyKeyImport,
@@ -40,15 +42,13 @@ import {
 type Props = {
   draft: SetDraft;
   onApply: (draft: SetDraft, message: string) => void;
-  /** Put a library track into the set (Crate). */
-  onAddTrack?: (track: SetTrack) => void;
-  /** Play a library track in the player dock. */
-  onPlayTrack?: (track: SetTrack) => void;
   /** Library lives in the parent so other views (Ersatz) can use it. */
   rows: LibraryRow[];
   onRows: (rows: LibraryRow[]) => void;
   /** Stick playlists and history, for starting the set. */
   onStickSets?: (sets: RekordboxStickSet[]) => void;
+  /** Parent asks this panel to run the existing stick picker. */
+  chooseStick?: RefObject<(() => void) | null>;
 };
 
 export type LibraryRow = {
@@ -127,7 +127,12 @@ export function LibraryBrowser({
 }) {
   const { t } = useI18n();
   const [fitTo, setFitTo] = useState("");
-  const [fitPage, setFitPage] = useState(0);
+  const [fitPageState, setFitPageState] = useState<{
+    page: number;
+    fitTo: string;
+    query: string;
+    rows: LibraryRow[];
+  }>({ page: 0, fitTo: "", query: "", rows });
   const [addPhase, setAddPhase] = useState<SetPhaseId>("open");
   const [addRole, setAddRole] = useState<TrackRole>("groove");
   const [query, setQuery] = useState("");
@@ -204,6 +209,12 @@ export function LibraryBrowser({
   const fitPageCount = fitReference
     ? Math.max(1, Math.ceil(rankedLibrary.length / FIT_PAGE_SIZE))
     : 1;
+  const fitPage =
+    fitPageState.fitTo === fitTo &&
+    fitPageState.query === query &&
+    fitPageState.rows === rows
+      ? fitPageState.page
+      : 0;
   const safeFitPage = fitReference ? Math.min(fitPage, fitPageCount - 1) : 0;
   const filteredLibrary = fitReference
     ? rankedLibrary.slice(
@@ -212,10 +223,6 @@ export function LibraryBrowser({
       )
     : rankedLibrary;
   const canShowMoreMatches = Boolean(fitReference) && rankedLibrary.length > FIT_PAGE_SIZE;
-
-  useEffect(() => {
-    setFitPage(0);
-  }, [fitTo, query, rows]);
 
   if (rows.length === 0) return null;
 
@@ -266,6 +273,7 @@ export function LibraryBrowser({
           </div>
           {onAddTrack ? (
           <div className="library-add-bar">
+            <div className="library-add-group">
             <span>{t("library.add.title")}</span>
             <label>
               {t("library.add.phase")}
@@ -293,7 +301,8 @@ export function LibraryBrowser({
                 ))}
               </select>
             </label>
-            <label>
+            </div>
+            <label className="library-add-fit">
               {t("library.add.fits")}
               <select value={fitTo} onChange={(event) => setFitTo(event.target.value)}>
                 <option value="">{t("library.add.allTracks")}</option>
@@ -372,7 +381,14 @@ export function LibraryBrowser({
                     page: safeFitPage + 1,
                     pages: fitPageCount,
                   })}
-                  onClick={() => setFitPage((page) => (page + 1) % fitPageCount)}
+                  onClick={() =>
+                    setFitPageState({
+                      page: (safeFitPage + 1) % fitPageCount,
+                      fitTo,
+                      query,
+                      rows,
+                    })
+                  }
                 >
                   <span className="library-more-icon" aria-hidden="true">
                     ↻
@@ -397,11 +413,10 @@ export function LibraryBrowser({
 export function LibraryPanel({
   draft,
   onApply,
-  onAddTrack,
-  onPlayTrack,
   rows: libraryRows,
   onRows: setLibraryRows,
   onStickSets,
+  chooseStick,
 }: Props) {
   const { t } = useI18n();
   const [text, setText] = useState("");
@@ -410,6 +425,32 @@ export function LibraryPanel({
   const [tidalNote, setTidalNote] = useState<string | null>(null);
   const [tidalConfigured, setTidalConfigured] = useState<boolean | null>(null);
   const [source, setSource] = useState<SourceTab>("rekordbox");
+  const stickChoose = useRef<(() => void) | null>(null);
+  const pendingChoose = useRef(false);
+
+  useEffect(() => {
+    if (!chooseStick) return;
+    chooseStick.current = () => {
+      if (stickChoose.current) {
+        setSource("rekordbox");
+        stickChoose.current();
+        return;
+      }
+      pendingChoose.current = true;
+      setSource("rekordbox");
+    };
+    return () => {
+      chooseStick.current = null;
+    };
+  }, [chooseStick]);
+
+  useEffect(() => {
+    if (source !== "rekordbox" || !pendingChoose.current) return;
+    const run = stickChoose.current;
+    if (!run) return;
+    pendingChoose.current = false;
+    run();
+  }, [source]);
 
   const keyStats = useMemo(() => {
     const main = performanceTracks(draft.tracks);
@@ -461,7 +502,15 @@ export function LibraryPanel({
     if (!file) return;
     setBusy(true);
     try {
-      const parsed = await enqueueWork(async () => parseRekordboxFile(file, t));
+      const parsed = await enqueueWork(
+        async () => parseRekordboxFile(file, t),
+        {
+          operation: "collection-import",
+          key: `${file.name}:${file.size}:${file.lastModified}`,
+          label: t("builder.work.collectionImport"),
+          target: file.name,
+        },
+      );
       const rows: LibraryRow[] = parsed.rows.map((row) => ({
         artist: row.artist,
         title: row.title,
@@ -630,14 +679,13 @@ export function LibraryPanel({
       </div>
       {source === "rekordbox" ? (
         <RekordboxStick
-          draft={draft}
           busy={busy}
-          onApply={onApply}
           onIndexed={(rows) => {
             setLibraryRows(rows);
             setLibraryCount(rows.length);
           }}
           onSets={onStickSets}
+          chooseStick={stickChoose}
         />
       ) : (
         <div className="library-source-pane builder-card" role="tabpanel">

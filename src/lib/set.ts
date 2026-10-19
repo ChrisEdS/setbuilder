@@ -114,6 +114,8 @@ export type SourcePoolTrack = {
 };
 
 export type SetDraft = {
+  /** Version of the persisted draft payload. Missing on drafts written before migration support. */
+  schemaVersion?: number;
   title: string;
   vibe: string;
   venue: string;
@@ -472,7 +474,9 @@ export function exportSetText(draft: SetDraft, t: Translate = tDe): string {
     for (const track of phaseTracks) {
       number += 1;
       lines.push(`${number}. ${line(track)}`);
-      const cue = [track.note?.trim(), track.safetyAlt?.trim()].filter(Boolean).join(" · ");
+      const cue = [track.comment?.trim(), track.safetyAlt?.trim()]
+        .filter(Boolean)
+        .join(" · ");
       if (cue) lines.push(`   ${cue}`);
     }
     lines.push("");

@@ -17,6 +17,7 @@ export async function POST(request: Request) {
       slot?: string;
       audience?: string;
       gear?: string;
+      notes?: string;
     };
 
     const playlistId = parsePlaylistId(body.url || "");
@@ -50,6 +51,7 @@ export async function POST(request: Request) {
       slot: body.slot,
       audience: body.audience,
       gear: body.gear,
+      notes: body.notes,
     });
     // Preserve slot kind from client brief when present
     const bodyWithKind = body as { slotKind?: string };

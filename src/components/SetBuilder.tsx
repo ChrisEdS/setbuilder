@@ -4,7 +4,6 @@ import { LanguageSwitch } from "@/components/LanguageSwitch";
 import {
   createTranslate,
   errorText,
-  isGeneratedNote,
   localizeWhy,
   phaseHint,
   phaseLabel,
@@ -44,7 +43,6 @@ import {
 import { ReplaceMenu } from "@/components/ReplaceMenu";
 import type { LibraryRow } from "@/components/LibraryPanel";
 import {
-  applyStickSet,
   libraryTrackToSetTrack,
   mediaPathsForDraft,
   rehydrateStickCovers,
@@ -60,19 +58,34 @@ import {
 } from "@/lib/stick-session";
 import { stickFileCount } from "@/lib/stick-audio";
 import {
+  applyCoverUrls,
   applyEnergyLevels,
   applyRereadEnergyLevels,
   ensureStickWriteAccess,
   energyTagFromFile,
+  missingCoversFromFiles,
   missingEnergyFromFiles,
   isWritableMp3,
   resolveTrackAudio,
-  writeStickFileBytes,
+  writeVerifiedStickFileBytes,
 } from "@/lib/stick-file";
 import { analyzeFileEnergy } from "@/lib/openkey/client";
-import { enqueueWork, workQueueDepth, yieldToUi } from "@/lib/work-queue";
+import {
+  enqueueWork,
+  getWorkQueueSnapshot,
+  yieldToUi,
+  type WorkJob,
+} from "@/lib/work-queue";
+import { useLiveWorkQueue, workQueueStatus } from "@/lib/work-queue-react";
+import { applyPlaylistLoad, undoPlaylistLoad } from "@/lib/playlist-load";
 import { writeEnergy } from "@/lib/openkey/writeEnergy";
-import { sanitizeDraftImages } from "@/lib/media";
+import {
+  decodeStoredDraft,
+  encodeStoredDraft,
+  normalizeDraftTrack,
+  uniqueIncomingDraftTracks,
+} from "@/lib/draft-codec";
+import { ActionIcon } from "@/components/ActionIcon";
 import { TrackArt } from "@/components/TrackArt";
 import { StickReloadBanner } from "@/components/StickReloadBanner";
 import { bestPhaseFor } from "@/lib/plan-b";
@@ -103,7 +116,7 @@ import {
   pinCloser,
   pinOpener,
 } from "@/lib/set-anchors";
-import { energyStatusLine, hasKnownEnergy, isMetadataComment, parseEnergyLevel, settledEnergy } from "@/lib/energy";
+import { energyStatusLine, hasKnownEnergy } from "@/lib/energy";
 import type { SetSortTechnique } from "@/lib/sort-set";
 import { looksLikeMusicLink, sourceLabel } from "@/lib/music-link";
 import {
@@ -188,25 +201,7 @@ let cachedDraft: SetDraft = DEFAULT_SET;
 let draftPersisted = true;
 
 function normalizeTrack(track: SetTrack): SetTrack {
-  const rawComment = track.comment ?? "";
-  const fromComment = parseEnergyLevel(rawComment);
-  const tagged =
-    fromComment != null && !hasKnownEnergy(track)
-      ? { ...track, energyLevel: fromComment, energySource: "tag" as const }
-      : track;
-  const settled = settledEnergy(tagged);
-  // Older drafts stored MP3 Energy tokens in comment — strip those; keep real set notes.
-  const comment = isMetadataComment(rawComment) ? "" : rawComment;
-  return {
-    ...tagged,
-    comment,
-    source: tagged.source ?? "spotify",
-    // Machine notes from earlier versions ("open/groove · Übergang: long-blend") are noise.
-    note: isGeneratedNote(tagged.note) ? "" : (tagged.note ?? ""),
-    safetyAlt: tagged.safetyAlt ?? "",
-    energyLevel: settled.energyLevel,
-    energySource: settled.energySource,
-  };
+  return normalizeDraftTrack(track) ?? track;
 }
 
 const BRIEF_FIELDS = ["title", "vibe", "venue", "slot", "audience", "gear"] as const;
@@ -261,31 +256,12 @@ function readStoredDraft(): SetDraft {
       cachedDraft = DEFAULT_SET;
       return cachedDraft;
     }
-    const parsed = JSON.parse(raw) as SetDraft;
-    if (!(parsed?.tracks && parsed.title)) {
+    const parsed = decodeStoredDraft(raw);
+    if (!parsed) {
       cachedDraft = DEFAULT_SET;
       return cachedDraft;
     }
-    cachedDraft = sanitizeDraftImages({
-      ...DEFAULT_SET,
-      ...parsed,
-      slotKind: parsed.slotKind ?? "peaktime",
-      tracks: (parsed.tracks ?? []).map(normalizeTrack),
-      sourcePool: parsed.sourcePool?.map((track) => {
-        const settled = settledEnergy(track);
-        if (
-          track.energyLevel === settled.energyLevel &&
-          track.energySource === settled.energySource
-        ) {
-          return track;
-        }
-        return {
-          ...track,
-          energyLevel: settled.energyLevel,
-          energySource: settled.energySource,
-        };
-      }),
-    });
+    cachedDraft = parsed;
     const cleanRaw = JSON.stringify(cachedDraft);
     if (cleanRaw !== raw) {
       writeLocal(STORAGE_KEY, cleanRaw);
@@ -384,7 +360,7 @@ function writeSetups(setups: SavedSetup[]): boolean {
 }
 
 function persistDraft(draft: SetDraft) {
-  const raw = JSON.stringify(sanitizeDraftImages(draft));
+  const raw = encodeStoredDraft(draft);
   try {
     writeLocal(STORAGE_KEY, raw);
     draftPersisted = true;
@@ -467,13 +443,22 @@ export function SetBuilder() {
   const devLibraryLoaded = useRef(false);
   const [matchingLinks, setMatchingLinks] = useState(false);
   const [analyzingEnergy, setAnalyzingEnergy] = useState(false);
-  const [energyTrackId, setEnergyTrackId] = useState<string | null>(null);
+  const workQueue = useLiveWorkQueue();
+  const liveJobs = workQueue.jobs;
+  const energyPendingIds = workQueue.energyPendingIds;
+  const energyBusy =
+    analyzingEnergy || workQueue.energyBusy;
   const [stickReady, setStickReady] = useState(false);
+  const chooseStickRef = useRef<(() => void) | null>(null);
   // Long work (stick read, tag scan, sort) keeps the status line up until it finishes.
   const statusHold = useRef(0);
   const [statusHeld, setStatusHeld] = useState(false);
   const stickJob = useRef(0);
   const energyJob = useRef(0);
+  const [pendingStickSet, setPendingStickSet] = useState<RekordboxStickSet | null>(
+    null,
+  );
+  const [replaceUndo, setReplaceUndo] = useState<SetDraft | null>(null);
   const [replaceFor, setReplaceFor] = useState<string | null>(null);
   /** Setliste: tracks whose key, BPM, energy and comment fields are open */
   const [openDetails, setOpenDetails] = useState<Set<string>>(() => new Set());
@@ -563,6 +548,8 @@ export function SetBuilder() {
     );
     return () => window.clearTimeout(timer);
   }, [status, analyzingEnergy, statusHeld]);
+
+  const displayedStatus = workQueueStatus(liveJobs, t) ?? status;
 
   const persisted = useSyncExternalStore(
     subscribeDraft,
@@ -696,6 +683,10 @@ export function SetBuilder() {
       } catch {
         finish(null);
       }
+    }, {
+      operation: "stick-reconnect",
+      key: "startup",
+      label: t("builder.work.stickReconnect"),
     });
     return () => {
       cancelled = true;
@@ -719,10 +710,8 @@ export function SetBuilder() {
       .catch(() => undefined);
   }, [libraryRows.length]);
 
-  function queueHeavy(run: () => Promise<void>): Promise<void> {
-    const ahead = workQueueDepth();
-    if (ahead > 0) setStatus(t("builder.work.queued", { count: ahead }));
-    return enqueueWork(run);
+  function queueHeavy(run: () => Promise<void>, job: WorkJob): Promise<void> {
+    return enqueueWork(run, job);
   }
 
   function beginWork(message: string) {
@@ -765,10 +754,24 @@ export function SetBuilder() {
       handle,
       onProgress,
     );
-    setDraft((latest) => applyEnergyLevels(latest, levels));
+    const covers = await missingCoversFromFiles(readStoredDraft().tracks, handle);
+    setDraft((current) =>
+      applyCoverUrls(applyEnergyLevels(current, levels), covers),
+    );
   }
 
   function showStickMerge(library: StickTrack[], done: string | null) {
+    const key = library.map((track) => track.filePath || track.id).join("|");
+    if (
+      getWorkQueueSnapshot().jobs.some(
+        (queued) =>
+          queued.operation === "stick-merge" &&
+          queued.key === key &&
+          (queued.status === "queued" || queued.status === "running"),
+      )
+    ) {
+      return;
+    }
     const job = ++stickJob.current;
     beginWork(t("builder.stick.reading"));
     void queueHeavy(async () => {
@@ -802,7 +805,62 @@ export function SetBuilder() {
         if (!current()) cancelWork();
         else endWork(done);
       }
+    }, {
+      operation: "stick-merge",
+      key,
+      label: t("builder.work.stickMerge"),
     });
+  }
+
+  function applyLoadedStickSet(
+    set: RekordboxStickSet,
+    mode: "replace" | "merge",
+  ) {
+    const current = readStoredDraft();
+    const loaded = applyPlaylistLoad(current, set, mode, t);
+    setReplaceUndo(loaded.undo);
+    const keyed = set.tracks.filter((track) => track.keyCamelot).length;
+    const minutes = set.tracks.reduce((sum, track) => sum + track.durationMs, 0);
+    const kind = t(
+      set.kind === "history" ? "library.stick.history" : "library.stick.playlist",
+    );
+    const message =
+      t(
+        mode === "merge"
+          ? "builder.playlist.merged"
+          : "library.stick.applied",
+        {
+          kind,
+          name: set.name,
+          tracks: trackCount(set.tracks.length, t),
+        },
+      ) +
+      (keyed ? ` · ${t("library.stick.withKey", { count: keyed })}` : "") +
+      (minutes ? ` · ${formatDuration(minutes)}` : "") +
+      (set.missing
+        ? ` · ${t("library.stick.unmatched", { count: set.missing })}`
+        : "");
+    setDraft(loaded.draft);
+    setPendingStickSet(null);
+    clearNotice();
+    const library = libraryRows.flatMap((row) => (row.stick ? [row.stick] : []));
+    showStickMerge(library, message);
+  }
+
+  function openStickPicker() {
+    const section = document.getElementById("library-section");
+    if (section instanceof HTMLDetailsElement) section.open = true;
+    section?.scrollIntoView({ behavior: "smooth", block: "start" });
+    chooseStickRef.current?.();
+  }
+
+  function requestStickSet(set: RekordboxStickSet) {
+    if (!set.tracks.length) return;
+    if (readStoredDraft().tracks.length === 0) {
+      applyLoadedStickSet(set, "replace");
+      return;
+    }
+    setPendingStickSet(set);
   }
 
   function setDraft(updater: SetDraft | ((current: SetDraft) => SetDraft)) {
@@ -912,6 +970,7 @@ export function SetBuilder() {
           slotKind: draft.slotKind,
           audience: draft.audience,
           gear: draft.gear,
+          notes: draft.notes,
         }),
       });
       const data = (await response.json()) as {
@@ -942,7 +1001,10 @@ export function SetBuilder() {
         throw new Error(data.error || t("builder.fail.extract"));
       }
 
-      setDraft(data.draft);
+      setDraft({
+        ...data.draft,
+        notes: data.draft.notes ?? draft.notes,
+      });
       setRoleFilter("all");
       const performanceCount = (data.draft.tracks ?? []).filter(
         (track) => track.role !== "safety",
@@ -1284,10 +1346,10 @@ export function SetBuilder() {
 
   function addTracksBulk(incoming: SetTrack[]) {
     setDraft((current) => {
-      const seen = new Set(current.tracks.map((track) => track.id));
-      const fresh = incoming
-        .map(normalizeTrack)
-        .filter((track) => !seen.has(track.id));
+      const fresh = uniqueIncomingDraftTracks(
+        current.tracks.map((track) => track.id),
+        incoming,
+      );
       if (!fresh.length) return current;
       return { ...current, tracks: [...current.tracks, ...fresh] };
     });
@@ -1551,7 +1613,7 @@ export function SetBuilder() {
   function exportM3u() {
     downloadText(
       boothFileName(draft.title, "m3u"),
-      buildM3u(draft),
+      buildM3u(draft, t),
       "audio/x-mpegurl",
     );
     setStatus(t("builder.status.m3u"));
@@ -2030,7 +2092,7 @@ export function SetBuilder() {
           if (options.write && isWritableMp3(resolved.file, path) && resolved.handle && options.writeRoot) {
             const bytes = new Uint8Array(await resolved.file.arrayBuffer());
             const tagged = writeEnergy(bytes, energy);
-            await writeStickFileBytes(resolved.handle, tagged);
+            await writeVerifiedStickFileBytes(resolved.handle, tagged);
             if (!alive()) return;
             written += 1;
           } else if (options.write) {
@@ -2083,7 +2145,16 @@ export function SetBuilder() {
       setStatus(t("builder.energy.noFile"));
       return;
     }
-    await queueHeavy(() => readEnergyTagsNow(withPath));
+    setAnalyzingEnergy(true);
+    await queueHeavy(
+      () => readEnergyTagsNow(withPath),
+      {
+        operation: "energy-tags",
+        key: withPath.map((track) => track.filePath || track.id).join("|"),
+        label: t("builder.work.energyTags"),
+        target: trackCount(withPath.length, t),
+      },
+    ).finally(() => setAnalyzingEnergy(false));
   }
 
   async function readEnergyTagsNow(withPath: SetTrack[]) {
@@ -2136,14 +2207,26 @@ export function SetBuilder() {
     }
     const stick = await stickForEnergy();
     if (stick === undefined) return;
-    await queueHeavy(() =>
-      runEnergyScan(targets, {
-        write: false,
-        writeRoot: null,
-        reuseTags: mode === "missing",
-        root: stick,
-      }),
-    );
+    setAnalyzingEnergy(true);
+    await queueHeavy(
+      () =>
+        runEnergyScan(targets, {
+          write: false,
+          writeRoot: null,
+          reuseTags: mode === "missing",
+          root: stick,
+        }),
+      {
+        operation: "energy-measure",
+        key: `${mode}:${targets.map((track) => track.filePath || track.id).join("|")}`,
+        label: t(
+          mode === "missing"
+            ? "builder.work.energyMissing"
+            : "builder.work.energyAll",
+        ),
+        target: trackCount(targets.length, t),
+      },
+    ).finally(() => setAnalyzingEnergy(false));
   }
 
   async function writeEnergyToFiles() {
@@ -2162,7 +2245,16 @@ export function SetBuilder() {
       setStatus(t("builder.energy.denied"));
       return;
     }
-    await queueHeavy(() => writeEnergyNow(known, writeRoot));
+    setAnalyzingEnergy(true);
+    await queueHeavy(
+      () => writeEnergyNow(known, writeRoot),
+      {
+        operation: "energy-write",
+        key: known.map((track) => track.filePath || track.id).join("|"),
+        label: t("builder.work.energyWrite"),
+        target: trackCount(known.length, t),
+      },
+    ).finally(() => setAnalyzingEnergy(false));
   }
 
   async function writeEnergyNow(
@@ -2190,7 +2282,7 @@ export function SetBuilder() {
             isWritableMp3(resolved.file, path)
           ) {
             const bytes = new Uint8Array(await resolved.file.arrayBuffer());
-            await writeStickFileBytes(resolved.handle, writeEnergy(bytes, level));
+            await writeVerifiedStickFileBytes(resolved.handle, writeEnergy(bytes, level));
             written += 1;
           } else {
             skipped += 1;
@@ -2211,9 +2303,9 @@ export function SetBuilder() {
   }
 
   async function recalculateTrackEnergy(track: SetTrack) {
-    if (!track.filePath?.trim() || energyTrackId === track.id) return;
+    if (!track.filePath?.trim()) return;
+    setAnalyzingEnergy(true);
     await queueHeavy(async () => {
-      setEnergyTrackId(track.id);
       let started = false;
       try {
         const stick = await loadPersistedStickHandle().catch(() => null);
@@ -2232,9 +2324,13 @@ export function SetBuilder() {
         });
       } finally {
         if (!started) setAnalyzingEnergy(false);
-        setEnergyTrackId((current) => (current === track.id ? null : current));
       }
-    });
+    }, {
+      operation: "energy-track",
+      key: track.id,
+      label: t("builder.work.energyTrack"),
+      target: track.name,
+    }).finally(() => setAnalyzingEnergy(false));
   }
 
   function fitSlot() {
@@ -2621,10 +2717,73 @@ export function SetBuilder() {
         </p>
       ) : null}
 
-      {status ? (
-        <p className="banner status" role="status" aria-live="polite" aria-busy={statusHeld || analyzingEnergy}>
-          {status}
+      {displayedStatus ? (
+        <p className="banner status" role="status" aria-live="polite" aria-busy={statusHeld || energyBusy}>
+          {displayedStatus}
         </p>
+      ) : null}
+
+      {pendingStickSet ? (
+        <div className="stick-reload" role="alertdialog" aria-modal="false">
+          <div>
+            <strong>
+              {t("builder.playlist.confirmTitle", { name: pendingStickSet.name })}
+            </strong>
+            <p>{t("builder.playlist.confirmBody")}</p>
+          </div>
+          <div className="stick-reload-actions">
+            <button
+              type="button"
+              className="btn danger"
+              onClick={() => applyLoadedStickSet(pendingStickSet, "replace")}
+            >
+              {t("builder.playlist.replace")}
+            </button>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => applyLoadedStickSet(pendingStickSet, "merge")}
+            >
+              {t("builder.playlist.merge")}
+            </button>
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={() => setPendingStickSet(null)}
+            >
+              {t("builder.playlist.cancel")}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {replaceUndo ? (
+        <div className="stick-reload" role="status">
+          <div>
+            <strong>{t("builder.playlist.replacedTitle")}</strong>
+            <p>{t("builder.playlist.replacedBody")}</p>
+          </div>
+          <div className="stick-reload-actions">
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                setDraft((current) => undoPlaylistLoad(current, replaceUndo));
+                setReplaceUndo(null);
+                setStatus(t("builder.playlist.undoDone"));
+              }}
+            >
+              {t("builder.playlist.undo")}
+            </button>
+            <button
+              type="button"
+              className="btn ghost"
+              onClick={() => setReplaceUndo(null)}
+            >
+              {t("builder.playlist.dismiss")}
+            </button>
+          </div>
+        </div>
       ) : null}
 
       {libraryRows.length === 0 ? (
@@ -2652,8 +2811,6 @@ export function SetBuilder() {
         </summary>
         <LibraryPanel
           draft={draft}
-          onAddTrack={addLibraryTrack}
-          onPlayTrack={playLibraryTrack}
           rows={libraryRows}
           onRows={(rows) => {
             setLibraryRows(rows);
@@ -2667,6 +2824,7 @@ export function SetBuilder() {
             showStickMerge(library, message);
           }}
           onStickSets={setStickSets}
+          chooseStick={chooseStickRef}
         />
       </details>
 
@@ -2692,30 +2850,7 @@ export function SetBuilder() {
             {stickSets.length > 0 ? (
               <StickSetList
                 sets={stickSets}
-                onTake={(set) => {
-                  if (!set.tracks.length) return;
-                  const next = applyStickSet(draft, set, t);
-                  const keyed = set.tracks.filter((track) => track.keyCamelot).length;
-                  const minutes = set.tracks.reduce((sum, track) => sum + track.durationMs, 0);
-                  const kind = t(
-                    set.kind === "history" ? "library.stick.history" : "library.stick.playlist",
-                  );
-                  const message =
-                    t("library.stick.applied", {
-                      kind,
-                      name: set.name,
-                      tracks: trackCount(set.tracks.length, t),
-                    }) +
-                    (keyed ? ` · ${t("library.stick.withKey", { count: keyed })}` : "") +
-                    (minutes ? ` · ${formatDuration(minutes)}` : "") +
-                    (set.missing
-                      ? ` · ${t("library.stick.unmatched", { count: set.missing })}`
-                      : "");
-                  setDraft(next);
-                  clearNotice();
-                  const library = libraryRows.flatMap((row) => (row.stick ? [row.stick] : []));
-                  showStickMerge(library, message);
-                }}
+                onTake={requestStickSet}
               />
             ) : (
               <section className="library-browser stick-sets builder-card" aria-label={t("builder.playlist.title")}>
@@ -3098,6 +3233,7 @@ export function SetBuilder() {
                     type="button"
                     role="tab"
                     aria-selected={crateView === id}
+                    aria-controls={`set-view-${id}`}
                     className={crateView === id ? "seg-item active" : "seg-item"}
                     onClick={() => setCrateView(id)}
                   >
@@ -3165,8 +3301,9 @@ export function SetBuilder() {
               </button>
             </Tip>
             <SetEnergyMenu
-              disabled={!stickReady || !draft.tracks.some((track) => track.filePath?.trim())}
-              busy={analyzingEnergy}
+              busy={energyBusy}
+              stickReady={stickReady}
+              onChooseStick={openStickPicker}
               fileCount={draft.tracks.filter((track) => track.filePath?.trim()).length}
               missingCount={
                 draft.tracks.filter((track) => track.filePath?.trim() && !hasKnownEnergy(track))
@@ -3213,7 +3350,7 @@ export function SetBuilder() {
           <FieldNoticeView notice={localNotice("export")} />
 
           {crateView === "list" ? (
-            <div className="crate-view crate-list">
+            <div id="set-view-list" className="crate-view crate-list" role="tabpanel">
               <div className="crate-list-head">
                 {visibleTimeline.length > 0 ? (
                 <div
@@ -3494,8 +3631,8 @@ export function SetBuilder() {
                               type="button"
                               className={
                                 focusTrackId === track.id
-                                  ? "is-playing"
-                                  : undefined
+                                  ? "icon-action is-playing"
+                                  : "icon-action"
                               }
                               onClick={() => toggleTrackPreview(track)}
                               aria-label={
@@ -3510,33 +3647,37 @@ export function SetBuilder() {
                               }
                             >
                               {previewTransport.trackId === track.id &&
-                              previewTransport.playing
-                                ? "❚❚"
-                                : "▶"}
+                              previewTransport.playing ? (
+                                <ActionIcon name="pause" />
+                              ) : (
+                                <ActionIcon name="play" />
+                              )}
                             </button>
                           </Tip>
                           <Tip text={t("builder.row.moveUpTip")}>
                             <button
                               type="button"
+                              className="icon-action"
                               onClick={() => moveTrack(track.id, -1)}
                               aria-label={t("builder.row.moveUpAria", { name: track.name })}
                             >
-                              ↑
+                              <ActionIcon name="up" />
                             </button>
                           </Tip>
                           <Tip text={t("builder.row.moveDownTip")}>
                             <button
                               type="button"
+                              className="icon-action"
                               onClick={() => moveTrack(track.id, 1)}
                               aria-label={t("builder.row.moveDownAria", { name: track.name })}
                             >
-                              ↓
+                              <ActionIcon name="down" />
                             </button>
                           </Tip>
                           {track.filePath?.trim() ? (
                             <TrackEnergyMenu
                               name={track.name}
-                              busy={energyTrackId === track.id}
+                              busy={energyPendingIds.has(track.id)}
                               level={hasKnownEnergy(track) ? track.energyLevel : undefined}
                               onMeasure={() => void recalculateTrackEnergy(track)}
                               onSetLevel={(level) =>
@@ -3551,13 +3692,16 @@ export function SetBuilder() {
                             <Tip text={t("builder.row.replaceTitle")}>
                               <button
                                 type="button"
+                                className="icon-action"
+                                aria-expanded={replaceFor === track.id}
+                                aria-label={t("builder.row.replace")}
                                 onClick={() =>
                                   setReplaceFor((current) =>
                                     current === track.id ? null : track.id,
                                   )
                                 }
                               >
-                                {t("builder.row.replace")}
+                                <ActionIcon name="replace" />
                               </button>
                             </Tip>
                           ) : null}
@@ -3573,8 +3717,13 @@ export function SetBuilder() {
                                 type="button"
                                 className={
                                   draft.openerId === track.id
-                                    ? "is-anchor"
-                                    : undefined
+                                    ? "icon-action is-anchor"
+                                    : "icon-action"
+                                }
+                                aria-label={
+                                  draft.openerId === track.id
+                                    ? t("builder.row.clearOpener")
+                                    : t("builder.row.setOpener")
                                 }
                                 aria-pressed={draft.openerId === track.id}
                                 onClick={() =>
@@ -3585,9 +3734,7 @@ export function SetBuilder() {
                                   )
                                 }
                               >
-                                {draft.openerId === track.id
-                                  ? t("builder.row.clearOpener")
-                                  : t("builder.row.setOpener")}
+                                <ActionIcon name="opener" />
                               </button>
                             </Tip>
                           ) : null}
@@ -3598,14 +3745,18 @@ export function SetBuilder() {
                                   ? t("builder.row.clearCloserTip")
                                   : t("builder.row.setCloserTitle")
                               }
-                              end
                             >
                               <button
                                 type="button"
                                 className={
                                   draft.closerId === track.id
-                                    ? "is-anchor"
-                                    : undefined
+                                    ? "icon-action is-anchor"
+                                    : "icon-action"
+                                }
+                                aria-label={
+                                  draft.closerId === track.id
+                                    ? t("builder.row.clearCloser")
+                                    : t("builder.row.setCloser")
                                 }
                                 aria-pressed={draft.closerId === track.id}
                                 onClick={() =>
@@ -3616,22 +3767,20 @@ export function SetBuilder() {
                                   )
                                 }
                               >
-                                {draft.closerId === track.id
-                                  ? t("builder.row.clearCloser")
-                                  : t("builder.row.setCloser")}
+                                <ActionIcon name="closer" />
                               </button>
                             </Tip>
                           ) : null}
                           <Tip text={t("builder.row.removeTip")} end>
                             <button
                               type="button"
-                              className="danger"
+                              className="icon-action danger"
                               onClick={() => removeTrack(track.id)}
                               aria-label={t("builder.row.removeAria", {
                                 name: track.name,
                               })}
                             >
-                              ✕
+                              <ActionIcon name="remove" />
                             </button>
                           </Tip>
                         </div>
@@ -3785,7 +3934,7 @@ export function SetBuilder() {
           ) : null}
 
           {crateView === "roles" ? (
-            <div className="crate-view">
+            <div id="set-view-roles" className="crate-view" role="tabpanel">
           <RoleCrates
             embedded
             tracks={draft.tracks}
@@ -3839,11 +3988,14 @@ export function SetBuilder() {
           ) : null}
 
           {crateView === "keys" ? (
-            <div className="crate-view">
+            <div id="set-view-keys" className="crate-view" role="tabpanel">
       <section className="curve" aria-label={t("builder.curve.aria")}>
         <div className="curve-head">
           <h2>{t("builder.curve.title")}</h2>
-          <p>
+          <p
+            className={filledMs > targetMs ? "curve-overrun" : undefined}
+            role={filledMs > targetMs ? "status" : undefined}
+          >
             {t(
               filledMs > targetMs ? "builder.curve.summaryOver" : "builder.curve.summary",
               {
@@ -3854,6 +4006,13 @@ export function SetBuilder() {
               },
             )}
           </p>
+          {filledMs > targetMs ? (
+            <strong className="curve-overrun-warning">
+              {t("builder.curve.overrun", {
+                duration: formatDuration(filledMs - targetMs),
+              })}
+            </strong>
+          ) : null}
         </div>
         <details className="explain-fold nested principles">
           <summary>
@@ -3884,7 +4043,15 @@ export function SetBuilder() {
               actual: formatDuration(actual),
               minutes,
             });
-            const clickHint = t("builder.curve.phaseClick", { label });
+            const overrun =
+              ratio > 1
+                ? t("builder.curve.phaseOverrun", {
+                    duration: formatDuration(actual - target),
+                  })
+                : "";
+            const clickHint = `${t("builder.curve.phaseClick", { label })}${
+              overrun ? ` ${overrun}` : ""
+            }`;
             return (
               <div key={phase.id} className="phase-slot">
                 <button
@@ -3916,6 +4083,7 @@ export function SetBuilder() {
                       minutes,
                     })}
                   </em>
+                  {overrun ? <b className="phase-overrun">{overrun}</b> : null}
                 </button>
               </div>
             );

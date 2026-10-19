@@ -59,6 +59,19 @@ const de = {
     "Die Playlist wird die Basis des Sets. Einzelne Tracks danach unter Musik hinzufügen.",
   "builder.playlist.empty":
     "Noch kein Stick. Oben unter „Set laden & Keys“ den Stick laden.",
+  "builder.playlist.confirmTitle": "Playlist „{name}“ laden?",
+  "builder.playlist.confirmBody":
+    "Im aktuellen Set stehen bereits Tracks. Ersetzen überschreibt die Setliste; Zusammenführen behält sie und hängt nur neue Tracks an.",
+  "builder.playlist.replace": "Ersetzen",
+  "builder.playlist.merge": "Zusammenführen",
+  "builder.playlist.cancel": "Abbrechen",
+  "builder.playlist.merged": "{kind} „{name}“ zusammengeführt · {tracks}",
+  "builder.playlist.replacedTitle": "Playlist ersetzt",
+  "builder.playlist.replacedBody":
+    "Die vorherige Setliste kann einmal wiederhergestellt werden.",
+  "builder.playlist.undo": "Rückgängig",
+  "builder.playlist.dismiss": "Schließen",
+  "builder.playlist.undoDone": "Vorherige Setliste wiederhergestellt.",
 
   // Add music
   "builder.add.title": "Musik hinzufügen",
@@ -190,6 +203,17 @@ const de = {
   "builder.energy.oneWritten": "Energie {level} · {name} · MP3 geschrieben",
   "builder.energy.progress": "{done}/{total} · {skipped} übersprungen · {errors} Fehler",
   "builder.work.queued": "Wartet · noch {count} davor",
+  "builder.work.queuedNamed":
+    "{label}{target} wartet · Position {position}",
+  "builder.work.runningNamed": "{label}{target} läuft…",
+  "builder.work.stickReconnect": "Stick erneut verbinden",
+  "builder.work.stickMerge": "Stick-Dateien ins Set einlesen",
+  "builder.work.collectionImport": "rekordbox Collection importieren",
+  "builder.work.energyTags": "Energie-Tags lesen",
+  "builder.work.energyMissing": "Fehlende Energie messen",
+  "builder.work.energyAll": "Alle Energien neu messen",
+  "builder.work.energyWrite": "Energie in MP3 schreiben",
+  "builder.work.energyTrack": "Track-Energie messen",
   "builder.energy.done":
     "Fertig: {set} gesetzt, {written} in MP3 geschrieben · {skipped} übersprungen · {errors} Fehler",
   "builder.energy.denied":
@@ -345,6 +369,8 @@ const de = {
     "{duration} / {minutes}:00 · {performance} Performance · {safety} Alternativen",
   "builder.curve.summaryOver":
     "{duration} / {minutes}:00 · über dem Brief · {performance} Performance · {safety} Alternativen",
+  "builder.curve.overrun": "Warnung: {duration} über der geplanten Setdauer.",
+  "builder.curve.phaseOverrun": "Warnung: {duration} über dem Phasenfenster.",
   "builder.curve.principles": "Dramaturgie-Prinzipien",
   "builder.curve.principlesIntro":
     "Diese Prinzipien bestimmen, wie SETBUILDER den Bogen legt und worauf du in der Setliste achten solltest.",
@@ -599,6 +625,19 @@ const en: Record<keyof typeof de, string> = {
     "The playlist becomes the base of the set. Add single tracks afterwards under Add music.",
   "builder.playlist.empty":
     "No stick yet. Load it above under “Load set & keys”.",
+  "builder.playlist.confirmTitle": "Load playlist “{name}”?",
+  "builder.playlist.confirmBody":
+    "The current set already has tracks. Replace overwrites the set list; Merge keeps it and appends only new tracks.",
+  "builder.playlist.replace": "Replace",
+  "builder.playlist.merge": "Merge",
+  "builder.playlist.cancel": "Cancel",
+  "builder.playlist.merged": "{kind} “{name}” merged · {tracks}",
+  "builder.playlist.replacedTitle": "Playlist replaced",
+  "builder.playlist.replacedBody":
+    "The previous set list can be restored once.",
+  "builder.playlist.undo": "Undo",
+  "builder.playlist.dismiss": "Dismiss",
+  "builder.playlist.undoDone": "Previous set list restored.",
 
   "builder.add.title": "Add music",
   "builder.add.target": "New tracks go to",
@@ -725,6 +764,17 @@ const en: Record<keyof typeof de, string> = {
   "builder.energy.oneWritten": "Energy {level} · {name} · written to MP3",
   "builder.energy.progress": "{done}/{total} · {skipped} skipped · {errors} errors",
   "builder.work.queued": "Waiting · {count} ahead",
+  "builder.work.queuedNamed":
+    "{label}{target} queued · position {position}",
+  "builder.work.runningNamed": "{label}{target} running…",
+  "builder.work.stickReconnect": "Reconnect stick",
+  "builder.work.stickMerge": "Read stick files into set",
+  "builder.work.collectionImport": "Import rekordbox collection",
+  "builder.work.energyTags": "Read energy tags",
+  "builder.work.energyMissing": "Measure missing energy",
+  "builder.work.energyAll": "Recalculate all energy",
+  "builder.work.energyWrite": "Write energy to MP3",
+  "builder.work.energyTrack": "Measure track energy",
   "builder.energy.done":
     "Done: {set} set, {written} written to MP3 · {skipped} skipped · {errors} errors",
   "builder.energy.denied":
@@ -878,6 +928,8 @@ const en: Record<keyof typeof de, string> = {
     "{duration} / {minutes}:00 · {performance} performance · {safety} alternatives",
   "builder.curve.summaryOver":
     "{duration} / {minutes}:00 · over the brief · {performance} performance · {safety} alternatives",
+  "builder.curve.overrun": "Warning: {duration} over the planned set duration.",
+  "builder.curve.phaseOverrun": "Warning: {duration} over the phase window.",
   "builder.curve.principles": "Dramaturgy principles",
   "builder.curve.principlesIntro":
     "These principles decide how SETBUILDER lays out the arc and what to watch for in the setlist.",

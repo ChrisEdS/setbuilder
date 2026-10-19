@@ -82,6 +82,7 @@ const de = {
   // ReplaceMenu
   "crates.replace.ariaLabel": "Alternative einsetzen",
   "crates.replace.title": "Ersatz einsetzen",
+  "crates.replace.target": "Für „{name}“",
   "crates.replace.empty":
     "Keine Alternativen. Einen Track auf die Rolle Alternativen setzen oder die Stick-Bibliothek laden.",
   "crates.replace.groupMine": "Aus deinen Alternativen",
@@ -201,6 +202,7 @@ const en: Record<keyof typeof de, string> = {
 
   "crates.replace.ariaLabel": "Insert alternative",
   "crates.replace.title": "Insert replacement",
+  "crates.replace.target": "For “{name}”",
   "crates.replace.empty":
     "No alternatives. Set a track to the Alternatives role or load the stick library.",
   "crates.replace.groupMine": "From your alternatives",

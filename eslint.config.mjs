@@ -11,6 +11,7 @@ const eslintConfig = defineConfig([
     ".next/**",
     ".next-standalone/**",
     "desktop/**",
+    "public/essentia/**",
     "**/*.test.ts",
     "out/**",
     "build/**",

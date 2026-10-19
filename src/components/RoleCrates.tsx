@@ -405,6 +405,8 @@ export function RoleCrates({
             <div
               key={role.id}
               id={`crate-col-${role.id}`}
+              role="region"
+              aria-labelledby={`crate-col-heading-${role.id}`}
               className={[
                 "crate-col",
                 flashRole === role.id ? "is-flash" : "",
@@ -446,17 +448,21 @@ export function RoleCrates({
                 } as CSSProperties
               }
             >
+              <h3 id={`crate-col-heading-${role.id}`} className="sr-only">
+                {roleName}
+              </h3>
               <div className="crate-col-head-row">
                 <button
                   type="button"
                   className="crate-col-head"
+                  aria-label={`${roleName}: ${roleHint(t, role.id)} (${roleTracks.length})`}
                   onClick={() => {
                     onSelectRole(role.id);
                     if (!isOpen) setOpen(role.id, true);
                   }}
                 >
                   <span className="crate-bar" aria-hidden />
-                  <strong>{roleName}</strong>
+                  <strong aria-hidden="true">{roleName}</strong>
                   <span>{roleHint(t, role.id)}</span>
                   <em>{roleTracks.length}</em>
                 </button>

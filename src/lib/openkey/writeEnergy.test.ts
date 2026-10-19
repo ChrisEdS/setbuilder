@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   applyEnergyToken,
+  artworkFromId3,
   energyLevelFromId3,
   readEnergyFields,
   readId3,
@@ -385,4 +386,34 @@ test("writeTags writes a decimal BPM the same way it is shown", () => {
 
 test("writeTags refuses an empty selection", () => {
   assert.throws(() => writeTags(taggedLibrary(), {}), /at least one/);
+});
+
+test("artworkFromId3 prefers the front cover APIC frame", () => {
+  const jpeg = [0xff, 0xd8, 0xff, 0x10, 0x20, 0x30];
+  const png = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2];
+  const tag = buildTag({
+    frames: [
+      frame(3, "APIC", [0, ...chars("image/png"), 0, 1, 0, ...png]),
+      frame(3, "APIC", [0, ...chars("image/jpeg"), 0, 3, 0, ...jpeg]),
+    ],
+  });
+  const picture = artworkFromId3(tag);
+  assert.ok(picture);
+  assert.equal(picture?.mime, "image/jpeg");
+  assert.deepEqual([...picture!.bytes], jpeg);
+});
+
+test("artworkFromId3 sniffs JPEG when the MIME is a short JPG token", () => {
+  const jpeg = [0xff, 0xd8, 0xff, 0xaa];
+  const tag = buildTag({
+    frames: [frame(3, "APIC", [0, ...chars("JPG"), 0, 3, 0, ...jpeg])],
+  });
+  const picture = artworkFromId3(tag);
+  assert.equal(picture?.mime, "image/jpeg");
+  assert.deepEqual([...picture!.bytes], jpeg);
+});
+
+test("artworkFromId3 returns null without an APIC frame", () => {
+  assert.equal(artworkFromId3(libraryTag()), null);
+  assert.equal(artworkFromId3(Uint8Array.from(audio)), null);
 });

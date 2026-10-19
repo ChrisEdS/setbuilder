@@ -18,7 +18,9 @@ import { parseRekordboxPdb, type PdbLibrary } from "@/lib/rekordbox-pdb";
 import {
   addPlaylistToPdb,
   PdbWriteError,
+  replacePlaylistInPdb,
   verifyPdbUpdate,
+  verifyPdbReplacement,
   type AddPlaylistResult,
 } from "@/lib/rekordbox-pdb-write";
 import { buildM3u, buildM3uAlternatives, buildRekordboxXml } from "@/lib/export-booth";
@@ -231,10 +233,6 @@ function sameBytes(a: ArrayBuffer, b: ArrayBuffer): boolean {
   const y = new Uint8Array(b);
   for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return false;
   return true;
-}
-
-function playlistExists(library: PdbLibrary, name: string): boolean {
-  return library.playlists.some((item) => item.name === name);
 }
 
 type StagedWrite = {
@@ -476,16 +474,88 @@ export async function writeSetToStick(
   };
 }
 
-/** Puts the last backup back, then writes the current set. That is how a set is updated. */
+/** Transactionally replaces one existing playlist against the current database bytes. */
 export async function rewriteSetToStick(
   root: DirLike,
   tracks: Wanted[],
   title: string,
   now: Date = new Date(),
-  alternativesLabel = "Alternativen",
 ): Promise<StickWriteDone> {
-  await restoreLatestBackup(root);
-  return writeSetToStick(root, tracks, title, now, alternativesLabel);
+  const location = await findStickDatabase(root);
+  const original = await readBytes(location.file);
+  const library = parseRekordboxPdb(original.slice(0));
+  const existingName = existingStickPlaylistName(library.playlists, title);
+  const candidates = library.playlists.filter(
+    (item) => item.kind === "playlist" && item.name === existingName,
+  );
+  if (!existingName || candidates.length !== 1) {
+    throw stickError(
+      "exports.pdbWrite.unsupported",
+      "Die bestehende Playlist konnte nicht eindeutig gefunden werden. Es wurde nichts verändert.",
+    );
+  }
+  const { performance } = splitForStick(tracks);
+  const match = matchSetToStick(performance, library);
+  if (!match.trackIds.length) {
+    throw stickError(
+      "exports.stickWrite.noneOnStick",
+      "Keiner der Titel liegt auf diesem Stick. Es wurde nichts verändert.",
+    );
+  }
+
+  // Build and fully validate against the current bytes before any database write.
+  const playlist = candidates[0];
+  const result = replacePlaylistInPdb(original, {
+    playlistId: playlist.id,
+    trackIds: match.trackIds,
+  });
+  verifyPdbReplacement(original, result.buffer, {
+    playlistId: playlist.id,
+    name: playlist.name,
+    trackIds: match.trackIds,
+  });
+
+  // Keep an immediate, byte-verified backup of exactly the current database.
+  const backupDir = await root.getDirectoryHandle(BACKUP_DIR, { create: true });
+  const backupName = `export-${stamp(now)}.pdb`;
+  const backup = await backupDir.getFileHandle(backupName, { create: true });
+  await replaceFile(backup, original);
+  if (!sameBytes(await readBytes(backup), original)) {
+    throw stickError(
+      "exports.stickWrite.backupFailed",
+      "Die Sicherung konnte nicht geschrieben werden. Es wurde nichts verändert.",
+    );
+  }
+
+  try {
+    // One commit to export.pdb, followed by exact and semantic read-back verification.
+    await replaceFile(location.file, result.buffer);
+    const written = await readBytes(location.file);
+    if (!sameBytes(written, result.buffer)) {
+      throw stickError("exports.stickWrite.readBack", "Die geschriebene Datei weicht ab.");
+    }
+    verifyPdbReplacement(original, written, {
+      playlistId: playlist.id,
+      name: playlist.name,
+      trackIds: match.trackIds,
+    });
+  } catch (error) {
+    await restoreOriginal(location.file, original);
+    throw stickError(
+      "exports.stickWrite.rolledBack",
+      "Die Stick-Datenbank wurde nach dem Schreiben nicht bestanden. Der vorherige Stand ist wiederhergestellt.",
+      { detail: error instanceof Error ? error.message : "" },
+    );
+  }
+
+  await pruneBackups(root, BACKUP_KEEP);
+  return {
+    playlistName: playlist.name,
+    alternativesName: existingAlternativesPlaylistName(library.playlists, title),
+    trackCount: match.trackIds.length,
+    backupName,
+    newPages: result.allocated.length,
+  };
 }
 
 async function writeTextFile(dir: DirLike, name: string, text: string) {

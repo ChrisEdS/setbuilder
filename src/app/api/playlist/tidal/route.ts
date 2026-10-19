@@ -16,6 +16,7 @@ export async function POST(request: Request) {
       slot?: string;
       audience?: string;
       gear?: string;
+      notes?: string;
       slotKind?: string;
     };
     const playlistId = parseTidalPlaylistId(body.url || "");
@@ -34,6 +35,7 @@ export async function POST(request: Request) {
       slot: body.slot,
       audience: body.audience,
       gear: body.gear,
+      notes: body.notes,
     });
     if (
       body.slotKind === "warmup" ||

@@ -86,6 +86,9 @@ test("m3u lists only the performance order", () => {
   assert.match(m3u, /Ada - Night Drive/);
   assert.match(m3u, /SETBUILDER - Freitag Alternativen/);
   assert.equal(m3u.includes("Plan B"), false);
+  const english = buildM3u(draft, tEn);
+  assert.match(english, /SETBUILDER - Freitag Alternatives/);
+  assert.doesNotMatch(english, /Alternativen/);
 });
 
 test("the Unknown placeholder of hand-made entries reads in the UI language", () => {

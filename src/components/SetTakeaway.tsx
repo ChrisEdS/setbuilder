@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
+import { ActionIcon } from "@/components/ActionIcon";
 import { Tip } from "@/components/Hint";
 import { useI18n } from "@/lib/i18n/react";
+import { energyMenuGate } from "@/lib/energy-menu";
 import { SET_SORTS } from "@/lib/sort-set";
 import type { SetSortTechnique } from "@/lib/sort-set";
 
@@ -13,6 +15,7 @@ function Menu({
   primary,
   disabled,
   className,
+  title,
   plain,
   children,
 }: {
@@ -21,6 +24,7 @@ function Menu({
   primary?: boolean;
   disabled?: boolean;
   className?: string;
+  title?: string;
   /** Row pills, not the large toolbar button. */
   plain?: boolean;
   children: ReactNode;
@@ -55,7 +59,9 @@ function Menu({
     const keys = ["ArrowDown", "ArrowUp", "Home", "End"];
     if (!keys.includes(event.key)) return;
     const items = [
-      ...node.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)'),
+      ...node.querySelectorAll<HTMLButtonElement>(
+        '[role="menuitem"]:not(:disabled), [role="menuitemradio"]:not(:disabled)',
+      ),
     ];
     if (!items.length) return;
     event.preventDefault();
@@ -82,6 +88,7 @@ function Menu({
           plain ? "menu-trigger" : primary ? "btn menu-trigger" : "btn ghost menu-trigger"
         }
         aria-label={ariaLabel}
+        title={title}
         aria-haspopup="menu"
         aria-disabled={disabled}
       >
@@ -146,28 +153,32 @@ function MenuGroup({ label }: { label: string }) {
 }
 
 export function SetEnergyMenu({
-  disabled,
   busy,
+  stickReady,
   fileCount,
   missingCount,
   knownCount,
+  onChooseStick,
   onReadTags,
   onMeasureMissing,
   onMeasureAll,
   onWrite,
 }: {
-  disabled?: boolean;
   busy?: boolean;
+  stickReady: boolean;
   fileCount: number;
   missingCount: number;
   knownCount: number;
+  /** Existing stick picker. Shown only when the stick itself is missing. */
+  onChooseStick?: () => void;
   onReadTags: () => void;
   onMeasureMissing: () => void;
   onMeasureAll: () => void;
   onWrite: () => void;
 }) {
   const { t } = useI18n();
-  const locked = Boolean(disabled);
+  const gate = energyMenuGate({ stickReady, fileCount });
+  const locked = Boolean(busy);
   return (
     <Menu
       label={
@@ -177,32 +188,57 @@ export function SetEnergyMenu({
         </>
       }
       ariaLabel={t("builder.tool.energy")}
+      title={locked ? t("builder.tool.energyBusy") : undefined}
       disabled={locked}
     >
-      <MenuItem
-        title={t("builder.energy.menu.read")}
-        hint={t("builder.energy.menu.readHint", { count: fileCount })}
-        disabled={locked || fileCount === 0}
-        onClick={onReadTags}
-      />
-      <MenuItem
-        title={t("builder.energy.menu.missing")}
-        hint={t("builder.energy.menu.missingHint", { count: missingCount })}
-        disabled={locked || missingCount === 0}
-        onClick={onMeasureMissing}
-      />
-      <MenuItem
-        title={t("builder.energy.menu.all")}
-        hint={t("builder.energy.menu.allHint", { count: fileCount })}
-        disabled={locked || fileCount === 0}
-        onClick={onMeasureAll}
-      />
-      <MenuItem
-        title={t("builder.energy.menu.write")}
-        hint={t("builder.energy.menu.writeHint", { count: knownCount })}
-        disabled={locked || knownCount === 0}
-        onClick={onWrite}
-      />
+      {gate === "stick" ? (
+        <>
+          <p className="menu-prereq" role="presentation">
+            {t("builder.energy.noStick")}
+          </p>
+          {onChooseStick ? (
+            <button
+              type="button"
+              role="menuitem"
+              className="menu-item"
+              onClick={onChooseStick}
+            >
+              <strong>{t("library.stick.choose")}</strong>
+            </button>
+          ) : null}
+        </>
+      ) : gate === "files" ? (
+        <p className="menu-prereq" role="presentation">
+          {t("builder.energy.noFile")}
+        </p>
+      ) : (
+        <>
+          <MenuItem
+            title={t("builder.energy.menu.read")}
+            hint={t("builder.energy.menu.readHint", { count: fileCount })}
+            disabled={fileCount === 0}
+            onClick={onReadTags}
+          />
+          <MenuItem
+            title={t("builder.energy.menu.missing")}
+            hint={t("builder.energy.menu.missingHint", { count: missingCount })}
+            disabled={missingCount === 0}
+            onClick={onMeasureMissing}
+          />
+          <MenuItem
+            title={t("builder.energy.menu.all")}
+            hint={t("builder.energy.menu.allHint", { count: fileCount })}
+            disabled={fileCount === 0}
+            onClick={onMeasureAll}
+          />
+          <MenuItem
+            title={t("builder.energy.menu.write")}
+            hint={t("builder.energy.menu.writeHint", { count: knownCount })}
+            disabled={knownCount === 0}
+            onClick={onWrite}
+          />
+        </>
+      )}
     </Menu>
   );
 }
@@ -223,34 +259,40 @@ export function TrackEnergyMenu({
 }) {
   const { t } = useI18n();
   return (
-    <Menu
-      className="track-energy"
-      plain
-      label={t("builder.row.energyRedo")}
-      ariaLabel={t("builder.row.energyRedoAria", { name })}
-    >
-      <MenuItem
-        title={t("builder.row.energyMenu.measure")}
-        hint={t("builder.row.energyRedoTip")}
-        disabled={busy}
-        onClick={onMeasure}
-      />
-      <MenuGroup label={t("builder.row.energyMenu.set")} />
-      <div className="energy-level-pick" role="presentation">
-        {Array.from({ length: 10 }, (_, index) => index + 1).map((value) => (
-          <button
-            key={value}
-            type="button"
-            role="menuitem"
-            aria-pressed={level === value}
-            aria-label={t("builder.row.energy", { level: value })}
-            onClick={() => onSetLevel(value)}
-          >
-            {value}
-          </button>
-        ))}
-      </div>
-    </Menu>
+    <Tip text={t("builder.row.energyRedoTip")}>
+      <Menu
+        className="track-energy"
+        plain
+        label={<ActionIcon name="energy" />}
+        ariaLabel={t("builder.row.energyRedoAria", { name })}
+      >
+        <MenuItem
+          title={t("builder.row.energyMenu.measure")}
+          hint={t("builder.row.energyRedoTip")}
+          disabled={busy}
+          onClick={onMeasure}
+        />
+        <MenuGroup label={t("builder.row.energyMenu.set")} />
+        <div
+          className="energy-level-pick"
+          role="group"
+          aria-label={t("builder.row.energyMenu.set")}
+        >
+          {Array.from({ length: 10 }, (_, index) => index + 1).map((value) => (
+            <button
+              key={value}
+              type="button"
+              role="menuitemradio"
+              aria-checked={level === value}
+              aria-label={t("builder.row.energy", { level: value })}
+              onClick={() => onSetLevel(value)}
+            >
+              {value}
+            </button>
+          ))}
+        </div>
+      </Menu>
+    </Tip>
   );
 }
 

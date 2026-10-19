@@ -4764,7 +4764,7 @@ button.drag-handle:active i {
 
 .replace-copy {
   display: grid;
-  grid-template-columns: 30px minmax(0, 1fr);
+  grid-template-columns: var(--ui-control-height, 2.625rem) minmax(0, 1fr);
   gap: 0.65rem;
   align-items: center;
   min-width: 0;
@@ -4774,8 +4774,8 @@ button.drag-handle:active i {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: var(--ui-control-height, 2.625rem);
+  height: var(--ui-control-height, 2.625rem);
 }
 
 .replace-copy strong,
@@ -8299,6 +8299,222 @@ body {
   margin: 0.875rem 0 0 !important;
   padding-top: 0.875rem;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Accessibility: one high-contrast keyboard ring that never changes layout. */
+:where(
+  button,
+  a[href],
+  input,
+  textarea,
+  select,
+  summary,
+  [role="tab"],
+  [role="menuitem"],
+  [role="menuitemradio"],
+  [draggable="true"]
+):focus-visible {
+  outline: 3px solid #ffffff !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 0 5px #117a37 !important;
+}
+
+/* Folds use a familiar chevron in addition to their state text. */
+.explain-fold > summary::before {
+  content: "" !important;
+  width: 0.55rem !important;
+  height: 0.55rem !important;
+  border: 0 !important;
+  border-right: 2px solid currentColor !important;
+  border-bottom: 2px solid currentColor !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  transform: rotate(45deg);
+  transition: transform 140ms var(--ease);
+}
+
+.explain-fold[open] > summary::before {
+  transform: rotate(-135deg);
+}
+
+.replace-menu {
+  max-height: min(34rem, calc(100vh - 7rem));
+  overflow: auto;
+  scroll-padding-top: 6rem;
+}
+
+.replace-menu-head {
+  position: sticky;
+  top: -0.85rem;
+  z-index: 3;
+  margin: -0.85rem -0.85rem 0;
+  padding: 0.85rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: #181818;
+}
+
+.replace-menu-head h4 {
+  margin: 0.2rem 0 0;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.curve-overrun,
+.curve-overrun-warning,
+.phase-overrun {
+  color: #ffb4b4 !important;
+}
+
+.curve-overrun-warning {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.82rem;
+}
+
+.phase-overrun {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.72rem;
+  line-height: 1.3;
+}
+
+.timeline-tools .energy-level-pick button[aria-checked="true"] {
+  background: #1ed760 !important;
+  color: #121212 !important;
+}
+
+@media (max-width: 600px) {
+  html,
+  body,
+  .set-shell,
+  .crate-workspace,
+  .crate-view,
+  .manual-list,
+  .manual-row,
+  .manual-body {
+    max-width: 100%;
+  }
+
+  html,
+  body {
+    overflow-x: clip;
+  }
+
+  .set-bar {
+    position: sticky;
+    top: 0;
+    z-index: 55;
+    margin-inline: -0.35rem;
+    padding: 0.45rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(18, 18, 18, 0.96);
+    backdrop-filter: blur(10px);
+  }
+
+  .set-menus {
+    margin-left: auto;
+  }
+
+  .set-menus .menu-trigger {
+    min-height: 44px !important;
+  }
+
+  .manual-row {
+    grid-template-columns: 44px minmax(0, 1fr) !important;
+    column-gap: 0.45rem !important;
+    padding: 0.9rem 0 0.9rem 0.25rem !important;
+  }
+
+  .manual-index,
+  .manual-select,
+  .manual-controls,
+  .manual-meta,
+  .timeline-tools {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .manual-select {
+    min-height: 44px;
+  }
+
+  .manual-index .drag-handle,
+  .timeline-tools button,
+  .timeline-tools summary.menu-trigger,
+  .manual-meta select,
+  .track-details > summary {
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+
+  .timeline-tools {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(44px, max-content));
+    gap: 0.3rem;
+    width: 100%;
+    justify-content: start;
+  }
+
+  .timeline-tools .tip,
+  .timeline-tools .track-energy {
+    min-width: 44px;
+  }
+
+  .timeline-tools .track-energy > summary.menu-trigger {
+    height: 44px !important;
+    line-height: 44px;
+  }
+
+  .timeline-tools .menu-panel {
+    position: fixed;
+    inset: auto 12px 76px 12px;
+    width: auto !important;
+    max-height: min(60vh, 28rem);
+  }
+
+  .replace-menu {
+    max-height: min(70vh, 34rem);
+  }
+
+  .replace-list li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .replace-meta {
+    grid-column: 1;
+    justify-self: start;
+    padding-left: 44px;
+  }
+
+  .replace-list .icon-action,
+  .replace-list .lib-play,
+  .replace-list .lib-add,
+  .replace-close,
+  .replace-foot button {
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+
+  .library-browser-head,
+  .library-browser-toolbar,
+  .library-add-bar {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .library-browser-toolbar > *,
+  .library-search-field,
+  .library-search-field input,
+  .library-playlist-pick,
+  .library-playlist-pick select {
+    min-width: 0 !important;
+    max-width: 100%;
+  }
+
+  .library-add-bar label,
+  .library-add-bar select {
+    width: 100%;
+  }
 }
 
 .set-shell .crate-connect.builder-card {

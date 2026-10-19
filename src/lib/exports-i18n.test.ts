@@ -5,7 +5,11 @@ import { buildSetPrintHtml } from "./export-pdf.ts";
 import { tDe, tEn } from "./i18n/core.ts";
 import { errorText } from "./i18n/error.ts";
 import { parseRekordboxPdb } from "./rekordbox-pdb.ts";
-import { applyStickSet, libraryTrackToSetTrack } from "./rekordbox-stick.ts";
+import {
+  applyStickSet,
+  applyStickSetMode,
+  libraryTrackToSetTrack,
+} from "./rekordbox-stick.ts";
 import { exportSetText, type SetDraft, type SetTrack } from "./set.ts";
 
 function track(partial: Partial<SetTrack> & Pick<SetTrack, "id" | "name">): SetTrack {
@@ -102,6 +106,23 @@ test("rekordbox XML names the alternatives playlist per language", () => {
   assert.match(buildRekordboxXml(draft), /Pfad fehlt — in rekordbox der Datei zuordnen/);
 });
 
+test("set-only comments print and copy but never become rekordbox Comments", () => {
+  const noted = {
+    ...draft,
+    tracks: [
+      track({
+        id: "note",
+        name: "Cue Track",
+        filePath: "/Cue Track.mp3",
+        comment: "Bring vocal in after 32",
+      }),
+    ],
+  };
+  assert.match(buildSetPrintHtml(noted), /Bring vocal in after 32/);
+  assert.match(exportSetText(noted), /Bring vocal in after 32/);
+  assert.doesNotMatch(buildRekordboxXml(noted), /Bring vocal in after 32/);
+});
+
 test("importer errors carry keys and keep the German message", () => {
   assert.throws(() => parseRekordboxPdb(new ArrayBuffer(8)), /zu klein/);
   try {
@@ -146,6 +167,62 @@ test("stick set helpers accept a translator", () => {
   assert.equal(picked.why, "Added to the set from the stick library");
 });
 
+test("stick set replace and merge normalize and deduplicate tracks", () => {
+  const set = {
+    id: "p:2",
+    name: "Incoming",
+    path: "Incoming",
+    kind: "playlist" as const,
+    missing: 0,
+    tracks: [
+      {
+        id: "a",
+        title: "Duplicate",
+        artist: "A",
+        album: "",
+        bpm: "120",
+        keyRaw: "8A",
+        keyCamelot: "8A",
+        durationMs: 1000,
+        comment: "",
+        filePath: "",
+      },
+      {
+        id: "new",
+        title: "Fresh",
+        artist: "B",
+        album: "",
+        bpm: "121",
+        keyRaw: "9A",
+        keyCamelot: "9A",
+        durationMs: 1000,
+        comment: "",
+        filePath: "",
+      },
+    ],
+  };
+  const replaced = applyStickSetMode(draft, set, "replace");
+  assert.equal(replaced.title, "Incoming");
+  assert.deepEqual(replaced.tracks.map((item) => item.id), [
+    "rekordbox:p:2:a:0",
+    "rekordbox:p:2:new:1",
+  ]);
+  const current = {
+    ...draft,
+    tracks: draft.tracks.map((item, index) =>
+      index === 0 ? { ...item, id: "rekordbox:p:2:a:0" } : item,
+    ),
+  };
+  const merged = applyStickSetMode(current, set, "merge");
+  assert.equal(merged.title, "Friday");
+  assert.deepEqual(merged.tracks.map((item) => item.id), [
+    "rekordbox:p:2:a:0",
+    "b",
+    "c",
+    "rekordbox:p:2:new:1",
+  ]);
+});
+
 test("the printout and the text list stay short for a three hour set", () => {
   const long: SetDraft = {
     ...draft,
@@ -164,8 +241,9 @@ test("the printout and the text list stay short for a three hour set", () => {
   };
   const html = buildSetPrintHtml(long);
   assert.equal((html.match(/<tr>/g) ?? []).length, 40 + 1); // 40 tracks + the header row
-  assert.doesNotMatch(html, /example\.com|Long explanation|Energy 6/);
+  assert.doesNotMatch(html, /example\.com|Long explanation/);
+  assert.match(html, /Energy 6/);
   const text = exportSetText(long);
   assert.doesNotMatch(text, /example\.com|Long explanation/);
-  assert.ok(text.split("\n").length < 60);
+  assert.ok(text.split("\n").length < 100);
 });

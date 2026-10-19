@@ -10,8 +10,35 @@ permissions:
   contents: write
 
 jobs:
+  quality:
+    name: Test, typecheck, lint, build
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install app
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
   build:
     name: ${{ matrix.os }} ${{ matrix.arch }}
+    needs: quality
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
