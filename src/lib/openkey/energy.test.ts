@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { energyFromFeatures, highFrequencyRatio } from "./energy.ts";
+import {
+  ENERGY_WINDOW_SECONDS,
+  energyAnalysisWindow,
+  energyFromFeatures,
+  highFrequencyRatio,
+} from "./energy.ts";
 
 const quiet = { hfRatio: 0, onsetsPerSec: 0, danceability: 0, dynamicComplexity: 0 };
 
@@ -30,8 +35,37 @@ test("energyFromFeatures clamps values outside the ranges", () => {
 });
 
 test("energyFromFeatures ignores a danceability value blown up by a flat signal", () => {
-  assert.equal(energyFromFeatures({ ...quiet, danceability: 12 }), 1);
+  // A pure 440 Hz sine measures around 164. A kick loop measures around 6.
+  assert.equal(energyFromFeatures({ ...quiet, danceability: 164 }), 1);
   assert.equal(energyFromFeatures({ ...quiet, danceability: 400 }), 1);
+});
+
+test("a measured four-on-the-floor loop is a club level, not Energy 1", () => {
+  // Essentia on a 126 BPM kick + hat loop: ~4.2 onsets/s, danceability ~6,
+  // almost nothing above 5 kHz, dynamic complexity ~4.
+  // Danceability above 3.5 used to be discarded, which floored this at 1–4.
+  assert.equal(
+    energyFromFeatures({
+      hfRatio: 0.012,
+      onsetsPerSec: 4.2,
+      danceability: 6,
+      dynamicComplexity: 4.1,
+    }),
+    7,
+  );
+});
+
+test("energyAnalysisWindow keeps a short clip and takes the body of a long one", () => {
+  const short = new Float32Array(1000);
+  short[0] = 3;
+  assert.equal(energyAnalysisWindow(short, 44100), short);
+
+  const rate = 1000;
+  const long = new Float32Array(100 * rate);
+  for (let i = 0; i < long.length; i++) long[i] = i;
+  const windowed = energyAnalysisWindow(long, rate);
+  assert.equal(windowed.length, ENERGY_WINDOW_SECONDS * rate);
+  assert.equal(windowed[0], 20 * rate);
 });
 
 test("energyFromFeatures places a peak-time club track near 7 and a sparser groove near 4", () => {

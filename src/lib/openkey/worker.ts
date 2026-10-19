@@ -2,7 +2,7 @@
 // Use the web WASM build — the .es.js build pulls Node `fs` and breaks Turbopack.
 import Essentia from "essentia.js/dist/essentia.js-core.es.js";
 import { loadEssentiaWasm } from "./essentia-wasm";
-import { energyFromFeatures, highFrequencyRatio } from "./energy";
+import { energyAnalysisWindow, energyFromFeatures, highFrequencyRatio } from "./energy";
 import { isLowConfidence, keyLabel, mixesWith, openKeyCode } from "./openKey";
 import type { Analysis } from "./types";
 
@@ -161,25 +161,57 @@ async function analyze(samples: Float32Array, sampleRate: number): Promise<Analy
 }
 
 function trackEnergy(engine: EssentiaModule, samples: Float32Array, sampleRate: number): number {
-  const hfRatio = highFrequencyRatio(samples, sampleRate);
+  const clip = energyAnalysisWindow(samples, sampleRate);
+  const hfRatio = highFrequencyRatio(clip, sampleRate);
   const rhythm = { onsetsPerSec: 0, danceability: 0, dynamicComplexity: 0 };
   let prepared: PreparedSignal | null = null;
+  let measured = 0;
   try {
-    prepared = signalAt44100(engine, samples, sampleRate);
-    const onsets = engine.OnsetRate(prepared.signal);
-    rhythm.onsetsPerSec = finite(onsets.onsetRate);
-    release(onsets.onsets ?? null);
-    const dance = engine.Danceability(prepared.signal, 8800, 310, 44100, 1.1);
-    rhythm.danceability = finite(dance.danceability);
-    release(dance.dfa ?? null);
-    const dynamics = engine.DynamicComplexity(prepared.signal, 0.2, 44100);
-    rhythm.dynamicComplexity = finite(dynamics.dynamicComplexity);
-  } catch {
-    // A missing rhythm estimate still leaves the spectral ratio.
+    prepared = signalAt44100(engine, clip, sampleRate);
+    // Each feature stands on its own. One Essentia failure must not wipe
+    // the others — that used to leave every weight at 0 and store Energy 1.
+    try {
+      const onsets = engine.OnsetRate(prepared.signal);
+      rhythm.onsetsPerSec = finite(onsets.onsetRate);
+      release(onsets.onsets ?? null);
+      measured += 1;
+    } catch {
+      // Onset rate is optional when dance or dynamics still measure.
+    }
+    try {
+      const dance = engine.Danceability(prepared.signal, 8800, 310, 44100, 1.1);
+      rhythm.danceability = finite(dance.danceability);
+      release(dance.dfa ?? null);
+      measured += 1;
+    } catch {
+      // Danceability needs a few seconds. A short clip can skip it.
+    }
+    try {
+      const dynamics = engine.DynamicComplexity(prepared.signal, 0.2, 44100);
+      rhythm.dynamicComplexity = finite(dynamics.dynamicComplexity);
+      measured += 1;
+    } catch {
+      // Dynamics are optional when the pulse was measured.
+    }
   } finally {
     prepared?.release();
   }
+  if (measured === 0) {
+    throw new Error("Could not measure energy from this file");
+  }
   return energyFromFeatures({ hfRatio, ...rhythm });
+}
+
+function energyOnly(samples: Float32Array, sampleRate: number): Promise<Analysis> {
+  return library().then((engine) => ({
+    keyLabel: null,
+    openKey: null,
+    strength: 0,
+    uncertain: true,
+    bpm: null,
+    energy: trackEnergy(engine, samples, sampleRate),
+    mixesWith: [],
+  }));
 }
 
 type PreparedSignal = {
@@ -215,20 +247,29 @@ function finite(value: number): number {
   return Number.isFinite(value) ? value : 0;
 }
 
+type WorkerRequest = {
+  id: number;
+  samples: Float32Array;
+  sampleRate: number;
+  kind?: "full" | "energy";
+};
+
 type WorkerScope = {
-  onmessage:
-    | ((event: MessageEvent<{ id: number; samples: Float32Array; sampleRate: number }>) => void)
-    | null;
+  onmessage: ((event: MessageEvent<WorkerRequest>) => void) | null;
   postMessage(message: unknown): void;
 };
 
 const scope = globalThis as unknown as WorkerScope;
 
 scope.onmessage = (event) => {
-  const { id, samples, sampleRate } = event.data;
+  const { id, samples, sampleRate, kind } = event.data;
   void (async () => {
     try {
-      scope.postMessage({ id, result: await analyze(samples, sampleRate) });
+      const result =
+        kind === "energy"
+          ? await energyOnly(samples, sampleRate)
+          : await analyze(samples, sampleRate);
+      scope.postMessage({ id, result });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       scope.postMessage({ id, error: message });

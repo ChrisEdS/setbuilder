@@ -1,3 +1,4 @@
+import { energyAnalysisWindow } from "./energy";
 import type { Analysis } from "./types";
 
 type WorkerResponse = {
@@ -37,12 +38,13 @@ function getWorker(): Worker {
 export function analyzeSamples(
   samples: Float32Array,
   sampleRate: number,
+  kind: "full" | "energy" = "full",
 ): Promise<Analysis> {
   const id = nextId;
   nextId += 1;
   return new Promise((resolve, reject) => {
     pending.set(id, { resolve, reject });
-    getWorker().postMessage({ id, samples, sampleRate }, [samples.buffer]);
+    getWorker().postMessage({ id, samples, sampleRate, kind }, [samples.buffer]);
   });
 }
 
@@ -73,6 +75,14 @@ export async function analyzeFile(file: File): Promise<Analysis> {
 
 /** Energy Level 1–10 from a stick file (Essentia in a worker). */
 export async function analyzeFileEnergy(file: File): Promise<number> {
-  const analysis = await analyzeFile(file);
+  const decoded = await decodeAudio(file);
+  const view = energyAnalysisWindow(decoded.samples, decoded.sampleRate);
+  // Copy the window. Transferring a subarray would pin the whole decoded file.
+  const samples = new Float32Array(view.length);
+  samples.set(view);
+  const analysis = await analyzeSamples(samples, decoded.sampleRate, "energy");
+  if (!Number.isInteger(analysis.energy) || analysis.energy < 1 || analysis.energy > 10) {
+    throw new Error("Energy analysis returned no level");
+  }
   return analysis.energy;
 }

@@ -8,9 +8,15 @@ const ONSET_LOW = 0.8;
 const ONSET_HIGH = 5.5;
 const DANCE_LOW = 0.4;
 const DANCE_HIGH = 2.2;
-// Essentia danceability is 1 / mean DFA slope. Musical tracks sit around 0–3.
-// A flat tone makes the slope collapse toward 0 and the value explodes.
-const DANCE_LIMIT = 3.5;
+// Essentia danceability is 1 / mean DFA slope. A 126 BPM kick loop measures
+// about 6. A pure sine collapses the slope and the value jumps past 100.
+// Reject only that explosion. Values inside the musical range still clamp
+// at DANCE_HIGH, so a club groove saturates instead of being thrown away.
+const DANCE_LIMIT = 20;
+/** Body of a long file used for energy. Full tracks blow the WASM heap and
+ *  their silent intros pull a club record down to 1. */
+export const ENERGY_WINDOW_SECONDS = 45;
+const ENERGY_WINDOW_START = 0.2;
 const HF_LOW = 0.03;
 const HF_HIGH = 0.18;
 const DYNAMIC_LOW = 2;
@@ -38,6 +44,24 @@ function scale(value: number, low: number, high: number): number {
 function usableDanceability(value: number): number {
   if (!Number.isFinite(value) || value < 0 || value > DANCE_LIMIT) return 0;
   return value;
+}
+
+/**
+ * The part of a file energy should hear: the whole clip when it is short,
+ * otherwise 45 seconds starting a fifth of the way in (past the intro).
+ */
+export function energyAnalysisWindow(
+  samples: Float32Array,
+  sampleRate: number,
+): Float32Array {
+  if (sampleRate <= 0 || samples.length === 0) return samples;
+  const span = Math.floor(ENERGY_WINDOW_SECONDS * sampleRate);
+  if (span <= 0 || samples.length <= span) return samples;
+  const start = Math.min(
+    samples.length - span,
+    Math.floor(samples.length * ENERGY_WINDOW_START),
+  );
+  return samples.subarray(Math.max(0, start), start + span);
 }
 
 export function energyFromFeatures(features: EnergyFeatures): number {

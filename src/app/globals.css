@@ -5465,6 +5465,36 @@ html[lang="en"] .energy-bars li.jump::before {
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
 }
 
+/* macOS desktop: hiddenInset titlebar. Keep rows and the status banner
+   below the traffic lights instead of scrolling through them. */
+html[data-frame="mac"] {
+  scroll-padding-top: 3.25rem;
+}
+
+html[data-frame="mac"] body::before {
+  content: "";
+  position: fixed;
+  z-index: 90;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 46px;
+  background: #121212;
+  -webkit-app-region: drag;
+}
+
+html[data-frame="mac"] .set-shell {
+  padding-top: 3.5rem;
+}
+
+html[data-frame="mac"] .banner.status {
+  top: 3.25rem;
+}
+
+html[data-frame="mac"] .crate-col-head-row {
+  top: 46px;
+}
+
 /* Fields for manual entries inside the Crate. */
 .crate-add-body .manual-form input {
   width: 100%;

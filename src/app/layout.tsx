@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Manrope, Space_Grotesk } from "next/font/google";
+import { DesktopFrame } from "@/components/DesktopFrame";
 import { I18nProvider } from "@/lib/i18n/react";
 import "./globals.css";
 
@@ -35,6 +36,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${display.variable} ${body.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <DesktopFrame />
         <I18nProvider>{children}</I18nProvider>
       </body>
     </html>
