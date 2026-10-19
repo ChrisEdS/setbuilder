@@ -6,7 +6,7 @@ import {
   type HarmonicRelation,
 } from "@/lib/harmonic";
 import { orderPhase, type SetSortTechnique } from "@/lib/sort-set";
-import { PHASE_ENERGY, energyStep } from "@/lib/energy";
+import { PHASE_ENERGY, energyStep, hasKnownEnergy } from "@/lib/energy";
 import { phaseLabel } from "@/lib/i18n/domain";
 import { LocalizedError } from "@/lib/i18n/error";
 import { isGeneratedNote } from "@/lib/i18n/stored";
@@ -29,6 +29,7 @@ import {
   type SourcePoolTrack,
   type TrackRole,
   type TransitionVerb,
+  type EnergySource,
 } from "@/lib/set";
 
 /** How many leftovers become Alternativen after packing. */
@@ -52,6 +53,7 @@ type Enriched = SpotifyTrack & {
   keyCamelot: string;
   energy: number;
   energyLevel?: number;
+  energySource?: EnergySource;
   filePath?: string;
   source?: SetTrack["source"];
 };
@@ -138,8 +140,11 @@ export function reshuffleDraftFromPool(
   for (let i = 0; i < pool.length; i++) {
     const prior = ordered[i];
     if (prior?.energy != null) pool[i].energy = prior.energy;
-    else if (prior?.energyLevel != null) pool[i].energy = prior.energyLevel / 10;
-    if (prior?.energyLevel != null) pool[i].energyLevel = prior.energyLevel;
+    else if (hasKnownEnergy(prior ?? {})) pool[i].energy = (prior?.energyLevel ?? 0) / 10;
+    if (prior && hasKnownEnergy(prior)) {
+      pool[i].energyLevel = prior.energyLevel;
+      pool[i].energySource = prior.energySource;
+    }
     if (prior?.bpm) pool[i].bpm = prior.bpm;
     if (prior?.keyCamelot) pool[i].keyCamelot = prior.keyCamelot;
     if (prior?.filePath) pool[i].filePath = prior.filePath;
@@ -202,6 +207,9 @@ function toSourcePoolTrack(track: Enriched): SourcePoolTrack {
     bpm: track.bpm,
     keyCamelot: track.keyCamelot,
     energy: track.energy,
+    energyLevel: track.energyLevel,
+    energySource: track.energySource,
+    filePath: track.filePath,
     popularity: track.popularity ?? null,
     catalogPopularity: track.catalogPopularity ?? null,
     catalogBpm: track.catalogBpm,
@@ -448,7 +456,7 @@ type RoleInput = Pick<
   | "bpm"
   | "keyCamelot"
   | "phase"
-> & { energy?: number; energyLevel?: number };
+> & { energy?: number; energyLevel?: number; energySource?: EnergySource };
 
 function assignRolesAndTransitions(
   tracks: Array<RoleInput & { filePath?: string; source?: SetTrack["source"] }>,
@@ -559,7 +567,8 @@ function assignRolesAndTransitions(
       bpm: track.bpm,
       keyCamelot: track.keyCamelot,
       energy: track.energy ?? 0.5,
-      energyLevel: track.energyLevel,
+      energyLevel: hasKnownEnergy(track) ? track.energyLevel : undefined,
+      energySource: hasKnownEnergy(track) ? track.energySource : undefined,
       filePath: track.filePath,
       source: track.source,
       // The row shows phase, role, transition and the live key relation; no machine note.
@@ -633,7 +642,8 @@ function appendSafetyCrates(
     bpm: track.bpm,
     keyCamelot: track.keyCamelot,
     energy: track.energy,
-    energyLevel: track.energyLevel,
+    energyLevel: hasKnownEnergy(track) ? track.energyLevel : undefined,
+    energySource: hasKnownEnergy(track) ? track.energySource : undefined,
     filePath: track.filePath,
     source: track.source,
     note: t("analysis.note.safety"),

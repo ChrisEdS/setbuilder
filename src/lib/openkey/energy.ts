@@ -16,7 +16,9 @@ const DANCE_LIMIT = 20;
 /** Body of a long file used for energy. Full tracks blow the WASM heap and
  *  their silent intros pull a club record down to 1. */
 export const ENERGY_WINDOW_SECONDS = 45;
-const ENERGY_WINDOW_START = 0.2;
+export const ENERGY_WINDOW_START = 0.2;
+/** Rate Essentia hears. Device AudioContext rates (48/96 kHz) are folded down to this. */
+export const ENERGY_ANALYSIS_RATE = 44100;
 const HF_LOW = 0.03;
 const HF_HIGH = 0.18;
 const DYNAMIC_LOW = 2;
@@ -55,13 +57,66 @@ export function energyAnalysisWindow(
   sampleRate: number,
 ): Float32Array {
   if (sampleRate <= 0 || samples.length === 0) return samples;
+  const span = energySampleSpan(samples.length, sampleRate);
+  if (!span) return samples;
+  return samples.subarray(span.start, span.start + span.count);
+}
+
+/**
+ * First 45 seconds of a buffer that already starts at the energy window.
+ * Applying energyAnalysisWindow again would skip another 20%.
+ */
+export function energyWindowPrefix(
+  samples: Float32Array,
+  sampleRate: number,
+): Float32Array {
+  if (sampleRate <= 0 || samples.length === 0) return samples;
   const span = Math.floor(ENERGY_WINDOW_SECONDS * sampleRate);
   if (span <= 0 || samples.length <= span) return samples;
+  return samples.subarray(0, span);
+}
+
+/**
+ * Sample range matching energyAnalysisWindow, in frames of `sampleRate`.
+ * Null when the whole clip is already the window.
+ */
+/**
+ * Linear resample onto `toRate`. Same rate returns the input unchanged.
+ * Energy only needs 44.1 kHz; a 96 kHz window is what overflows the WASM heap.
+ */
+export function resampleLinear(
+  samples: Float32Array,
+  fromRate: number,
+  toRate: number,
+): Float32Array {
+  if (samples.length === 0 || fromRate <= 0 || toRate <= 0) return samples;
+  if (Math.round(fromRate) === Math.round(toRate)) return samples;
+  const outLength = Math.max(1, Math.round((samples.length * toRate) / fromRate));
+  const out = new Float32Array(outLength);
+  const scale = (samples.length - 1) / Math.max(1, outLength - 1);
+  const last = samples.length - 1;
+  for (let i = 0; i < outLength; i++) {
+    const pos = i * scale;
+    const index = Math.min(last, Math.floor(pos));
+    const next = Math.min(last, index + 1);
+    const frac = pos - index;
+    out[i] = samples[index] + (samples[next] - samples[index]) * frac;
+  }
+  return out;
+}
+
+export function energySampleSpan(
+  totalFrames: number,
+  sampleRate: number,
+): { start: number; count: number } | null {
+  if (sampleRate <= 0 || totalFrames <= 0) return null;
+  const count = Math.floor(ENERGY_WINDOW_SECONDS * sampleRate);
+  if (count <= 0 || totalFrames <= count) return null;
   const start = Math.min(
-    samples.length - span,
-    Math.floor(samples.length * ENERGY_WINDOW_START),
+    totalFrames - count,
+    Math.floor(totalFrames * ENERGY_WINDOW_START),
   );
-  return samples.subarray(Math.max(0, start), start + span);
+  return { start: Math.max(0, start), count };
 }
 
 export function energyFromFeatures(features: EnergyFeatures): number {

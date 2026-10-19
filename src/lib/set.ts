@@ -37,6 +37,9 @@ export type TrackSource =
   | "rekordbox"
   | "manual";
 
+/** Where an Energy Level came from. A stored 1 with no source is the old failed-scan placeholder. */
+export type EnergySource = "tag" | "measured" | "manual";
+
 export type SetTrack = {
   id: string;
   name: string;
@@ -53,8 +56,10 @@ export type SetTrack = {
   keyCamelot: string;
   /** Soft energy prior 0–1 (crate position / analysis) */
   energy?: number;
-  /** Energy Level 1–10 as Mixed In Key rates it (from the comment tag or set by hand) */
+  /** Energy Level 1–10 as Mixed In Key rates it (from a tag, a measurement, or by hand) */
   energyLevel?: number;
+  /** Provenance for energyLevel. Missing on older drafts; an anonymous 1 then counts as unknown. */
+  energySource?: EnergySource;
   note: string;
   /**
    * Set-only note for booth prep (cue, floor). Not written to MP3 tags —
@@ -97,6 +102,7 @@ export type SourcePoolTrack = {
   keyCamelot?: string;
   energy?: number;
   energyLevel?: number;
+  energySource?: EnergySource;
   filePath?: string;
   source?: TrackSource;
   popularity?: number | null;

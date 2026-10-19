@@ -12,7 +12,7 @@
  */
 
 import { tDe, type Translate } from "@/lib/i18n/core";
-import type { SetPhaseId } from "@/lib/set";
+import type { EnergySource, SetPhaseId } from "@/lib/set";
 
 /** Where each phase should sit on the 1–10 scale. */
 export const PHASE_ENERGY: Record<SetPhaseId, { min: number; max: number }> = {
@@ -90,6 +90,53 @@ export function energyFromRekordboxTags(parts: {
     parseEnergyField(parts.label) ??
     parseEnergyField(parts.remixer)
   );
+}
+
+export function isEnergySource(value: unknown): value is EnergySource {
+  return value === "tag" || value === "measured" || value === "manual";
+}
+
+/**
+ * A level the scan can trust. Energy 1 with no origin is the old placeholder
+ * left behind when a measurement failed before it could store a real level.
+ */
+export function hasKnownEnergy(track: {
+  energyLevel?: number;
+  energySource?: unknown;
+}): boolean {
+  const level = track.energyLevel;
+  if (level == null || !Number.isInteger(level) || level < 1 || level > 10) return false;
+  if (level === 1 && !isEnergySource(track.energySource)) return false;
+  return true;
+}
+
+/** Drop an anonymous Energy 1. Keep every other stored level, including a tagged or measured 1. */
+export function settledEnergy(track: {
+  energyLevel?: number;
+  energySource?: unknown;
+}): { energyLevel?: number; energySource?: EnergySource } {
+  if (!hasKnownEnergy(track)) return {};
+  const source = isEnergySource(track.energySource) ? track.energySource : undefined;
+  return source
+    ? { energyLevel: track.energyLevel, energySource: source }
+    : { energyLevel: track.energyLevel };
+}
+
+/**
+ * Same failure repeated across a batch is one reason, not a sentence per file.
+ * The first distinct reason stays first. A single reason is shown once; the
+ * error count already says how often it happened.
+ */
+export function energyReasonSummary(reasons: Iterable<[string, number]>): string {
+  const entries = [...reasons].filter(([reason, count]) => reason.trim() && count > 0);
+  if (entries.length === 0) return "";
+  if (entries.length === 1) return entries[0][0];
+  return entries.map(([reason, count]) => `${reason} ×${count}`).join(" · ");
+}
+
+export function energyStatusLine(base: string, reasons: Iterable<[string, number]>): string {
+  const detail = energyReasonSummary(reasons);
+  return detail ? `${base} · ${detail}` : base;
 }
 
 export type EnergyStep = "same" | "smooth" | "lift" | "jump" | "unknown";

@@ -9,6 +9,9 @@
  */
 
 type EssentiaFactory = (config?: {
+  INITIAL_MEMORY?: number;
+  print?: (text: unknown) => void;
+  printErr?: (text: unknown) => void;
   locateFile?: (path: string, prefix?: string) => string;
 }) => Promise<unknown>;
 
@@ -18,6 +21,20 @@ declare global {
 }
 
 let loading: Promise<unknown> | null = null;
+
+/**
+ * The shipped glue starts at 16MB and cannot be relied on to grow inside a
+ * worker. A 45s window at the sound-card rate (48 or 96 kHz) then makes
+ * Essentia throw, which surfaces as the "exception catching is disabled" line.
+ */
+const INITIAL_MEMORY = 64 * 1024 * 1024;
+
+function quietEssentiaLog(text: unknown): void {
+  const line = String(text);
+  if (line.includes("Exception catching is disabled")) return;
+  if (line.includes("Compiled code throwing an exception")) return;
+  if (line.startsWith("Heap resize")) return;
+}
 
 function assetOrigin(): string {
   try {
@@ -69,6 +86,9 @@ export function loadEssentiaWasm(): Promise<unknown> {
   loading ??= (async () => {
     const factory = await loadFactory();
     return factory({
+      INITIAL_MEMORY,
+      print: quietEssentiaLog,
+      printErr: quietEssentiaLog,
       locateFile: (path) => {
         const name = path.split("/").pop() || path;
         return essentiaAsset(name);

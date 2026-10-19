@@ -79,6 +79,18 @@ function release(vector: VectorFloat | null): void {
   }
 }
 
+/** Essentia's WASM build turns every C++ throw into this sentence. */
+function asAnalysisError(error: unknown): Error {
+  const raw = error instanceof Error ? error.message : String(error);
+  if (
+    raw.includes("Exception catching is disabled") ||
+    raw.includes("Compiled code throwing an exception")
+  ) {
+    return new Error("Could not measure energy from this file");
+  }
+  return error instanceof Error ? error : new Error(raw.trim() || "Energy analysis failed");
+}
+
 /**
  * Energy is the product for SETBUILDER. Key/BPM are best-effort and must not
  * block energy when Essentia returns an unrecognized key.
@@ -271,8 +283,7 @@ scope.onmessage = (event) => {
           : await analyze(samples, sampleRate);
       scope.postMessage({ id, result });
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      scope.postMessage({ id, error: message });
+      scope.postMessage({ id, error: asAnalysisError(error).message });
     }
   })();
 };

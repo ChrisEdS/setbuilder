@@ -1,5 +1,5 @@
 import { normalizeCamelot, parseBpm, type CamelotCode } from "@/lib/harmonic";
-import { parseEnergyField, parseEnergyLevel } from "@/lib/energy";
+import { hasKnownEnergy, isEnergySource, parseEnergyField, parseEnergyLevel } from "@/lib/energy";
 import type { SetDraft, SetTrack } from "@/lib/set";
 
 export type KeyImportRow = {
@@ -328,11 +328,18 @@ export function applyKeyImportRows(
       });
     }
 
+    const keepEnergy = hasKnownEnergy(track);
     return {
       ...track,
       keyCamelot: row.keyCamelot || track.keyCamelot,
       bpm: row.bpm || track.bpm,
-      energyLevel: row.energyLevel ?? track.energyLevel,
+      energyLevel: row.energyLevel ?? (keepEnergy ? track.energyLevel : undefined),
+      energySource:
+        row.energyLevel != null
+          ? "tag"
+          : keepEnergy && isEnergySource(track.energySource)
+            ? track.energySource
+            : undefined,
     };
   });
 

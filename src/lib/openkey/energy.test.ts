@@ -1,10 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  ENERGY_ANALYSIS_RATE,
   ENERGY_WINDOW_SECONDS,
   energyAnalysisWindow,
   energyFromFeatures,
+  energySampleSpan,
+  energyWindowPrefix,
   highFrequencyRatio,
+  resampleLinear,
 } from "./energy.ts";
 
 const quiet = { hfRatio: 0, onsetsPerSec: 0, danceability: 0, dynamicComplexity: 0 };
@@ -68,6 +72,25 @@ test("energyAnalysisWindow keeps a short clip and takes the body of a long one",
   assert.equal(windowed[0], 20 * rate);
 });
 
+test("energyWindowPrefix keeps the start of an already-positioned buffer", () => {
+  const rate = 1000;
+  const samples = new Float32Array(80 * rate);
+  for (let i = 0; i < samples.length; i++) samples[i] = i;
+  const prefix = energyWindowPrefix(samples, rate);
+  assert.equal(prefix.length, ENERGY_WINDOW_SECONDS * rate);
+  assert.equal(prefix[0], 0);
+  assert.equal(prefix[prefix.length - 1], ENERGY_WINDOW_SECONDS * rate - 1);
+});
+
+test("energySampleSpan matches the 45s body window", () => {
+  const rate = 1000;
+  const span = energySampleSpan(100 * rate, rate);
+  assert.ok(span);
+  assert.equal(span.start, 20 * rate);
+  assert.equal(span.count, ENERGY_WINDOW_SECONDS * rate);
+  assert.equal(energySampleSpan(10 * rate, rate), null);
+});
+
 test("energyFromFeatures places a peak-time club track near 7 and a sparser groove near 4", () => {
   const peak = energyFromFeatures({
     hfRatio: 0.11,
@@ -113,4 +136,13 @@ test("highFrequencyRatio keeps a low sine below bright noise", () => {
   const noiseRatio = highFrequencyRatio(noise, sampleRate);
   assert.equal(energyFromFeatures({ ...quiet, hfRatio: sineRatio }), 1);
   assert.ok(noiseRatio > sineRatio);
+});
+
+test("resampleLinear folds a 96 kHz window down to the analysis rate", () => {
+  const input = new Float32Array(96000);
+  input[10] = 1;
+  assert.equal(resampleLinear(input, 44100, ENERGY_ANALYSIS_RATE), input);
+  const out = resampleLinear(input, 96000, ENERGY_ANALYSIS_RATE);
+  assert.equal(out.length, ENERGY_ANALYSIS_RATE);
+  assert.ok(out.some((sample) => sample > 0));
 });

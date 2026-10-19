@@ -1,6 +1,6 @@
 import { distributeRoles } from "@/lib/extract-set";
 import { stickAudioUrl } from "@/lib/stick-audio";
-import { energyFromRekordboxTags } from "@/lib/energy";
+import { energyFromRekordboxTags, hasKnownEnergy } from "@/lib/energy";
 import { tDe, type Translate } from "@/lib/i18n/core";
 import { LocalizedError } from "@/lib/i18n/error";
 import { parseKeyValue } from "@/lib/key-import";
@@ -52,7 +52,9 @@ export async function readRekordboxStick(files: File[]): Promise<RekordboxStickR
     findFile(files, (path) => path.endsWith("/export.pdb") || path === "export.pdb") ??
     findFile(files, (path) => path.endsWith(".pdb"));
   if (pdb) {
-    const library = parseRekordboxPdb(await pdb.arrayBuffer());
+    const buffer = await pdb.arrayBuffer();
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    const library = parseRekordboxPdb(buffer);
     return {
       label: displayPath(pdb),
       sets: setsFromPdb(library),
@@ -185,13 +187,20 @@ export function rehydrateStickCovers(draft: SetDraft, library: StickTrack[]): Se
     }
     if (!hit) return track;
     const imageUrl = coverUrl(hit.artworkPath) ?? track.imageUrl;
-    const energyLevel = track.energyLevel ?? hit.energyLevel;
+    const known = hasKnownEnergy(track);
+    const energyLevel = known ? track.energyLevel : hit.energyLevel;
+    const energySource = known
+      ? track.energySource ?? (hit.energyLevel === track.energyLevel ? "tag" : undefined)
+      : hit.energyLevel != null
+        ? "tag"
+        : undefined;
     const bpm = track.bpm || hit.bpm;
     const keyCamelot = track.keyCamelot || hit.keyCamelot;
     if (
       imageUrl === track.imageUrl &&
       (hit.filePath || "") === (track.filePath || "") &&
       energyLevel === track.energyLevel &&
+      energySource === track.energySource &&
       bpm === track.bpm &&
       keyCamelot === track.keyCamelot
     ) {
@@ -203,6 +212,7 @@ export function rehydrateStickCovers(draft: SetDraft, library: StickTrack[]): Se
       imageUrl,
       filePath: hit.filePath || track.filePath,
       energyLevel,
+      energySource,
       bpm,
       keyCamelot,
     };
@@ -316,6 +326,8 @@ export function sourcePoolFromStickLibrary(
         track.id.includes(`:${stick.id}:`),
     );
     const key = stick.keyCamelot || parseKeyValue(row.key) || "";
+    const fromSet = existing && hasKnownEnergy(existing) ? existing : null;
+    const imported = stick.energyLevel ?? row.energy;
     pool.push({
       id: existing?.id ?? `rekordbox:lib:${stick.id}`,
       name: row.title,
@@ -327,7 +339,12 @@ export function sourcePoolFromStickLibrary(
       imageUrl: coverUrl(stick.artworkPath),
       bpm: stick.bpm || row.bpm,
       keyCamelot: key,
-      energyLevel: stick.energyLevel ?? row.energy,
+      energyLevel: fromSet ? fromSet.energyLevel : imported,
+      energySource: fromSet
+        ? fromSet.energySource
+        : imported != null
+          ? "tag"
+          : undefined,
       filePath: stick.filePath,
       source: "rekordbox",
       catalogBpm: stick.bpm || row.bpm,
@@ -354,6 +371,16 @@ export function reshufflePoolForDraft(
   return null;
 }
 
+/** Stable id for a library row, shared by preview and the replace-list play button. */
+export function libraryRowTrackId(row: {
+  artist: string;
+  title: string;
+  stick?: { id: string };
+}): string {
+  const slug = `${row.artist}-${row.title}`.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  return `rekordbox:lib:${row.stick ? row.stick.id : slug}`;
+}
+
 /** A track picked from the stick library, placed into a chosen phase and role. */
 export function libraryTrackToSetTrack(
   row: {
@@ -370,8 +397,10 @@ export function libraryTrackToSetTrack(
 ): SetTrack {
   const stick = row.stick;
   const slug = `${row.artist}-${row.title}`.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const fromTags = energyFromRekordboxTags({ comment: stick?.comment });
+  const tagged = stick?.energyLevel ?? fromTags;
   return {
-    id: `rekordbox:lib:${stick ? stick.id : slug}`,
+    id: libraryRowTrackId(row),
     name: row.title,
     artists: [row.artist || "Unknown"],
     album: stick?.album || "rekordbox",
@@ -387,10 +416,8 @@ export function libraryTrackToSetTrack(
     note: "",
     // Set-Notiz stays empty — stick/MP3 comments only feed energyLevel.
     comment: "",
-    energyLevel:
-      stick?.energyLevel ??
-      row.energy ??
-      energyFromRekordboxTags({ comment: stick?.comment }),
+    energyLevel: tagged ?? row.energy,
+    energySource: tagged != null ? "tag" : undefined,
     filePath: stick?.filePath || "",
     source: "rekordbox",
     why: t("exports.stick.whyLibrary"),
@@ -423,6 +450,7 @@ function toSetTrack(
     // Set-Notiz is set-only; MP3/rekordbox Comments are not copied here.
     comment: "",
     energyLevel: track.energyLevel,
+    energySource: track.energyLevel != null ? "tag" : undefined,
     filePath: track.filePath,
     source: "rekordbox",
     why:

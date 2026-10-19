@@ -57,6 +57,36 @@ test("rehydrateStickCovers puts the file path back without changing order or rol
   assert.equal(next.tracks[1].filePath, "/Ada/Spare.mp3");
   assert.equal(next.tracks[0].id, "a");
   assert.equal(next.tracks[0].energyLevel, 6);
+  assert.equal(next.tracks[0].energySource, "tag");
+});
+
+test("rehydrateStickCovers treats an anonymous Energy 1 as missing", () => {
+  const draft = {
+    ...DEFAULT_SET,
+    tracks: [
+      track({
+        id: "a",
+        name: "Night Drive",
+        filePath: "/Ada/Night Drive.mp3",
+        energyLevel: 1,
+      }),
+      track({
+        id: "b",
+        name: "Kept",
+        filePath: "/Ada/Kept.mp3",
+        energyLevel: 1,
+        energySource: "manual",
+      }),
+    ],
+  };
+  const next = rehydrateStickCovers(draft, [
+    stick({ id: "7", title: "Night Drive", filePath: "/Ada/Night Drive.mp3", energyLevel: 8 }),
+    stick({ id: "8", title: "Kept", filePath: "/Ada/Kept.mp3", energyLevel: 4 }),
+  ]);
+  assert.equal(next.tracks[0].energyLevel, 8);
+  assert.equal(next.tracks[0].energySource, "tag");
+  assert.equal(next.tracks[1].energyLevel, 1);
+  assert.equal(next.tracks[1].energySource, "manual");
 });
 
 test("rehydrateStickCovers leaves unmatched tracks alone", () => {

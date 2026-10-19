@@ -3,12 +3,16 @@ import test from "node:test";
 import {
   PLAN_B_MIN,
   energyFromRekordboxTags,
+  energyReasonSummary,
+  energyStatusLine,
   energyStep,
+  hasKnownEnergy,
   isMetadataComment,
   parseEnergyField,
   parseEnergyLevel,
   planBCount,
   planBState,
+  settledEnergy,
 } from "./energy.ts";
 import { parseKeyImportText } from "./key-import.ts";
 
@@ -88,4 +92,35 @@ test("Plan B state names why an Alternative does not count", () => {
   assert.equal(planBState({ phase: "lift", energyLevel: 3 }), "below");
   assert.equal(planBState({ phase: "open", energyLevel: 9 }), "above");
   assert.equal(planBState({ phase: "open" }), "unknown");
+});
+
+test("anonymous Energy 1 is missing; a sourced 1 and any other level stay", () => {
+  assert.equal(hasKnownEnergy({ energyLevel: 1 }), false);
+  assert.equal(hasKnownEnergy({}), false);
+  assert.equal(hasKnownEnergy({ energyLevel: 1, energySource: "tag" }), true);
+  assert.equal(hasKnownEnergy({ energyLevel: 1, energySource: "measured" }), true);
+  assert.equal(hasKnownEnergy({ energyLevel: 1, energySource: "manual" }), true);
+  assert.equal(hasKnownEnergy({ energyLevel: 7 }), true);
+  assert.deepEqual(settledEnergy({ energyLevel: 1 }), {});
+  assert.deepEqual(settledEnergy({ energyLevel: 7 }), { energyLevel: 7 });
+  assert.deepEqual(settledEnergy({ energyLevel: 1, energySource: "manual" }), {
+    energyLevel: 1,
+    energySource: "manual",
+  });
+});
+
+test("energy status counts one repeated reason instead of repeating the sentence", () => {
+  assert.equal(energyReasonSummary([["Decoding failed", 48]]), "Decoding failed");
+  assert.equal(
+    energyReasonSummary([
+      ["Decoding failed", 46],
+      ["Could not measure energy from this file", 2],
+    ]),
+    "Decoding failed ×46 · Could not measure energy from this file ×2",
+  );
+  assert.equal(
+    energyStatusLine("48/248 · 0 übersprungen · 48 Fehler", [["Decoding failed", 48]]),
+    "48/248 · 0 übersprungen · 48 Fehler · Decoding failed",
+  );
+  assert.equal(energyStatusLine("0/10 · 0 skipped · 0 errors", []), "0/10 · 0 skipped · 0 errors");
 });
