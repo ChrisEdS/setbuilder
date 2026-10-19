@@ -11,69 +11,50 @@
 >
 > SETBUILDER soll dir deshalb keine Entscheidungen abnehmen. Es ist ein Werkzeug, das dir Orientierung gibt, Übergänge sichtbar macht und neue Ideen liefert. Nutze es als Hilfestellung und Inspiration – aber vertraue am Ende immer deinen Ohren.
 
-SETBUILDER bereitet DJ-Sets für rekordbox vor. Baue ein Set aus einer Stick-Playlist, durch Musik hinzufügen oder mit beidem. **Set laden & Keys** verbindet den Stick und reichert ein bestehendes Set bzw. die Bibliothek aus Collection-XML, CSV oder einer unverschlüsselten Datenbank an; diese Collection-Dateien starten oder ersetzen allein kein Set. Danach legst du den Bogen, prüfst Energie, Key und BPM und nimmst das Ergebnis mit — Stick für den Player, PDF/Text für die Kabine, XML/M3U für den Rechner.
+SETBUILDER ist der ruhige Raum vor dem Gig. Du nimmst einen rekordbox-Stick, legst der Nacht eine Form und gehst mit einem Set, das du spielen kannst: ein klarer Bogen, Keys, die zueinander passen, Energie, die steigt und fällt, und ein Plan B, wenn der Floor dreht.
 
-Die ausgelieferte App ist die Desktop-App auf Port **4317**. Die Browser-Entwicklung nutzt Port **4327**. Cover kommen aus `PIONEER/Artwork` auf dem Stick, danach aus dem ID3-APIC-Frame der MP3, wenn die Artwork-Datei fehlt; der Stick-Ordner muss in der Sitzung liegen. Die Setlisten-Zeile sind Icon-Buttons — Play, hoch, runter, Energie (Blitz), Ersatz, Opener (Fahne), Closer (karierte Flagge), Entfernen — jeweils mit demselben Hover-Tipp. Ersatz öffnet eine Schublade, die folgenden Tracks bleiben stehen; der Titel bleibt in der Kopfzeile, der Fokus geht hinein und kehrt bei Schließen oder Escape zurück. Play in dieser Liste ist derselbe runde Button wie in der Zeile. **Energie aus Dateien** zeigt die vier Aktionen nur, wenn Stick-Dateien da sind. Sonst steht eine Voraussetzung im Menü, und **Stick wählen**, wenn kein Stick verbunden ist. Der Vorhör-Player ist eine kompakte schwebende Karte, etwa 512px breit: am Titelstreifen ziehen, Schließen sitzt oben rechts, und die Karte bleibt über der Ersatz-Schublade, damit Play, Seek und Schließen erreichbar bleiben. Chrome und die installierte Desktop-App haben einen echten Stick nur lesend gezeigt. Stick-Schreiben, CDJ/XDJ-Wiedergabe, Spotify-/Tidal-Konten, Auswerfen und Energie-Kalibrierung auf echten Medien sind nicht geprüft.
+## Was du bekommst
 
-**Highlights**
-- ⚡ **Energie aus Dateien** — Tags lesen, fehlende/alle Werte messen oder Energie in MP3 schreiben; Schreiben mit Prüfung und Rollback, Audio unverändert
-- 🔑 **Key-Verlauf** — Camelot entlang des Sets mit Mix-Score, Clash-Badges und Mixed-In-Key-Sortierungen
-- 🎯 **Perfekt-Sort** — Ganzes Set als Camelot-TSP (Held-Karp): Clashes killen, Mix-Score maximieren; Opener/Closer bleiben
-- 🎲 **Andere Songs** — Aus dem Playlist-Pool eine neue Performance für denselben Brief würfeln
-- 🎚️ **Bogen & Energie** — Phasen Open→Release gegen Zielbänder; Sprünge sichtbar
-- 📌 **Opener & Closer** — Enden pinnen oder aktuelle erste/letzte Tracks; jede Sortierung respektiert sie
-- 💾 **Stick-Rundreise** — Gezieltes, transaktionales Aktualisieren einer vorhandenen SETBUILDER-Playlist in der aktuellen `export.pdb`; fremde Änderungen bleiben erhalten, mit Backup, Rücklesen und Rollback
-- 🎒 **Mitnehmen** — Menü nach Player / Kabine / Rechner; Stick schreiben zuerst
-- 🛟 **Plan B** — Rollen und Alternativen pro Phase, wenn der Floor dreht
+- **Ein Set mit Form.** Open, Lift, Peak, Release. Du siehst, wo die Nacht dünn ist und wo sie schon voll ist.
+- **Keys, denen du trauen kannst.** Camelot entlang des Sets, Clashes markiert, bevor du in der Kabine stehst.
+- **Energie, die zum Track gehört.** Aus den Dateien lesen, Fehlendes messen oder selbst setzen.
+- **Opener und Closer, die bleiben.** Jede Sortierung respektiert die Enden, die du gepinnt hast.
+- **Eine andere Nacht aus derselben Kiste.** Für denselben Brief eine neue Auswahl würfeln, wenn der erste Cast nicht trägt.
+- **Plan B.** Rollen und Alternativen für den Moment, in dem der Floor es sich anders überlegt.
+- **Ein Player, der nicht im Weg ist.** Eine kleine Karte, die du ziehen kannst. Schließen sitzt in der Ecke. Er bleibt erreichbar, während du einen Track ersetzt.
+- **Etwas zum Mitnehmen.** Der Stick für den Player, PDF oder Text für die Kabine, eine Datei für den Rechner.
 
-## So läuft ein Set
+## Vier Schritte
 
-1. **Brief** — Titel, Vibe, Venue, Slot-Art und Dauer
-2. **Set laden & Keys** — Stick verbinden und das aktuelle Set/die Bibliothek optional aus XML, CSV oder DB anreichern
-3. **Set bauen** — mit einer Stick-Playlist starten, Musik hinzufügen oder beides kombinieren; dann Phasen, Rollen und Reihenfolge setzen
-4. **Mitnehmen** — Stick schreiben, dann PDF / Text, oder XML / M3U
+1. **Brief** — Titel, Vibe, Raum, Slot, Länge
+2. **Laden** — Stick verbinden. Eine Collection kann Keys ergänzen; sie ersetzt das Set nicht.
+3. **Bauen** — mit einer Playlist starten, Musik hinzufügen oder beides. Dann Phase, Rolle und Reihenfolge.
+4. **Mitnehmen** — Stick schreiben, Kabinenzettel drucken oder eine Datei exportieren.
 
-📖 **Ausführliche Anleitung mit Screenshots:** [docs/GUIDE.de.md](docs/GUIDE.de.md)
+📖 **Anleitung mit Screenshots:** [docs/GUIDE.de.md](docs/GUIDE.de.md)
 
-🧪 **4.0-Notizen:** [docs/RELEASE-4.0-RC.md](docs/RELEASE-4.0-RC.md). Stick-Schreiben, Player und Streaming-Konten sind weiter ungeprüft.
+> Spiel den Stick vor dem Gig am echten Player. SETBUILDER legt ein Backup ab, die Nacht bleibt deine.
 
-Die Zeit ist eine Schätzung: Jeder Performance-Track zählt mit seiner Dauer minus fixer zwei Minuten Überblendung, mindestens jedoch 30 Sekunden. Cue-Punkte, Übergangsstil und Live-Entscheidungen werden nicht modelliert.
+## Download
 
-> Stick vor dem Gig immer am echten Player testen. SETBUILDER legt Kopien unter `SETBUILDER-Backup/` ab; Browser-Rechte, Abbruch/voller Datenträger, rekordbox-Tag-Reload/Import, Player-Familien und echte Medien bleiben externe Prüfgrenzen.
+Die App gibt es für Mac, Windows und Linux. Hol sie dir unter [GitHub Releases](https://github.com/ChrisEdS/setbuilder/releases).
 
-## Setup
+Auf dem Mac braucht ein unsignierter Download manchmal einmal das hier:
 
-1. Optional (nur Spotify / Tidal): Spotify Developer App mit **Web API**. rekordbox allein braucht keine Zugangsdaten.
-2. Redirect URI **exakt**: `http://127.0.0.1:4317/api/auth/callback`  
-   Tidal: `http://127.0.0.1:4317/api/auth/tidal/callback`
-3. Dich selbst als User hinzufügen (Development Mode)
-4. Keys unter **Einstellungen** in der App eintragen, oder in `.env.local` (Vorlage: [`.env.example`](.env.example))
-5. Starten:
+```bash
+xattr -dr com.apple.quarantine /Applications/SETBUILDER.app
+```
+
+## Für Entwickler
+
+rekordbox allein braucht kein Konto. Spotify und Tidal sind optional und nutzen eine Weiterleitung auf `http://127.0.0.1:4317/api/auth/callback` (Tidal: `…/api/auth/tidal/callback`). Keys trägst du unter **Einstellungen** ein oder in `.env.local` ([`.env.example`](.env.example)).
 
 ```bash
 npm install
 npm run dev
 ```
 
-Dev: [http://127.0.0.1:4327](http://127.0.0.1:4327). Desktop-App: Port **4317**.
-
-## Desktop
-
-Paketierte App für Mac, Windows und Linux: [`desktop/README.md`](desktop/README.md). Releases: [GitHub Releases](https://github.com/ChrisEdS/setbuilder/releases).
-
-Unsignierte Mac-Downloads brauchen einmal Quarantäne entfernen:
-
-```bash
-xattr -dr com.apple.quarantine /Applications/SETBUILDER.app
-```
-
-## Sprachen & Tests
-
-Oberfläche und Exporte folgen **DE / EN** (gespeichert als `setbuilder-lang`). Texte in [`src/lib/i18n/messages`](src/lib/i18n/messages).
-
-```bash
-npm test
-```
+Die Desktop-App nutzt Port **4317**. Der Dev-Server nutzt [Port 4327](http://127.0.0.1:4327). Hinweise zum Paketieren stehen in [`desktop/README.md`](desktop/README.md). Die Oberfläche ist Deutsch und Englisch. Tests: `npm test`.
 
 ## Spenden
 
@@ -81,4 +62,4 @@ SETBUILDER bleibt kostenlos und offen. Unterstützung über **[GitHub Sponsors @
 
 ## Lizenz
 
-MIT, siehe [LICENSE](LICENSE). Die clientseitige Energie-Analyse nutzt essentia.js (AGPL-3.0); siehe [THIRD_PARTY.md](THIRD_PARTY.md).
+MIT, siehe [LICENSE](LICENSE). Die Energiemessung nutzt essentia.js (AGPL-3.0); siehe [THIRD_PARTY.md](THIRD_PARTY.md).

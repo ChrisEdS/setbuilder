@@ -11,69 +11,50 @@
 >
 > SETBUILDER is not here to take decisions away from you. It is a tool that gives you orientation, makes transitions visible and sparks new ideas. Use it as help and inspiration — but in the end, always trust your ears.
 
-SETBUILDER prepares DJ sets for rekordbox. Build a set from a stick playlist, by adding music, or with both. **Load set & keys** connects the stick and enriches an existing set/library from collection XML, CSV or an unencrypted database; those collection files do not start or replace a set by themselves. Then lay out the arc, check energy, key and BPM, and take the result with you — stick write for the player, PDF/text for the booth, XML/M3U for the computer.
+SETBUILDER is the quiet prep room before the gig. You bring a rekordbox stick, shape the night, and leave with a set you can actually play: a clear arc, keys that talk to each other, energy that rises and falls, and a Plan B when the floor turns.
 
-The shipping client is the desktop app on port **4317**. Browser development uses port **4327**. Covers come from `PIONEER/Artwork` on the stick, then from the MP3 ID3 APIC frame when that artwork file is missing; the stick folder has to be in the session. Setlist rows are icon buttons — play, up, down, energy (lightning), replace, opener (flag), closer (checkered flag), remove — and each uses the same hover tip. Replace opens a drawer, so later tracks stay put; the header keeps the track name, focus moves into the drawer, and close or Escape returns focus. Play in that list is the same round button as on the row. **Energy from files** shows its four actions only when stick files are present. Otherwise it shows one prerequisite, and **Choose stick** when no stick is connected. Preview is a compact floating card about 512px wide: drag the title strip, Close sits at the top right, and the card stays above the Replace drawer so play, seek and close remain reachable. Chrome and the installed desktop app have shown a real stick read-only. Stick write, CDJ/XDJ playback, Spotify/Tidal accounts, eject, and energy calibration on real media are not verified.
+## What you get
 
-**Highlights**
-- ⚡ **Energy from files** — Separately read tags, measure missing/recalculate, or write Energy to MP3; writes are verified and rolled back on failure, audio unchanged
-- 🔑 **Key path** — Camelot along the set with mix score, clash badges and Mixed In Key–style sorts
-- 🎯 **Perfect sort** — Whole-set Camelot TSP (Held-Karp): kill clashes, max mix score; opener/closer stay
-- 🎲 **Different songs** — Reshuffle a new performance from the playlist pool for the same brief
-- 🎚️ **Arc & energy** — Phases Open→Release against target bands; jumps called out
-- 📌 **Opener & closer** — Pin ends, or keep the current first/last track; every sort respects them
-- 💾 **Stick round-trip** — Targeted, transactional update of an existing SETBUILDER playlist in the current `export.pdb`; unrelated database changes are preserved, with backup, read-back and rollback
-- 🎒 **Take with you** — Menu grouped by player / booth / computer; stick write first
-- 🛟 **Plan B** — Roles and alternatives per phase when the floor turns
+- **A set with a shape.** Open, lift, peak, release. You see where the night is thin and where it is already full.
+- **Keys you can trust.** Camelot along the set, with clashes marked before you are in the booth.
+- **Energy that belongs to the track.** Read it from your files, measure what is missing, or set it by hand.
+- **An opener and a closer that stay put.** Every sort respects the ends you pinned.
+- **Another night from the same crate.** Roll a different selection for the same brief when the first cast is not the one.
+- **Plan B.** Roles and alternatives for the moment the floor changes its mind.
+- **A player that stays out of the way.** A small card you can drag. Close sits in the corner. It stays reachable while you replace a track.
+- **Something to take with you.** The stick for the player, a PDF or a text list for the booth, a file for the computer.
 
-## How a set works
+## Four steps
 
-1. **Brief** — title, vibe, venue, slot type and duration
-2. **Load set & keys** — connect a stick and optionally enrich the current set/library from XML, CSV or DB
-3. **Build the set** — start from a stick playlist, add music, or combine both; then set phases, roles and order
-4. **Take with you** — stick write, then PDF / text, or XML / M3U
+1. **Brief** — title, vibe, room, slot, length
+2. **Load** — connect the stick. A collection file can fill in keys; it does not replace the set.
+3. **Build** — start from a playlist, add music, or both. Then phase, role, and order.
+4. **Take it** — write the stick, print the booth sheet, or export a file.
 
-📖 **Full walkthrough with screenshots:** [docs/GUIDE.md](docs/GUIDE.md)
+📖 **Walkthrough with screenshots:** [docs/GUIDE.md](docs/GUIDE.md)
 
-🧪 **4.0 notes:** [docs/RELEASE-4.0-RC.md](docs/RELEASE-4.0-RC.md). Stick write, players, and streaming accounts are still unverified.
+> Play the stick on the actual player before the gig. SETBUILDER keeps a backup, and you still own the night.
 
-Set timing is an estimate: each performance track contributes its duration minus a fixed two-minute overlap, with a minimum contribution of 30 seconds. It does not model cue points, transition style or live decisions.
+## Download
 
-> Always test the stick on the actual player before a gig. SETBUILDER keeps copies under `SETBUILDER-Backup/`, but browser permissions, disconnects/full disks, rekordbox tag reload/import, player families and real media remain external verification boundaries.
+The app ships for Mac, Windows and Linux. Grab it from [GitHub Releases](https://github.com/ChrisEdS/setbuilder/releases).
 
-## Setup
+On a Mac, an unsigned download sometimes needs this once:
 
-1. Optional (Spotify / Tidal only): create a Spotify Developer app with **Web API**. rekordbox alone needs no credentials.
-2. Redirect URI **exactly**: `http://127.0.0.1:4317/api/auth/callback`  
-   Tidal: `http://127.0.0.1:4317/api/auth/tidal/callback`
-3. Add yourself as a user (Development Mode)
-4. Enter keys under **Settings** in the app, or in `.env.local` (template: [`.env.example`](.env.example))
-5. Run:
+```bash
+xattr -dr com.apple.quarantine /Applications/SETBUILDER.app
+```
+
+## For developers
+
+rekordbox on its own needs no account. Spotify and Tidal are optional and use a redirect to `http://127.0.0.1:4317/api/auth/callback` (Tidal: `…/api/auth/tidal/callback`). Keys go under **Settings**, or into `.env.local` ([`.env.example`](.env.example)).
 
 ```bash
 npm install
 npm run dev
 ```
 
-Dev: [http://127.0.0.1:4327](http://127.0.0.1:4327). Desktop app: port **4317**.
-
-## Desktop
-
-Packaged app for Mac, Windows and Linux: [`desktop/README.md`](desktop/README.md). Releases: [GitHub Releases](https://github.com/ChrisEdS/setbuilder/releases).
-
-Unsigned Mac downloads may need quarantine removed once:
-
-```bash
-xattr -dr com.apple.quarantine /Applications/SETBUILDER.app
-```
-
-## Languages & tests
-
-UI and exports follow **DE / EN** (stored as `setbuilder-lang`). Messages live in [`src/lib/i18n/messages`](src/lib/i18n/messages).
-
-```bash
-npm test
-```
+The desktop app uses port **4317**. The dev server uses [port 4327](http://127.0.0.1:4327). Packaging notes live in [`desktop/README.md`](desktop/README.md). The interface is German and English. Tests: `npm test`.
 
 ## Donate
 
@@ -81,4 +62,4 @@ SETBUILDER stays free and open. Support via **[GitHub Sponsors @ChrisEdS](https:
 
 ## License
 
-MIT, see [LICENSE](LICENSE). Client-side energy analysis uses essentia.js (AGPL-3.0); see [THIRD_PARTY.md](THIRD_PARTY.md).
+MIT, see [LICENSE](LICENSE). Energy measurement uses essentia.js (AGPL-3.0); see [THIRD_PARTY.md](THIRD_PARTY.md).
