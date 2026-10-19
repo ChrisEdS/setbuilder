@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import { Manrope, Space_Grotesk } from "next/font/google";
 import { DesktopFrame } from "@/components/DesktopFrame";
@@ -30,7 +31,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
       lang="de"
