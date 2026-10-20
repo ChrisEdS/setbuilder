@@ -10,12 +10,12 @@ Die ausgelieferte App ist die Desktop-App (Port **4317**). Die Browser-Entwicklu
 
 ## So läuft ein Set mit rekordbox
 
-1. **Brief:** Titel, Vibe, Venue, Slot-Art und Dauer.
-2. **Set laden & Keys:** Stick verbinden und das aktuelle Set/die Bibliothek optional aus Collection-XML, CSV oder unverschlüsselter Datenbank anreichern.
-3. **Set bauen:** mit Stick-Playlist starten, Musik hinzufügen oder beides kombinieren; dann Phasen, Rollen und Reihenfolge prüfen.
-4. **Exportieren:** Stick-Playlist aktualisieren, Kabinen-PDF/Text erstellen oder XML/M3U exportieren.
+1. **Brief:** Titel, Dauer und durchschnittliche Blend-Zeit. Set-Info (Vibe, Venue, Slot, Audience, Gear, Notes) klappt zu; das sind Notizen zum Gig, nicht die Uhr.
+2. **Stick laden & vorbereiten:** Stick verbinden und das aktuelle Set/die Bibliothek optional aus Collection-XML, CSV oder unverschlüsselter Datenbank anreichern.
+3. **Set bauen:** mit Stick-Playlist starten, Musik hinzufügen oder beides kombinieren; dann Phasen, Rollen, Reihenfolge und jeden Anschluss prüfen.
+4. **Exportieren:** das Set im Setbuilder speichern, die Stick-Playlist aktualisieren, Kabinen-PDF/Text erstellen oder XML/M3U exportieren.
 
-## 1. Set laden & Keys
+## 1. Stick laden & vorbereiten
 
 ![Stick einrichten und Collection anreichern](screenshots/de/01-stick-setup-v400.png)
 
@@ -31,7 +31,7 @@ Die ausgelieferte App ist die Desktop-App (Port **4317**). Die Browser-Entwicklu
 
 **Set-Notiz.** In den Track-Details ist die **Set-Notiz** nur für die Kabine (Cue, Floor). Sie erscheint in PDF und kopiertem Text, niemals in rekordbox Comments oder ID3-Tags.
 
-**Energie aus Dateien.** Wenn Stick-Dateien da sind, trennt das Menü **Aus Tags lesen** (ohne Audio-Decoding), **Fehlende messen**, **Alle neu berechnen** (messen ohne Schreiben) und **In MP3 schreiben**. Ohne verbundenen Stick zeigt das Menü genau diese Voraussetzung und **Stick wählen** — das öffnet den vorhandenen Stick-Dialog unter Set laden & Keys. Ist der Stick da, aber kein Track hat einen Dateipfad, steht diese Voraussetzung statt vier leerer Aktionen. MP3-Schreiben ergänzt `TXXX EnergyLevel` plus `Energy N` im Dateikommentar; jede ersetzte Datei wird erneut geöffnet und bytegenau geprüft, bei Fehler wird das Original wiederhergestellt. Key, BPM, Set-Notiz und Audiodaten bleiben unverändert. Danach Tags in rekordbox neu laden; `export.pdb` und die `master.db` auf dem Rechner werden durch diese Aktion nicht geändert. Die Analyse nutzt [essentia.js](https://github.com/MTG/essentia.js) (AGPL-3.0). Die Kalibrierung mit echten Medien ist nicht geprüft.
+**Energie aus Dateien.** Wenn Stick-Dateien da sind, trennt das Menü **Aus Tags lesen** (ohne Audio-Decoding), **Fehlende messen**, **Alle neu berechnen** (messen ohne Schreiben) und **In MP3 schreiben**. Ohne verbundenen Stick zeigt das Menü genau diese Voraussetzung und **Stick wählen** — das öffnet den vorhandenen Stick-Dialog unter Stick laden & vorbereiten. Ist der Stick da, aber kein Track hat einen Dateipfad, steht diese Voraussetzung statt vier leerer Aktionen. MP3-Schreiben ergänzt `TXXX EnergyLevel` plus `Energy N` im Dateikommentar; jede ersetzte Datei wird erneut geöffnet und bytegenau geprüft, bei Fehler wird das Original wiederhergestellt. Key, BPM, Set-Notiz und Audiodaten bleiben unverändert. Danach Tags in rekordbox neu laden; `export.pdb` und die `master.db` auf dem Rechner werden durch diese Aktion nicht geändert. Die Analyse nutzt [essentia.js](https://github.com/MTG/essentia.js) (AGPL-3.0). Die Kalibrierung mit echten Medien ist nicht geprüft.
 
 ## 2. Set bauen
 
@@ -44,11 +44,13 @@ Unter **Set bauen** wählst du **Mit einer Playlist starten** vom verbundenen St
 
 Collection-XML/CSV/DB löst diese Auswahl nie aus, weil es nur Metadaten und Bibliothek anreichert.
 
-Jeder Track zeigt die Quelle (rekordbox), Phase und Rolle. Phase und Rolle stehen in einer Zeile. Darunter liegen Icon-Buttons: Play, hoch, runter, Energie (Blitz), Ersatz, Opener (Fahne), Closer (karierte Flagge) und Entfernen. Energie nutzt denselben Hover-Tipp wie die anderen Icons. Darunter stehen Key, BPM und Energie, der Übergang zum Vorgänger („Nachbar-Key (±1) · +1 BPM · Energie +1“) und die Begründung („Warum hier“). Die Reihenfolge änderst du per Ziehen oder mit den Pfeilen.
+Jeder Track zeigt die Quelle (rekordbox), Phase und Rolle. Die Zahl und der Ziehgriff bleiben auf der Titelzeile; aufgeklappte Details ziehen sie nicht mit. Phase und Rolle stehen in einer Zeile. Darunter liegen Icon-Buttons: Play, Vorhören, hoch, runter, Energie (Blitz), Ersatz, Opener (Fahne), Closer (karierte Flagge) und Entfernen. Energie nutzt denselben Hover-Tipp wie die anderen Icons. Unter dem Titel stehen der Anschluss zum Vorgänger („Nachbar-Key (±1) · +1 BPM · Energie +1“) und die Begründung („Warum hier“). **Details** hält Key, BPM, Energie, den Übergang, seine Länge und die Set-Notiz. **So ist es gedacht**, neben Set bauen, sagt, wofür jedes davon da ist. Die Reihenfolge änderst du am Griff oder mit den Pfeilen.
+
+Ein Übergang markiert, wie du in den nächsten Track gehst: Cut, Short blend, Long blend, EQ swap, Echo-out und die übrigen. Er wird nicht in die Audiodatei geschrieben. „—“ heißt keine Marke, und dieser Anschluss behält die Blend-Zeit aus dem Brief. **Länge** ist die Überlappung: diese Zeit geht von der Spielzeit ab, Slot-Zeile und Überlänge folgen ihr. Du wählst eine Länge oder tippst sie. Lässt du sie leer, schlägt der Übergang eine Zeit vor. **Zurücksetzen**, neben Exportieren, fragt zuerst und leert dann das Set.
 
 **Ersatz** öffnet eine Schublade über der Setliste, die Tracks darunter rutschen nicht. Die Kopfzeile behält den Tracknamen („Für „Name““). Der Fokus geht in die Schublade; Schließen oder Escape bringt ihn zum Ersatz-Button zurück. Play in dieser Liste ist derselbe runde Play-Button wie in der Setlisten-Zeile. Einsetzen tauscht den Titel.
 
-Der Vorhör-Player ist eine kompakte schwebende Karte, etwa 512px breit, keine Leiste über die ganze Fensterbreite. Am Titelstreifen ziehen; die Karte bleibt im Fenster. Schließen sitzt oben rechts. Zurück, Play/Pause und Weiter bleiben zusammen. Die Karte liegt über der Ersatz-Schublade, der Player bleibt erreichbar, solange Ersatz offen ist.
+Der Vorhör-Player ist eine kompakte schwebende Karte. Am Titelstreifen ziehen; an der rechten Kante breiter, an der unteren Kante höher; die Karte bleibt im Fenster. Schließen sitzt oben rechts. Vorhören zeigt Vorher, diesen Track und Nächsten, mit denselben Übergangschips und derselben Länge wie die Setliste. Die Karte liegt über der Ersatz-Schublade, der Player bleibt erreichbar, solange Ersatz offen ist.
 
 ![Vorhör-Player](screenshots/de/02-preview-player-v400.png)
 
@@ -69,9 +71,9 @@ Der Vorhör-Player ist eine kompakte schwebende Karte, etwa 512px breit, keine L
   | **Camelot-Reise** | Pro Phase: im Uhrzeigersinn ums Wheel (stapelt denselben Key nicht) |
   | **Wellen** | Pro Phase: im Peak Groove ↔ Impact (Anchor); sonst Low/High-Energie |
 
-- **Andere Songs:** zwischen Sortieren und Energie. Würfelt eine neue Performance für denselben Brief aus der Stick-Bibliothek (alle Playlists auf dem Export-Stick) oder, nach einem Extract, aus diesem Playlist-Pool. Confirm vorher; Opener/Closer-Pins bleiben, Notizen gehen verloren. Ohne größere Auswahl als das Set bleibt der Button aus.
+- **Andere Songs:** ein kurzes Menü zwischen Sortieren und Energie. **Andere Tracks** nutzt denselben Pool wie früher (den Playlist-Pool, sonst die Stick-Bibliothek). **Aus der Playlist**, **Aus der Collection** und **Aus der History** nehmen diese geladene Quelle. Ein Eintrag bleibt sichtbar und ist deaktiviert, mit kurzer Begründung, wenn sein Pool nicht geladen ist. Vorher die Rückfrage; Opener/Closer-Pins bleiben, Notizen gehen verloren.
 - **Energie aus Dateien:** mit Stick-Dateien Tags lesen, fehlende messen, alle neu berechnen oder gesetzte Level ausdrücklich in MP3 schreiben. Messen schreibt keine Dateien. Ohne Stick zeigt das Menü diese Voraussetzung und **Stick wählen**. Ohne Dateipfade steht die Voraussetzung statt vier leerer Aktionen.
-- **Auf Slot kürzen:** behält pro Phase die Tracks, deren Energie ins Band passt; der Rest wandert unter Alternativen
+- **Auf Slot kürzen:** behält pro Phase die Tracks, deren Energie ins Band passt; der Rest wandert unter Alternativen. Ein Rückgängig holt genau diese Tracks in Rolle, Phase und Platz zurück. Ein zweites Kürzen ersetzt diese Momentaufnahme.
 - **Rollen verteilen:** Anchor auf den stärksten Peak-Tracks und den Schluss, Bridge bei Phasenwechsel, Key-Clash, BPM- oder Energie-Sprung, sonst Groove
 - **Spotify-Links suchen:** sucht zu Tracks ohne Link einen Spotify-Treffer, damit du sie im Set vorhören kannst (braucht die Spotify-Zugangsdaten, siehe [Setup im README](../README.de.md#setup)). Der rekordbox-Export bleibt davon unberührt.
 
@@ -117,7 +119,7 @@ Sortieren (besonders **Perfekt · Max Score**), Ziehen oder Key/Energie in der S
 
 Bevor etwas mitgeht, fragt eine Checkliste nach fehlenden Dateien, Keys, Energie, einem dünnen Plan B und ob du das Set am Player gehört hast. Nur eine Lücke, die diese Aktion zur Lüge machen würde, hält sie auf. Im Player hörst du den Übergang vor: vorher, dieser Track, nächster, die Übergangsmarkierung und die Set-Notiz.
 
-Das Menü **Exportieren** ist nach Ziel gruppiert:
+Das Menü **Exportieren** ist nach Ziel gruppiert. **Set speichern**, unter Im Setbuilder, öffnet das vorhandene Speichern unter Verbindungen & Setups. Es startet die Checkliste nicht und schreibt den Stick nicht.
 
 ### Für den Player
 

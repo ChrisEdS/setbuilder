@@ -10,12 +10,12 @@ The shipping client is the desktop app (port **4317**). Browser development uses
 
 ## How a set works with rekordbox
 
-1. **Brief:** title, vibe, venue, slot type and duration.
-2. **Load set & keys:** connect the stick and optionally enrich the current set/library from collection XML, CSV or an unencrypted database.
-3. **Build set:** start with a stick playlist, add music, or do both; then check phases, roles and order.
-4. **Export:** update the stick playlist, make booth PDF/text, or export XML/M3U.
+1. **Brief:** title, duration, and average blend time. Set info (vibe, venue, slot, audience, gear, notes) folds away; it is notes for the gig, not the clock.
+2. **Load stick & prepare:** connect the stick and optionally enrich the current set/library from collection XML, CSV or an unencrypted database.
+3. **Build set:** start with a stick playlist, add music, or do both; then check phases, roles, order, and each join.
+4. **Export:** save the set in SETBUILDER, update the stick playlist, make booth PDF/text, or export XML/M3U.
 
-## 1. Load set & keys
+## 1. Load stick & prepare
 
 ![Stick setup and collection enrichment](screenshots/en/01-stick-setup-v400.png)
 
@@ -31,7 +31,7 @@ The shipping client is the desktop app (port **4317**). Browser development uses
 
 **Set note.** In setlist details, **Set note** is booth-only (cue, floor). It appears in PDF and copied text, never in rekordbox Comments or ID3 tags.
 
-**Energy from files.** When stick files are present, the menu separates **Read from tags** (no audio decode), **Measure missing**, **Recalculate all** (measure without writing), and **Write to MP3**. If no stick is connected, the menu shows that one prerequisite and **Choose stick**, which opens the existing stick picker under Load set & keys. If the stick is connected but no track has a file path, it shows that prerequisite instead of four empty actions. MP3 writes add `TXXX EnergyLevel` plus `Energy N` in the file comment; each replacement is reopened and byte-verified, and the original is restored if verification fails. Key, BPM, set notes and audio bytes stay unchanged. Reload tags in rekordbox afterwards; `export.pdb` and computer `master.db` are not edited by this action. Analysis uses [essentia.js](https://github.com/MTG/essentia.js) (AGPL-3.0). Calibration on real media is not verified.
+**Energy from files.** When stick files are present, the menu separates **Read from tags** (no audio decode), **Measure missing**, **Recalculate all** (measure without writing), and **Write to MP3**. If no stick is connected, the menu shows that one prerequisite and **Choose stick**, which opens the existing stick picker under Load stick & prepare. If the stick is connected but no track has a file path, it shows that prerequisite instead of four empty actions. MP3 writes add `TXXX EnergyLevel` plus `Energy N` in the file comment; each replacement is reopened and byte-verified, and the original is restored if verification fails. Key, BPM, set notes and audio bytes stay unchanged. Reload tags in rekordbox afterwards; `export.pdb` and computer `master.db` are not edited by this action. Analysis uses [essentia.js](https://github.com/MTG/essentia.js) (AGPL-3.0). Calibration on real media is not verified.
 
 ## 2. Build set
 
@@ -44,11 +44,13 @@ Under **Build set**, choose **Start with a playlist** from the connected stick, 
 
 Collection XML/CSV/DB never triggers this choice because it only enriches metadata and the library.
 
-Each track shows its source (rekordbox), phase and role. Phase and role sit on one row. The next row is icon buttons: play, up, down, energy (lightning), replace, opener (flag), closer (checkered flag), and remove. Energy uses the same hover tip as the other icons. Below are key, BPM and energy, the transition from the previous track (“Adjacent key (±1) · +1 BPM · Energy +1”) and the reasoning (“Why here”). Change the order by dragging or with the arrows.
+Each track shows its source (rekordbox), phase and role. The number and the drag grip stay on the title line; opening details does not move them. Phase and role sit on one row. The next row is icon buttons: play, rehearse, up, down, energy (lightning), replace, opener (flag), closer (checkered flag), and remove. Energy uses the same hover tip as the other icons. Under the title, the join from the previous track (“Adjacent key (±1) · +1 BPM · Energy +1”) and the reasoning (“Why here”). **Details** holds key, BPM, energy, the transition, its length, and the set note. **How this works**, next to Build set, says what each of those is for. Change the order by dragging the grip or with the arrows.
+
+A transition marks how you go into the next track — cut, short blend, long blend, EQ swap, echo-out, and the others. It is not written into the audio file. “—” means no mark, and that join keeps the average blend from the brief. **Length** is the overlap: that time comes off the playing time, so the slot line and the overrun follow it. Pick a length or type one. If you leave it, the chosen transition suggests a time. **Reset**, beside Export, asks first and then clears the set.
 
 **Replace** opens a drawer over the setlist, so the tracks below do not move. The header keeps the track name (“For «name»”). Focus moves into the drawer; Close or Escape returns it to the replace button. Play in that list is the same round play button as on the setlist row. Insert swaps the title.
 
-Preview plays in a compact floating card about 512px wide, not a bar across the window. Drag the title strip; the card stays inside the window. Close is at the top-right corner. Previous, play/pause and next stay together. The card floats above the Replace drawer, so the player stays reachable while Replace is open.
+Preview plays in a compact floating card. Drag the title strip; pull the right edge wider and the bottom edge taller; the card stays inside the window. Close is at the top-right corner. Rehearse shows previous, this track, and next, with the same transition chips and length as the setlist. The card floats above the Replace drawer, so the player stays reachable while Replace is open.
 
 ![Preview player](screenshots/en/02-preview-player-v400.png)
 
@@ -69,9 +71,9 @@ Preview plays in a compact floating card about 512px wide, not a bar across the 
   | **Camelot journey** | Per phase: clockwise around the wheel (does not stack the same key) |
   | **Waves** | Per phase: in Peak, groove ↔ impact (anchor); else low/high energy |
 
-- **Different songs:** between Sort and Energy. Picks a new performance for the same brief from the stick library (every playlist on the export stick) or, after an extract, from that playlist pool. Confirms first; opener/closer pins stay, notes are lost. Stays disabled when nothing larger than the set is loaded.
+- **Different songs:** a short menu between Sort and Energy. **Different songs** uses the same pool as before (the playlist pool, otherwise the stick library). **From the playlist**, **From the collection**, and **From history** use that loaded source. An entry stays visible and is disabled, with a short reason, when its pool is not loaded. Confirms first; opener/closer pins stay, notes are lost.
 - **Energy from files:** with stick files present, read tags, measure missing, recalculate all, or explicitly write known levels to MP3. Measuring does not write files. Without a stick, the menu shows that prerequisite and **Choose stick**. Without file paths, it shows that prerequisite instead of four empty actions.
-- **Trim to slot:** keeps, per phase, the tracks whose energy fits the band; the rest moves to Alternatives
+- **Trim to slot:** keeps, per phase, the tracks whose energy fits the band; the rest moves to Alternatives. One undo puts those tracks back in their previous role, phase, and place. A second trim replaces that snapshot.
 - **Assign roles:** Anchor on the strongest Peak tracks and the closer, Bridge at a phase change, key clash, BPM or energy jump, otherwise Groove
 - **Find Spotify links:** looks up a Spotify match for tracks without a link so you can preview them in the set (needs the Spotify credentials, see [Setup in the README](../README.md#setup)). Your rekordbox export is unaffected.
 
@@ -117,7 +119,7 @@ Sort (especially **Perfect · Max score**), drag, or change key/energy in the se
 
 Before anything leaves, a checklist asks about missing files, keys, energy, a thin Plan B, and whether you have heard the set on the player. Only a gap that would make that action a lie blocks it. In the player, rehearse the join: previous, this track, next, the transition mark and the set note.
 
-The **Export** menu is grouped by where the set goes next:
+The **Export** menu is grouped by where the set goes next. **Save set**, under In SETBUILDER, opens the existing save under Connections & setups. It does not run the checklist and does not write the stick.
 
 ### For the player
 

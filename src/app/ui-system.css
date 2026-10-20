@@ -82,8 +82,19 @@
   display: grid;
   grid-template-columns: minmax(16rem, 0.8fr) minmax(0, 1.3fr);
   gap: var(--ui-space-6);
-  align-items: center;
+  align-items: start;
   min-width: 0;
+}
+
+.set-shell .hero-copy {
+  position: sticky;
+  top: 1rem;
+  align-self: start;
+  z-index: 2;
+}
+
+html[data-frame="mac"] .set-shell .hero-copy {
+  top: 3.75rem;
 }
 
 .set-shell .hero-copy h1 {

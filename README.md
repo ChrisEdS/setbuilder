@@ -4,14 +4,11 @@
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
 
-**Version 4.1.0** · Dramaturgy, not a playlist.
+**Version 4.1.0** · Out of the playlist.
 
-> A good set does not have to be perfect.  
-> Music can be analyzed, sorted and planned — but in the end your ears, your feel and the moment on the dancefloor decide. No score and no algorithm can replace what you perceive as a DJ.
->
-> SETBUILDER is not here to take decisions away from you. It is a tool that gives you orientation, makes transitions visible and sparks new ideas. Use it as help and inspiration — but in the end, always trust your ears.
+The stick is the material. You draw the arc, set each join and its length, and hear if it holds.
 
-SETBUILDER is the quiet prep room before the gig. You bring a rekordbox stick, shape the night, and leave with a set you can actually play: a clear arc, keys that talk to each other, energy that rises and falls, and a Plan B when the floor turns.
+SETBUILDER is the quiet room before the gig. You bring a rekordbox stick, shape the night, and leave with a set you can actually play: a clear arc, keys that talk to each other, energy that rises and falls, and a Plan B when the floor turns.
 
 ## What you get
 
@@ -19,17 +16,18 @@ SETBUILDER is the quiet prep room before the gig. You bring a rekordbox stick, s
 - 🔑 **Keys you can trust.** Camelot along the set, with clashes marked before you are in the booth.
 - ⚡ **Energy that belongs to the track.** Read it from your files, measure what is missing, or set it by hand.
 - 📌 **An opener and a closer that stay put.** Every sort respects the ends you pinned.
-- 🎲 **Another night from the same crate.** Roll a different selection for the same brief when the first cast is not the one.
+- 🎛️ **A mark on every join.** Cut, blend, echo-out, and the rest. Each one has a length, and the slot clock follows it. “—” keeps the average blend from the brief.
+- 🎲 **Another night from the same crate.** Different songs, the playlist, the collection, or history — when that pool is actually loaded.
 - 🛟 **Plan B.** Roles and alternatives for the moment the floor changes its mind.
-- 🎧 **A player that stays out of the way.** A small card you can drag. Close sits in the corner. It stays reachable while you replace a track.
-- 🎒 **Something to take with you.** The stick for the player, a PDF or a text list for the booth, a file for the computer. A checklist before you leave, the join in the player, and an average blend time the slot follows at once.
+- 🎧 **Hear the handoff.** A card you can drag and resize. Previous, this track, next. The same mark and length as the setlist.
+- 🎒 **Export when it holds.** A checklist first. The stick for the player, a PDF or text for the booth, a file for the computer. Or save the set in SETBUILDER.
 
 ## Four steps
 
-1. 📝 **Brief** — title, vibe, room, slot, length
+1. 📝 **Brief** — title, duration, blend. Gig notes fold under Set info.
 2. 🔌 **Load** — connect the stick. A collection file can fill in keys; it does not replace the set.
-3. 🎛️ **Build** — start from a playlist, add music, or both. Then phase, role, and order.
-4. 🎒 **Take it** — write the stick, print the booth sheet, or export a file.
+3. 🎛️ **Build** — start from a playlist, add music, or both. Then phase, role, order, and each join.
+4. 🎒 **Export** — write the stick, print the booth sheet, or export a file.
 
 📖 **Walkthrough with screenshots:** [docs/GUIDE.md](docs/GUIDE.md)
 
@@ -44,6 +42,8 @@ On a Mac, an unsigned download sometimes needs this once:
 ```bash
 xattr -dr com.apple.quarantine /Applications/SETBUILDER.app
 ```
+
+<a id="setup"></a>
 
 ## For developers
 

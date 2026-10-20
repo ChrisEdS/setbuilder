@@ -4,12 +4,9 @@
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
 
-**Version 4.1.0** · Dramaturgie statt Playlist.
+**Version 4.1.0** · Raus aus der Playlist.
 
-> Ein gutes Set muss nicht perfekt sein.  
-> Musik lässt sich analysieren, sortieren und planen – aber am Ende entscheiden dein Gehör, dein Gefühl und der Moment auf dem Dancefloor. Kein Score und kein Algorithmus kann ersetzen, was du als DJ wahrnimmst.
->
-> SETBUILDER soll dir deshalb keine Entscheidungen abnehmen. Es ist ein Werkzeug, das dir Orientierung gibt, Übergänge sichtbar macht und neue Ideen liefert. Nutze es als Hilfestellung und Inspiration – aber vertraue am Ende immer deinen Ohren.
+Der Stick ist das Material. Du ziehst den Bogen, setzt Übergang und Länge und hörst, ob der Anschluss trägt.
 
 SETBUILDER ist der ruhige Raum vor dem Gig. Du nimmst einen rekordbox-Stick, legst der Nacht eine Form und gehst mit einem Set, das du spielen kannst: ein klarer Bogen, Keys, die zueinander passen, Energie, die steigt und fällt, und ein Plan B, wenn der Floor dreht.
 
@@ -19,17 +16,18 @@ SETBUILDER ist der ruhige Raum vor dem Gig. Du nimmst einen rekordbox-Stick, leg
 - 🔑 **Keys, denen du trauen kannst.** Camelot entlang des Sets, Clashes markiert, bevor du in der Kabine stehst.
 - ⚡ **Energie, die zum Track gehört.** Aus den Dateien lesen, Fehlendes messen oder selbst setzen.
 - 📌 **Opener und Closer, die bleiben.** Jede Sortierung respektiert die Enden, die du gepinnt hast.
-- 🎲 **Eine andere Nacht aus derselben Kiste.** Für denselben Brief eine neue Auswahl würfeln, wenn der erste Cast nicht trägt.
+- 🎛️ **Eine Marke an jedem Anschluss.** Cut, Blend, Echo-out und der Rest. Jede hat eine Länge, und die Slot-Uhr folgt ihr. „—“ behält die Blend-Zeit aus dem Brief.
+- 🎲 **Eine andere Nacht aus derselben Kiste.** Andere Tracks, die Playlist, die Collection oder die History — wenn dieser Pool wirklich geladen ist.
 - 🛟 **Plan B.** Rollen und Alternativen für den Moment, in dem der Floor es sich anders überlegt.
-- 🎧 **Ein Player, der nicht im Weg ist.** Eine kleine Karte, die du ziehen kannst. Schließen sitzt in der Ecke. Er bleibt erreichbar, während du einen Track ersetzt.
-- 🎒 **Etwas zum Mitnehmen.** Der Stick für den Player, PDF oder Text für die Kabine, eine Datei für den Rechner. Eine Checkliste vor dem Gehen, der Übergang im Player, und eine durchschnittliche Blend-Zeit, der der Slot sofort folgt.
+- 🎧 **Den Anschluss hören.** Eine Karte, die du ziehen und größer machen kannst. Vorher, dieser Track, nächster. Dieselbe Marke und Länge wie in der Setliste.
+- 🎒 **Exportieren, wenn es trägt.** Zuerst eine Checkliste. Der Stick für den Player, PDF oder Text für die Kabine, eine Datei für den Rechner. Oder das Set im Setbuilder speichern.
 
 ## Vier Schritte
 
-1. 📝 **Brief** — Titel, Vibe, Raum, Slot, Länge
+1. 📝 **Brief** — Titel, Dauer, Blend. Gig-Notizen falten sich unter Set-Info.
 2. 🔌 **Laden** — Stick verbinden. Eine Collection kann Keys ergänzen; sie ersetzt das Set nicht.
-3. 🎛️ **Bauen** — mit einer Playlist starten, Musik hinzufügen oder beides. Dann Phase, Rolle und Reihenfolge.
-4. 🎒 **Mitnehmen** — Stick schreiben, Kabinenzettel drucken oder eine Datei exportieren.
+3. 🎛️ **Bauen** — mit einer Playlist starten, Musik hinzufügen oder beides. Dann Phase, Rolle, Reihenfolge und jeder Anschluss.
+4. 🎒 **Exportieren** — Stick schreiben, Kabinenzettel drucken oder eine Datei exportieren.
 
 📖 **Anleitung mit Screenshots:** [docs/GUIDE.de.md](docs/GUIDE.de.md)
 
@@ -44,6 +42,8 @@ Auf dem Mac braucht ein unsignierter Download manchmal einmal das hier:
 ```bash
 xattr -dr com.apple.quarantine /Applications/SETBUILDER.app
 ```
+
+<a id="setup"></a>
 
 ## Für Entwickler
 
