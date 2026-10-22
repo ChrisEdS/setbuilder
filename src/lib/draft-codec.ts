@@ -63,6 +63,18 @@ function finite(value: unknown, fallback = 0): number {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
+/** Keeps a non-empty purpose line per known phase. Anything else is dropped. */
+function phaseNotes(value: unknown): SetDraft["phaseNote"] {
+  const raw = object(value);
+  if (!raw) return undefined;
+  const notes: Partial<Record<SetPhaseId, string>> = {};
+  for (const id of phases) {
+    const line = text(raw[id]);
+    if (line.trim()) notes[id] = line;
+  }
+  return Object.keys(notes).length ? notes : undefined;
+}
+
 /** Normalizes one performance track from any supported stored-draft version. */
 export function normalizeDraftTrack(value: unknown): SetTrack | null {
   const raw = object(value);
@@ -215,6 +227,7 @@ export function normalizeStoredDraft(value: unknown): SetDraft | null {
     audience: text(raw.audience, DEFAULT_SET.audience),
     gear: text(raw.gear, DEFAULT_SET.gear),
     notes: text(raw.notes),
+    phaseNote: phaseNotes(raw.phaseNote),
     durationMinutes: finite(raw.durationMinutes, DEFAULT_SET.durationMinutes),
     blendMs: blendMsOf(raw.blendMs),
     tracks,

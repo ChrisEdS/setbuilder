@@ -3,7 +3,7 @@ import test from "node:test";
 import { buildM3u, buildRekordboxXml } from "./export-booth.ts";
 import { tEn } from "./i18n/core.ts";
 import { pickStreamingMatch } from "./match-link.ts";
-import { rankReplacements, replacementOrigin, swapIntoSlot } from "./replace-track.ts";
+import { rankFitsAfter, rankReplacements, replacementOrigin, swapIntoSlot } from "./replace-track.ts";
 import { artistLine, type SetDraft, type SetTrack } from "./set.ts";
 import { matchStickFile } from "./stick-audio.ts";
 
@@ -119,6 +119,22 @@ test("replacement ranking prefers the closer key and bpm", () => {
   assert.equal(swapped[1]?.id, "close");
   assert.equal(swapped[1]?.role, "groove");
   assert.equal(swapped.find((item) => item.id === "slot")?.role, "safety");
+});
+
+test("fits-after uses the same key and bpm window as Passt zu", () => {
+  const ranked = rankFitsAfter(
+    [
+      { artist: "Ada", title: "Close", key: "9A", bpm: "124", energy: 6 },
+      { artist: "Ada", title: "Far", key: "1B", bpm: "140", energy: 6 },
+      { artist: "Ada", title: "Jump", key: "8A", bpm: "122", energy: 10 },
+    ],
+    { name: "Now", artists: ["Bea"], keyCamelot: "8A", bpm: "122", energyLevel: 6 },
+    (raw) => raw,
+  );
+  assert.deepEqual(
+    ranked.map((item) => item.row.title),
+    ["Close"],
+  );
 });
 
 test("replacement origin prefers history, then playlist path, then the file folder", () => {

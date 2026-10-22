@@ -30,6 +30,7 @@ import { ConnectionSetup } from "@/components/ConnectionSetup";
 import { FieldNoticeView, type FieldNotice } from "@/components/FieldNotice";
 import { Hint, Tip } from "@/components/Hint";
 import { EnergyPath } from "@/components/EnergyPath";
+import { FitsNext } from "@/components/FitsNext";
 import { HarmonicPath } from "@/components/HarmonicPath";
 import { LibraryBrowser, LibraryPanel } from "@/components/LibraryPanel";
 import { StickSetList, type StickStatusSlice } from "@/components/RekordboxStick";
@@ -1542,6 +1543,43 @@ export function SetBuilder() {
         role: roleLabel(t, track.role),
       }),
     );
+  }
+
+  function addLibraryAfter(afterId: string, row: LibraryRow) {
+    const after = draft.tracks.find((item) => item.id === afterId);
+    const incoming = libraryTrackToSetTrack(row, after?.phase ?? "open", "groove", t);
+    const same = draft.tracks.some(
+      (item) =>
+        item.id === incoming.id ||
+        (item.name.toLowerCase() === incoming.name.toLowerCase() &&
+          item.artists.join(",").toLowerCase() === incoming.artists.join(",").toLowerCase()),
+    );
+    if (same) {
+      setStatus(t("builder.status.alreadyInNamed", { name: incoming.name }));
+      return;
+    }
+    setDraft((current) => {
+      const index = current.tracks.findIndex((item) => item.id === afterId);
+      const tracks = [...current.tracks];
+      tracks.splice(index < 0 ? tracks.length : index + 1, 0, incoming);
+      return { ...current, tracks };
+    });
+    setStatus(
+      t("builder.status.added", {
+        name: incoming.name,
+        phase: phaseLabel(t, incoming.phase),
+        role: roleLabel(t, incoming.role),
+      }),
+    );
+  }
+
+  function setPhaseNote(phase: SetPhaseId, value: string) {
+    setDraft((current) => {
+      const next = { ...current.phaseNote };
+      if (value.trim()) next[phase] = value;
+      else delete next[phase];
+      return { ...current, phaseNote: Object.keys(next).length ? next : undefined };
+    });
   }
 
   function fillPlanB(picks: { row: LibraryRow; phase: SetPhaseId }[]) {
@@ -4031,6 +4069,13 @@ export function SetBuilder() {
                         ) : null}
                       </div>
                     ) : null}
+                    {focusTrackId === track.id && track.role !== "safety" && libraryRows.length > 0 ? (
+                      <FitsNext
+                        rows={libraryRows}
+                        track={track}
+                        onAdd={(row) => addLibraryAfter(track.id, row)}
+                      />
+                    ) : null}
                     {replaceFor === track.id ? (
                       <ReplaceMenu
                         tracks={draft.tracks}
@@ -4333,6 +4378,16 @@ export function SetBuilder() {
                   </em>
                   {overrun ? <b className="phase-overrun">{overrun}</b> : null}
                 </button>
+                <label className="phase-purpose">
+                  <span className="sr-only">
+                    {t("builder.phase.purpose", { phase: phaseLabel(t, phase.id) })}
+                  </span>
+                  <input
+                    value={draft.phaseNote?.[phase.id] ?? ""}
+                    placeholder={t("builder.phase.purposePlaceholder")}
+                    onChange={(event) => setPhaseNote(phase.id, event.target.value)}
+                  />
+                </label>
               </div>
             );
           })}

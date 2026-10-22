@@ -138,6 +138,17 @@ test("repairs duplicate and missing ids deterministically across both collection
   assert.deepEqual(second, first);
 });
 
+test("a phase purpose line is kept and an empty one is dropped", () => {
+  const draft = normalizeStoredDraft({
+    title: "Nachtlinie",
+    tracks: [],
+    phaseNote: { peak: "treibend, 128", open: "  ", nope: "weg", lift: 4 },
+  });
+  assert.deepEqual(draft?.phaseNote, { peak: "treibend, 128" });
+  const round = decodeStoredDraft(encodeStoredDraft(draft!));
+  assert.deepEqual(round?.phaseNote, { peak: "treibend, 128" });
+});
+
 test("codec rejects unsafe shapes and versions the same storage payload", () => {
   assert.equal(decodeStoredDraft("{bad"), null);
   assert.equal(normalizeStoredDraft({ title: "x", tracks: "no" }), null);

@@ -210,3 +210,47 @@ export function swapIntoSlot(
   };
   return next;
 }
+
+export type FitAfter<T> = {
+  row: T;
+  text: string;
+  score: number;
+};
+
+/**
+ * Same ranking as “Passt zu” in the library: key, BPM within 6, no energy jump.
+ * Limited to the rows you pass in — the loaded stick pool.
+ */
+export function rankFitsAfter<
+  T extends { artist: string; title: string; key: string; bpm: string; energy?: number },
+>(
+  rows: T[],
+  reference: { name: string; artists: string[]; keyCamelot: string; bpm: string; energyLevel?: number },
+  toKey: (raw: string) => string,
+  t: Translate = tDe,
+): FitAfter<T>[] {
+  const ref = {
+    keyCamelot: reference.keyCamelot,
+    bpm: reference.bpm,
+    energyLevel: reference.energyLevel,
+  };
+  return rows
+    .map((row) => {
+      const side = sidePhrase(
+        ref,
+        { keyCamelot: toKey(row.key) || row.key, bpm: row.bpm, energyLevel: row.energy },
+        t("analysis.side.after"),
+        t,
+      );
+      const delta = bpmDelta(ref.bpm, row.bpm);
+      const energyJump = energyStep(ref.energyLevel, row.energy) === "jump";
+      return { row, text: side?.text ?? "", score: side?.score ?? 0, delta, energyJump };
+    })
+    .filter(({ row, score, delta, energyJump }) => {
+      if (energyJump) return false;
+      if (row.title === reference.name && row.artist === reference.artists[0]) return false;
+      return score >= 0.55 && (delta == null || Math.abs(delta) <= 6);
+    })
+    .sort((a, b) => b.score - a.score)
+    .map(({ row, text, score }) => ({ row, text, score }));
+}

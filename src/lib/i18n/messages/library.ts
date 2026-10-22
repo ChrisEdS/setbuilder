@@ -71,6 +71,13 @@ const de = {
   "library.browser.playlistPickAria": "Nach Playlist filtern",
   "library.browser.playlistPickTip":
     "Playlist vom Stick wählen — zeigt nur Tracks aus dieser Playlist. „Alle Playlists“ setzt die Suche zurück.",
+  "library.filter.key": "Key-Nachbarschaft",
+  "library.filter.keyAny": "Jeder Key",
+  "library.filter.bpmFrom": "BPM von",
+  "library.filter.bpmTo": "BPM bis",
+  "library.filter.energyFrom": "Energie von",
+  "library.filter.energyTo": "Energie bis",
+  "library.filter.energyAny": "—",
   "library.browser.rewrite": "Keys & BPM neu schreiben",
   "library.browser.rewriteTip":
     "Schreibt Key und BPM aus dieser Liste in die Tracks deiner Setliste. Gefunden wird über Artist und Titel. Vorhandene Werte werden überschrieben. Tracks ohne Treffer und leere Felder in der Liste lassen den alten Wert stehen.",
@@ -401,6 +408,13 @@ const en: Record<keyof typeof de, string> = {
   "library.browser.playlistPickAria": "Filter by playlist",
   "library.browser.playlistPickTip":
     "Pick a stick playlist — shows only tracks from that playlist. “All playlists” resets the search.",
+  "library.filter.key": "Key neighborhood",
+  "library.filter.keyAny": "Any key",
+  "library.filter.bpmFrom": "BPM from",
+  "library.filter.bpmTo": "BPM to",
+  "library.filter.energyFrom": "Energy from",
+  "library.filter.energyTo": "Energy to",
+  "library.filter.energyAny": "—",
   "library.browser.rewrite": "Rewrite keys & BPM",
   "library.browser.rewriteTip":
     "Writes key and BPM from this list into the tracks of your setlist. Tracks are found by artist and title. Existing values are overwritten. Tracks without a match and empty fields in the list keep their old value.",

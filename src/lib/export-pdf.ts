@@ -87,11 +87,13 @@ export function buildSetPrintHtml(draft: SetDraft, t: Translate = tDe): string {
       lastPhase = track.phase;
       const start = formatDuration(clock);
       clock += trackPlayedMs(track, draft.blendMs);
+      const purpose = draft.phaseNote?.[track.phase]?.trim() ?? "";
       const banner = phaseChanged
         ? `<tr class="phase-row">
             <td colspan="6">
               <strong>${escapeHtml(phaseLabel(track.phase, t))}</strong>
               <em>${escapeHtml(phaseWindowLabel(draft.durationMinutes, track.phase, t))}</em>
+              ${purpose ? `<span class="by">${escapeHtml(purpose)}</span>` : ""}
             </td>
           </tr>`
         : "";

@@ -417,6 +417,66 @@ html[data-frame="mac"] .set-shell .hero-copy {
   flex-wrap: wrap;
 }
 
+.set-shell .library-refine {
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.6rem;
+  align-items: end;
+}
+
+.set-shell .library-refine label {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+  color: var(--ui-muted, #b3b3b3);
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+}
+
+.set-shell .library-refine input,
+.set-shell .library-refine select {
+  width: 6.5rem;
+  min-width: 0;
+}
+
+.set-shell .phase-purpose {
+  display: block;
+  min-width: 0;
+}
+
+.set-shell .phase-purpose input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.set-shell .manual-row .fits-next {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.set-shell .fits-next > span {
+  color: #b3b3b3;
+  font-size: 0.75rem;
+}
+
+.set-shell .fits-next-add {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+}
+
+.set-shell .fits-next-add em {
+  color: #b3b3b3;
+  font-size: 0.72rem;
+  font-style: normal;
+}
+
 .set-shell .library-browser-toolbar .library-search-field {
   display: flex;
   flex: 1 1 18rem !important;

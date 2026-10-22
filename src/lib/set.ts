@@ -138,6 +138,8 @@ export type SetDraft = {
   gear: string;
   /** Free-form brief notes (promoter, doors, curfew, …). */
   notes?: string;
+  /** Optional one-line purpose per phase, e.g. “treibend, 128”. Absent means no line. */
+  phaseNote?: Partial<Record<SetPhaseId, string>>;
   /** Performance track that must stay first (Open). */
   openerId?: string | null;
   /** Performance track that must stay last (Release). */

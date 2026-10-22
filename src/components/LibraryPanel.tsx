@@ -18,9 +18,9 @@ import {
 } from "@/lib/key-import";
 import { parseRekordboxFile } from "@/lib/rekordbox";
 import { enqueueWork } from "@/lib/work-queue";
-import { energyStep } from "@/lib/energy";
-import { bpmDelta } from "@/lib/harmonic";
-import { sidePhrase } from "@/lib/replace-track";
+import { CAMELOT_CODES } from "@/lib/harmonic";
+import { boundOf, matchesLibraryFilter } from "@/lib/library-filter";
+import { rankFitsAfter } from "@/lib/replace-track";
 import { Tip } from "@/components/Hint";
 import { RekordboxStick, type StickStatusSlice } from "@/components/RekordboxStick";
 import { StickReloadBanner } from "@/components/StickReloadBanner";
@@ -133,12 +133,19 @@ export function LibraryBrowser({
     page: number;
     fitTo: string;
     query: string;
+    filterKey: string;
     rows: LibraryRow[];
-  }>({ page: 0, fitTo: "", query: "", rows });
+  }>({ page: 0, fitTo: "", query: "", filterKey: "", rows });
   const [addPhase, setAddPhase] = useState<SetPhaseId>("open");
   const [addRole, setAddRole] = useState<TrackRole>("groove");
   const [query, setQuery] = useState("");
+  const [keyFilter, setKeyFilter] = useState("");
+  const [bpmMin, setBpmMin] = useState("");
+  const [bpmMax, setBpmMax] = useState("");
+  const [energyMin, setEnergyMin] = useState("");
+  const [energyMax, setEnergyMax] = useState("");
   const searchHintsId = useId();
+  const filterKey = `${keyFilter}|${bpmMin}|${bpmMax}|${energyMin}|${energyMax}`;
 
   const inSet = useMemo(
     () =>
@@ -173,40 +180,22 @@ export function LibraryBrowser({
           (row.playlists ?? []).some((name) => name.toLowerCase().includes(q)),
       );
     }
+    list = list.filter((row) =>
+      matchesLibraryFilter(row, {
+        key: keyFilter,
+        bpmMin: boundOf(bpmMin),
+        bpmMax: boundOf(bpmMax),
+        energyMin: boundOf(energyMin),
+        energyMax: boundOf(energyMax),
+      }),
+    );
     if (fitReference) {
-      const ref = {
-        keyCamelot: fitReference.keyCamelot,
-        bpm: fitReference.bpm,
-        energyLevel: fitReference.energyLevel,
-      };
-      return list
-        .map((row) => {
-          const side = sidePhrase(
-            ref,
-            {
-              keyCamelot: parseKeyValue(row.key) || row.key,
-              bpm: row.bpm,
-              energyLevel: row.energy,
-            },
-            t("analysis.side.after"),
-            t,
-          );
-          const delta = bpmDelta(ref.bpm, row.bpm);
-          const energyJump = energyStep(ref.energyLevel, row.energy) === "jump";
-          return { row, score: side?.score ?? 0, delta, energyJump };
-        })
-        .filter(({ row, score, delta, energyJump }) => {
-          if (energyJump) return false;
-          if (row.title === fitReference.name && row.artist === fitReference.artists[0]) {
-            return false;
-          }
-          return score >= 0.55 && (delta == null || Math.abs(delta) <= 6);
-        })
-        .sort((a, b) => b.score - a.score)
-        .map(({ row }) => row);
+      return rankFitsAfter(list, fitReference, (raw) => parseKeyValue(raw) || raw, t).map(
+        (item) => item.row,
+      );
     }
     return list.slice(0, LIBRARY_BROWSE_CAP);
-  }, [rows, query, fitReference, t, playlistOptions]);
+  }, [rows, query, fitReference, t, playlistOptions, keyFilter, bpmMin, bpmMax, energyMin, energyMax]);
 
   const fitPageCount = fitReference
     ? Math.max(1, Math.ceil(rankedLibrary.length / FIT_PAGE_SIZE))
@@ -214,6 +203,7 @@ export function LibraryBrowser({
   const fitPage =
     fitPageState.fitTo === fitTo &&
     fitPageState.query === query &&
+    fitPageState.filterKey === filterKey &&
     fitPageState.rows === rows
       ? fitPageState.page
       : 0;
@@ -272,6 +262,66 @@ export function LibraryBrowser({
                 </label>
               </Tip>
             ) : null}
+          </div>
+          <div className="library-refine">
+            <label>
+              {t("library.filter.key")}
+              <select
+                value={keyFilter}
+                onChange={(event) => setKeyFilter(event.target.value)}
+              >
+                <option value="">{t("library.filter.keyAny")}</option>
+                {CAMELOT_CODES.map((code) => (
+                  <option key={code} value={code}>
+                    {code}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              {t("library.filter.bpmFrom")}
+              <input
+                inputMode="decimal"
+                value={bpmMin}
+                onChange={(event) => setBpmMin(event.target.value)}
+              />
+            </label>
+            <label>
+              {t("library.filter.bpmTo")}
+              <input
+                inputMode="decimal"
+                value={bpmMax}
+                onChange={(event) => setBpmMax(event.target.value)}
+              />
+            </label>
+            <label>
+              {t("library.filter.energyFrom")}
+              <select
+                value={energyMin}
+                onChange={(event) => setEnergyMin(event.target.value)}
+              >
+                <option value="">{t("library.filter.energyAny")}</option>
+                {Array.from({ length: 10 }, (_, index) => String(index + 1)).map((level) => (
+                  <option key={level} value={level}>
+                    {level}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              {t("library.filter.energyTo")}
+              <select
+                value={energyMax}
+                onChange={(event) => setEnergyMax(event.target.value)}
+              >
+                <option value="">{t("library.filter.energyAny")}</option>
+                {Array.from({ length: 10 }, (_, index) => String(index + 1)).map((level) => (
+                  <option key={level} value={level}>
+                    {level}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
           {onAddTrack ? (
           <div className="library-add-bar">
@@ -388,6 +438,7 @@ export function LibraryBrowser({
                       page: (safeFitPage + 1) % fitPageCount,
                       fitTo,
                       query,
+                      filterKey,
                       rows,
                     })
                   }
