@@ -6,35 +6,34 @@
 
 **Version 4.2.0** · Out of the playlist.
 
-The stick is the material. You draw the arc, set each join and its length, and hear if it holds.
+The stick is the material. You draw the arc, set the join, and hear if it holds.
 
-SETBUILDER is the quiet room before the gig. You bring a rekordbox stick, shape the night, and leave with a set you can actually play: a clear arc, keys that talk to each other, energy that rises and falls, and a Plan B when the floor turns.
+Before the gig, the room is quiet. SETBUILDER is that room. You arrive with a rekordbox stick and leave with a night you want to play: an arc, keys that find each other, energy that rises and falls, and a Plan B when the floor turns.
 
-## What you get
+## What you take with you
 
-- 🎚️ **A set with a shape.** Open, lift, peak, release. You see where the night is thin and where it is already full.
-- 🔑 **Keys you can trust.** Camelot along the set, with clashes marked before you are in the booth.
-- ⚡ **Energy that belongs to the track.** Read it from your files, measure what is missing, or set it by hand. A finished reading shows on the details line. Unknown energy stays blank.
-- 📌 **An opener and a closer that stay put.** Every sort respects the ends you pinned.
-- 🎛️ **A mark on every join.** Cut, blend, echo-out, and the rest. Each one has a length, and the slot clock follows it. “—” keeps the average blend from the brief.
-- 🎲 **Another night from the same crate.** Different songs, the playlist, the collection, or history — when that pool is actually loaded.
-- 🛟 **Plan B.** Roles and alternatives for the moment the floor changes its mind.
-- 🎧 **Hear the handoff.** A card you can drag and resize. Previous, this track, next. The same mark and length as the setlist.
-- 🔍 **A narrower library.** Under the search: key neighborhood, BPM from and to, energy from and to. Together with artist, title, key, and “Fits after”. No danceability, emotion, or genre score.
-- ⏭️ **What fits next.** On the focused track, up to four candidates from the loaded library, ranked like “Fits after”. A click puts the track immediately after, same phase, role groove.
-- 📝 **One line for the phase.** Optional, on the arc. An empty line is not stored. The booth PDF prints it on the phase banner.
-- 🎒 **Export when it holds.** A checklist first. The stick for the player, a PDF or text for the booth, a file for the computer. Or save the set in SETBUILDER.
+- 🎚️ **A night with a shape.** Open, lift, peak, release. You see where there is still air and where it is already full.
+- 🔑 **Keys that talk to each other.** Camelot along the set. A clash shows up while you still have time.
+- ⚡ **Energy that belongs to the song.** Read from the file, measured, or set by you. It sits on the track once it is real.
+- 📌 **An opener and a closer that stay.** Sort as often as you like. The ends you pinned do not move.
+- 🎛️ **Every join with its own length.** Cut, blend, echo-out. The slot clock follows what you write on the handoff. “—” takes the blend time from the brief.
+- 🎲 **Another night from the same crate.** Different songs. Or the playlist, the collection, the history, once they are in the room.
+- 🛟 **Plan B in your pocket.** Roles and alternatives for the moment the floor changes its mind.
+- 🎧 **Hear the handoff first.** A card you can drag and open up. Previous, this track, next. The same length as the setlist.
+- 🔍 **Only what fits next.** Key, BPM, and energy pull the library in close. On the track sit the songs that can follow. One click, and one of them lands right after it.
+- 📝 **A line for the phase.** On the arc, when you want it. Driving, 128. It travels onto the sheet for the booth.
+- 🎒 **Ready when it holds.** The checklist first. Then the stick for the player, the sheet for the booth, the file for the computer. Or the set stays in SETBUILDER.
 
 ## Four steps
 
-1. 📝 **Brief** — title, duration, blend. Gig notes fold under Set info.
-2. 🔌 **Load** — connect the stick. A collection file can fill in keys; it does not replace the set.
-3. 🎛️ **Build** — start from a playlist, add music, or both. Narrow the library, or take a track that fits next. Then phase, role, order, and each join.
-4. 🎒 **Export** — write the stick, print the booth sheet, or export a file.
+1. 📝 **Brief** — title, length, how close the joins should sit. The notes for the gig wait under Set info.
+2. 🔌 **Load** — connect the stick. A collection can fill in the keys.
+3. 🎛️ **Build** — a playlist, your own songs, or both. Draw the crate in close, take what fits next, and set the phase, the role, and every join.
+4. 🎒 **Export** — the stick for the player, the sheet for the booth, a file for home.
 
 📖 **Walkthrough with screenshots:** [docs/GUIDE.md](docs/GUIDE.md)
 
-> Play the stick on the actual player before the gig. SETBUILDER keeps a backup, and you still own the night.
+> Play the stick on the actual player before the gig. SETBUILDER keeps a backup, and the night stays yours.
 
 ## Download
 
