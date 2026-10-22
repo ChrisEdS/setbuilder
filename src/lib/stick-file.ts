@@ -249,7 +249,7 @@ export async function missingEnergyFromFiles(
   for (const track of pending) {
     try {
       const resolved = await resolveTrackAudio(track.filePath ?? "", root);
-      if (resolved && isWritableMp3(resolved.file, track.filePath)) {
+      if (resolved) {
         const energy = await energyTagFromFile(resolved.file);
         if (energy != null) levels.set(track.id, energy);
       }
@@ -263,6 +263,73 @@ export async function missingEnergyFromFiles(
     });
   }
   return levels;
+}
+
+export type MeasuredEnergy = {
+  energy: number;
+  source: "tag" | "measured";
+  filePath: string;
+};
+
+/**
+ * Write a finished OpenKey / tag reading onto matching tracks.
+ * `fill` leaves a level that is already known. `replace` is a fresh measurement.
+ * A value outside 1–10, or an anonymous 1, is not written.
+ */
+export function stampMeasuredEnergy<T extends {
+  id: string;
+  filePath?: string;
+  energyLevel?: number;
+  energySource?: EnergySource;
+}>(
+  items: readonly T[],
+  levels: ReadonlyMap<string, MeasuredEnergy>,
+  mode: "replace" | "fill" = "replace",
+): T[] {
+  if (levels.size === 0) return items as T[];
+  return items.map((item) => {
+    const entry = measuredEnergyFor(item, levels);
+    if (!entry || !hasKnownEnergy({ energyLevel: entry.energy, energySource: entry.source })) {
+      return item;
+    }
+    if (mode === "fill" && hasKnownEnergy(item)) return item;
+    if (item.energyLevel === entry.energy && item.energySource === entry.source) return item;
+    return { ...item, energyLevel: entry.energy, energySource: entry.source };
+  });
+}
+
+function measuredEnergyFor<T extends { id: string; filePath?: string }>(
+  item: T,
+  levels: ReadonlyMap<string, MeasuredEnergy>,
+): MeasuredEnergy | undefined {
+  const direct = levels.get(item.id);
+  if (direct) return direct;
+  const path = item.filePath?.trim();
+  if (!path) return undefined;
+  for (const entry of levels.values()) {
+    if (entry.filePath === path) return entry;
+  }
+  return undefined;
+}
+
+/** Merge a finished measurement into the latest draft. Same object when nothing changes. */
+export function applyMeasuredEnergy(
+  draft: SetDraft,
+  levels: ReadonlyMap<string, MeasuredEnergy>,
+  mode: "replace" | "fill" = "replace",
+): SetDraft {
+  if (levels.size === 0) return draft;
+  const tracks = stampMeasuredEnergy(draft.tracks, levels, mode);
+  const sourcePool = draft.sourcePool
+    ? stampMeasuredEnergy(draft.sourcePool, levels, mode)
+    : draft.sourcePool;
+  if (
+    tracks.every((track, index) => track === draft.tracks[index]) &&
+    (sourcePool ?? []).every((track, index) => track === draft.sourcePool?.[index])
+  ) {
+    return draft;
+  }
+  return { ...draft, tracks, sourcePool };
 }
 
 /** Fill gaps only. Tracks that already have energy, and unknown ids, stay as they are. */

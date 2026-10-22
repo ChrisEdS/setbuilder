@@ -236,7 +236,36 @@ function readPlaylistTree(
       name: readDeviceString(view, row + 20, pageEnd) || "Playlist",
     });
   });
-  return rows;
+  return dedupePlaylistTree(rows);
+}
+
+// Leftover tree rows repeat a live playlist id with parent 0 and sort 0, and
+// then inherit that id's track list. Keep one row per id: the child whose
+// parent exists in this tree. An id seen only once is kept, folders included.
+function dedupePlaylistTree(rows: TreeRow[]): TreeRow[] {
+  const ids = new Set(rows.map((row) => row.id));
+  const groups = new Map<number, TreeRow[]>();
+  for (const row of rows) {
+    const group = groups.get(row.id);
+    if (group) group.push(row);
+    else groups.set(row.id, [row]);
+  }
+
+  const kept: TreeRow[] = [];
+  for (const group of groups.values()) {
+    if (group.length === 1) {
+      kept.push(group[0]);
+      continue;
+    }
+    const linked = group.filter((row) => ids.has(row.parentId));
+    if (linked.length > 0) {
+      kept.push(linked[0]);
+      continue;
+    }
+    const rest = group.filter((row) => row.parentId !== 0 || row.sort !== 0);
+    kept.push(rest[0] ?? group[0]);
+  }
+  return kept;
 }
 
 function readPlaylistEntries(

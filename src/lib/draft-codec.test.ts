@@ -39,6 +39,31 @@ test("migrates an older draft, normalizes tracks and preserves user text", () =>
   assert.equal(draft.blendMs, 120_000);
 });
 
+test("a measured Energy Level survives save and load, an anonymous 1 does not", () => {
+  const draft = normalizeStoredDraft({
+    title: "Energy",
+    tracks: [
+      {
+        id: "m",
+        name: "Measured",
+        energyLevel: 7,
+        energySource: "measured",
+        keyCamelot: "7A",
+        bpm: "125",
+      },
+      { id: "anon", name: "Placeholder", energyLevel: 1 },
+      { id: "soft", name: "Prior", energy: 0.62 },
+    ],
+  });
+  assert.ok(draft);
+  const round = decodeStoredDraft(encodeStoredDraft(draft));
+  assert.equal(round?.tracks[0].energyLevel, 7);
+  assert.equal(round?.tracks[0].energySource, "measured");
+  assert.equal(round?.tracks[1].energyLevel, undefined);
+  assert.equal(round?.tracks[2].energy, 0.62);
+  assert.equal(round?.tracks[2].energyLevel, undefined);
+});
+
 test("keeps a finite overlap and drops a missing or nonsense length", () => {
   const kept = normalizeStoredDraft({
     title: "Overlap",

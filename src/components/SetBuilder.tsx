@@ -67,6 +67,7 @@ import { stickFileCount } from "@/lib/stick-audio";
 import {
   applyCoverUrls,
   applyEnergyLevels,
+  applyMeasuredEnergy,
   applyRereadEnergyLevels,
   ensureStickWriteAccess,
   energyTagFromFile,
@@ -116,7 +117,7 @@ import {
 import { openSetPdfExport } from "@/lib/export-pdf";
 import { pickStreamingMatch } from "@/lib/match-link";
 import { swapIntoSlot } from "@/lib/replace-track";
-import { CAMELOT_CODES, mixJoin, relationHint } from "@/lib/harmonic";
+import { CAMELOT_CODES, mixJoin, relationHint, trackDetailsSummary } from "@/lib/harmonic";
 import {
   distributeRoles,
   fitToSlot,
@@ -2189,30 +2190,14 @@ export function SetBuilder() {
     const batchSize = total === 1 ? 1 : total > 24 ? 16 : 8;
 
     function flush(force: boolean) {
-      if (!alive() || pending.size === 0) return;
-      if (!force && pending.size < batchSize) return;
+      if (pending.size === 0) return;
+      // A newer scan must not throw away levels this one already finished.
+      // Those fill gaps only, so they cannot overwrite the newer result.
+      if (!force && (!alive() || pending.size < batchSize)) return;
       const batch = new Map(pending);
       pending.clear();
-      const latest = readStoredDraft();
-      const stamp = <T extends { id: string; filePath?: string; energyLevel?: number; energySource?: SetTrack["energySource"] }>(
-        item: T,
-      ): T => {
-        const byId = batch.get(item.id);
-        if (byId) return { ...item, energyLevel: byId.energy, energySource: byId.source };
-        const path = item.filePath?.trim();
-        if (!path) return item;
-        for (const entry of batch.values()) {
-          if (entry.filePath === path) {
-            return { ...item, energyLevel: entry.energy, energySource: entry.source };
-          }
-        }
-        return item;
-      };
-      setDraft({
-        ...latest,
-        tracks: latest.tracks.map(stamp),
-        sourcePool: latest.sourcePool?.map(stamp),
-      });
+      const mode = alive() ? "replace" : "fill";
+      setDraft((current) => applyMeasuredEnergy(current, batch, mode));
     }
 
     const remember = (
@@ -2249,9 +2234,8 @@ export function SetBuilder() {
             continue;
           }
 
-          if (options.reuseTags && isWritableMp3(resolved.file, path)) {
+          if (options.reuseTags) {
             const tagged = await energyTagFromFile(resolved.file);
-            if (!alive()) return;
             if (tagged != null) {
               remember(track.id, tagged, "tag", path);
               setCount += 1;
@@ -2260,11 +2244,12 @@ export function SetBuilder() {
               await yieldToUi();
               continue;
             }
+            if (!alive()) return;
           }
 
           const energy = await analyzeFileEnergy(resolved.file);
-          if (!alive()) return;
           remember(track.id, energy, "measured", path);
+          if (!alive()) return;
           setCount += 1;
 
           if (options.write && isWritableMp3(resolved.file, path) && resolved.handle && options.writeRoot) {
@@ -2351,7 +2336,7 @@ export function SetBuilder() {
         const path = track.filePath!.trim();
         try {
           const resolved = await resolveTrackAudio(path, stick);
-          if (resolved && isWritableMp3(resolved.file, path)) {
+          if (resolved) {
             const energy = await energyTagFromFile(resolved.file);
             if (energy != null) levels.set(track.id, energy);
           }
@@ -4107,21 +4092,7 @@ export function SetBuilder() {
                     >
                       <summary>
                         <span className="td-label">{t("builder.row.details")}</span>
-                        <span className="td-values">
-                          {[
-                            track.keyCamelot || t("builder.row.keyOpen"),
-                            track.bpm ? `${track.bpm} BPM` : t("builder.row.bpmOpen"),
-                            hasKnownEnergy(track)
-                              ? t("builder.row.energy", { level: track.energyLevel ?? 0 })
-                              : null,
-                            track.transition !== "unset"
-                              ? transitionLabel(t, track.transition)
-                              : null,
-                            (track.comment || "").trim() ? t("builder.row.setNoteTag") : null,
-                          ]
-                            .filter(Boolean)
-                            .join(" · ")}
-                        </span>
+                        <span className="td-values">{trackDetailsSummary(track, t)}</span>
                       </summary>
                     <label className="manual-comment">
                       <span>{t("builder.row.setNote")}</span>

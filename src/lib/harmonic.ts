@@ -8,7 +8,9 @@
  */
 
 import { tDe, type Translate } from "@/lib/i18n/core";
-import { energyScore, energyStep, energyText } from "./energy";
+import { transitionLabel } from "@/lib/i18n/domain";
+import { energyScore, energyStep, energyText, hasKnownEnergy } from "./energy";
+import type { TransitionVerb } from "./set";
 
 export type CamelotCode = `${number}A` | `${number}B`;
 
@@ -234,6 +236,36 @@ export function relationShortLabel(
 
 export function relationHint(relation: HarmonicRelation, t: Translate = tDe): string {
   return t(`analysis.relation.${relation}.hint`);
+}
+
+/**
+ * Quiet details line under a setlist row: key, BPM, a known Energy Level, transition.
+ * Missing energy stays out. An anonymous 1 is the old failed-scan placeholder, not a level.
+ */
+export function trackDetailsSummary(
+  track: {
+    keyCamelot?: string;
+    bpm?: string;
+    energyLevel?: number;
+    energySource?: unknown;
+    transition?: TransitionVerb;
+    comment?: string;
+  },
+  t: Translate = tDe,
+): string {
+  return [
+    track.keyCamelot || t("builder.row.keyOpen"),
+    track.bpm ? `${track.bpm} BPM` : t("builder.row.bpmOpen"),
+    hasKnownEnergy(track)
+      ? t("builder.row.energy", { level: track.energyLevel ?? 0 })
+      : "",
+    track.transition && track.transition !== "unset"
+      ? transitionLabel(t, track.transition)
+      : "",
+    (track.comment || "").trim() ? t("builder.row.setNoteTag") : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 type MixSide = { keyCamelot: string; bpm: string; energyLevel?: number };

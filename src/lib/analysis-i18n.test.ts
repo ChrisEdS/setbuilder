@@ -7,6 +7,7 @@ import {
   relationHint,
   relationLabel,
   relationShortLabel,
+  trackDetailsSummary,
 } from "./harmonic.ts";
 import { tDe, tEn } from "./i18n/core.ts";
 import { localizeWhy } from "./i18n/stored.ts";
@@ -77,6 +78,22 @@ test("relationHint explains the jargon in DE and EN", () => {
   assert.match(relationHint("adjacent", tEn), /wheel|number|standard mix/i);
   assert.match(relationHint("relative"), /8A → 8B|Dur\/Moll/);
   assert.match(relationHint("relative", tEn), /8A → 8B|major\/minor/);
+});
+
+test("the setlist details line shows a known Energy Level and stays quiet without one", () => {
+  const known = {
+    keyCamelot: "7A",
+    bpm: "125",
+    energyLevel: 7,
+    energySource: "measured" as const,
+    transition: "long-blend" as const,
+  };
+  const missing = { keyCamelot: "8A", bpm: "123", energy: 0.62, transition: "long-blend" as const };
+  const placeholder = { keyCamelot: "8A", bpm: "123", energyLevel: 1, transition: "long-blend" as const };
+  assert.equal(trackDetailsSummary(known, tEn), "7A · 125 BPM · Energy 7 · Long blend");
+  assert.equal(trackDetailsSummary(known), "7A · 125 BPM · Energie 7 · Long blend");
+  assert.equal(trackDetailsSummary(missing, tEn), "8A · 123 BPM · Long blend");
+  assert.equal(trackDetailsSummary(placeholder, tEn), "8A · 123 BPM · Long blend");
 });
 
 test("mixJoin names an energy jump in the active language", () => {

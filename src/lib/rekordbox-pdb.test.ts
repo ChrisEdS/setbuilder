@@ -30,6 +30,30 @@ test("rejects a file that is not a rekordbox database", () => {
   assert.throws(() => parseRekordboxPdb(new ArrayBuffer(32)), /export\.pdb/);
 });
 
+test("keeps the folder-linked playlist when the same id is repeated", () => {
+  const library = parseRekordboxPdb(duplicateTreeFixture());
+  const playlists = library.playlists.filter((item) => item.kind === "playlist");
+  const joyride = playlists.filter((item) => item.id === 5);
+
+  assert.equal(joyride.length, 1);
+  assert.equal(joyride[0].name, "Joyride");
+  assert.equal(joyride[0].path, "Sets / Joyride");
+  assert.deepEqual(joyride[0].trackIds, [7, 11]);
+  assert.equal(
+    playlists.some((item) => item.name === "Leftover"),
+    false,
+  );
+
+  const once = playlists.find((item) => item.id === 8);
+  assert.ok(once);
+  assert.equal(once.name, "Once");
+  assert.equal(
+    playlists.some((item) => item.name === "Sets"),
+    false,
+  );
+  assert.equal(playlists.length, 2);
+});
+
 function fixture(): ArrayBuffer {
   const tables = [
     { type: 2, page: 1 },
@@ -198,6 +222,45 @@ function entryRow(): Uint8Array {
   view.setUint32(4, 7, true);
   view.setUint32(8, 3, true);
   return row;
+}
+
+function playlistEntry(index: number, trackId: number, playlistId: number): Uint8Array {
+  const row = new Uint8Array(12);
+  const view = new DataView(row.buffer);
+  view.setUint32(0, index, true);
+  view.setUint32(4, trackId, true);
+  view.setUint32(8, playlistId, true);
+  return row;
+}
+
+// The orphan is stored before the linked row. Same id, parent 0 / sort 0,
+// plus one id that appears only once at the root.
+function duplicateTreeFixture(): ArrayBuffer {
+  const tables = [
+    { type: 0, page: 1 },
+    { type: 7, page: 2 },
+    { type: 8, page: 3 },
+  ];
+  const file = new Uint8Array((tables.length + 1) * PAGE);
+  const header = new DataView(file.buffer);
+  header.setUint32(4, PAGE, true);
+  header.setUint32(8, tables.length, true);
+  tables.forEach((table, index) => {
+    const at = 28 + index * 16;
+    header.setUint32(at, table.type, true);
+    header.setUint32(at + 8, table.page, true);
+    header.setUint32(at + 12, table.page, true);
+  });
+
+  writeRow(file, 1, 0, trackRow());
+  writeRows(file, 2, 7, [
+    namedPlaylist(0, 0, 16, true, shortAscii("Sets")),
+    namedPlaylist(0, 0, 5, false, shortAscii("Leftover")),
+    namedPlaylist(16, 2, 5, false, shortAscii("Joyride")),
+    namedPlaylist(0, 0, 8, false, shortAscii("Once")),
+  ]);
+  writeRows(file, 3, 8, [playlistEntry(0, 7, 5), playlistEntry(1, 11, 5)]);
+  return file.buffer;
 }
 
 function historyPlaylistRow(): Uint8Array {

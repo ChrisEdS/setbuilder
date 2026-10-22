@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { rehydrateStickCovers, type StickTrack } from "./rekordbox-stick.ts";
+import { libraryTrackToSetTrack, rehydrateStickCovers, type StickTrack } from "./rekordbox-stick.ts";
 import { rememberStickFiles } from "./stick-audio.ts";
 import { DEFAULT_SET, type SetTrack } from "./set.ts";
 
@@ -120,6 +120,23 @@ test("rehydrateStickCovers uses Collection artwork files, not the MP3 path", () 
   ]);
   assert.ok(next.tracks[0].imageUrl?.startsWith("blob:"));
   rememberStickFiles([]);
+});
+
+test("a library Energy Level is stored on the set track the row can read", () => {
+  const picked = libraryTrackToSetTrack(
+    { artist: "Adam Ten", title: "I Never Knew", key: "7A", bpm: "125", energy: 7 },
+    "peak",
+    "groove",
+  );
+  assert.equal(picked.energyLevel, 7);
+  assert.equal(picked.energySource, "tag");
+  const soft = libraryTrackToSetTrack(
+    { artist: "Ada", title: "Prior", key: "8A", bpm: "123", energy: 0.62 },
+    "peak",
+    "groove",
+  );
+  assert.equal(soft.energyLevel, undefined);
+  assert.equal(soft.energySource, undefined);
 });
 
 test("rehydrateStickCovers leaves unmatched tracks alone", () => {

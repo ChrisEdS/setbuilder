@@ -405,7 +405,11 @@ export function libraryTrackToSetTrack(
   const stick = row.stick;
   const slug = `${row.artist}-${row.title}`.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   const fromTags = energyFromRekordboxTags({ comment: stick?.comment });
-  const tagged = stick?.energyLevel ?? fromTags;
+  const candidate = stick?.energyLevel ?? fromTags ?? row.energy;
+  const energyLevel =
+    candidate != null && hasKnownEnergy({ energyLevel: candidate, energySource: "tag" })
+      ? candidate
+      : undefined;
   return {
     id: libraryRowTrackId(row),
     name: row.title,
@@ -423,8 +427,8 @@ export function libraryTrackToSetTrack(
     note: "",
     // Set-Notiz stays empty — stick/MP3 comments only feed energyLevel.
     comment: "",
-    energyLevel: tagged ?? row.energy,
-    energySource: tagged != null ? "tag" : undefined,
+    energyLevel,
+    energySource: energyLevel != null ? "tag" : undefined,
     filePath: stick?.filePath || "",
     source: "rekordbox",
     why: t("exports.stick.whyLibrary"),
