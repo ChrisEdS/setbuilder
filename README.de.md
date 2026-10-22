@@ -14,19 +14,22 @@ SETBUILDER ist der ruhige Raum vor dem Gig. Du nimmst einen rekordbox-Stick, leg
 
 - 🎚️ **Ein Set mit Form.** Open, Lift, Peak, Release. Du siehst, wo die Nacht dünn ist und wo sie schon voll ist.
 - 🔑 **Keys, denen du trauen kannst.** Camelot entlang des Sets, Clashes markiert, bevor du in der Kabine stehst.
-- ⚡ **Energie, die zum Track gehört.** Aus den Dateien lesen, Fehlendes messen oder selbst setzen.
+- ⚡ **Energie, die zum Track gehört.** Aus den Dateien lesen, Fehlendes messen oder selbst setzen. Eine fertige Messung steht in der Details-Zeile. Unbekannte Energie bleibt leer.
 - 📌 **Opener und Closer, die bleiben.** Jede Sortierung respektiert die Enden, die du gepinnt hast.
 - 🎛️ **Eine Marke an jedem Anschluss.** Cut, Blend, Echo-out und der Rest. Jede hat eine Länge, und die Slot-Uhr folgt ihr. „—“ behält die Blend-Zeit aus dem Brief.
 - 🎲 **Eine andere Nacht aus derselben Kiste.** Andere Tracks, die Playlist, die Collection oder die History — wenn dieser Pool wirklich geladen ist.
 - 🛟 **Plan B.** Rollen und Alternativen für den Moment, in dem der Floor es sich anders überlegt.
 - 🎧 **Den Anschluss hören.** Eine Karte, die du ziehen und größer machen kannst. Vorher, dieser Track, nächster. Dieselbe Marke und Länge wie in der Setliste.
+- 🔍 **Eine engere Bibliothek.** Unter der Suche: Key-Nachbarschaft, BPM von und bis, Energie von und bis. Zusammen mit Artist, Titel, Key und „Passt zu“. Keine Danceability, keine Emotion, kein Genre-Score.
+- ⏭️ **Was danach passt.** Am fokussierten Track bis zu vier Kandidaten aus der geladenen Bibliothek, gereiht wie „Passt zu“. Ein Klick setzt den Track direkt dahinter, gleiche Phase, Rolle Groove.
+- 📝 **Eine Zeile für die Phase.** Optional, auf dem Bogen. Eine leere Zeile wird nicht gespeichert. Das Kabinen-PDF setzt sie auf das Phasen-Banner.
 - 🎒 **Exportieren, wenn es trägt.** Zuerst eine Checkliste. Der Stick für den Player, PDF oder Text für die Kabine, eine Datei für den Rechner. Oder das Set im Setbuilder speichern.
 
 ## Vier Schritte
 
 1. 📝 **Brief** — Titel, Dauer, Blend. Gig-Notizen falten sich unter Set-Info.
 2. 🔌 **Laden** — Stick verbinden. Eine Collection kann Keys ergänzen; sie ersetzt das Set nicht.
-3. 🎛️ **Bauen** — mit einer Playlist starten, Musik hinzufügen oder beides. Dann Phase, Rolle, Reihenfolge und jeder Anschluss.
+3. 🎛️ **Bauen** — mit einer Playlist starten, Musik hinzufügen oder beides. Die Bibliothek eingrenzen oder einen Track nehmen, der danach passt. Dann Phase, Rolle, Reihenfolge und jeder Anschluss.
 4. 🎒 **Exportieren** — Stick schreiben, Kabinenzettel drucken oder eine Datei exportieren.
 
 📖 **Anleitung mit Screenshots:** [docs/GUIDE.de.md](docs/GUIDE.de.md)

@@ -2,7 +2,7 @@
 
 [Deutsch](GUIDE.de.md) · **English** · [README](../README.md)
 
-How to prepare a set with rekordbox: connect and understand the library → build → export. Screenshots show a set open in the app.
+How to prepare a set with rekordbox: connect and understand the library → build → export. Screenshots show a set open in the app. The pictures are from 4.0. The words describe 4.1, including the library filters, Fits next, the phase line, and energy on the details line.
 
 The shipping client is the desktop app (port **4317**). Browser development uses port **4327**. This document describes **4.1.0**. Stick write, players, and streaming accounts are still unverified.
 
@@ -19,13 +19,13 @@ The shipping client is the desktop app (port **4317**). Browser development uses
 
 ![Stick setup and collection enrichment](screenshots/en/01-stick-setup-v400.png)
 
-**Rekordbox stick.** Prefer **Choose stick** (Chrome / Edge / desktop) for the volume root, or pick `PIONEER` / `PIONEER/rekordbox`. If the folder dialog fails or hangs, use **export.pdb** (`PIONEER/rekordbox/export.pdb` or `.PIONEER/…`) — the most reliable path. Avoid selecting the whole USB with every music file; that can stall. SETBUILDER finds the database itself, even in the hidden `PIONEER` or `.PIONEER` folder. It reads playlists and the played history. Order, key and BPM are kept; Energy Level is read from the rekordbox comment when Mixed In Key wrote it there. Files from the stick can be previewed directly. Status text shows while the dialog is open, while files are listed, and while the database is read.
+**Rekordbox stick.** Prefer **Choose stick** (Chrome / Edge / desktop) for the volume root, or pick `PIONEER` / `PIONEER/rekordbox`. If the folder dialog fails or hangs, use **export.pdb** (`PIONEER/rekordbox/export.pdb` or `.PIONEER/…`) — the most reliable path. Avoid selecting the whole USB with every music file; that can stall. SETBUILDER finds the database itself, even in the hidden `PIONEER` or `.PIONEER` folder. It reads playlists and the played history. Each playlist id is kept once. A leftover copy of that same id, with parent 0 and sort 0, is dropped. Order, key and BPM are kept; Energy Level is read from the rekordbox comment when Mixed In Key wrote it there. Files from the stick can be previewed directly. Status text shows while the dialog is open, while files are listed, and while the database is read.
 
 **Covers.** Art comes from `PIONEER/Artwork` on the stick (the larger `_m` file first, then the smaller JPEG). If that artwork file is missing, SETBUILDER reads the front cover from the MP3 ID3 APIC frame. Both paths need the stick folder in the current session.
 
 **Player check.** After a stick is chosen, a short strip shows one verdict and one primary action (prepare for player, eject, or open rekordbox). Details sit behind a toggle: green / amber / red dots mark real status (folder, database, player library); plain lines without a dot are info only (e.g. no SETBUILDER playlists yet). Green means Device Library players can use the stick; amber means a step is still needed — often *Prepare for player* so the old OneLibrary no longer hides your playlists, then *Eject*.
 
-**Collection enrichment.** In rekordbox, export via *File → Export Collection in XML…* and load the file. An unencrypted `master.db` and CSV work too. These sources index the library and match metadata such as key/BPM onto tracks already in the set; they do **not** start, replace or become the set by themselves. Playlist choice is under **Build set**. After import, the **Library** searches by artist, title or key. **Fits after** ranks tracks that can follow a chosen set track; **5 others** pages through more matches.
+**Collection enrichment.** In rekordbox, export via *File → Export Collection in XML…* and load the file. An unencrypted `master.db` and CSV work too. These sources index the library and match metadata such as key/BPM onto tracks already in the set; they do **not** start, replace or become the set by themselves. Playlist choice is under **Build set**. After import, the **Library** searches by artist, title, key or playlist. Under that search: key neighborhood (the same key, the relative major/minor, or ±1 on the wheel), BPM from/to, and energy from/to on the 1–10 scale. Those combine with the search and with **Fits after**, which ranks tracks that can follow a chosen set track. There is no danceability, emotion, or genre score. **5 others** pages through more matches.
 
 **Energy.** The Energy Level (1–10) comes from Mixed In Key. SETBUILDER reads it from the rekordbox comment (for example `7A - Energy 6`, `Energie 6`), from Grouping / Label / Remixer in the collection XML or CSV (`Energy` / `Energie`), from a lone `6` or `E8` in those fields, or you set it by hand in the setlist. USB `export.pdb` has comments but not Grouping — reload tags in rekordbox and load the collection XML if energy stays empty.
 
@@ -44,9 +44,11 @@ Under **Build set**, choose **Start with a playlist** from the connected stick, 
 
 Collection XML/CSV/DB never triggers this choice because it only enriches metadata and the library.
 
-Each track shows its source (rekordbox), phase and role. The number and the drag grip stay on the title line; opening details does not move them. Phase and role sit on one row. The next row is icon buttons: play, rehearse, up, down, energy (lightning), replace, opener (flag), closer (checkered flag), and remove. Energy uses the same hover tip as the other icons. Under the title, the join from the previous track (“Adjacent key (±1) · +1 BPM · Energy +1”) and the reasoning (“Why here”). **Details** holds key, BPM, energy, the transition, its length, and the set note. **How this works**, next to Build set, says what each of those is for. Change the order by dragging the grip or with the arrows.
+Each track shows its source (rekordbox), phase and role. The number and the drag grip stay on the title line; opening details does not move them. Phase and role sit on one row. The next row is icon buttons: play, rehearse, up, down, energy (lightning), replace, opener (flag), closer (checkered flag), and remove. Energy uses the same hover tip as the other icons. Under the title, the join from the previous track (“Adjacent key (±1) · +1 BPM · Energy +1”) and the reasoning (“Why here”). **Details** holds key, BPM, energy, the transition, its length, and the set note. The closed line reads like “7A · 125 BPM · Energy 7 · Long blend”. Energy is shown only when the level is known. Unknown energy, and the old anonymous Energy 1, stay blank. **How this works**, next to Build set, says what each of those is for. Change the order by dragging the grip or with the arrows.
 
-A transition marks how you go into the next track — cut, short blend, long blend, EQ swap, echo-out, and the others. It is not written into the audio file. “—” means no mark, and that join keeps the average blend from the brief. **Length** is the overlap: that time comes off the playing time, so the slot line and the overrun follow it. Pick a length or type one. If you leave it, the chosen transition suggests a time. **Reset**, beside Export, asks first and then clears the set.
+On the focused performance track, **Fits next** shows up to four candidates from the loaded library, ranked the same way as **Fits after**. A click inserts that track immediately after, in the same phase, as groove.
+
+A transition marks how you go into the next track — cut, short blend, long blend, EQ swap, echo-out, and the others. It is not written into the audio file. “—” means no mark, and that join keeps the average blend from the brief. **Length** is the overlap: that time comes off the playing time, so the slot line and the overrun follow it. The last track still loses its overlap. Pick a length or type one. A length you set, including 0, wins over the time the transition suggests. If you leave it, the chosen transition suggests a time. **Reset**, beside Export, asks first and then clears the set.
 
 **Replace** opens a drawer over the setlist, so the tracks below do not move. The header keeps the track name (“For «name»”). Focus moves into the drawer; Close or Escape returns it to the replace button. Play in that list is the same round play button as on the setlist row. Insert swaps the title.
 
@@ -96,7 +98,7 @@ Drag titles between the columns. **Plan B** asks for at least two fitting altern
 
 ![Arc and Camelot key path](screenshots/en/04-arc-key-path-v400.png)
 
-The arc shows how the phases fill the slot (active phase is highlighted; yellow means over the window) and how each track's energy sits against the phase's target band. Jumps of three levels or more are marked. Playing time follows the average blend time in the brief: 30 seconds, one minute, two minutes or four minutes off each track, and never less than 30 seconds of a short file. A marked join and its length replace that average on that track. Cue points and what you do live stay yours.
+The arc shows how the phases fill the slot (active phase is highlighted; yellow means over the window) and how each track's energy sits against the phase's target band. Jumps of three levels or more are marked. Under each phase, one optional line says what that part is for — the placeholder reads “e.g. driving, 128”. An empty line is not stored. The set file stays version 1. The booth PDF prints the line on that phase's banner. The arc picture is from 4.0, so the line is not in it. Playing time follows the average blend time in the brief: 30 seconds, one minute, two minutes or four minutes off each track, and never less than 30 seconds of a short file. A marked join and its length replace that average on that track. Cue points and what you do live stay yours.
 
 **Key path** shows Camelot along the played order. Each card has a short relation badge (Same, ±1, Clash, …), the key, energy when known, and BPM. Drag cards to reorder; use **Sort** for the techniques above. Three stats with a **?** explain the numbers:
 - **Keys set** — share of performance tracks with a Camelot key
@@ -127,7 +129,7 @@ The **Export** menu is grouped by where the set goes next. **Save set**, under I
 
 ### For the booth
 
-- **PDF:** print view with brief, order, key, BPM and booth-only set notes (save as PDF in the print dialog)
+- **PDF:** print view with brief, order, key, BPM, a phase line when you wrote one, and booth-only set notes (save as PDF in the print dialog)
 - **Copy text:** set with brief and booth-only set notes to the clipboard
 
 ### For the computer

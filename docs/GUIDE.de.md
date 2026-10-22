@@ -2,7 +2,7 @@
 
 **Deutsch** · [English](GUIDE.md) · [README](../README.de.md)
 
-So bereitest du ein Set mit rekordbox vor: Bibliothek verbinden und verstehen → bauen → exportieren. Die Screenshots zeigen ein in der App geöffnetes Set.
+So bereitest du ein Set mit rekordbox vor: Bibliothek verbinden und verstehen → bauen → exportieren. Die Screenshots zeigen ein in der App geöffnetes Set. Die Bilder sind von 4.0. Der Text beschreibt 4.1, einschließlich Bibliotheksfilter, Passt danach, die Phasenzeile und Energie in der Details-Zeile.
 
 Die ausgelieferte App ist die Desktop-App (Port **4317**). Die Browser-Entwicklung nutzt Port **4327**. Dieses Dokument beschreibt **4.1.0**. Stick-Schreiben, Player und Streaming-Konten sind weiter ungeprüft.
 
@@ -19,13 +19,13 @@ Die ausgelieferte App ist die Desktop-App (Port **4317**). Die Browser-Entwicklu
 
 ![Stick einrichten und Collection anreichern](screenshots/de/01-stick-setup-v400.png)
 
-**Rekordbox-Stick.** Am besten **Stick wählen** (Chrome / Edge / Desktop) für die Volume-Wurzel, oder `PIONEER` / `PIONEER/rekordbox`. Wenn der Ordner-Dialog fehlschlägt oder hängt: **export.pdb** (`PIONEER/rekordbox/export.pdb` oder `.PIONEER/…`) — der zuverlässigste Weg. Nicht den ganzen USB mit allen Musikdateien wählen, das kann ewig dauern. SETBUILDER findet die Datenbank selbst, auch im versteckten Ordner `PIONEER` oder `.PIONEER`. Gelesen werden Playlists und die gespielte History. Reihenfolge, Key und BPM bleiben erhalten; der Energy Level wird aus dem rekordbox-Kommentar gelesen, wenn Mixed In Key ihn dort geschrieben hat. Dateien vom Stick lassen sich direkt vorhören. Während Dialog, Dateiliste und Datenbank-Lesen steht ein Status.
+**Rekordbox-Stick.** Am besten **Stick wählen** (Chrome / Edge / Desktop) für die Volume-Wurzel, oder `PIONEER` / `PIONEER/rekordbox`. Wenn der Ordner-Dialog fehlschlägt oder hängt: **export.pdb** (`PIONEER/rekordbox/export.pdb` oder `.PIONEER/…`) — der zuverlässigste Weg. Nicht den ganzen USB mit allen Musikdateien wählen, das kann ewig dauern. SETBUILDER findet die Datenbank selbst, auch im versteckten Ordner `PIONEER` oder `.PIONEER`. Gelesen werden Playlists und die gespielte History. Jede Playlist-Id bleibt einmal. Eine übrig gebliebene Kopie derselben Id, mit Parent 0 und Sort 0, fällt weg. Reihenfolge, Key und BPM bleiben erhalten; der Energy Level wird aus dem rekordbox-Kommentar gelesen, wenn Mixed In Key ihn dort geschrieben hat. Dateien vom Stick lassen sich direkt vorhören. Während Dialog, Dateiliste und Datenbank-Lesen steht ein Status.
 
 **Cover.** Das Bild kommt aus `PIONEER/Artwork` auf dem Stick (zuerst die größere `_m`-Datei, dann das kleinere JPEG). Fehlt die Artwork-Datei, liest SETBUILDER das Front-Cover aus dem ID3-APIC-Frame der MP3. Beide Wege brauchen den Stick-Ordner in der aktuellen Sitzung.
 
 **Player-Check.** Nach dem Wählen zeigt ein kurzer Strip ein Urteil und eine Primäraktion (Für Player vorbereiten, Auswerfen oder rekordbox öffnen). Details liegen hinter einem Toggle: grüne / gelbe / rote Punkte markieren echten Status (Ordner, Datenbank, Player-Bibliothek); Zeilen ohne Punkt sind nur Info (z. B. noch keine SETBUILDER-Playlists). Grün heißt: Device-Library-Player können den Stick nutzen; Amber heißt: es fehlt noch ein Schritt — oft *Für Player vorbereiten*, damit die alte OneLibrary deine Playlists nicht verdeckt, danach *Auswerfen*.
 
-**Collection-Anreicherung.** In rekordbox unter *File → Export Collection in XML…* exportieren und laden. Unverschlüsselte `master.db` und CSV gehen ebenfalls. Diese Quellen indexieren die Bibliothek und matchen Metadaten wie Key/BPM auf Tracks, die schon im Set stehen; allein starten, ersetzen oder bilden sie **kein** Set. Die Playlist-Auswahl liegt unter **Set bauen**. Nach dem Import sucht die **Bibliothek** nach Artist, Titel oder Key. **Passt zu** rankt Tracks hinter einem gewählten Set-Track; **5 andere** blättert weitere Treffer.
+**Collection-Anreicherung.** In rekordbox unter *File → Export Collection in XML…* exportieren und laden. Unverschlüsselte `master.db` und CSV gehen ebenfalls. Diese Quellen indexieren die Bibliothek und matchen Metadaten wie Key/BPM auf Tracks, die schon im Set stehen; allein starten, ersetzen oder bilden sie **kein** Set. Die Playlist-Auswahl liegt unter **Set bauen**. Nach dem Import sucht die **Bibliothek** nach Artist, Titel, Key oder Playlist. Unter der Suche: Key-Nachbarschaft (derselbe Key, relativer Dur/Moll oder ±1 auf dem Wheel), BPM von/bis und Energie von/bis auf der Skala 1–10. Das gilt zusammen mit der Suche und mit **Passt zu**, das Tracks hinter einem gewählten Set-Track rankt. Es gibt keine Danceability, keine Emotion und keinen Genre-Score. **5 andere** blättert weitere Treffer.
 
 **Energie.** Der Energy Level (1–10) kommt aus Mixed In Key. SETBUILDER liest ihn aus dem rekordbox-Kommentar (zum Beispiel `7A - Energy 6`, `Energie 6`), aus Grouping / Label / Remixer in der Collection-XML oder CSV (`Energy` / `Energie`), aus einer nackten `6` oder `E8` in diesen Feldern, oder von Hand in der Setliste. Der USB-`export.pdb` hat Kommentare, aber kein Grouping — in rekordbox Tags neu laden und die Collection-XML laden, wenn die Energie leer bleibt.
 
@@ -44,9 +44,11 @@ Unter **Set bauen** wählst du **Mit einer Playlist starten** vom verbundenen St
 
 Collection-XML/CSV/DB löst diese Auswahl nie aus, weil es nur Metadaten und Bibliothek anreichert.
 
-Jeder Track zeigt die Quelle (rekordbox), Phase und Rolle. Die Zahl und der Ziehgriff bleiben auf der Titelzeile; aufgeklappte Details ziehen sie nicht mit. Phase und Rolle stehen in einer Zeile. Darunter liegen Icon-Buttons: Play, Vorhören, hoch, runter, Energie (Blitz), Ersatz, Opener (Fahne), Closer (karierte Flagge) und Entfernen. Energie nutzt denselben Hover-Tipp wie die anderen Icons. Unter dem Titel stehen der Anschluss zum Vorgänger („Nachbar-Key (±1) · +1 BPM · Energie +1“) und die Begründung („Warum hier“). **Details** hält Key, BPM, Energie, den Übergang, seine Länge und die Set-Notiz. **So ist es gedacht**, neben Set bauen, sagt, wofür jedes davon da ist. Die Reihenfolge änderst du am Griff oder mit den Pfeilen.
+Jeder Track zeigt die Quelle (rekordbox), Phase und Rolle. Die Zahl und der Ziehgriff bleiben auf der Titelzeile; aufgeklappte Details ziehen sie nicht mit. Phase und Rolle stehen in einer Zeile. Darunter liegen Icon-Buttons: Play, Vorhören, hoch, runter, Energie (Blitz), Ersatz, Opener (Fahne), Closer (karierte Flagge) und Entfernen. Energie nutzt denselben Hover-Tipp wie die anderen Icons. Unter dem Titel stehen der Anschluss zum Vorgänger („Nachbar-Key (±1) · +1 BPM · Energie +1“) und die Begründung („Warum hier“). **Details** hält Key, BPM, Energie, den Übergang, seine Länge und die Set-Notiz. Die geschlossene Zeile liest sich wie „7A · 125 BPM · Energie 7 · Long blend“. Energie steht nur da, wenn das Level bekannt ist. Unbekannte Energie und die alte anonyme Energy 1 bleiben leer. **So ist es gedacht**, neben Set bauen, sagt, wofür jedes davon da ist. Die Reihenfolge änderst du am Griff oder mit den Pfeilen.
 
-Ein Übergang markiert, wie du in den nächsten Track gehst: Cut, Short blend, Long blend, EQ swap, Echo-out und die übrigen. Er wird nicht in die Audiodatei geschrieben. „—“ heißt keine Marke, und dieser Anschluss behält die Blend-Zeit aus dem Brief. **Länge** ist die Überlappung: diese Zeit geht von der Spielzeit ab, Slot-Zeile und Überlänge folgen ihr. Du wählst eine Länge oder tippst sie. Lässt du sie leer, schlägt der Übergang eine Zeit vor. **Zurücksetzen**, neben Exportieren, fragt zuerst und leert dann das Set.
+Am fokussierten Performance-Track zeigt **Passt danach** bis zu vier Kandidaten aus der geladenen Bibliothek, gereiht wie **Passt zu**. Ein Klick setzt den Track direkt dahinter, in derselben Phase, als Groove.
+
+Ein Übergang markiert, wie du in den nächsten Track gehst: Cut, Short blend, Long blend, EQ swap, Echo-out und die übrigen. Er wird nicht in die Audiodatei geschrieben. „—“ heißt keine Marke, und dieser Anschluss behält die Blend-Zeit aus dem Brief. **Länge** ist die Überlappung: diese Zeit geht von der Spielzeit ab, Slot-Zeile und Überlänge folgen ihr. Der letzte Track verliert seine Überlappung weiter. Du wählst eine Länge oder tippst sie. Eine gesetzte Länge, auch 0, schlägt die Zeit, die der Übergang vorschlägt. Lässt du sie leer, schlägt der Übergang eine Zeit vor. **Zurücksetzen**, neben Exportieren, fragt zuerst und leert dann das Set.
 
 **Ersatz** öffnet eine Schublade über der Setliste, die Tracks darunter rutschen nicht. Die Kopfzeile behält den Tracknamen („Für „Name““). Der Fokus geht in die Schublade; Schließen oder Escape bringt ihn zum Ersatz-Button zurück. Play in dieser Liste ist derselbe runde Play-Button wie in der Setlisten-Zeile. Einsetzen tauscht den Titel.
 
@@ -96,7 +98,7 @@ Titel lassen sich zwischen den Spalten ziehen. **Plan B** verlangt pro Phase min
 
 ![Bogen und Camelot-Key-Verlauf](screenshots/de/04-arc-key-path-v400.png)
 
-Der Bogen zeigt, wie die Phasen den Slot füllen (aktive Phase hervorgehoben; gelb heißt über dem Fenster) und wie die Energie jedes Tracks zum Zielband der Phase steht. Sprünge ab drei Stufen werden markiert. Die Spielzeit folgt der durchschnittlichen Blend-Zeit im Brief: 30 Sekunden, eine Minute, zwei Minuten oder vier Minuten weniger pro Track, und nie unter 30 Sekunden einer kurzen Datei. Ein gesetzter Übergang und seine Länge ersetzen diesen Durchschnitt an diesem Track. Cue-Punkte und was du live tust, bleiben bei dir.
+Der Bogen zeigt, wie die Phasen den Slot füllen (aktive Phase hervorgehoben; gelb heißt über dem Fenster) und wie die Energie jedes Tracks zum Zielband der Phase steht. Sprünge ab drei Stufen werden markiert. Unter jeder Phase sagt eine optionale Zeile, wofür dieser Teil da ist — der Platzhalter lautet „z. B. treibend, 128“. Eine leere Zeile wird nicht gespeichert. Die Set-Datei bleibt Version 1. Das Kabinen-PDF setzt die Zeile auf das Banner dieser Phase. Das Bogen-Bild ist von 4.0, die Zeile ist darauf nicht zu sehen. Die Spielzeit folgt der durchschnittlichen Blend-Zeit im Brief: 30 Sekunden, eine Minute, zwei Minuten oder vier Minuten weniger pro Track, und nie unter 30 Sekunden einer kurzen Datei. Ein gesetzter Übergang und seine Länge ersetzen diesen Durchschnitt an diesem Track. Cue-Punkte und was du live tust, bleiben bei dir.
 
 **Key-Verlauf** zeigt Camelot entlang der gespielten Reihenfolge. Jede Karte hat ein kurzes Relationen-Badge (Gleich, ±1, Clash, …), den Key, Energie wenn bekannt und BPM. Karten ziehen zum Umsortieren; **Sortieren** für die Techniken oben. Drei Kacheln mit **?** erklären die Zahlen:
 - **Keys gesetzt** — Anteil der Performance-Tracks mit Camelot-Key
@@ -127,7 +129,7 @@ Das Menü **Exportieren** ist nach Ziel gruppiert. **Set speichern**, unter Im S
 
 ### Für die Kabine
 
-- **PDF:** Druckansicht mit Brief, Reihenfolge, Key, BPM und Kabinen-Set-Notizen (im Dialog „Als PDF speichern“)
+- **PDF:** Druckansicht mit Brief, Reihenfolge, Key, BPM, einer Phasenzeile wenn du eine geschrieben hast, und Kabinen-Set-Notizen (im Dialog „Als PDF speichern“)
 - **Text kopieren:** Set mit Brief und Kabinen-Set-Notizen in die Zwischenablage
 
 ### Für den Rechner

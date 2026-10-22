@@ -4052,14 +4052,16 @@ export function SetBuilder() {
                             {localizeWhy(track.why, t)}
                           </p>
                         ) : null}
+                        {focusTrackId === track.id &&
+                        track.role !== "safety" &&
+                        libraryRows.length > 0 ? (
+                          <FitsNext
+                            rows={libraryRows}
+                            track={track}
+                            onAdd={(row) => addLibraryAfter(track.id, row)}
+                          />
+                        ) : null}
                       </div>
-                    ) : null}
-                    {focusTrackId === track.id && track.role !== "safety" && libraryRows.length > 0 ? (
-                      <FitsNext
-                        rows={libraryRows}
-                        track={track}
-                        onAdd={(row) => addLibraryAfter(track.id, row)}
-                      />
                     ) : null}
                     {replaceFor === track.id ? (
                       <ReplaceMenu

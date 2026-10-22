@@ -14,19 +14,22 @@ SETBUILDER is the quiet room before the gig. You bring a rekordbox stick, shape 
 
 - 🎚️ **A set with a shape.** Open, lift, peak, release. You see where the night is thin and where it is already full.
 - 🔑 **Keys you can trust.** Camelot along the set, with clashes marked before you are in the booth.
-- ⚡ **Energy that belongs to the track.** Read it from your files, measure what is missing, or set it by hand.
+- ⚡ **Energy that belongs to the track.** Read it from your files, measure what is missing, or set it by hand. A finished reading shows on the details line. Unknown energy stays blank.
 - 📌 **An opener and a closer that stay put.** Every sort respects the ends you pinned.
 - 🎛️ **A mark on every join.** Cut, blend, echo-out, and the rest. Each one has a length, and the slot clock follows it. “—” keeps the average blend from the brief.
 - 🎲 **Another night from the same crate.** Different songs, the playlist, the collection, or history — when that pool is actually loaded.
 - 🛟 **Plan B.** Roles and alternatives for the moment the floor changes its mind.
 - 🎧 **Hear the handoff.** A card you can drag and resize. Previous, this track, next. The same mark and length as the setlist.
+- 🔍 **A narrower library.** Under the search: key neighborhood, BPM from and to, energy from and to. Together with artist, title, key, and “Fits after”. No danceability, emotion, or genre score.
+- ⏭️ **What fits next.** On the focused track, up to four candidates from the loaded library, ranked like “Fits after”. A click puts the track immediately after, same phase, role groove.
+- 📝 **One line for the phase.** Optional, on the arc. An empty line is not stored. The booth PDF prints it on the phase banner.
 - 🎒 **Export when it holds.** A checklist first. The stick for the player, a PDF or text for the booth, a file for the computer. Or save the set in SETBUILDER.
 
 ## Four steps
 
 1. 📝 **Brief** — title, duration, blend. Gig notes fold under Set info.
 2. 🔌 **Load** — connect the stick. A collection file can fill in keys; it does not replace the set.
-3. 🎛️ **Build** — start from a playlist, add music, or both. Then phase, role, order, and each join.
+3. 🎛️ **Build** — start from a playlist, add music, or both. Narrow the library, or take a track that fits next. Then phase, role, order, and each join.
 4. 🎒 **Export** — write the stick, print the booth sheet, or export a file.
 
 📖 **Walkthrough with screenshots:** [docs/GUIDE.md](docs/GUIDE.md)

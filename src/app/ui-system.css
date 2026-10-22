@@ -418,10 +418,11 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 .set-shell .library-refine {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(9.5rem, 1.4fr) repeat(4, minmax(6.5rem, 1fr));
   flex: 1 1 100%;
-  flex-wrap: wrap;
-  gap: 0.45rem 0.6rem;
+  width: 100%;
+  gap: 0.55rem 0.75rem;
   align-items: end;
 }
 
@@ -431,18 +432,42 @@ html[data-frame="mac"] .set-shell .hero-copy {
   min-width: 0;
   color: var(--ui-muted, #b3b3b3);
   font-size: 0.72rem;
+  line-height: 1.25;
   letter-spacing: 0.02em;
 }
 
 .set-shell .library-refine input,
 .set-shell .library-refine select {
-  width: 6.5rem;
+  width: 100%;
   min-width: 0;
+  box-sizing: border-box;
+}
+
+.set-shell .library-refine select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  padding-right: 2rem !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23b3b3b3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.65rem center !important;
+  background-size: 1rem !important;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 720px) {
+  .set-shell .library-refine {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .set-shell .library-refine label:first-child {
+    grid-column: 1 / -1;
+  }
 }
 
 .set-shell .phase-purpose {
   display: block;
   min-width: 0;
+  margin-top: 0.2rem;
 }
 
 .set-shell .phase-purpose input {
@@ -451,30 +476,88 @@ html[data-frame="mac"] .set-shell .hero-copy {
   box-sizing: border-box;
 }
 
-.set-shell .manual-row .fits-next {
-  grid-column: 2;
+/* Same text column as “Warum hier”: a quiet second line, not a button row. */
+.set-shell .manual-subline:has(.fits-next) {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem;
+  align-items: baseline;
+  row-gap: 0.2rem;
+}
+
+.set-shell .manual-row .fits-next {
+  flex: 1 0 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.4rem;
+  row-gap: 0.2rem;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 .set-shell .fits-next > span {
+  flex: 0 0 auto;
   color: #b3b3b3;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 400;
+  line-height: 1.35;
 }
 
 .set-shell .fits-next-add {
+  appearance: none;
   display: inline-flex;
   align-items: baseline;
-  gap: 0.35rem;
-  font-size: 0.8rem;
+  gap: 0.28rem;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0 0.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+  color: #e8e8e8;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.45;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+
+.set-shell .fits-next-add:hover {
+  border-color: rgba(255, 255, 255, 0.32);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.set-shell .fits-next-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .set-shell .fits-next-add em {
-  color: #b3b3b3;
-  font-size: 0.72rem;
+  flex: 0 0 auto;
+  color: #8a8a8a;
+  font-size: 0.68rem;
   font-style: normal;
+  font-weight: 450;
+}
+
+.set-shell .track-details > summary {
+  align-items: baseline;
+}
+
+.set-shell .track-details .td-values {
+  flex: 1 1 8rem;
+  min-width: 0;
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
 }
 
 .set-shell .library-browser-toolbar .library-search-field {

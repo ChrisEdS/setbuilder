@@ -6106,7 +6106,7 @@ html[data-frame="mac"] .set-shell label.btn {
   min-height: 0;
 }
 
-.manual-subline:not(:has(.mix-join)):not(:has(.why-inline)) {
+.manual-subline:not(:has(.mix-join)):not(:has(.why-inline)):not(:has(.fits-next)) {
   display: none;
 }
 
