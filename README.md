@@ -4,7 +4,7 @@
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
 
-**Version 4.1.0** · Out of the playlist.
+**Version 4.2.0** · Out of the playlist.
 
 The stick is the material. You draw the arc, set each join and its length, and hear if it holds.
 

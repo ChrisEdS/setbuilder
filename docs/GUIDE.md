@@ -2,9 +2,9 @@
 
 [Deutsch](GUIDE.de.md) · **English** · [README](../README.md)
 
-How to prepare a set with rekordbox: connect and understand the library → build → export. Screenshots show a set open in the app. The pictures are from 4.0. The words describe 4.1, including the library filters, Fits next, the phase line, and energy on the details line.
+How to prepare a set with rekordbox: connect and understand the library → build → export. Screenshots show a set open in the app. The pictures are from 4.0. The words describe 4.2, including the library filters, Fits next, the phase line, and energy on the details line.
 
-The shipping client is the desktop app (port **4317**). Browser development uses port **4327**. This document describes **4.1.0**. Stick write, players, and streaming accounts are still unverified.
+The shipping client is the desktop app (port **4317**). Browser development uses port **4327**. This document describes **4.2.0**. Stick write, players, and streaming accounts are still unverified.
 
 > **Before the gig:** Always test the stick on the actual player (playlist visible, tracks playable). Keep a backup — SETBUILDER writes to `export.pdb` and keeps copies under `SETBUILDER-Backup/`, but you are responsible for your media. No warranty. Works on my machine. :)
 

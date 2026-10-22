@@ -4,7 +4,7 @@
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
 
-**Version 4.1.0** · Raus aus der Playlist.
+**Version 4.2.0** · Raus aus der Playlist.
 
 Der Stick ist das Material. Du ziehst den Bogen, setzt Übergang und Länge und hörst, ob der Anschluss trägt.
 
