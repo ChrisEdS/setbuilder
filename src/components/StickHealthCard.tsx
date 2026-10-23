@@ -424,10 +424,12 @@ export function StickHealthCard({
     >
       <div className="stick-strip-row">
         <span className="stick-strip-dot" aria-hidden="true" />
-        <span className="stick-strip-verdict">{verdict}</span>
+        <div className="stick-strip-copy">
+          <span className="stick-strip-verdict">{verdict}</span>
+          {followUp}
+        </div>
         {actions}
       </div>
-      {followUp}
       {details}
     </section>
   );

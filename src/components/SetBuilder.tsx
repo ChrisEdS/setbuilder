@@ -44,6 +44,7 @@ import {
   requestPreviewResume,
   subscribePreviewTransport,
 } from "@/lib/preview-transport";
+import { PlaceInSetMenu } from "@/components/PlaceInSetMenu";
 import { ReplaceMenu } from "@/components/ReplaceMenu";
 import { SetGuideDrawer } from "@/components/SetGuideDrawer";
 import type { LibraryRow } from "@/components/LibraryPanel";
@@ -51,6 +52,7 @@ import {
   historyPoolCount,
   libraryTrackToSetTrack,
   mediaPathsForDraft,
+  readRekordboxStick,
   rehydrateStickCovers,
   sourcePoolFromStickLibrary,
   stickLibraryPoolCount,
@@ -61,10 +63,17 @@ import {
 import {
   hydrateStickMedia,
   loadPersistedStickHandle,
+  pickAndRememberStick,
   readStickFromHandle,
   stickPermission,
 } from "@/lib/stick-session";
-import { stickFileCount } from "@/lib/stick-audio";
+import {
+  getStickFilesEpoch,
+  rememberStickFiles,
+  stickFileCount,
+  stickFileInSession,
+  subscribeStickFiles,
+} from "@/lib/stick-audio";
 import {
   applyCoverUrls,
   applyEnergyLevels,
@@ -134,12 +143,12 @@ import {
   clearOpener,
   pinCloser,
   pinOpener,
+  placeInPerformance,
   toggleKeepPin,
   withoutEndPins,
 } from "@/lib/set-anchors";
 import { energyStatusLine, hasKnownEnergy } from "@/lib/energy";
 import { assessGigReady } from "@/lib/gig-ready";
-import { stickFileInSession } from "@/lib/stick-audio";
 import type { StickHealth } from "@/lib/stick-health";
 import type { SetSortTechnique } from "@/lib/sort-set";
 import { looksLikeMusicLink, sourceLabel } from "@/lib/music-link";
@@ -519,6 +528,7 @@ export function SetBuilder() {
   const [replaceUndo, setReplaceUndo] = useState<SetDraft | null>(null);
   const [trimUndo, setTrimUndo] = useState<TrimRestore[] | null>(null);
   const [replaceFor, setReplaceFor] = useState<string | null>(null);
+  const [placeFor, setPlaceFor] = useState<string | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
   /** Setliste: tracks whose key, BPM, energy and comment fields are open */
   const [openDetails, setOpenDetails] = useState<Set<string>>(() => new Set());
@@ -1680,6 +1690,26 @@ export function SetBuilder() {
     }));
   }
 
+  /** Put an Alternative into the performance before or after a playlist track. */
+  function placeAlternative(altId: string, relativeId: string, side: "before" | "after") {
+    const alt = draft.tracks.find((track) => track.id === altId);
+    const relative = draft.tracks.find((track) => track.id === relativeId);
+    if (!alt || !relative) return;
+    setDraft((current) =>
+      placeInPerformance(current, altId, {
+        beforeId: side === "before" ? relativeId : null,
+        afterId: side === "after" ? relativeId : null,
+      }),
+    );
+    setPlaceFor(null);
+    setStatus(
+      t(side === "before" ? "builder.status.placedBefore" : "builder.status.placedAfter", {
+        name: alt.name,
+        relative: relative.name,
+      }),
+    );
+  }
+
   /** Arrow buttons swap with the neighbour the list shows, not with a hidden Alternative. */
   function moveTrack(id: string, direction: -1 | 1) {
     const index = visibleTimeline.findIndex((track) => track.id === id);
@@ -1772,14 +1802,72 @@ export function SetBuilder() {
     else if (kind === "m3u") exportM3u();
   }
 
-  const pendingChecks = pendingTake
-    ? assessGigReady({
-        tracks: draft.tracks,
-        action: pendingTake === "stick" ? "stick" : pendingTake === "xml" || pendingTake === "m3u" ? "desk" : "booth",
-        fileInSession: stickFileInSession,
-        health: stickHealth,
-      })
-    : [];
+  const stickFilesEpoch = useSyncExternalStore(
+    subscribeStickFiles,
+    getStickFilesEpoch,
+    () => 0,
+  );
+
+  const pendingChecks = useMemo(
+    () =>
+      pendingTake
+        ? assessGigReady({
+            tracks: draft.tracks,
+            action:
+              pendingTake === "stick"
+                ? "stick"
+                : pendingTake === "xml" || pendingTake === "m3u"
+                  ? "desk"
+                  : "booth",
+            fileInSession: stickFileInSession,
+            health: stickHealth,
+          })
+        : [],
+    // stickFilesEpoch: re-run after rememberStickFiles / hydrateStickMedia.
+    [pendingTake, draft.tracks, stickHealth, stickFilesEpoch],
+  );
+
+  /** Re-pick the stick folder so gig-ready file paths match this session again. */
+  async function reselectStickForGigReady() {
+    const existing = await loadPersistedStickHandle();
+    const handle =
+      existing && (await stickPermission(existing, "read", true))
+        ? existing
+        : await pickAndRememberStick("read");
+    if (!handle) return;
+    await enqueueWork(
+      async () => {
+        const stick = await readStickFromHandle(handle);
+        await hydrateStickMedia(handle, mediaPathsForDraft(draft, stick.library));
+        setLibraryRows(stickLibraryRows(stick.library, stick.sets));
+        setStickReady(true);
+      },
+      {
+        operation: "stick-reconnect",
+        key: `gig-ready:${draft.title}`,
+        label: t("builder.work.stickReconnect"),
+        target: handle.name,
+      },
+    );
+  }
+
+  async function reselectStickFilesForGigReady(files: File[]) {
+    if (!files.length) return;
+    await enqueueWork(
+      async () => {
+        const stick = await readRekordboxStick(files);
+        rememberStickFiles(files);
+        setLibraryRows(stickLibraryRows(stick.library, stick.sets));
+        setStickReady(true);
+      },
+      {
+        operation: "stick-reconnect",
+        key: `gig-ready-files:${files[0]?.webkitRelativePath.split("/")[0] ?? "stick"}`,
+        label: t("builder.work.stickReconnect"),
+        target: files[0]?.webkitRelativePath.split("/")[0],
+      },
+    );
+  }
 
   function replaceTrack(targetId: string, replacementId: string) {
     setDraft((current) => {
@@ -3495,6 +3583,8 @@ export function SetBuilder() {
               checks={pendingChecks}
               onClose={() => setPendingTake(null)}
               onContinue={confirmTake}
+              onReselectStick={reselectStickForGigReady}
+              onReselectStickFiles={reselectStickFilesForGigReady}
             />
             <StickWriteDialog
               open={stickOpen}
@@ -3962,23 +4052,41 @@ export function SetBuilder() {
                               }
                             />
                           ) : null}
-                          {track.role !== "safety" ? (
+                          {track.role === "safety" ? (
+                            <Tip text={t("builder.row.placeInSetTip")}>
+                              <button
+                                type="button"
+                                className="icon-action"
+                                aria-expanded={placeFor === track.id}
+                                aria-label={t("builder.row.placeInSet")}
+                                onClick={() => {
+                                  setReplaceFor(null);
+                                  setPlaceFor((current) =>
+                                    current === track.id ? null : track.id,
+                                  );
+                                }}
+                              >
+                                <ActionIcon name="replace" />
+                              </button>
+                            </Tip>
+                          ) : (
                             <Tip text={t("builder.row.replaceTitle")}>
                               <button
                                 type="button"
                                 className="icon-action"
                                 aria-expanded={replaceFor === track.id}
                                 aria-label={t("builder.row.replace")}
-                                onClick={() =>
+                                onClick={() => {
+                                  setPlaceFor(null);
                                   setReplaceFor((current) =>
                                     current === track.id ? null : track.id,
-                                  )
-                                }
+                                  );
+                                }}
                               >
                                 <ActionIcon name="replace" />
                               </button>
                             </Tip>
-                          ) : null}
+                          )}
                           {track.role !== "safety" ? (
                             <Tip
                               text={
@@ -4045,35 +4153,41 @@ export function SetBuilder() {
                               </button>
                             </Tip>
                           ) : null}
-                          {track.role !== "safety" ? (
-                            <Tip
-                              text={
-                                draft.pinnedIds?.includes(track.id)
-                                  ? t("builder.row.clearPinTip")
+                          <Tip
+                            text={
+                              draft.pinnedIds?.includes(track.id)
+                                ? t("builder.row.clearPinTip")
+                                : track.role === "safety"
+                                  ? t("builder.row.setPinFromAltTitle")
                                   : t("builder.row.setPinTitle")
+                            }
+                          >
+                            <button
+                              type="button"
+                              className={
+                                draft.pinnedIds?.includes(track.id)
+                                  ? "icon-action is-anchor"
+                                  : "icon-action"
                               }
+                              aria-label={
+                                draft.pinnedIds?.includes(track.id)
+                                  ? t("builder.row.clearPin")
+                                  : t("builder.row.setPin")
+                              }
+                              aria-pressed={Boolean(draft.pinnedIds?.includes(track.id))}
+                              onClick={() => {
+                                const fromAlt = track.role === "safety";
+                                setDraft((current) => toggleKeepPin(current, track.id));
+                                if (fromAlt && !draft.pinnedIds?.includes(track.id)) {
+                                  setStatus(
+                                    t("builder.status.pinnedFromAlt", { name: track.name }),
+                                  );
+                                }
+                              }}
                             >
-                              <button
-                                type="button"
-                                className={
-                                  draft.pinnedIds?.includes(track.id)
-                                    ? "icon-action is-anchor"
-                                    : "icon-action"
-                                }
-                                aria-label={
-                                  draft.pinnedIds?.includes(track.id)
-                                    ? t("builder.row.clearPin")
-                                    : t("builder.row.setPin")
-                                }
-                                aria-pressed={Boolean(draft.pinnedIds?.includes(track.id))}
-                                onClick={() =>
-                                  setDraft((current) => toggleKeepPin(current, track.id))
-                                }
-                              >
-                                <ActionIcon name="pin" />
-                              </button>
-                            </Tip>
-                          ) : null}
+                              <ActionIcon name="pin" />
+                            </button>
+                          </Tip>
                           <Tip text={t("builder.row.removeTip")} end>
                             <button
                               type="button"
@@ -4115,6 +4229,16 @@ export function SetBuilder() {
                         playingId={
                           previewTransport.playing ? previewTransport.trackId : null
                         }
+                      />
+                    ) : null}
+                    {placeFor === track.id ? (
+                      <PlaceInSetMenu
+                        tracks={draft.tracks}
+                        altId={track.id}
+                        onPlace={(relativeId, side) =>
+                          placeAlternative(track.id, relativeId, side)
+                        }
+                        onClose={() => setPlaceFor(null)}
                       />
                     ) : null}
                     <details

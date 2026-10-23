@@ -5,6 +5,7 @@ import {
   applySetAnchors,
   pinCloser,
   pinOpener,
+  placeInPerformance,
   toggleKeepPin,
   suggestCloserId,
   suggestOpenerId,
@@ -162,6 +163,46 @@ test("a keep-pin leaves the track in place and drops an end pin on the same trac
   const opened = pinOpener(pinned, "b");
   assert.equal(opened.openerId, "b");
   assert.deepEqual(opened.pinnedIds, ["a"]);
+});
+
+test("placeInPerformance inserts an Alternative before or after a playlist track", () => {
+  const draft = {
+    ...DEFAULT_SET,
+    tracks: [
+      track("a", { phase: "open" }),
+      track("b", { phase: "peak" }),
+      track("c", { phase: "release" }),
+      track("alt", { phase: "peak", role: "safety", why: "trimmed" }),
+    ],
+  };
+  const afterA = placeInPerformance(draft, "alt", { afterId: "a" });
+  assert.deepEqual(
+    afterA.tracks.filter((item) => item.role !== "safety").map((item) => item.id),
+    ["a", "alt", "b", "c"],
+  );
+  assert.equal(afterA.tracks.find((item) => item.id === "alt")?.role, "groove");
+  assert.equal(afterA.tracks.find((item) => item.id === "alt")?.why, "");
+
+  const beforeC = placeInPerformance(draft, "alt", { beforeId: "c" });
+  assert.deepEqual(
+    beforeC.tracks.filter((item) => item.role !== "safety").map((item) => item.id),
+    ["a", "b", "alt", "c"],
+  );
+});
+
+test("pinning an Alternative brings it into the performance and keeps the pin", () => {
+  const draft = {
+    ...DEFAULT_SET,
+    tracks: [
+      track("a", { phase: "open" }),
+      track("b", { phase: "release" }),
+      track("alt", { phase: "peak", role: "safety" }),
+    ],
+  };
+  const next = toggleKeepPin(draft, "alt");
+  assert.deepEqual(next.pinnedIds, ["alt"]);
+  assert.equal(next.tracks.find((item) => item.id === "alt")?.role, "groove");
+  assert.ok(next.tracks.filter((item) => item.role !== "safety").some((item) => item.id === "alt"));
 });
 
 test("applySetAnchors drops pins that no longer exist in performance", () => {

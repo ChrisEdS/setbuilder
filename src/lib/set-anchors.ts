@@ -178,6 +178,76 @@ export function keepInSetIds(
   return ids;
 }
 
+/**
+ * Move an Alternative into the performance before or after a played track.
+ * Without a relative id, appends at the end of the performance (before safeties).
+ * Keeps phase; safety becomes groove. Optional mid-pin.
+ */
+export function placeInPerformance(
+  draft: SetDraft,
+  trackId: string,
+  opts: {
+    beforeId?: string | null;
+    afterId?: string | null;
+    pin?: boolean;
+  } = {},
+): SetDraft {
+  const id = trackId.trim();
+  if (!id) return draft;
+  const source = draft.tracks.find((track) => track.id === id);
+  if (!source) return draft;
+
+  const promoted: SetTrack = {
+    ...source,
+    role: source.role === "safety" ? "groove" : source.role,
+    why: source.role === "safety" ? "" : source.why,
+  };
+
+  const others = draft.tracks.filter((track) => track.id !== id);
+  let performance = others.filter((track) => track.role !== "safety");
+  const safeties = others.filter((track) => track.role === "safety");
+
+  const beforeId = opts.beforeId?.trim() || null;
+  const afterId = opts.afterId?.trim() || null;
+  const relativeId = beforeId ?? afterId;
+  if (relativeId) {
+    const at = performance.findIndex((track) => track.id === relativeId);
+    if (at >= 0) {
+      const insertAt = beforeId ? at : at + 1;
+      performance = [
+        ...performance.slice(0, insertAt),
+        promoted,
+        ...performance.slice(insertAt),
+      ];
+    } else {
+      performance = [...performance, promoted];
+    }
+  } else {
+    performance = [...performance, promoted];
+  }
+
+  let openerId = draft.openerId ?? null;
+  let closerId = draft.closerId ?? null;
+  let pinnedIds = draft.pinnedIds;
+  if (opts.pin) {
+    openerId = openerId === id ? null : openerId;
+    closerId = closerId === id ? null : closerId;
+    pinnedIds = withoutEndPins(
+      [...(draft.pinnedIds ?? []).filter((item) => item !== id), id],
+      openerId,
+      closerId,
+    );
+  }
+
+  return applySetAnchors({
+    ...draft,
+    openerId,
+    closerId,
+    pinnedIds,
+    tracks: [...performance, ...safeties],
+  });
+}
+
 /** Pin a track so trim and reshuffle keep it, without locking its place in the order. */
 export function toggleKeepPin(draft: SetDraft, trackId: string): SetDraft {
   const id = trackId.trim();
@@ -185,6 +255,11 @@ export function toggleKeepPin(draft: SetDraft, trackId: string): SetDraft {
   const current = draft.pinnedIds ?? [];
   if (current.includes(id)) {
     return { ...draft, pinnedIds: withoutEndPins(current.filter((item) => item !== id), null, null) };
+  }
+  const track = draft.tracks.find((item) => item.id === id);
+  // An Alternative must enter the performance first — otherwise the pin cannot protect it.
+  if (track?.role === "safety") {
+    return placeInPerformance(draft, id, { pin: true });
   }
   const openerId = draft.openerId === id ? null : draft.openerId ?? null;
   const closerId = draft.closerId === id ? null : draft.closerId ?? null;

@@ -53,6 +53,10 @@ const de = {
   "builder.ready.block": "Hält diese Aktion auf",
   "builder.ready.filesBlock": "{count} Tracks ohne Datei in dieser Sitzung. Stick schreiben braucht die Dateien.",
   "builder.ready.filesAck": "{count} Tracks ohne Datei in dieser Sitzung.",
+  "builder.ready.reselectStick": "Stick-Ordner erneut wählen",
+  "builder.ready.reselectStickTip":
+    "Denselben Ordner wählen, von dem das Set kommt — dann sind die Dateien wieder in der Sitzung.",
+  "builder.ready.reselectStickBusy": "Lese den Stick…",
   "builder.ready.keys": "{count} Tracks ohne Key.",
   "builder.ready.energy": "{count} Tracks ohne Energie.",
   "builder.ready.planB": "Plan B dünn: {phases}.",
@@ -397,9 +401,26 @@ const de = {
   "builder.row.setPin": "Pin",
   "builder.row.setPinTitle":
     "Im Set behalten. Beim Kürzen und bei Andere Songs bleibt der Track. Sortieren darf ihn frei verschieben.",
+  "builder.row.setPinFromAltTitle":
+    "Ins Set holen und pinnen. Bleibt beim Kürzen und bei Andere Songs. Sortieren darf ihn frei verschieben.",
   "builder.row.clearPin": "Pin lösen",
   "builder.row.clearPinTip":
     "Pin lösen. Der Track bleibt im Set, kann aber beim Kürzen zu den Alternativen wandern.",
+  "builder.row.placeInSet": "Ins Set",
+  "builder.row.placeInSetTip":
+    "Alternative vor oder nach einem Song der aktuellen Playlist setzen.",
+  "builder.place.ariaLabel": "Alternative ins Set setzen",
+  "builder.place.title": "Ins Set setzen",
+  "builder.place.target": "{name}",
+  "builder.place.hint": "Vor oder nach einem Track der gespielten Playlist.",
+  "builder.place.empty": "Noch keine Performance-Tracks — zuerst ein Set bauen.",
+  "builder.place.before": "Davor",
+  "builder.place.after": "Danach",
+  "builder.place.beforeTip": "Direkt vor diesem Song in die Playlist setzen.",
+  "builder.place.afterTip": "Direkt hinter diesem Song in die Playlist setzen.",
+  "builder.status.placedBefore": "+ {name} vor {relative} → Performance",
+  "builder.status.placedAfter": "+ {name} hinter {relative} → Performance",
+  "builder.status.pinnedFromAlt": "Pin: {name} ist wieder in der Performance.",
   "builder.row.pinBadge": "Pin",
   "builder.row.pinBadgeTip":
     "Gepinnt. Bleibt im Set beim Kürzen und bei Andere Songs. Die Reihenfolge beim Sortieren ist frei.",
@@ -708,6 +729,10 @@ const en: Record<keyof typeof de, string> = {
   "builder.ready.block": "Stops this action",
   "builder.ready.filesBlock": "{count} tracks have no file in this session. Writing the stick needs those files.",
   "builder.ready.filesAck": "{count} tracks have no file in this session.",
+  "builder.ready.reselectStick": "Choose stick folder again",
+  "builder.ready.reselectStickTip":
+    "Pick the same folder the set came from — then the files are back in this session.",
+  "builder.ready.reselectStickBusy": "Reading the stick…",
   "builder.ready.keys": "{count} tracks have no key.",
   "builder.ready.energy": "{count} tracks have no energy.",
   "builder.ready.planB": "Plan B is thin: {phases}.",
@@ -1045,9 +1070,26 @@ const en: Record<keyof typeof de, string> = {
   "builder.row.setPin": "Pin",
   "builder.row.setPinTitle":
     "Keep this track in the set. Trim and Different songs leave it in. Sorting may move it freely.",
+  "builder.row.setPinFromAltTitle":
+    "Bring it into the set and pin it. Stays through trim and Different songs. Sorting may move it freely.",
   "builder.row.clearPin": "Unpin",
   "builder.row.clearPinTip":
     "Unpin. The track stays in the set, and trim may move it to Alternatives.",
+  "builder.row.placeInSet": "Into set",
+  "builder.row.placeInSetTip":
+    "Put this Alternative before or after a song in the current playlist.",
+  "builder.place.ariaLabel": "Place Alternative in the set",
+  "builder.place.title": "Place in set",
+  "builder.place.target": "{name}",
+  "builder.place.hint": "Before or after a track in the played playlist.",
+  "builder.place.empty": "No performance tracks yet — build a set first.",
+  "builder.place.before": "Before",
+  "builder.place.after": "After",
+  "builder.place.beforeTip": "Insert directly before this song in the playlist.",
+  "builder.place.afterTip": "Insert directly after this song in the playlist.",
+  "builder.status.placedBefore": "+ {name} before {relative} → performance",
+  "builder.status.placedAfter": "+ {name} after {relative} → performance",
+  "builder.status.pinnedFromAlt": "Pin: {name} is back in the performance.",
   "builder.row.pinBadge": "Pin",
   "builder.row.pinBadgeTip":
     "Pinned. Stays in the set through trim and Different songs. Sort order stays free.",

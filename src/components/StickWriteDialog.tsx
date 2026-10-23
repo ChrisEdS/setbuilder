@@ -223,108 +223,110 @@ export function StickWriteDialog({
 
       {plan ? (
         <>
-          <p>
-            {missing.length
-              ? t("library.stickWrite.found", {
-                  found: plan.match.matched.length,
-                  total: plan.match.matched.length + missing.length,
-                })
-              : t("library.stickWrite.allFound", { total: plan.match.matched.length })}
-          </p>
-          {suggestions.length ? (
-            <div className="stick-missing">
-              <strong>{t("library.stickWrite.suggestTitle")}</strong>
-              <ul>
-                {suggestions.map((item) => {
-                  const setLabel = [
-                    item.track.artists.filter((name) => name && name !== "Unknown").join(", "),
-                    item.track.name,
-                  ]
-                    .filter(Boolean)
-                    .join(" – ");
-                  return (
-                    <li key={(item.track as SetTrack).id ?? item.track.name}>
-                      <span>{setLabel}</span>
-                      {item.candidates.map((candidate) => {
-                        const stickLabel = [candidate.artist, candidate.title]
-                          .filter(Boolean)
-                          .join(" – ");
-                        const sameLabel =
-                          stickLabel.replace(/\s+/g, " ").trim().toLowerCase() ===
-                          setLabel.replace(/\s+/g, " ").trim().toLowerCase();
-                        return (
-                          <button
-                            key={candidate.id}
-                            type="button"
-                            className="btn ghost"
-                            onClick={() => {
-                              const id = (item.track as SetTrack).id;
-                              if (!id || !root.current) return;
-                              const next = { ...hints, [id]: candidate.id };
-                              setHints(next);
-                              void planFrom(root.current, next);
-                            }}
-                          >
-                            {sameLabel || item.candidates.length === 1
-                              ? t("library.stickWrite.suggestUse")
-                              : `${t("library.stickWrite.suggestUse")}: ${stickLabel}`}
-                          </button>
-                        );
-                      })}
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ) : null}
-          {leftOut.length ? (
-            <div className="stick-missing">
-              <strong>{t("library.stickWrite.missingTitle")}</strong>
-              <ul>
-                {leftOut.slice(0, 6).map((track, index) => (
-                  <li key={`${track.name}-${index}`}>
-                    {track.artists.filter((name) => name && name !== "Unknown").join(", ")}
-                    {track.artists.length ? " – " : ""}
-                    {track.name}
-                  </li>
-                ))}
-              </ul>
-              {leftOut.length > 6 ? (
-                <span>{t("library.stickWrite.missingMore", { count: leftOut.length - 6 })}</span>
-              ) : null}
-            </div>
-          ) : null}
-          {plan.refusal ? (
-            <p className="stick-warn" role="alert">
-              {t("library.stickWrite.refused", { reason: errorText(plan.refusal, t) })}
-            </p>
-          ) : plan.alreadyOnStick ? (
-            <>
-              <p>{t("library.stickWrite.alreadyThere", { name: plan.playlistName })}</p>
-              <p className="stick-hint">{t("library.stickWrite.rewriteHint")}</p>
-            </>
-          ) : plan.skippedPerformance && plan.alternativesName ? (
+          <div className="stick-write-copy">
             <p>
-              {t("library.stickWrite.willAddAltsOnly", {
-                name: plan.playlistName,
-                alts: plan.alternativesName,
-              })}
-            </p>
-          ) : plan.performanceCount || plan.alternativesCount ? (
-            <p>
-              {plan.performanceCount
-                ? t("library.stickWrite.willWrite", {
-                    name: plan.playlistName,
-                    count: plan.performanceCount,
+              {missing.length
+                ? t("library.stickWrite.found", {
+                    found: plan.match.matched.length,
+                    total: plan.match.matched.length + missing.length,
                   })
-                : ""}
-              {plan.alternativesName
-                ? ` ${t("library.stickWrite.willWriteAlts", { name: plan.alternativesName })}`
-                : ""}
+                : t("library.stickWrite.allFound", { total: plan.match.matched.length })}
             </p>
-          ) : (
-            <p className="stick-warn">{t("library.stickWrite.noneFound")}</p>
-          )}
+            {suggestions.length ? (
+              <div className="stick-missing">
+                <strong>{t("library.stickWrite.suggestTitle")}</strong>
+                <ul>
+                  {suggestions.map((item) => {
+                    const setLabel = [
+                      item.track.artists.filter((name) => name && name !== "Unknown").join(", "),
+                      item.track.name,
+                    ]
+                      .filter(Boolean)
+                      .join(" – ");
+                    return (
+                      <li key={(item.track as SetTrack).id ?? item.track.name}>
+                        <span>{setLabel}</span>
+                        {item.candidates.map((candidate) => {
+                          const stickLabel = [candidate.artist, candidate.title]
+                            .filter(Boolean)
+                            .join(" – ");
+                          const sameLabel =
+                            stickLabel.replace(/\s+/g, " ").trim().toLowerCase() ===
+                            setLabel.replace(/\s+/g, " ").trim().toLowerCase();
+                          return (
+                            <button
+                              key={candidate.id}
+                              type="button"
+                              className="btn ghost"
+                              onClick={() => {
+                                const id = (item.track as SetTrack).id;
+                                if (!id || !root.current) return;
+                                const next = { ...hints, [id]: candidate.id };
+                                setHints(next);
+                                void planFrom(root.current, next);
+                              }}
+                            >
+                              {sameLabel || item.candidates.length === 1
+                                ? t("library.stickWrite.suggestUse")
+                                : `${t("library.stickWrite.suggestUse")}: ${stickLabel}`}
+                            </button>
+                          );
+                        })}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ) : null}
+            {leftOut.length ? (
+              <div className="stick-missing">
+                <strong>{t("library.stickWrite.missingTitle")}</strong>
+                <ul>
+                  {leftOut.slice(0, 6).map((track, index) => (
+                    <li key={`${track.name}-${index}`}>
+                      {track.artists.filter((name) => name && name !== "Unknown").join(", ")}
+                      {track.artists.length ? " – " : ""}
+                      {track.name}
+                    </li>
+                  ))}
+                </ul>
+                {leftOut.length > 6 ? (
+                  <span>{t("library.stickWrite.missingMore", { count: leftOut.length - 6 })}</span>
+                ) : null}
+              </div>
+            ) : null}
+            {plan.refusal ? (
+              <p className="stick-warn" role="alert">
+                {t("library.stickWrite.refused", { reason: errorText(plan.refusal, t) })}
+              </p>
+            ) : plan.alreadyOnStick ? (
+              <>
+                <p>{t("library.stickWrite.alreadyThere", { name: plan.playlistName })}</p>
+                <p className="stick-hint">{t("library.stickWrite.rewriteHint")}</p>
+              </>
+            ) : plan.skippedPerformance && plan.alternativesName ? (
+              <p>
+                {t("library.stickWrite.willAddAltsOnly", {
+                  name: plan.playlistName,
+                  alts: plan.alternativesName,
+                })}
+              </p>
+            ) : plan.performanceCount || plan.alternativesCount ? (
+              <p>
+                {plan.performanceCount
+                  ? t("library.stickWrite.willWrite", {
+                      name: plan.playlistName,
+                      count: plan.performanceCount,
+                    })
+                  : ""}
+                {plan.alternativesName
+                  ? ` ${t("library.stickWrite.willWriteAlts", { name: plan.alternativesName })}`
+                  : ""}
+              </p>
+            ) : (
+              <p className="stick-warn">{t("library.stickWrite.noneFound")}</p>
+            )}
+          </div>
           {health ? (
             <StickHealthCard
               health={health}
@@ -349,7 +351,7 @@ export function StickWriteDialog({
           ) : plan.hasLibraryDb ? (
             <p className="stick-hint">{t("library.stickWrite.oneLibrary")}</p>
           ) : null}
-          <p className="stick-hint">{t("library.stickWrite.safety")}</p>
+          <p className="stick-hint stick-write-note">{t("library.stickWrite.safety")}</p>
           <div className="stick-actions">
             <button type="button" className="btn ghost" onClick={onClose}>
               {t("library.stickWrite.cancel")}
@@ -379,18 +381,25 @@ export function StickWriteDialog({
 
       {step.kind === "done" ? (
         <>
-          <p role="status">
-            {t("library.stickWrite.done", { name: step.result.playlistName, count: step.result.trackCount })}
-            {step.result.alternativesName
-              ? ` ${t("library.stickWrite.doneAlts", { name: step.result.alternativesName })}`
-              : ""}
-          </p>
-          <p className="stick-hint">{t("library.stickWrite.doneBackup", { backup: step.result.backupName })}</p>
-          {step.sidecars.length ? (
-            <p className="stick-hint">
-              {t("library.stickWrite.sidecar", { files: step.sidecars.join(", ") })}
+          <div className="stick-write-copy">
+            <p role="status">
+              {t("library.stickWrite.done", {
+                name: step.result.playlistName,
+                count: step.result.trackCount,
+              })}
+              {step.result.alternativesName
+                ? ` ${t("library.stickWrite.doneAlts", { name: step.result.alternativesName })}`
+                : ""}
             </p>
-          ) : null}
+            <p className="stick-hint">
+              {t("library.stickWrite.doneBackup", { backup: step.result.backupName })}
+            </p>
+            {step.sidecars.length ? (
+              <p className="stick-hint">
+                {t("library.stickWrite.sidecar", { files: step.sidecars.join(", ") })}
+              </p>
+            ) : null}
+          </div>
           {health ? (
             <StickHealthCard
               health={health}
