@@ -476,78 +476,6 @@ html[data-frame="mac"] .set-shell .hero-copy {
   box-sizing: border-box;
 }
 
-/* Same text column as “Warum hier”: a quiet second line, not a button row. */
-.set-shell .manual-subline:has(.fits-next) {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  row-gap: 0.2rem;
-}
-
-.set-shell .manual-row .fits-next {
-  flex: 1 0 100%;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  column-gap: 0.4rem;
-  row-gap: 0.2rem;
-  min-width: 0;
-  max-width: 100%;
-  margin: 0;
-  padding: 0;
-}
-
-.set-shell .fits-next > span {
-  flex: 0 0 auto;
-  color: #b3b3b3;
-  font-size: 0.78rem;
-  font-weight: 400;
-  line-height: 1.35;
-}
-
-.set-shell .fits-next-add {
-  appearance: none;
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.28rem;
-  max-width: 100%;
-  min-width: 0;
-  min-height: 0;
-  margin: 0;
-  padding: 0 0.4rem;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 999px;
-  background: transparent;
-  box-shadow: none;
-  color: #e8e8e8;
-  font: inherit;
-  font-size: 0.75rem;
-  font-weight: 600;
-  line-height: 1.45;
-  letter-spacing: 0;
-  cursor: pointer;
-}
-
-.set-shell .fits-next-add:hover {
-  border-color: rgba(255, 255, 255, 0.32);
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.set-shell .fits-next-title {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.set-shell .fits-next-add em {
-  flex: 0 0 auto;
-  color: #8a8a8a;
-  font-size: 0.68rem;
-  font-style: normal;
-  font-weight: 450;
-}
-
 .set-shell .track-details > summary {
   align-items: baseline;
 }
@@ -947,10 +875,23 @@ html[data-frame="mac"] .set-shell .hero-copy {
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: var(--ui-space-3);
+  min-height: calc(var(--ui-control-height) + var(--ui-space-4));
+  padding-block: var(--ui-space-3) !important;
+}
+
+.set-shell .stick-sets-fold .library-list li:first-child,
+.set-shell .stick-sets-fold .library-list li:last-child {
+  padding-block: var(--ui-space-3) !important;
 }
 
 .set-shell .stick-sets-fold .library-list li > div {
   min-width: 0;
+  align-self: center;
+}
+
+.set-shell .stick-sets-fold .library-list li > em {
+  align-self: center;
+  line-height: 1.2;
 }
 
 .set-shell .stick-sets-fold .stick-set-load {
@@ -958,6 +899,7 @@ html[data-frame="mac"] .set-shell .hero-copy {
   min-width: max-content !important;
   height: var(--ui-control-height);
   padding-inline: var(--ui-space-4) !important;
+  align-self: center;
 }
 
 .set-shell :is(.builder-note, .library-path, .why, .artists) {
@@ -1881,6 +1823,18 @@ html[data-frame="mac"] .set-shell .hero-copy {
 .set-shell .manual-subline,
 .set-shell .manual-row .track-details {
   grid-column: 2;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  margin-inline: 0;
+  padding-inline: 0;
+}
+
+.set-shell .manual-subline .why-inline,
+.set-shell .manual-row .track-details > summary {
+  margin-inline: 0;
+  padding-inline: 0;
 }
 
 .set-shell .manual-index {

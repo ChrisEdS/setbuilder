@@ -2,9 +2,9 @@
 
 **Deutsch** · [English](GUIDE.md) · [README](../README.de.md)
 
-So bereitest du ein Set mit rekordbox vor: Bibliothek verbinden und verstehen → bauen → exportieren. Die Screenshots zeigen ein in der App geöffnetes Set. Die Bilder sind von 4.0. Der Text beschreibt 4.2, einschließlich Bibliotheksfilter, Passt danach, die Phasenzeile und Energie in der Details-Zeile.
+So bereitest du ein Set mit rekordbox vor: Bibliothek verbinden und verstehen → bauen → exportieren. Die Screenshots zeigen ein in der App geöffnetes Set. Die Bilder sind von 4.0. Der Text beschreibt 4.2, einschließlich Bibliotheksfilter, die Phasenzeile und Energie in der Details-Zeile.
 
-Die ausgelieferte App ist die Desktop-App (Port **4317**). Die Browser-Entwicklung nutzt Port **4327**. Dieses Dokument beschreibt **4.2.0**. Stick-Schreiben, Player und Streaming-Konten sind weiter ungeprüft.
+Die ausgelieferte App ist die Desktop-App (Port **4317**). Die Browser-Entwicklung nutzt Port **4327**. Dieses Dokument beschreibt **4.2.1**. Stick-Schreiben, Player und Streaming-Konten sind weiter ungeprüft.
 
 > **Vor dem Gig:** Stick immer am echten Player testen (Playlist sichtbar, Tracks spielbar). Backup behalten — SETBUILDER schreibt in `export.pdb` und legt Kopien unter `SETBUILDER-Backup/` ab, für deine Medien bist du selbst verantwortlich. Keine Garantie. Works on my machine. :)
 
@@ -45,8 +45,6 @@ Unter **Set bauen** wählst du **Mit einer Playlist starten** vom verbundenen St
 Collection-XML/CSV/DB löst diese Auswahl nie aus, weil es nur Metadaten und Bibliothek anreichert.
 
 Jeder Track zeigt die Quelle (rekordbox), Phase und Rolle. Die Zahl und der Ziehgriff bleiben auf der Titelzeile; aufgeklappte Details ziehen sie nicht mit. Phase und Rolle stehen in einer Zeile. Darunter liegen Icon-Buttons: Play, Vorhören, hoch, runter, Energie (Blitz), Ersatz, Opener (Fahne), Closer (karierte Flagge) und Entfernen. Energie nutzt denselben Hover-Tipp wie die anderen Icons. Unter dem Titel stehen der Anschluss zum Vorgänger („Nachbar-Key (±1) · +1 BPM · Energie +1“) und die Begründung („Warum hier“). **Details** hält Key, BPM, Energie, den Übergang, seine Länge und die Set-Notiz. Die geschlossene Zeile liest sich wie „7A · 125 BPM · Energie 7 · Long blend“. Energie steht nur da, wenn das Level bekannt ist. Unbekannte Energie und die alte anonyme Energy 1 bleiben leer. **So ist es gedacht**, neben Set bauen, sagt, wofür jedes davon da ist. Die Reihenfolge änderst du am Griff oder mit den Pfeilen.
-
-Am fokussierten Performance-Track zeigt **Passt danach** bis zu vier Kandidaten aus der geladenen Bibliothek, gereiht wie **Passt zu**. Ein Klick setzt den Track direkt dahinter, in derselben Phase, als Groove.
 
 Ein Übergang markiert, wie du in den nächsten Track gehst: Cut, Short blend, Long blend, EQ swap, Echo-out und die übrigen. Er wird nicht in die Audiodatei geschrieben. „—“ heißt keine Marke, und dieser Anschluss behält die Blend-Zeit aus dem Brief. **Länge** ist die Überlappung: diese Zeit geht von der Spielzeit ab, Slot-Zeile und Überlänge folgen ihr. Der letzte Track verliert seine Überlappung weiter. Du wählst eine Länge oder tippst sie. Eine gesetzte Länge, auch 0, schlägt die Zeit, die der Übergang vorschlägt. Lässt du sie leer, schlägt der Übergang eine Zeit vor. **Zurücksetzen**, neben Exportieren, fragt zuerst und leert dann das Set.
 

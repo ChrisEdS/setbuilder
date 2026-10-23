@@ -4,7 +4,7 @@
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
 
-**Version 4.2.0** · Raus aus der Playlist.
+**Version 4.2.1** · Raus aus der Playlist.
 
 Der Stick ist das Material. Du ziehst den Bogen, setzt den Anschluss und hörst, ob er trägt.
 
@@ -20,7 +20,7 @@ Vor dem Gig ist es still. SETBUILDER ist dieser Raum. Du kommst mit einem rekord
 - 🎲 **Eine andere Nacht aus derselben Kiste.** Andere Songs. Oder die Playlist, die Collection, die History, sobald sie da ist.
 - 🛟 **Plan B in der Tasche.** Rollen und Alternativen für den Moment, in dem der Floor es sich anders überlegt.
 - 🎧 **Den Übergang vorher hören.** Eine Karte zum Ziehen und größer machen. Vorher, dieser Track, der nächste. Dieselbe Länge wie in der Setliste.
-- 🔍 **Nur noch, was danach passt.** Key, BPM und Energie holen die Bibliothek heran. Am Track liegen die Songs, die als Nächstes tragen. Ein Klick, und einer liegt direkt dahinter.
+- 🔍 **Nur noch, was passt.** Key, BPM und Energie holen die Bibliothek heran. Passt zu reiht, was hinter einem gewählten Track tragen kann.
 - 📝 **Ein Satz für die Phase.** Auf dem Bogen, wenn du ihn brauchst. Treibend, 128. Er geht mit auf den Zettel für die Kabine.
 - 🎒 **Fertig, wenn es sitzt.** Erst die Checkliste. Dann der Stick für den Player, der Zettel für die Kabine, die Datei für den Rechner. Oder das Set bleibt in SETBUILDER.
 
@@ -28,7 +28,7 @@ Vor dem Gig ist es still. SETBUILDER ist dieser Raum. Du kommst mit einem rekord
 
 1. 📝 **Brief** — Titel, Länge, wie dicht die Übergänge sein sollen. Die Notizen zum Gig warten unter Set-Info.
 2. 🔌 **Laden** — Stick verbinden. Eine Collection darf die Keys nachreichen.
-3. 🎛️ **Bauen** — Playlist, eigene Songs oder beides. Eng die Kiste ein, nimm, was danach passt, und setz Phase, Rolle und jeden Anschluss.
+3. 🎛️ **Bauen** — Playlist, eigene Songs oder beides. Eng die Kiste ein, nutz Passt zu wenn du es brauchst, und setz Phase, Rolle und jeden Anschluss.
 4. 🎒 **Exportieren** — Stick für den Player, Zettel für die Kabine, Datei für zu Hause.
 
 📖 **Anleitung mit Screenshots:** [docs/GUIDE.de.md](docs/GUIDE.de.md)

@@ -6102,11 +6102,15 @@ html[data-frame="mac"] .set-shell label.btn {
   flex-wrap: nowrap;
   align-items: baseline;
   gap: 0.1rem 0.85rem;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
   min-height: 0;
+  margin: 0;
+  padding: 0;
 }
 
-.manual-subline:not(:has(.mix-join)):not(:has(.why-inline)):not(:has(.fits-next)) {
+.manual-subline:not(:has(.mix-join)):not(:has(.why-inline)) {
   display: none;
 }
 
@@ -6132,14 +6136,22 @@ html[data-frame="mac"] .set-shell label.btn {
 
 /* Setliste: key, BPM, energy, transition and comment live in a per-track fold */
 .track-details {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   margin-top: 0.2rem;
+  padding: 0;
   border-top: 1px solid var(--line);
 }
 .track-details > summary {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 0.55rem;
+  width: 100%;
   min-height: 26px;
+  margin: 0;
+  padding: 0.15rem 0;
   cursor: pointer;
   list-style: none;
   color: var(--muted);
@@ -7550,6 +7562,7 @@ body {
   position: relative;
   display: grid;
   grid-template-columns: 8.5rem minmax(0, 1fr);
+  align-items: baseline;
   gap: 0 0.6rem;
   padding-left: 0.85rem;
 }
@@ -7574,9 +7587,8 @@ body {
 .stick-strip-facts > div.is-bad::before {
   background: var(--danger);
 }
-/* Mute = info only: no status bubble, quieter type. */
+/* Mute = info only: no status bubble, quieter type. Same left edge as status rows. */
 .stick-strip-facts > div.is-mute {
-  padding-left: 0;
   opacity: 0.85;
 }
 .stick-strip-facts dt {

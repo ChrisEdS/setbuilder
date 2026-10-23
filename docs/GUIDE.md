@@ -2,9 +2,9 @@
 
 [Deutsch](GUIDE.de.md) · **English** · [README](../README.md)
 
-How to prepare a set with rekordbox: connect and understand the library → build → export. Screenshots show a set open in the app. The pictures are from 4.0. The words describe 4.2, including the library filters, Fits next, the phase line, and energy on the details line.
+How to prepare a set with rekordbox: connect and understand the library → build → export. Screenshots show a set open in the app. The pictures are from 4.0. The words describe 4.2, including the library filters, the phase line, and energy on the details line.
 
-The shipping client is the desktop app (port **4317**). Browser development uses port **4327**. This document describes **4.2.0**. Stick write, players, and streaming accounts are still unverified.
+The shipping client is the desktop app (port **4317**). Browser development uses port **4327**. This document describes **4.2.1**. Stick write, players, and streaming accounts are still unverified.
 
 > **Before the gig:** Always test the stick on the actual player (playlist visible, tracks playable). Keep a backup — SETBUILDER writes to `export.pdb` and keeps copies under `SETBUILDER-Backup/`, but you are responsible for your media. No warranty. Works on my machine. :)
 
@@ -45,8 +45,6 @@ Under **Build set**, choose **Start with a playlist** from the connected stick, 
 Collection XML/CSV/DB never triggers this choice because it only enriches metadata and the library.
 
 Each track shows its source (rekordbox), phase and role. The number and the drag grip stay on the title line; opening details does not move them. Phase and role sit on one row. The next row is icon buttons: play, rehearse, up, down, energy (lightning), replace, opener (flag), closer (checkered flag), and remove. Energy uses the same hover tip as the other icons. Under the title, the join from the previous track (“Adjacent key (±1) · +1 BPM · Energy +1”) and the reasoning (“Why here”). **Details** holds key, BPM, energy, the transition, its length, and the set note. The closed line reads like “7A · 125 BPM · Energy 7 · Long blend”. Energy is shown only when the level is known. Unknown energy, and the old anonymous Energy 1, stay blank. **How this works**, next to Build set, says what each of those is for. Change the order by dragging the grip or with the arrows.
-
-On the focused performance track, **Fits next** shows up to four candidates from the loaded library, ranked the same way as **Fits after**. A click inserts that track immediately after, in the same phase, as groove.
 
 A transition marks how you go into the next track — cut, short blend, long blend, EQ swap, echo-out, and the others. It is not written into the audio file. “—” means no mark, and that join keeps the average blend from the brief. **Length** is the overlap: that time comes off the playing time, so the slot line and the overrun follow it. The last track still loses its overlap. Pick a length or type one. A length you set, including 0, wins over the time the transition suggests. If you leave it, the chosen transition suggests a time. **Reset**, beside Export, asks first and then clears the set.
 
