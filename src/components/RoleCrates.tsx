@@ -897,12 +897,21 @@ function PlanBStrip({
   const phases = PHASES.filter((phase) => performance.some((track) => track.phase === phase.id));
   const thin = phases.filter((phase) => planBCount(tracks, phase.id) < PLAN_B_MIN);
   const hasLibrary = Boolean(library?.length);
-  const fill = hasLibrary && library ? planBFill(library, tracks) : [];
   const activeId = chosen === "closed" ? null : (chosen ?? thin[0]?.id ?? null);
+  // Scoring the whole library. Memoized so a parent re-render does not do it again.
+  const plan = useMemo(() => {
+    if (!library?.length) {
+      return { fill: [] as PlanBSuggestion<LibraryRow>[], items: [] as PlanBSuggestion<LibraryRow>[] };
+    }
+    return {
+      fill: planBFill(library, tracks),
+      items: activeId ? suggestPlanB(library, tracks, activeId, 3) : [],
+    };
+  }, [library, tracks, activeId]);
+  const fill = plan.fill;
   const activePhase = phases.find((phase) => phase.id === activeId) ?? null;
   const missing = activePhase ? PLAN_B_MIN - planBCount(tracks, activePhase.id) : 0;
-  const items =
-    activeId && hasLibrary && library ? suggestPlanB(library, tracks, activeId, 3) : [];
+  const items = plan.items;
   if (!phases.length) return null;
   return (
     <div className="planb-strip" role="group" aria-label={t("crates.planB.ariaLabel")}>

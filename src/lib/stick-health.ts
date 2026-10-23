@@ -47,9 +47,35 @@ export type StickHealth = {
   libraryAside: boolean;
 };
 
+export type PdbSummary = {
+  tracks: number;
+  /** Playlists only — history sets are not counted. */
+  playlists: number;
+  names: string[];
+};
+
+export function pdbSummaryOf(
+  trackCount: number,
+  sets: ReadonlyArray<{ kind: string; name: string }>,
+): PdbSummary {
+  let playlists = 0;
+  const names: string[] = [];
+  for (const set of sets) {
+    if (set.kind === "playlist") playlists += 1;
+    names.push(set.name);
+  }
+  return { tracks: trackCount, playlists, names };
+}
+
 export type StickHealthInput = {
   pioneer: StickHealth["pioneer"];
-  pdb: { buffer: ArrayBuffer; size: number; lastModified?: number } | null;
+  pdb: {
+    buffer?: ArrayBuffer;
+    size: number;
+    lastModified?: number;
+    /** Already parsed. Skips a second read of export.pdb. */
+    summary?: PdbSummary;
+  } | null;
   libraryDb: { size: number; lastModified?: number } | null;
   exportExt: boolean;
   analysis: boolean;
@@ -73,13 +99,21 @@ export function assessStick(input: StickHealthInput): StickHealth {
     error: null,
   };
   if (input.pdb && input.pdb.size > 0) {
-    try {
-      const library = parseRekordboxPdb(input.pdb.buffer.slice(0));
-      pdb.tracks = library.tracks.length;
-      pdb.playlists = library.playlists.filter((item) => item.kind === "playlist").length;
-      pdb.setform = brandPlaylistNames(library.playlists.map((item) => item.name));
-    } catch (error) {
-      pdb.error = error instanceof Error ? error.message : "unreadable";
+    if (input.pdb.summary) {
+      pdb.tracks = input.pdb.summary.tracks;
+      pdb.playlists = input.pdb.summary.playlists;
+      pdb.setform = brandPlaylistNames(input.pdb.summary.names);
+    } else if (input.pdb.buffer) {
+      try {
+        const library = parseRekordboxPdb(input.pdb.buffer.slice(0));
+        pdb.tracks = library.tracks.length;
+        pdb.playlists = library.playlists.filter((item) => item.kind === "playlist").length;
+        pdb.setform = brandPlaylistNames(library.playlists.map((item) => item.name));
+      } catch (error) {
+        pdb.error = error instanceof Error ? error.message : "unreadable";
+      }
+    } else {
+      pdb.error = "unreadable";
     }
   } else if (!input.pdb) {
     pdb.error = "missing";
@@ -210,14 +244,23 @@ function named(files: File[], name: string): File | undefined {
 }
 
 /** From a folder the browser listed (webkitdirectory). */
-export async function inspectStickFiles(files: File[]): Promise<StickHealth> {
+export async function inspectStickFiles(
+  files: File[],
+  known?: PdbSummary,
+): Promise<StickHealth> {
   const paths = files.map((file) => file.webkitRelativePath || file.name);
   const pdbFile = named(files, "export.pdb");
   const libraryFile = named(files, "exportLibrary.db");
-  const buffer = pdbFile ? await pdbFile.arrayBuffer() : null;
+  const buffer = pdbFile && !known ? await pdbFile.arrayBuffer() : null;
   return assessStick({
     pioneer: pioneerFromPaths(paths),
-    pdb: pdbFile && buffer ? { buffer, size: pdbFile.size, lastModified: pdbFile.lastModified } : null,
+    pdb: pdbFile
+      ? known
+        ? { size: pdbFile.size, lastModified: pdbFile.lastModified, summary: known }
+        : buffer
+          ? { buffer, size: pdbFile.size, lastModified: pdbFile.lastModified }
+          : null
+      : null,
     libraryDb: libraryFile ? { size: libraryFile.size, lastModified: libraryFile.lastModified } : null,
     exportExt: Boolean(named(files, "exportExt.pdb")),
     analysis: paths.some((path) => foldPath(path).includes("usbanlz")),
@@ -254,7 +297,7 @@ async function stat(handle: FileLike): Promise<Statted> {
 }
 
 /** From the directory handle of the whole stick. */
-export async function inspectStick(root: DirLike): Promise<StickHealth> {
+export async function inspectStick(root: DirLike, known?: PdbSummary): Promise<StickHealth> {
   const found: Array<{ pioneer: DirLike; name: "PIONEER" | ".PIONEER" }> = [];
   for (const name of ["PIONEER", ".PIONEER", "Pioneer"] as const) {
     const dir = await child(root, name);
@@ -281,7 +324,9 @@ export async function inspectStick(root: DirLike): Promise<StickHealth> {
     const pdbHandle = await file(rekordbox, "export.pdb");
     if (pdbHandle && !pdb) {
       const meta = await stat(pdbHandle);
-      pdb = { buffer: await meta.arrayBuffer(), size: meta.size, lastModified: meta.lastModified };
+      pdb = known
+        ? { size: meta.size, lastModified: meta.lastModified, summary: known }
+        : { buffer: await meta.arrayBuffer(), size: meta.size, lastModified: meta.lastModified };
     }
     const libHandle = await file(rekordbox, "exportLibrary.db");
     if (libHandle && !libraryDb) {

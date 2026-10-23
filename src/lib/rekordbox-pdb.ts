@@ -323,11 +323,34 @@ function readHistoryEntries(
   return rows;
 }
 
+function trackIdsByPlaylist(
+  entries: Array<{ playlistId: number; trackId: number; index: number }>,
+): Map<number, number[]> {
+  const grouped = new Map<number, Array<{ trackId: number; index: number }>>();
+  for (const entry of entries) {
+    if (!entry.trackId) continue;
+    const list = grouped.get(entry.playlistId);
+    const item = { trackId: entry.trackId, index: entry.index };
+    if (list) list.push(item);
+    else grouped.set(entry.playlistId, [item]);
+  }
+  const ids = new Map<number, number[]>();
+  for (const [playlistId, list] of grouped) {
+    list.sort((a, b) => a.index - b.index);
+    ids.set(
+      playlistId,
+      list.map((entry) => entry.trackId),
+    );
+  }
+  return ids;
+}
+
 function assemblePlaylists(
   tree: TreeRow[],
   entries: Array<{ playlistId: number; trackId: number; index: number }>,
 ): PdbPlaylist[] {
   const byId = new Map(tree.map((row) => [row.id, row]));
+  const trackIds = trackIdsByPlaylist(entries);
   return tree
     .filter((row) => !row.folder)
     .map((row) => ({
@@ -337,7 +360,7 @@ function assemblePlaylists(
         name: row.name,
         path: folderPath(row, byId),
         kind: "playlist" as const,
-        trackIds: orderedTrackIds(entries, row.id),
+        trackIds: trackIds.get(row.id) ?? [],
       },
     }))
     .sort((a, b) => a.sort - b.sort || a.playlist.path.localeCompare(b.playlist.path))
@@ -348,23 +371,14 @@ function assembleHistory(
   playlists: Array<{ id: number; name: string }>,
   entries: Array<{ playlistId: number; trackId: number; index: number }>,
 ): PdbPlaylist[] {
+  const trackIds = trackIdsByPlaylist(entries);
   return playlists.map((row) => ({
     id: row.id,
     name: row.name,
     path: `History / ${row.name}`,
     kind: "history" as const,
-    trackIds: orderedTrackIds(entries, row.id),
+    trackIds: trackIds.get(row.id) ?? [],
   }));
-}
-
-function orderedTrackIds(
-  entries: Array<{ playlistId: number; trackId: number; index: number }>,
-  playlistId: number,
-): number[] {
-  return entries
-    .filter((entry) => entry.playlistId === playlistId && entry.trackId)
-    .sort((a, b) => a.index - b.index)
-    .map((entry) => entry.trackId);
 }
 
 function folderPath(row: TreeRow, byId: Map<number, TreeRow>): string {
@@ -400,6 +414,9 @@ function readOffsetString(
   return ofs ? readDeviceString(view, row + ofs, pageEnd) : "";
 }
 
+const utf16le = new TextDecoder("utf-16le");
+const latin1 = new TextDecoder("latin1");
+
 function readDeviceString(view: DataView, pos: number, pageEnd: number): string {
   if (pos < 0 || pos >= pageEnd) return "";
   const kind = view.getUint8(pos);
@@ -418,8 +435,8 @@ function readDeviceString(view: DataView, pos: number, pageEnd: number): string 
     if (size <= 0 || pos + 4 + size > pageEnd) return "";
     if ((kind === 0x90 || (kind & 0x10) !== 0) && size % 2 === 1) size -= 1;
     const bytes = new Uint8Array(view.buffer, view.byteOffset + pos + 4, size);
-    const encoding = kind === 0x90 || (kind & 0x10) !== 0 ? "utf-16le" : "latin1";
-    return new TextDecoder(encoding).decode(bytes).replace(/\u0000+$/g, "");
+    const encoding = kind === 0x90 || (kind & 0x10) !== 0 ? utf16le : latin1;
+    return encoding.decode(bytes).replace(/\u0000+$/g, "");
   } catch {
     return "";
   }

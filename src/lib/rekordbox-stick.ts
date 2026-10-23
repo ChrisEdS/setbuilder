@@ -361,6 +361,40 @@ export function sourcePoolFromStickLibrary(
   return pool;
 }
 
+/** How many distinct stick tracks a reshuffle pool would contain. Does not build the pool. */
+export function stickLibraryPoolCount(
+  rows: Array<{ title: string; stick?: { id: string } }>,
+): number {
+  const seen = new Set<string>();
+  let count = 0;
+  for (const row of rows) {
+    const id = row.stick?.id;
+    if (!id || !row.title.trim()) continue;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    count += 1;
+  }
+  return count;
+}
+
+/** Distinct history tracks. Same identity rule as stickLibraryPoolCount. */
+export function historyPoolCount(
+  sets: ReadonlyArray<{ kind: string; tracks: ReadonlyArray<{ id: string; title: string }> }>,
+): number {
+  const seen = new Set<string>();
+  let count = 0;
+  for (const set of sets) {
+    if (set.kind !== "history") continue;
+    for (const track of set.tracks) {
+      if (!track.id || !track.title.trim()) continue;
+      if (seen.has(track.id)) continue;
+      seen.add(track.id);
+      count += 1;
+    }
+  }
+  return count;
+}
+
 /** Stored extract pool wins. Otherwise the stick library, when it is larger than the set. */
 export function reshufflePoolForDraft(
   draft: SetDraft,

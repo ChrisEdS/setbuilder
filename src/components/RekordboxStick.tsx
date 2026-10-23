@@ -22,7 +22,7 @@ import {
   stickPicker,
 } from "@/lib/stick-session";
 import { StickHealthCard } from "@/components/StickHealthCard";
-import { inspectStick, inspectStickFiles, type StickHealth } from "@/lib/stick-health";
+import { inspectStick, inspectStickFiles, pdbSummaryOf, type StickHealth } from "@/lib/stick-health";
 import { enqueueWork } from "@/lib/work-queue";
 import { prepareStickForPlayers, restorePlayerLibrary, type DirLike } from "@/lib/rekordbox-stick-write";
 
@@ -276,11 +276,11 @@ export function RekordboxStick({
       publishSets(read.sets);
       onIndexed(stickLibraryRows(read.library, read.sets));
       if (!read.sets.length) setError({ kind: "noSets" });
-      try {
-        setHealth(await inspectStick(handle));
-      } catch {
-        setHealth(null);
-      }
+        try {
+          setHealth(await inspectStick(handle, pdbSummaryOf(read.library.length, read.sets)));
+        } catch {
+          setHealth(null);
+        }
     }, {
       operation: "stick-read",
       key: handle.name || "persisted-stick",
@@ -312,7 +312,10 @@ export function RekordboxStick({
         onIndexed(stickLibraryRows(read.library, read.sets));
         if (!read.sets.length) setError({ kind: "noSets" });
         try {
-          const next = await inspectStickFiles(files);
+          const next = await inspectStickFiles(
+            files,
+            pdbSummaryOf(read.library.length, read.sets),
+          );
           if (stillCurrent(token)) setHealth(next);
         } catch {
           if (stillCurrent(token)) setHealth(null);

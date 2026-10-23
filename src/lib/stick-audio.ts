@@ -74,6 +74,117 @@ let stickFiles: File[] = [];
 let stickEpoch = 0;
 const stickListeners = new Set<() => void>();
 
+type StickKind = "image" | "audio" | "any";
+type StickHit = { file: File; order: number };
+type StickSlots = { image?: StickHit; audio?: StickHit; any?: StickHit };
+
+let indexedEpoch = -1;
+let byEndsWith = new Map<string, StickSlots>();
+let byExactRel = new Map<string, StickSlots>();
+let byExactName = new Map<string, StickSlots>();
+let byStem = new Map<string, StickSlots>();
+
+function kindOf(path: string): StickKind {
+  if (isStickImagePath(path)) return "image";
+  if (isStickAudioPath(path)) return "audio";
+  return "any";
+}
+
+function slot(map: Map<string, StickSlots>, key: string): StickSlots {
+  let slots = map.get(key);
+  if (!slots) {
+    slots = {};
+    map.set(key, slots);
+  }
+  return slots;
+}
+
+function noteFirst(map: Map<string, StickSlots>, key: string, kind: StickKind, hit: StickHit) {
+  const slots = slot(map, key);
+  if (!slots.any) slots.any = hit;
+  if (kind === "image" && !slots.image) slots.image = hit;
+  if (kind === "audio" && !slots.audio) slots.audio = hit;
+}
+
+function noteLast(map: Map<string, StickSlots>, key: string, kind: StickKind, hit: StickHit) {
+  const slots = slot(map, key);
+  slots.any = hit;
+  if (kind === "image") slots.image = hit;
+  if (kind === "audio") slots.audio = hit;
+}
+
+function pick(slots: StickSlots | undefined, kind: StickKind): StickHit | undefined {
+  return slots?.[kind];
+}
+
+/** First path hit and last name hit. Rebuilt when the remembered file list changes. */
+function ensureStickIndex() {
+  if (indexedEpoch === stickEpoch) return;
+  indexedEpoch = stickEpoch;
+  byEndsWith = new Map();
+  byExactRel = new Map();
+  byExactName = new Map();
+  byStem = new Map();
+  stickFiles.forEach((file, order) => {
+    const name = foldPath(file.name);
+    const rel = foldPath(file.webkitRelativePath || file.name);
+    if (!rel && !name) return;
+    const hit: StickHit = { file, order };
+    const kind = kindOf(rel || name);
+    if (rel) {
+      noteFirst(byExactRel, rel, kind, hit);
+      for (let i = 0; i < rel.length; i++) noteFirst(byEndsWith, rel.slice(i), kind, hit);
+    }
+    for (const label of name && name !== rel ? [name, rel.split("/").pop() || ""] : [rel.split("/").pop() || name]) {
+      if (!label) continue;
+      noteLast(byExactName, label, kind, hit);
+      for (let i = 0; i < label.length; i++) {
+        if (label.charCodeAt(i) !== 46) continue;
+        const stem = label.slice(0, i);
+        if (stem) noteLast(byStem, stem, kind, hit);
+      }
+    }
+  });
+}
+
+function earlier(a: StickHit | undefined, b: StickHit | undefined): StickHit | undefined {
+  if (!a) return b;
+  if (!b) return a;
+  return a.order <= b.order ? a : b;
+}
+
+/**
+ * Same result as matchStickFile over the remembered list, without scanning
+ * every file. A folder pick can hold thousands of audio files; the set UI
+ * used to do that scan once per library row.
+ */
+function lookupRemembered(filePath: string, filename: string, kind: StickKind): File | null {
+  if (!stickFiles.length) return null;
+  ensureStickIndex();
+  const wanted = foldPath(filePath);
+  const base = foldPath(filename || wanted.split("/").pop() || "");
+  let pathHit: StickHit | undefined;
+  if (wanted) {
+    pathHit = pick(byEndsWith.get(wanted), kind);
+    if (pathHit?.order !== 0) {
+      for (let i = 0; i < wanted.length; i++) {
+        const suffix = i === 0 ? wanted : wanted.slice(i);
+        if (!suffix.includes("/") && !suffix.includes(".")) continue;
+        pathHit = earlier(pathHit, pick(byExactRel.get(suffix), kind));
+        if (pathHit?.order === 0) break;
+      }
+    }
+  }
+  if (pathHit) return pathHit.file;
+  if (!base) return null;
+  const exact = pick(byExactName.get(base), kind);
+  if (base.includes(".")) return exact?.file ?? null;
+  const stem = pick(byStem.get(base), kind);
+  if (!exact) return stem?.file ?? null;
+  if (!stem) return exact.file;
+  return (stem.order >= exact.order ? stem : exact).file;
+}
+
 function bumpStickEpoch() {
   stickEpoch += 1;
   for (const listener of stickListeners) listener();
@@ -106,32 +217,15 @@ export function stickFileCount(): number {
 export function stickFileInSession(filePath: string): boolean {
   const path = filePath.trim();
   if (!path || !stickFiles.length) return false;
-  return Boolean(matchStickFile(rememberedRefs(), path, stickAudioBaseName(path)));
-}
-
-function rememberedRefs(): StickFileRef[] {
-  return stickFiles.map((file) => ({
-    name: file.name,
-    path: file.webkitRelativePath || file.name,
-  }));
+  return Boolean(lookupRemembered(path, stickAudioBaseName(path), "any"));
 }
 
 function findRememberedFile(
   filePath: string,
   filename: string,
-  allow: (path: string) => boolean,
+  kind: StickKind,
 ): File | null {
-  if (!stickFiles.length) return null;
-  const match = matchStickFile(
-    rememberedRefs().filter((file) => allow(file.path || file.name)),
-    filePath,
-    filename,
-  );
-  if (!match) return null;
-  const key = match.path || match.name;
-  return (
-    stickFiles.find((item) => (item.webkitRelativePath || item.name) === key) ?? null
-  );
+  return lookupRemembered(filePath, filename, kind);
 }
 
 function blobUrlFor(file: File, key: string): string | null {
@@ -151,7 +245,7 @@ export function lookupRememberedStickFile(
   filePath: string,
   filename = "",
 ): File | null {
-  return findRememberedFile(filePath, filename, isStickAudioPath);
+  return findRememberedFile(filePath, filename, "audio");
 }
 
 /** Blob URL for a cover file on the stick (`PIONEER/Artwork/...`). */
@@ -159,7 +253,7 @@ export function stickArtworkUrl(filePath: string, filename = ""): string | null 
   const file = findRememberedFile(
     filePath,
     filename || stickAudioBaseName(filePath),
-    isStickImagePath,
+    "image",
   );
   if (!file) return null;
   return blobUrlFor(file, file.webkitRelativePath || file.name);
@@ -192,7 +286,7 @@ export function lookupStickAudio(
   const file = findRememberedFile(
     filePath,
     filename || stickAudioBaseName(filePath),
-    isStickAudioPath,
+    "audio",
   );
   if (!file) return { kind: "missing" };
   const path = file.webkitRelativePath || file.name;

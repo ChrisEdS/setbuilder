@@ -1,9 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  isStickAudioPath,
+  lookupRememberedStickFile,
+  matchStickFile,
   rememberStickFiles,
   stickArtworkUrl,
   stickAudioUrl,
+  stickFileInSession,
+  type StickFileRef,
 } from "./stick-audio.ts";
 
 function fileWithPath(name: string, path: string, bytes: number[]): File {

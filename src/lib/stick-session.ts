@@ -81,7 +81,9 @@ async function readHandleFromDb(name: string): Promise<PersistableDir | null> {
   }
 }
 
-export async function loadPersistedStickHandle(): Promise<PersistableDir | null> {
+let handleLoad: Promise<PersistableDir | null> | null = null;
+
+async function loadPersistedStickHandleFromDb(): Promise<PersistableDir | null> {
   if (sessionHandle) return sessionHandle;
   if (typeof indexedDB === "undefined") return null;
   try {
@@ -95,6 +97,16 @@ export async function loadPersistedStickHandle(): Promise<PersistableDir | null>
   } catch {
     return null;
   }
+}
+
+export function loadPersistedStickHandle(): Promise<PersistableDir | null> {
+  if (sessionHandle) return Promise.resolve(sessionHandle);
+  if (!handleLoad) {
+    handleLoad = loadPersistedStickHandleFromDb().finally(() => {
+      handleLoad = null;
+    });
+  }
+  return handleLoad;
 }
 
 export async function stickPermission(
@@ -176,7 +188,9 @@ export async function hydrateStickMedia(root: DirLike, paths: string[]): Promise
   return files.length;
 }
 
-export async function readStickFromHandle(root: DirLike): Promise<RekordboxStickRead> {
+const stickReads = new WeakMap<DirLike, Promise<RekordboxStickRead>>();
+
+async function readStickFromHandleNow(root: DirLike): Promise<RekordboxStickRead> {
   const persistable = root as PersistableDir;
   if (
     (persistable.queryPermission || persistable.requestPermission) &&
@@ -200,6 +214,17 @@ export async function readStickFromHandle(root: DirLike): Promise<RekordboxStick
     /* ignore */
   }
   return readRekordboxStick([file]);
+}
+
+/** One in-flight read per folder. Launch reads the stick from two places at once. */
+export function readStickFromHandle(root: DirLike): Promise<RekordboxStickRead> {
+  const existing = stickReads.get(root);
+  if (existing) return existing;
+  const job = readStickFromHandleNow(root).finally(() => {
+    if (stickReads.get(root) === job) stickReads.delete(root);
+  });
+  stickReads.set(root, job);
+  return job;
 }
 
 export async function pickAndRememberStick(

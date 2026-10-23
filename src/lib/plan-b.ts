@@ -22,33 +22,31 @@ export type PlanBSuggestion<R extends PlanBRow> = {
   keyCamelot: string;
 };
 
-function sameTrack(track: SetTrack, row: PlanBRow): boolean {
-  return (
-    track.name.toLowerCase() === row.title.toLowerCase() &&
-    track.artists.join(",").toLowerCase() === row.artist.toLowerCase()
-  );
+function byPlanBFit<R extends PlanBRow>(
+  a: PlanBSuggestion<R>,
+  b: PlanBSuggestion<R>,
+): number {
+  return b.score - a.score || Number(b.energy != null) - Number(a.energy != null);
 }
 
-/**
- * Library tracks that would make a good Plan B for one phase: the energy sits in the
- * phase band, and key, BPM and energy blend with the phase's performance tracks.
- * Key clashes and tracks already in the set never qualify.
- */
-export function suggestPlanB<R extends PlanBRow>(
+/** Qualifying library rows for one phase, unsorted. Callers sort only what they keep. */
+function collectPlanB<R extends PlanBRow>(
   library: R[],
   tracks: SetTrack[],
   phase: SetPhaseId,
-  limit = 3,
 ): PlanBSuggestion<R>[] {
   const refs = performanceTracks(tracks).filter((track) => track.phase === phase && track.keyCamelot);
   if (!refs.length) return [];
   // A handful of evenly spread references is enough and keeps big phases cheap.
   const step = Math.max(1, Math.ceil(refs.length / 6));
   const sample = refs.filter((_, index) => index % step === 0);
+  const inSet = new Set(
+    tracks.map((track) => `${track.artists.join(",").toLowerCase()}|${track.name.toLowerCase()}`),
+  );
 
   const out: PlanBSuggestion<R>[] = [];
   for (const row of library) {
-    if (tracks.some((track) => sameTrack(track, row))) continue;
+    if (inSet.has(`${row.artist.toLowerCase()}|${row.title.toLowerCase()}`)) continue;
     const energy = row.energy ?? row.stick?.energyLevel;
     if (energy != null && energyFitsPhase(energy, phase) === false) continue;
     const keyCamelot = parseKeyValue(row.key) || "";
@@ -70,9 +68,21 @@ export function suggestPlanB<R extends PlanBRow>(
     if (score < 0.55) continue;
     out.push({ row, phase, score, energy, keyCamelot });
   }
-  return out
-    .sort((a, b) => b.score - a.score || Number(b.energy != null) - Number(a.energy != null))
-    .slice(0, limit);
+  return out;
+}
+
+/**
+ * Library tracks that would make a good Plan B for one phase: the energy sits in the
+ * phase band, and key, BPM and energy blend with the phase's performance tracks.
+ * Key clashes and tracks already in the set never qualify.
+ */
+export function suggestPlanB<R extends PlanBRow>(
+  library: R[],
+  tracks: SetTrack[],
+  phase: SetPhaseId,
+  limit = 3,
+): PlanBSuggestion<R>[] {
+  return collectPlanB(library, tracks, phase).sort(byPlanBFit).slice(0, limit);
 }
 
 /**
@@ -83,19 +93,21 @@ export function planBFill<R extends PlanBRow>(library: R[], tracks: SetTrack[]):
   const used = new Set<R>();
   const out: PlanBSuggestion<R>[] = [];
   // Scarce phases pick first, so a track that fits two phases goes where it is needed most.
+  // Count without sorting; the sort only runs for the handful of tracks a thin phase keeps.
   const options = new Map(
-    PHASES.map((phase) => [phase.id, suggestPlanB(library, tracks, phase.id, Infinity).length]),
+    PHASES.map((phase) => [phase.id, collectPlanB(library, tracks, phase.id).length]),
   );
   const order = [...PHASES].sort((a, b) => (options.get(a.id) ?? 0) - (options.get(b.id) ?? 0));
   for (const phase of order) {
     const need = PLAN_B_MIN - planBCount(tracks, phase.id);
     if (need <= 0) continue;
-    const picks = suggestPlanB(
+    const picks = collectPlanB(
       library.filter((row) => !used.has(row)),
       tracks,
       phase.id,
-      need,
-    );
+    )
+      .sort(byPlanBFit)
+      .slice(0, need);
     for (const pick of picks) {
       used.add(pick.row);
       out.push(pick);

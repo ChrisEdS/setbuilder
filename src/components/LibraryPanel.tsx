@@ -2,6 +2,7 @@
 
 import {
   Fragment,
+  useDeferredValue,
   useEffect,
   useId,
   useMemo,
@@ -145,7 +146,15 @@ export function LibraryBrowser({
   const [energyMin, setEnergyMin] = useState("");
   const [energyMax, setEnergyMax] = useState("");
   const searchHintsId = useId();
-  const filterKey = `${keyFilter}|${bpmMin}|${bpmMax}|${energyMin}|${energyMax}`;
+  // The field updates immediately. Filtering and “fits after” ranking wait, so a
+  // keystroke does not sort the whole stick library.
+  const deferredQuery = useDeferredValue(query);
+  const deferredKeyFilter = useDeferredValue(keyFilter);
+  const deferredBpmMin = useDeferredValue(bpmMin);
+  const deferredBpmMax = useDeferredValue(bpmMax);
+  const deferredEnergyMin = useDeferredValue(energyMin);
+  const deferredEnergyMax = useDeferredValue(energyMax);
+  const deferredFilterKey = `${deferredKeyFilter}|${deferredBpmMin}|${deferredBpmMax}|${deferredEnergyMin}|${deferredEnergyMax}`;
 
   const inSet = useMemo(
     () =>
@@ -161,7 +170,7 @@ export function LibraryBrowser({
     [draft.tracks, fitTo],
   );
   const rankedLibrary = useMemo(() => {
-    const trimmed = query.trim();
+    const trimmed = deferredQuery.trim();
     const q = trimmed.toLowerCase();
     const exactPlaylist = playlistOptions.find((name) => name === trimmed);
     let list = rows;
@@ -182,11 +191,11 @@ export function LibraryBrowser({
     }
     list = list.filter((row) =>
       matchesLibraryFilter(row, {
-        key: keyFilter,
-        bpmMin: boundOf(bpmMin),
-        bpmMax: boundOf(bpmMax),
-        energyMin: boundOf(energyMin),
-        energyMax: boundOf(energyMax),
+        key: deferredKeyFilter,
+        bpmMin: boundOf(deferredBpmMin),
+        bpmMax: boundOf(deferredBpmMax),
+        energyMin: boundOf(deferredEnergyMin),
+        energyMax: boundOf(deferredEnergyMax),
       }),
     );
     if (fitReference) {
@@ -195,15 +204,26 @@ export function LibraryBrowser({
       );
     }
     return list.slice(0, LIBRARY_BROWSE_CAP);
-  }, [rows, query, fitReference, t, playlistOptions, keyFilter, bpmMin, bpmMax, energyMin, energyMax]);
+  }, [
+    rows,
+    deferredQuery,
+    fitReference,
+    t,
+    playlistOptions,
+    deferredKeyFilter,
+    deferredBpmMin,
+    deferredBpmMax,
+    deferredEnergyMin,
+    deferredEnergyMax,
+  ]);
 
   const fitPageCount = fitReference
     ? Math.max(1, Math.ceil(rankedLibrary.length / FIT_PAGE_SIZE))
     : 1;
   const fitPage =
     fitPageState.fitTo === fitTo &&
-    fitPageState.query === query &&
-    fitPageState.filterKey === filterKey &&
+    fitPageState.query === deferredQuery &&
+    fitPageState.filterKey === deferredFilterKey &&
     fitPageState.rows === rows
       ? fitPageState.page
       : 0;
@@ -437,8 +457,8 @@ export function LibraryBrowser({
                     setFitPageState({
                       page: (safeFitPage + 1) % fitPageCount,
                       fitTo,
-                      query,
-                      filterKey,
+                      query: deferredQuery,
+                      filterKey: deferredFilterKey,
                       rows,
                     })
                   }
