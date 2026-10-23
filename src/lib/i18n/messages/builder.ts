@@ -516,6 +516,7 @@ const de = {
 
   // Status toasts
   "builder.status.added": "+ {name} → {phase} / {role}",
+  "builder.status.addedAfter": "+ {name} hinter {after} → {phase} / {role}",
   "builder.status.addedMany": "+ {tracks} → {phase} / {role}",
   "builder.status.alreadyIn": "Track ist schon im Set.",
   "builder.status.alreadyInNamed": "{name} ist schon im Set.",
@@ -1160,6 +1161,7 @@ const en: Record<keyof typeof de, string> = {
     "Not Apple-signed — download updates manually from GitHub.",
 
   "builder.status.added": "+ {name} → {phase} / {role}",
+  "builder.status.addedAfter": "+ {name} after {after} → {phase} / {role}",
   "builder.status.addedMany": "+ {tracks} → {phase} / {role}",
   "builder.status.alreadyIn": "Track is already in the set.",
   "builder.status.alreadyInNamed": "{name} is already in the set.",

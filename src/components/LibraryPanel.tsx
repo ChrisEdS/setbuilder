@@ -124,7 +124,8 @@ export function LibraryBrowser({
 }: {
   draft: SetDraft;
   rows: LibraryRow[];
-  onAddTrack?: (track: SetTrack) => void;
+  /** Optional afterId: place the new track right after that set track (Fits after). */
+  onAddTrack?: (track: SetTrack, afterId?: string) => void;
   onPlayTrack?: (track: SetTrack) => void;
   playingId?: string | null;
 }) {
@@ -374,7 +375,7 @@ export function LibraryBrowser({
               </select>
             </label>
             </div>
-            <label className="library-add-fit">
+            <label className="library-add-fit" title={t("library.add.fitsTip")}>
               {t("library.add.fits")}
               <select value={fitTo} onChange={(event) => setFitTo(event.target.value)}>
                 <option value="">{t("library.add.allTracks")}</option>
@@ -433,7 +434,12 @@ export function LibraryBrowser({
                     type="button"
                     className="btn ghost lib-add"
                     disabled={already}
-                    onClick={() => onAddTrack(libraryTrackToSetTrack(row, addPhase, addRole, t))}
+                    onClick={() =>
+                      onAddTrack(
+                        libraryTrackToSetTrack(row, addPhase, addRole, t),
+                        fitTo || undefined,
+                      )
+                    }
                   >
                     {already ? t("library.row.inSet") : t("library.row.add")}
                   </button>

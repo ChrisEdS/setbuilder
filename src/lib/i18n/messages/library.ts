@@ -85,6 +85,8 @@ const de = {
   "library.add.phase": "Phase",
   "library.add.role": "Rolle",
   "library.add.fits": "Passt zu",
+  "library.add.fitsTip":
+    "Sortiert die Liste für den Anschluss. + Ins Set setzt den Track direkt hinter diesen Song.",
   "library.add.allTracks": "Alle Tracks",
   "library.add.moreMatches": "5 andere",
   "library.add.moreMatchesTip":
@@ -422,6 +424,8 @@ const en: Record<keyof typeof de, string> = {
   "library.add.phase": "Phase",
   "library.add.role": "Role",
   "library.add.fits": "Fits after",
+  "library.add.fitsTip":
+    "Ranks the list for that handoff. + Add to set places the track right after this song.",
   "library.add.allTracks": "All tracks",
   "library.add.moreMatches": "5 others",
   "library.add.moreMatchesTip":

@@ -1521,7 +1521,7 @@ export function SetBuilder() {
     );
   }
 
-  function addLibraryTrack(incoming: SetTrack) {
+  function addLibraryTrack(incoming: SetTrack, afterId?: string) {
     // An Alternative whose energy contradicts the chosen phase goes to the phase it fits.
     const track =
       incoming.role === "safety"
@@ -1537,13 +1537,33 @@ export function SetBuilder() {
       setStatus(t("builder.status.alreadyInNamed", { name: track.name }));
       return;
     }
-    addTracksBulk([track]);
+    setDraft((current) => {
+      const fresh = uniqueIncomingDraftTracks(
+        current.tracks.map((item) => item.id),
+        [track],
+      );
+      if (!fresh.length) return current;
+      if (!afterId) return { ...current, tracks: [...current.tracks, ...fresh] };
+      const at = current.tracks.findIndex((item) => item.id === afterId);
+      if (at < 0) return { ...current, tracks: [...current.tracks, ...fresh] };
+      const tracks = current.tracks.slice();
+      tracks.splice(at + 1, 0, ...fresh);
+      return { ...current, tracks };
+    });
+    const after = afterId ? draft.tracks.find((item) => item.id === afterId) : null;
     setStatus(
-      t("builder.status.added", {
-        name: track.name,
-        phase: phaseLabel(t, track.phase),
-        role: roleLabel(t, track.role),
-      }),
+      after
+        ? t("builder.status.addedAfter", {
+            name: track.name,
+            after: after.name,
+            phase: phaseLabel(t, track.phase),
+            role: roleLabel(t, track.role),
+          })
+        : t("builder.status.added", {
+            name: track.name,
+            phase: phaseLabel(t, track.phase),
+            role: roleLabel(t, track.role),
+          }),
     );
   }
 
