@@ -4,7 +4,7 @@
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
 
-**Version 4.2.1** · Out of the playlist.
+**Version 4.3.0** · Out of the playlist.
 
 The stick is the material. You draw the arc, set the join, and hear if it holds.
 
@@ -15,7 +15,7 @@ Before the gig, the room is quiet. SETBUILDER is that room. You arrive with a re
 - 🎚️ **A night with a shape.** Open, lift, peak, release. You see where there is still air and where it is already full.
 - 🔑 **Keys that talk to each other.** Camelot along the set. A clash shows up while you still have time.
 - ⚡ **Energy that belongs to the song.** Read from the file, measured, or set by you. It sits on the track once it is real.
-- 📌 **An opener and a closer that stay.** Sort as often as you like. The ends you pinned do not move.
+- 📌 **Pins that stay in the set.** Opener and closer hold the ends. Mid pins survive trim and different songs, and still move when you sort.
 - 🎛️ **Every join with its own length.** Cut, blend, echo-out. The slot clock follows what you write on the handoff. “—” takes the blend time from the brief.
 - 🎲 **Another night from the same crate.** Different songs. Or the playlist, the collection, the history, once they are in the room.
 - 🛟 **Plan B in your pocket.** Roles and alternatives for the moment the floor changes its mind.

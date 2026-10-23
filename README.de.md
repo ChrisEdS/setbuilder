@@ -4,7 +4,7 @@
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
 
-**Version 4.2.1** · Raus aus der Playlist.
+**Version 4.3.0** · Raus aus der Playlist.
 
 Der Stick ist das Material. Du ziehst den Bogen, setzt den Anschluss und hörst, ob er trägt.
 
@@ -15,7 +15,7 @@ Vor dem Gig ist es still. SETBUILDER ist dieser Raum. Du kommst mit einem rekord
 - 🎚️ **Eine Nacht mit Form.** Open, Lift, Peak, Release. Du siehst, wo noch Luft ist und wo es schon voll ist.
 - 🔑 **Keys, die miteinander reden.** Camelot entlang des Sets. Ein Clash fällt auf, solange du noch Zeit hast.
 - ⚡ **Energie, die zum Song gehört.** Aus der Datei gelesen, gemessen oder von dir gesetzt. Sie steht am Track, sobald sie fest ist.
-- 📌 **Opener und Closer, die bleiben.** Sortier, so oft du willst. Die Enden, die du gesetzt hast, rücken nicht.
+- 📌 **Pins, die im Set bleiben.** Opener und Closer halten die Enden. Mittel-Pins überstehen Kürzen und Andere Songs und wandern beim Sortieren mit.
 - 🎛️ **Jeder Anschluss mit eigener Länge.** Cut, Blend, Echo-out. Die Uhr des Slots folgt dem, was du an den Übergang schreibst. „—“ nimmt die Blend-Zeit aus dem Brief.
 - 🎲 **Eine andere Nacht aus derselben Kiste.** Andere Songs. Oder die Playlist, die Collection, die History, sobald sie da ist.
 - 🛟 **Plan B in der Tasche.** Rollen und Alternativen für den Moment, in dem der Floor es sich anders überlegt.
