@@ -5,6 +5,7 @@ import {
   applySetAnchors,
   pinCloser,
   pinOpener,
+  toggleKeepPin,
   suggestCloserId,
   suggestOpenerId,
   withSuggestedAnchors,
@@ -120,6 +121,47 @@ test("reorderDraft keeps pinned opener and closer at the ends", () => {
   const performance = next.tracks.filter((item) => item.role !== "safety");
   assert.equal(performance[0].id, "mid");
   assert.equal(performance[performance.length - 1].id, "first");
+});
+
+test("reorderDraft moves a mid pin and keeps opener and closer at the ends", () => {
+  const draft = {
+    ...DEFAULT_SET,
+    openerId: "a",
+    closerId: "d",
+    pinnedIds: ["b"],
+    tracks: [
+      track("a", { phase: "peak", energyLevel: 1, keyCamelot: "8A" }),
+      track("b", { phase: "peak", energyLevel: 9, keyCamelot: "8A" }),
+      track("c", { phase: "peak", energyLevel: 3, keyCamelot: "8A" }),
+      track("d", { phase: "peak", energyLevel: 2, keyCamelot: "8A" }),
+    ],
+  };
+  const next = reorderDraft(draft, "energy");
+  const performance = next.tracks.filter((item) => item.role !== "safety").map((item) => item.id);
+  assert.deepEqual(performance, ["a", "c", "b", "d"]);
+  assert.deepEqual(next.pinnedIds, ["b"]);
+  assert.equal(next.openerId, "a");
+  assert.equal(next.closerId, "d");
+});
+
+test("a keep-pin leaves the track in place and drops an end pin on the same track", () => {
+  const draft = {
+    ...DEFAULT_SET,
+    openerId: "b",
+    pinnedIds: ["a"],
+    tracks: [
+      track("a", { phase: "open" }),
+      track("b", { phase: "peak" }),
+      track("c", { phase: "release" }),
+    ],
+  };
+  const pinned = toggleKeepPin(draft, "b");
+  assert.equal(pinned.openerId, null);
+  assert.deepEqual(pinned.pinnedIds, ["a", "b"]);
+  assert.equal(pinned.tracks[1].id, "b");
+  const opened = pinOpener(pinned, "b");
+  assert.equal(opened.openerId, "b");
+  assert.deepEqual(opened.pinnedIds, ["a"]);
 });
 
 test("applySetAnchors drops pins that no longer exist in performance", () => {

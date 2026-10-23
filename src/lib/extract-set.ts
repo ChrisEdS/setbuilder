@@ -15,8 +15,10 @@ import { bestPhaseFor } from "@/lib/plan-b";
 import { orderByPerfectHarmony } from "@/lib/perfect-harmony";
 import {
   applySetAnchors,
+  keepInSetIds,
   lockPerformanceEnds,
   withSuggestedAnchors,
+  withoutEndPins,
 } from "@/lib/set-anchors";
 import type { SpotifyTrack } from "@/lib/spotify";
 import {
@@ -102,7 +104,7 @@ export function canReshuffleDraft(draft: SetDraft): boolean {
 
 /**
  * Shuffle the stored playlist pool and rebuild the set for the same brief.
- * Keeps title/vibe/venue/… and opener/closer pins (forced into the cast).
+ * Keeps title/vibe/venue/… and opener, closer, and mid-pins (forced into the cast).
  */
 export function reshuffleDraftFromPool(
   draft: SetDraft,
@@ -112,10 +114,17 @@ export function reshuffleDraftFromPool(
   const stored = draft.sourcePool;
   if (!stored?.length) return draft;
 
+  const openerId = draft.openerId?.trim() || null;
+  const closerId = draft.closerId?.trim() || null;
+  const pinnedIds = withoutEndPins(draft.pinnedIds, openerId, closerId);
   const pinIds = new Set(
-    [draft.openerId, draft.closerId].filter((id): id is string => Boolean(id)),
+    [openerId, closerId, ...(pinnedIds ?? [])].filter((id): id is string => Boolean(id)),
   );
-  const shuffled = shuffleCopy(stored, random);
+  const held = draft.tracks
+    .filter((track) => track.role !== "safety" && pinIds.has(track.id))
+    .filter((track) => !stored.some((row) => row.id === track.id))
+    .map(setTrackAsPool);
+  const shuffled = shuffleCopy([...held, ...stored], random);
   const ordered = [
     ...shuffled.filter((track) => pinIds.has(track.id)),
     ...shuffled.filter((track) => !pinIds.has(track.id)),
@@ -171,8 +180,9 @@ export function reshuffleDraftFromPool(
     },
     t,
     {
-      openerId: draft.openerId ?? null,
-      closerId: draft.closerId ?? null,
+      openerId,
+      closerId,
+      pinnedIds,
     },
   );
   return {
@@ -239,7 +249,7 @@ function buildDraftFromPool(
   playlistName: string,
   options: ExtractOptions,
   t: Translate,
-  pins: { openerId?: string | null; closerId?: string | null } = {},
+  pins: { openerId?: string | null; closerId?: string | null; pinnedIds?: string[] } = {},
 ): SetDraft {
   const durationMinutes = Math.max(20, options.durationMinutes || 60);
   const blendMs = blendMsOf(options.blendMs);
@@ -247,12 +257,12 @@ function buildDraftFromPool(
   const harmonize = options.harmonize !== false;
   const openerId = pins.openerId?.trim() || null;
   const closerId = pins.closerId?.trim() || null;
+  const pinnedIds = withoutEndPins(pins.pinnedIds, openerId, closerId);
 
   const selected = ensurePinsInPack(
     packTracks(pool, targetMs, blendMs),
     pool,
-    openerId,
-    closerId,
+    [openerId, closerId, ...(pinnedIds ?? [])].filter((id): id is string => Boolean(id)),
   );
   const catalogCount = selected.filter(
     (track) => track.bpm || track.catalogPopularity != null,
@@ -305,31 +315,36 @@ function buildDraftFromPool(
     tracks: withSafety,
     openerId,
     closerId,
+    pinnedIds,
   };
 
   // Keep explicit pins at the ends; otherwise suggest warm open/release.
-  if (openerId || closerId) return applySetAnchors(base);
-  return withSuggestedAnchors(base);
+  const anchored = openerId || closerId ? applySetAnchors(base) : withSuggestedAnchors(base);
+  return {
+    ...anchored,
+    pinnedIds: withoutEndPins(anchored.pinnedIds, anchored.openerId, anchored.closerId),
+  };
 }
 
-/** Force pinned opener/closer into the performance pack when they exist in the pool. */
+/** Force pinned tracks into the performance pack when they exist in the pool. */
 function ensurePinsInPack(
   selected: Enriched[],
   pool: Enriched[],
-  openerId: string | null,
-  closerId: string | null,
+  pinIds: string[],
 ): Enriched[] {
-  if (!openerId && !closerId) return selected;
+  const keep = pinIds.filter(Boolean);
+  if (!keep.length) return selected;
+  const protectedIds = new Set(keep);
   const byId = new Map(pool.map((track) => [track.id, track]));
   const next = [...selected];
   const ids = new Set(next.map((track) => track.id));
 
-  const include = (id: string | null) => {
+  const include = (id: string) => {
     if (!id || ids.has(id)) return;
     const track = byId.get(id);
     if (!track) return;
     for (let i = next.length - 1; i >= 0; i--) {
-      if (next[i].id !== openerId && next[i].id !== closerId) {
+      if (!protectedIds.has(next[i].id)) {
         ids.delete(next[i].id);
         next.splice(i, 1);
         break;
@@ -339,9 +354,34 @@ function ensurePinsInPack(
     ids.add(id);
   };
 
-  include(openerId);
-  include(closerId);
+  for (const id of keep) include(id);
   return next;
+}
+
+function setTrackAsPool(track: SetTrack): SourcePoolTrack {
+  return {
+    id: track.id,
+    name: track.name,
+    artists: track.artists,
+    album: track.album,
+    durationMs: track.durationMs,
+    uri: track.uri,
+    externalUrl: track.externalUrl,
+    imageUrl: track.imageUrl,
+    bpm: track.bpm,
+    keyCamelot: track.keyCamelot,
+    energy: track.energy,
+    energyLevel: track.energyLevel,
+    energySource: track.energySource,
+    filePath: track.filePath,
+    source: track.source,
+    popularity: null,
+    catalogPopularity: null,
+    catalogBpm: track.bpm,
+    catalogKey: track.keyCamelot,
+    explicit: false,
+    isrc: null,
+  };
 }
 
 function catalogEnergy(
@@ -794,6 +834,7 @@ export function fitToSlot(draft: SetDraft, t: Translate = tDe): SlotFitResult {
   const targetMs = draft.durationMinutes * 60_000;
   const blendMs = blendMsOf(draft.blendMs);
   const performance = draft.tracks.filter((track) => track.role !== "safety");
+  const protectedIds = keepInSetIds(draft);
   const fallbackMs = 5 * 60_000;
   const spanOf = (track: SetTrack) =>
     trackPlayedMs(
@@ -843,6 +884,7 @@ export function fitToSlot(draft: SetDraft, t: Translate = tDe): SlotFitResult {
     if (phaseIndex === 0) keep.add(0);
     if (phaseIndex === PHASES.length - 1) keep.add(group.length - 1);
     group.forEach((track, index) => {
+      if (protectedIds.has(track.id)) return;
       if (!keep.has(index)) moveIds.add(track.id);
     });
   });
@@ -866,7 +908,8 @@ export function fitToSlot(draft: SetDraft, t: Translate = tDe): SlotFitResult {
       const removable = group.filter(
         (track) =>
           track.id !== performance[0].id &&
-          track.id !== performance[performance.length - 1].id,
+          track.id !== performance[performance.length - 1].id &&
+          !protectedIds.has(track.id),
       );
       if (!removable.length) continue;
       // Out-of-band energy goes first, otherwise the track nearest the middle.
@@ -927,7 +970,8 @@ export function fitToSlot(draft: SetDraft, t: Translate = tDe): SlotFitResult {
       const removable = group.filter(
         (track) =>
           track.id !== performance[0].id &&
-          track.id !== performance[performance.length - 1].id,
+          track.id !== performance[performance.length - 1].id &&
+          !protectedIds.has(track.id),
       );
       if (!removable.length) continue;
       const gapOf = (track: SetTrack) =>

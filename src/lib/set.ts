@@ -144,6 +144,11 @@ export type SetDraft = {
   openerId?: string | null;
   /** Performance track that must stay last (Release). */
   closerId?: string | null;
+  /**
+   * Performance tracks that stay in the set through trim and playlist reshuffle.
+   * They still move freely when the set is sorted. Opener and closer are not listed here.
+   */
+  pinnedIds?: string[];
   durationMinutes: number;
   /** How much of each track's end is the blend into the next one. */
   blendMs: number;

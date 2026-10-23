@@ -3745,6 +3745,11 @@ label.btn:hover {
   color: #e8fff0;
 }
 
+.anchor-pill.is-pin {
+  background: rgba(255, 255, 255, 0.12);
+  color: #f2f2f2;
+}
+
 .anchor-pill.is-closer {
   background: color-mix(in oklab, var(--mauve) 45%, #1a1a1a);
   color: #ffe8f0;

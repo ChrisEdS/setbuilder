@@ -1,4 +1,5 @@
 import { isGeneratedNote } from "@/lib/i18n";
+import { withoutEndPins } from "@/lib/set-anchors";
 import { hasKnownEnergy, isMetadataComment, parseEnergyLevel, settledEnergy } from "@/lib/energy";
 import { sanitizeDraftImages } from "@/lib/media";
 import {
@@ -64,6 +65,23 @@ function finite(value: unknown, fallback = 0): number {
 }
 
 /** Keeps a non-empty purpose line per known phase. Anything else is dropped. */
+function storedId(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function storedPins(
+  value: unknown,
+  openerId: string | null,
+  closerId: string | null,
+): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  return withoutEndPins(
+    value.filter((item): item is string => typeof item === "string"),
+    openerId,
+    closerId,
+  );
+}
+
 function phaseNotes(value: unknown): SetDraft["phaseNote"] {
   const raw = object(value);
   if (!raw) return undefined;
@@ -213,6 +231,8 @@ export function normalizeStoredDraft(value: unknown): SetDraft | null {
   const sourcePool = normalizedPool
     ? repairIds(normalizedPool as SourcePoolTrack[], "pool", seen)
     : undefined;
+  const openerId = storedId(raw.openerId);
+  const closerId = storedId(raw.closerId);
   const draft: SetDraft = {
     ...DEFAULT_SET,
     ...raw,
@@ -228,6 +248,9 @@ export function normalizeStoredDraft(value: unknown): SetDraft | null {
     gear: text(raw.gear, DEFAULT_SET.gear),
     notes: text(raw.notes),
     phaseNote: phaseNotes(raw.phaseNote),
+    openerId,
+    closerId,
+    pinnedIds: storedPins(raw.pinnedIds, openerId, closerId),
     durationMinutes: finite(raw.durationMinutes, DEFAULT_SET.durationMinutes),
     blendMs: blendMsOf(raw.blendMs),
     tracks,

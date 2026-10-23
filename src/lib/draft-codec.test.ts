@@ -174,6 +174,22 @@ test("a phase purpose line is kept and an empty one is dropped", () => {
   assert.deepEqual(round?.phaseNote, { peak: "treibend, 128" });
 });
 
+test("mid pins are kept and opener or closer ids are not stored twice", () => {
+  const draft = normalizeStoredDraft({
+    title: "Nachtlinie",
+    tracks: [],
+    openerId: "a",
+    closerId: "  ",
+    pinnedIds: ["b", "a", "b", "", 4],
+  });
+  assert.equal(draft?.openerId, "a");
+  assert.equal(draft?.closerId, null);
+  assert.deepEqual(draft?.pinnedIds, ["b"]);
+  const round = decodeStoredDraft(encodeStoredDraft(draft!));
+  assert.deepEqual(round?.pinnedIds, ["b"]);
+  assert.equal(JSON.parse(encodeStoredDraft(draft!)).schemaVersion, DRAFT_SCHEMA_VERSION);
+});
+
 test("codec rejects unsafe shapes and versions the same storage payload", () => {
   assert.equal(decodeStoredDraft("{bad"), null);
   assert.equal(normalizeStoredDraft({ title: "x", tracks: "no" }), null);

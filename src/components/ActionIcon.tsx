@@ -9,6 +9,7 @@ type ActionIconName =
   | "replace"
   | "opener"
   | "closer"
+  | "pin"
   | "rehearse"
   | "remove";
 
@@ -63,6 +64,13 @@ export function ActionIcon({ name }: { name: ActionIconName }) {
         <path d="M7 4h12v8H7z" />
         <path d="M7 4h6v4H7z" fill="currentColor" stroke="none" />
         <path d="M13 8h6v4h-6z" fill="currentColor" stroke="none" />
+      </>
+    ),
+    pin: (
+      <>
+        <path d="M9 10.5 12 4l3 6.5" />
+        <path d="M8 10.5h8" />
+        <path d="M12 10.5V20" />
       </>
     ),
     rehearse: (

@@ -48,10 +48,12 @@ import { ReplaceMenu } from "@/components/ReplaceMenu";
 import { SetGuideDrawer } from "@/components/SetGuideDrawer";
 import type { LibraryRow } from "@/components/LibraryPanel";
 import {
+  historyPoolCount,
   libraryTrackToSetTrack,
   mediaPathsForDraft,
   rehydrateStickCovers,
   sourcePoolFromStickLibrary,
+  stickLibraryPoolCount,
   stickLibraryRows,
   type RekordboxStickSet,
   type StickTrack,
@@ -132,6 +134,8 @@ import {
   clearOpener,
   pinCloser,
   pinOpener,
+  toggleKeepPin,
+  withoutEndPins,
 } from "@/lib/set-anchors";
 import { energyStatusLine, hasKnownEnergy } from "@/lib/energy";
 import { assessGigReady } from "@/lib/gig-ready";
@@ -1118,28 +1122,26 @@ export function SetBuilder() {
     return draft.tracks.filter((track) => track.role === roleFilter);
   }, [draft.tracks, mainTracks, roleFilter]);
 
+  const sourcePoolCount = draft.sourcePool?.length ?? 0;
+  // Counts only. Building the pool looks up a cover for every library row, and
+  // that used to run on every keystroke in the set.
   const reshuffleOffers = useMemo(() => {
-    const performance = performanceTracks(draft.tracks);
-    const playlistCount = draft.sourcePool?.length ?? 0;
-    const collectionCount = sourcePoolFromStickLibrary(libraryRows, performance).length;
-    const historyCount = sourcePoolFromStickLibrary(
-      historyLibraryRows(stickSets),
-      performance,
-    ).length;
-    const different = reshufflePoolForDraft(draft, libraryRows);
+    const performanceCount = mainTracks.length;
+    const collectionCount = stickLibraryPoolCount(libraryRows);
+    const historyCount = historyPoolCount(stickSets);
+    const storedReady = sourcePoolCount >= 2 && sourcePoolCount > performanceCount;
+    const stickReady = collectionCount >= 2 && collectionCount > performanceCount;
     return {
-      different: different
-        ? {
-            ready: true as const,
-            count: different.pool.length,
-            fromStick: different.fromStick,
-          }
-        : poolOffer(Math.max(playlistCount, collectionCount), performance.length),
-      playlist: poolOffer(playlistCount, performance.length),
-      collection: poolOffer(collectionCount, performance.length),
-      history: poolOffer(historyCount, performance.length),
+      different: storedReady
+        ? { ready: true as const, count: sourcePoolCount, fromStick: false }
+        : stickReady
+          ? { ready: true as const, count: collectionCount, fromStick: true }
+          : poolOffer(Math.max(sourcePoolCount, collectionCount), performanceCount),
+      playlist: poolOffer(sourcePoolCount, performanceCount),
+      collection: poolOffer(collectionCount, performanceCount),
+      history: poolOffer(historyCount, performanceCount),
     };
-  }, [draft, libraryRows, stickSets]);
+  }, [mainTracks.length, sourcePoolCount, libraryRows, stickSets]);
 
   const positions = useMemo(
     () => setPositionById(draft.tracks),
@@ -1638,6 +1640,9 @@ export function SetBuilder() {
         ...current,
         openerId: demoted && current.openerId === id ? null : current.openerId,
         closerId: demoted && current.closerId === id ? null : current.closerId,
+        pinnedIds: demoted
+          ? withoutEndPins(current.pinnedIds?.filter((item) => item !== id), null, null)
+          : current.pinnedIds,
         tracks,
         sourcePool,
       };
@@ -1650,6 +1655,7 @@ export function SetBuilder() {
       ...current,
       openerId: current.openerId === id ? null : current.openerId,
       closerId: current.closerId === id ? null : current.closerId,
+      pinnedIds: withoutEndPins(current.pinnedIds?.filter((item) => item !== id), null, null),
       tracks: current.tracks.filter((track) => track.id !== id),
     }));
   }
@@ -1758,10 +1764,17 @@ export function SetBuilder() {
   function replaceTrack(targetId: string, replacementId: string) {
     setDraft((current) => {
       const tracks = swapIntoSlot(current.tracks, targetId, replacementId, t);
+      const openerId = current.openerId === targetId ? replacementId : current.openerId;
+      const closerId = current.closerId === targetId ? replacementId : current.closerId;
       return {
         ...current,
-        openerId: current.openerId === targetId ? replacementId : current.openerId,
-        closerId: current.closerId === targetId ? replacementId : current.closerId,
+        openerId,
+        closerId,
+        pinnedIds: withoutEndPins(
+          current.pinnedIds?.map((item) => (item === targetId ? replacementId : item)),
+          openerId,
+          closerId,
+        ),
         tracks,
       };
     });
@@ -1780,10 +1793,17 @@ export function SetBuilder() {
         incoming.id,
         t,
       );
+      const openerId = current.openerId === targetId ? incoming.id : current.openerId;
+      const closerId = current.closerId === targetId ? incoming.id : current.closerId;
       return {
         ...current,
-        openerId: current.openerId === targetId ? incoming.id : current.openerId,
-        closerId: current.closerId === targetId ? incoming.id : current.closerId,
+        openerId,
+        closerId,
+        pinnedIds: withoutEndPins(
+          current.pinnedIds?.map((item) => (item === targetId ? incoming.id : item)),
+          openerId,
+          closerId,
+        ),
         tracks,
       };
     });
@@ -3747,7 +3767,8 @@ export function SetBuilder() {
                           </span>
                         </button>
                         {draft.openerId === track.id ||
-                        draft.closerId === track.id ? (
+                        draft.closerId === track.id ||
+                        draft.pinnedIds?.includes(track.id) ? (
                           <span className="anchor-pills">
                             {draft.openerId === track.id ? (
                               <Tip text={t("builder.row.openerBadgeTip")}>
@@ -3757,9 +3778,16 @@ export function SetBuilder() {
                               </Tip>
                             ) : null}
                             {draft.closerId === track.id ? (
-                              <Tip text={t("builder.row.closerBadgeTip")} end>
+                              <Tip text={t("builder.row.closerBadgeTip")}>
                                 <em className="anchor-pill is-closer">
                                   {t("builder.row.closerBadge")}
+                                </em>
+                              </Tip>
+                            ) : null}
+                            {draft.pinnedIds?.includes(track.id) ? (
+                              <Tip text={t("builder.row.pinBadgeTip")} end>
+                                <em className="anchor-pill is-pin">
+                                  {t("builder.row.pinBadge")}
                                 </em>
                               </Tip>
                             ) : null}
@@ -3994,6 +4022,35 @@ export function SetBuilder() {
                                 }
                               >
                                 <ActionIcon name="closer" />
+                              </button>
+                            </Tip>
+                          ) : null}
+                          {track.role !== "safety" ? (
+                            <Tip
+                              text={
+                                draft.pinnedIds?.includes(track.id)
+                                  ? t("builder.row.clearPinTip")
+                                  : t("builder.row.setPinTitle")
+                              }
+                            >
+                              <button
+                                type="button"
+                                className={
+                                  draft.pinnedIds?.includes(track.id)
+                                    ? "icon-action is-anchor"
+                                    : "icon-action"
+                                }
+                                aria-label={
+                                  draft.pinnedIds?.includes(track.id)
+                                    ? t("builder.row.clearPin")
+                                    : t("builder.row.setPin")
+                                }
+                                aria-pressed={Boolean(draft.pinnedIds?.includes(track.id))}
+                                onClick={() =>
+                                  setDraft((current) => toggleKeepPin(current, track.id))
+                                }
+                              >
+                                <ActionIcon name="pin" />
                               </button>
                             </Tip>
                           ) : null}

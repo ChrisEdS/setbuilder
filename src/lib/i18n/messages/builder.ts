@@ -220,15 +220,15 @@ const de = {
   "builder.tool.sort": "Sortieren",
   "builder.tool.reshuffle": "Andere Songs",
   "builder.tool.reshuffleTip":
-    "Würfelt aus dem Playlist-Pool ({pool} Tracks) eine neue Performance für denselben Brief. Alternativen werden neu gefüllt. Opener/Closer-Pins bleiben; Notizen gehen verloren.",
+    "Würfelt aus dem Playlist-Pool ({pool} Tracks) eine neue Performance für denselben Brief. Alternativen werden neu gefüllt. Opener, Closer und gepinnte Tracks bleiben; Notizen gehen verloren.",
   "builder.tool.reshuffleTipStick":
-    "Würfelt aus der Stick-Bibliothek ({pool} Tracks, alle Playlists) eine neue Performance für denselben Brief. Alternativen werden neu gefüllt. Opener/Closer-Pins bleiben; Notizen gehen verloren.",
+    "Würfelt aus der Stick-Bibliothek ({pool} Tracks, alle Playlists) eine neue Performance für denselben Brief. Alternativen werden neu gefüllt. Opener, Closer und gepinnte Tracks bleiben; Notizen gehen verloren.",
   "builder.tool.reshuffleDisabledTip":
     "Braucht mehr Tracks als im Set. Stick laden — dann kommt die Auswahl aus den Playlists darauf — oder eine längere Playlist extrahieren.",
   "builder.tool.reshuffleConfirm":
-    "Setliste aus dem Playlist-Pool ({pool} Tracks) neu setzen? Brief und Opener/Closer bleiben — Reihenfolge, Rollen und Notizen werden ersetzt.",
+    "Setliste aus dem Playlist-Pool ({pool} Tracks) neu setzen? Brief, Opener, Closer und gepinnte Tracks bleiben. Der Rest kommt neu aus der Playlist.",
   "builder.tool.reshuffleConfirmStick":
-    "Setliste aus den {pool} Tracks auf dem Stick neu setzen? Brief und Opener/Closer bleiben — Reihenfolge, Rollen und Notizen werden ersetzt.",
+    "Setliste aus den {pool} Tracks auf dem Stick neu setzen? Brief, Opener, Closer und gepinnte Tracks bleiben. Der Rest kommt neu aus der Playlist.",
   "builder.pool.different": "Andere Tracks",
   "builder.pool.differentHint":
     "Neue Performance aus dem Playlist-Pool ({count} Tracks). Brief und Pins bleiben.",
@@ -247,14 +247,14 @@ const de = {
   "builder.pool.collectionMissing": "Collection ist nicht geladen.",
   "builder.pool.collectionSmall": "Die Collection hat nicht mehr Tracks als das Set.",
   "builder.pool.collectionConfirm":
-    "Setliste aus den {pool} Tracks der Collection neu setzen? Brief und Opener/Closer bleiben — Reihenfolge, Rollen und Notizen werden ersetzt.",
+    "Setliste aus den {pool} Tracks der Collection neu setzen? Brief, Opener, Closer und gepinnte Tracks bleiben. Der Rest kommt neu aus der Collection.",
   "builder.pool.history": "Aus der History",
   "builder.pool.historyHint":
     "{count} gespielte Tracks. Brief und Pins bleiben.",
   "builder.pool.historyMissing": "Keine History geladen.",
   "builder.pool.historySmall": "Die History hat nicht mehr Tracks als das Set.",
   "builder.pool.historyConfirm":
-    "Setliste aus den {pool} gespielten Tracks neu setzen? Brief und Opener/Closer bleiben — Reihenfolge, Rollen und Notizen werden ersetzt.",
+    "Setliste aus den {pool} gespielten Tracks neu setzen? Brief, Opener, Closer und gepinnte Tracks bleiben. Der Rest kommt neu aus der History.",
   "builder.tool.energy": "Energie aus Dateien",
   "builder.tool.energyBusy": "Energie…",
   "builder.energy.noStick":
@@ -394,6 +394,15 @@ const de = {
   "builder.row.clearCloser": "Closer lösen",
   "builder.row.clearCloserTip":
     "Pin lösen — der Track bleibt im Set. Sortieren hält weiter den aktuellen letzten Track, bis du einen anderen pinnst oder nach hinten ziehst.",
+  "builder.row.setPin": "Pin",
+  "builder.row.setPinTitle":
+    "Im Set behalten. Beim Kürzen und bei Andere Songs bleibt der Track. Sortieren darf ihn frei verschieben.",
+  "builder.row.clearPin": "Pin lösen",
+  "builder.row.clearPinTip":
+    "Pin lösen. Der Track bleibt im Set, kann aber beim Kürzen zu den Alternativen wandern.",
+  "builder.row.pinBadge": "Pin",
+  "builder.row.pinBadgeTip":
+    "Gepinnt. Bleibt im Set beim Kürzen und bei Andere Songs. Die Reihenfolge beim Sortieren ist frei.",
   "builder.row.openerBadge": "Opener",
   "builder.row.openerBadgeTip": "Gepinnter Opener — erster Performance-Track, auch nach Sortieren.",
   "builder.row.closerBadge": "Closer",
@@ -859,15 +868,15 @@ const en: Record<keyof typeof de, string> = {
   "builder.tool.sort": "Sort",
   "builder.tool.reshuffle": "Different songs",
   "builder.tool.reshuffleTip":
-    "Picks a new performance from the playlist pool ({pool} tracks) for the same brief. Alternatives are refilled. Opener/closer pins stay; notes are lost.",
+    "Picks a new performance from the playlist pool ({pool} tracks) for the same brief. Alternatives are refilled. Opener, closer and pinned tracks stay; notes are lost.",
   "builder.tool.reshuffleTipStick":
-    "Picks a new performance from the stick library ({pool} tracks, every playlist) for the same brief. Alternatives are refilled. Opener/closer pins stay; notes are lost.",
+    "Picks a new performance from the stick library ({pool} tracks, every playlist) for the same brief. Alternatives are refilled. Opener, closer and pinned tracks stay; notes are lost.",
   "builder.tool.reshuffleDisabledTip":
     "Needs more tracks than the set. Load the stick — then it draws from the playlists on it — or extract a longer playlist.",
   "builder.tool.reshuffleConfirm":
-    "Rebuild the setlist from the playlist pool ({pool} tracks)? Brief and opener/closer stay — order, roles and notes are replaced.",
+    "Rebuild the setlist from the playlist pool ({pool} tracks)? Brief, opener, closer and pinned tracks stay. The rest is drawn again from the playlist.",
   "builder.tool.reshuffleConfirmStick":
-    "Rebuild the setlist from the {pool} tracks on the stick? Brief and opener/closer stay — order, roles and notes are replaced.",
+    "Rebuild the setlist from the {pool} tracks on the stick? Brief, opener, closer and pinned tracks stay. The rest is drawn again from the playlist.",
   "builder.pool.different": "Different songs",
   "builder.pool.differentHint":
     "A new performance from the playlist pool ({count} tracks). Brief and pins stay.",
@@ -886,14 +895,14 @@ const en: Record<keyof typeof de, string> = {
   "builder.pool.collectionMissing": "Collection is not loaded.",
   "builder.pool.collectionSmall": "The collection has no more tracks than the set.",
   "builder.pool.collectionConfirm":
-    "Rebuild the setlist from the {pool} collection tracks? Brief and opener/closer stay — order, roles and notes are replaced.",
+    "Rebuild the setlist from the {pool} collection tracks? Brief, opener, closer and pinned tracks stay. The rest is drawn again from the collection.",
   "builder.pool.history": "From history",
   "builder.pool.historyHint":
     "{count} played tracks. Brief and pins stay.",
   "builder.pool.historyMissing": "No history loaded.",
   "builder.pool.historySmall": "History has no more tracks than the set.",
   "builder.pool.historyConfirm":
-    "Rebuild the setlist from the {pool} played tracks? Brief and opener/closer stay — order, roles and notes are replaced.",
+    "Rebuild the setlist from the {pool} played tracks? Brief, opener, closer and pinned tracks stay. The rest is drawn again from history.",
   "builder.tool.energy": "Energy from files",
   "builder.tool.energyBusy": "Energy…",
   "builder.energy.noStick":
@@ -1032,6 +1041,15 @@ const en: Record<keyof typeof de, string> = {
   "builder.row.clearCloser": "Unpin closer",
   "builder.row.clearCloserTip":
     "Unpin — the track stays in the set. Sorting still keeps the current last track until you pin another or move one to the end.",
+  "builder.row.setPin": "Pin",
+  "builder.row.setPinTitle":
+    "Keep this track in the set. Trim and Different songs leave it in. Sorting may move it freely.",
+  "builder.row.clearPin": "Unpin",
+  "builder.row.clearPinTip":
+    "Unpin. The track stays in the set, and trim may move it to Alternatives.",
+  "builder.row.pinBadge": "Pin",
+  "builder.row.pinBadgeTip":
+    "Pinned. Stays in the set through trim and Different songs. Sort order stays free.",
   "builder.row.openerBadge": "Opener",
   "builder.row.openerBadgeTip": "Pinned opener — first performance track, even after sorting.",
   "builder.row.closerBadge": "Closer",

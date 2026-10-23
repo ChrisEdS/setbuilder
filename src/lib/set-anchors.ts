@@ -144,13 +144,70 @@ export function applySetAnchors(draft: SetDraft): SetDraft {
   };
 }
 
+/** Drop blank ids, duplicates, and any id that is already the opener or closer. */
+export function withoutEndPins(
+  ids: string[] | undefined,
+  openerId: string | null | undefined,
+  closerId: string | null | undefined,
+): string[] | undefined {
+  const drop = new Set(
+    [openerId, closerId]
+      .map((id) => id?.trim())
+      .filter((id): id is string => Boolean(id)),
+  );
+  const next: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of ids ?? []) {
+    const id = raw.trim();
+    if (!id || drop.has(id) || seen.has(id)) continue;
+    seen.add(id);
+    next.push(id);
+  }
+  return next.length ? next : undefined;
+}
+
+/** Opener, closer, and mid-pins: these tracks stay in the performance. */
+export function keepInSetIds(
+  draft: Pick<SetDraft, "openerId" | "closerId" | "pinnedIds">,
+): Set<string> {
+  const ids = new Set<string>();
+  for (const raw of [draft.openerId, draft.closerId, ...(draft.pinnedIds ?? [])]) {
+    const id = raw?.trim();
+    if (id) ids.add(id);
+  }
+  return ids;
+}
+
+/** Pin a track so trim and reshuffle keep it, without locking its place in the order. */
+export function toggleKeepPin(draft: SetDraft, trackId: string): SetDraft {
+  const id = trackId.trim();
+  if (!id) return draft;
+  const current = draft.pinnedIds ?? [];
+  if (current.includes(id)) {
+    return { ...draft, pinnedIds: withoutEndPins(current.filter((item) => item !== id), null, null) };
+  }
+  const openerId = draft.openerId === id ? null : draft.openerId ?? null;
+  const closerId = draft.closerId === id ? null : draft.closerId ?? null;
+  return {
+    ...draft,
+    openerId,
+    closerId,
+    pinnedIds: withoutEndPins([...(draft.pinnedIds ?? []), id], openerId, closerId),
+  };
+}
+
 export function pinOpener(draft: SetDraft, trackId: string): SetDraft {
   const id = trackId.trim();
   if (!id) return draft;
   const closerId = draft.closerId === id && draft.tracks.filter((t) => t.role !== "safety").length > 1
     ? null
     : draft.closerId;
-  return applySetAnchors({ ...draft, openerId: id, closerId });
+  return applySetAnchors({
+    ...draft,
+    openerId: id,
+    closerId,
+    pinnedIds: withoutEndPins(draft.pinnedIds, id, closerId),
+  });
 }
 
 export function pinCloser(draft: SetDraft, trackId: string): SetDraft {
@@ -159,7 +216,12 @@ export function pinCloser(draft: SetDraft, trackId: string): SetDraft {
   const openerId = draft.openerId === id && draft.tracks.filter((t) => t.role !== "safety").length > 1
     ? null
     : draft.openerId;
-  return applySetAnchors({ ...draft, openerId, closerId: id });
+  return applySetAnchors({
+    ...draft,
+    openerId,
+    closerId: id,
+    pinnedIds: withoutEndPins(draft.pinnedIds, openerId, id),
+  });
 }
 
 export function clearOpener(draft: SetDraft): SetDraft {

@@ -229,6 +229,41 @@ test("reshuffleDraftFromPool keeps opener and closer pins in the cast", () => {
   assert.ok(nextPerf.some((track) => track.id === closerId));
 });
 
+test("reshuffleDraftFromPool keeps a mid pin in the performance", () => {
+  const crate = Array.from({ length: 40 }, (_, i) => spotifyTrack(i));
+  let draft = extractSetFromPlaylist(crate, "Pinned Night", {
+    durationMinutes: 45,
+  });
+  const performance = draft.tracks.filter((track) => track.role !== "safety");
+  const mid = performance[Math.floor(performance.length / 2)]?.id;
+  assert.ok(mid);
+  draft = { ...draft, pinnedIds: [mid] };
+  const next = reshuffleDraftFromPool(draft, tEn, () => 0);
+  const nextPerf = next.tracks.filter((track) => track.role !== "safety");
+  assert.ok(nextPerf.some((track) => track.id === mid));
+  assert.ok(next.pinnedIds?.includes(mid));
+  assert.equal(next.tracks.find((track) => track.id === mid)?.role === "safety", false);
+});
+
+test("slot fit keeps opener, closer and a mid pin in the performance", () => {
+  const energies = [3, 5, 4, 5, 6, 5, 6, 7, 8, 6, 7, 9, 5, 9, 8, 4, 5, 4, 6];
+  const phases = ["open", "open", "open", "lift", "lift", "lift", "rise", "rise", "rise", "rise", "peak", "peak", "peak", "peak", "peak", "peak", "release", "release", "release"];
+  const tracks = energies.map((energy, index) => mk(index, phases[index], energy));
+  const draft: any = {
+    ...DEFAULT_SET,
+    durationMinutes: 60,
+    tracks,
+    openerId: "t0",
+    closerId: "t18",
+    pinnedIds: ["t12"],
+  };
+  const fitted = fitToSlot(draft);
+  const kept = fitted.draft.tracks.filter((track: { role: string }) => track.role !== "safety");
+  for (const id of ["t0", "t18", "t12"]) {
+    assert.ok(kept.some((track: { id: string }) => track.id === id), id);
+  }
+});
+
 
 test("canReshuffleDraft is false without a usable pool", () => {
   assert.equal(canReshuffleDraft({ ...DEFAULT_SET, tracks: [] }), false);
