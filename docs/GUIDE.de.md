@@ -4,7 +4,7 @@
 
 So bereitest du ein Set mit rekordbox vor: Bibliothek verbinden und verstehen → bauen → exportieren. Die Screenshots zeigen ein in der App geöffnetes Set. Die Bilder sind von 4.0. Der Text beschreibt 4.2, einschließlich Bibliotheksfilter, die Phasenzeile und Energie in der Details-Zeile.
 
-Die ausgelieferte App ist die Desktop-App (Port **4317**). Die Browser-Entwicklung nutzt Port **4327**. Dieses Dokument beschreibt **4.3.0**. Stick-Schreiben, Player und Streaming-Konten sind weiter ungeprüft.
+Die ausgelieferte App ist die Desktop-App (Port **4317**). Die Browser-Entwicklung nutzt Port **4327**. Dieses Dokument beschreibt **4.3.1**. Stick-Schreiben, Player und Streaming-Konten sind weiter ungeprüft.
 
 > **Vor dem Gig:** Stick immer am echten Player testen (Playlist sichtbar, Tracks spielbar). Backup behalten — SETBUILDER schreibt in `export.pdb` und legt Kopien unter `SETBUILDER-Backup/` ab, für deine Medien bist du selbst verantwortlich. Keine Garantie. Works on my machine. :)
 
