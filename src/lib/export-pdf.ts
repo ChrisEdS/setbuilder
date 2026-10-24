@@ -1,3 +1,4 @@
+import { hasKnownEnergy } from "@/lib/energy";
 import { mixJoin } from "@/lib/harmonic";
 import { stickAlternativesPlaylistName } from "@/lib/stick-names";
 import { tDe, type Translate } from "@/lib/i18n/core";
@@ -67,6 +68,11 @@ function trackCell(track: SetTrack, t: Translate): string {
   )}`;
 }
 
+/** Known Energy Level for the booth sheet; anonymous Energy 1 stays blank like the setlist. */
+function energyCell(track: SetTrack): string {
+  return hasKnownEnergy(track) ? String(track.energyLevel) : "—";
+}
+
 export function buildSetPrintHtml(draft: SetDraft, t: Translate = tDe): string {
   const locale = t("exports.locale");
   const main = performanceTracks(draft.tracks);
@@ -90,7 +96,7 @@ export function buildSetPrintHtml(draft: SetDraft, t: Translate = tDe): string {
       const purpose = draft.phaseNote?.[track.phase]?.trim() ?? "";
       const banner = phaseChanged
         ? `<tr class="phase-row">
-            <td colspan="6">
+            <td colspan="7">
               <strong>${escapeHtml(phaseLabel(track.phase, t))}</strong>
               <em>${escapeHtml(phaseWindowLabel(draft.durationMinutes, track.phase, t))}</em>
               ${purpose ? `<span class="by">${escapeHtml(purpose)}</span>` : ""}
@@ -104,6 +110,7 @@ export function buildSetPrintHtml(draft: SetDraft, t: Translate = tDe): string {
         <td class="track">${trackCell(track, t)}</td>
         <td class="key">${escapeHtml(track.keyCamelot || "—")}</td>
         <td class="bpm">${escapeHtml(track.bpm || "—")}</td>
+        <td class="energy">${escapeHtml(energyCell(track))}</td>
         <td class="mix">${escapeHtml(join?.label || "—")}${
           transition ? ` <span class="by">${escapeHtml(transition)}</span>` : ""
         }</td>
@@ -118,6 +125,7 @@ export function buildSetPrintHtml(draft: SetDraft, t: Translate = tDe): string {
         <td class="track" colspan="2">${trackCell(track, t)}</td>
         <td class="key">${escapeHtml(track.keyCamelot || "—")}</td>
         <td class="bpm">${escapeHtml(track.bpm || "—")}</td>
+        <td class="energy">${escapeHtml(energyCell(track))}</td>
         <td class="mix"><span class="by">${escapeHtml(phaseLabel(track.phase, t))}</span></td>
       </tr>`;
     })
@@ -132,6 +140,7 @@ export function buildSetPrintHtml(draft: SetDraft, t: Translate = tDe): string {
             <th>${escapeHtml(t("exports.pdf.colTrack"))}</th>
             <th>${escapeHtml(t("exports.pdf.colKey"))}</th>
             <th>${escapeHtml(t("exports.pdf.colBpm"))}</th>
+            <th>${escapeHtml(t("exports.pdf.colEnergy"))}</th>
             <th>${escapeHtml(t("exports.pdf.colFromPrevious"))}</th>
           </tr>
         </thead>
@@ -276,8 +285,8 @@ export function buildSetPrintHtml(draft: SetDraft, t: Translate = tDe): string {
     }
     td.num { width: 24px; color: var(--muted); }
     td.clock { width: 42px; font-variant-numeric: tabular-nums; }
-    td.key, td.bpm { width: 36px; font-variant-numeric: tabular-nums; }
-    td.mix { width: 190px; }
+    td.key, td.bpm, td.energy { width: 36px; font-variant-numeric: tabular-nums; }
+    td.mix { width: 170px; }
     .track strong { font-size: 11px; }
     .by, .dur, .note { color: var(--muted); font-size: 10px; }
     .dur { font-variant-numeric: tabular-nums; margin-left: 4px; }

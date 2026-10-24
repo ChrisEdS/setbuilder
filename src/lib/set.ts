@@ -1,3 +1,4 @@
+import { hasKnownEnergy } from "@/lib/energy";
 import { tDe, type Translate } from "@/lib/i18n/core";
 import { stickAlternativesPlaylistName } from "@/lib/stick-names";
 
@@ -590,6 +591,7 @@ export function exportSetText(draft: SetDraft, t: Translate = tDe): string {
       track.durationMs ? formatDuration(track.durationMs) : "",
       track.keyCamelot,
       track.bpm,
+      hasKnownEnergy(track) ? t("builder.row.energy", { level: track.energyLevel ?? 0 }) : "",
       track.transition !== "unset" ? t(`domain.transition.${track.transition}`) : "",
     ]
       .filter(Boolean)

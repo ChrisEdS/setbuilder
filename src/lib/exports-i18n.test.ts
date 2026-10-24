@@ -123,6 +123,43 @@ test("set-only comments print and copy but never become rekordbox Comments", () 
   assert.doesNotMatch(buildRekordboxXml(noted), /Bring vocal in after 32/);
 });
 
+test("print and text include known energy and hide anonymous Energy 1", () => {
+  const energized: SetDraft = {
+    ...draft,
+    tracks: [
+      track({ id: "hot", name: "Peak Cut", energyLevel: 8, energySource: "tag" }),
+      track({
+        id: "blank",
+        name: "Placeholder",
+        energyLevel: 1,
+        phase: "peak",
+      }),
+      track({
+        id: "real-one",
+        name: "Soft Open",
+        energyLevel: 1,
+        energySource: "manual",
+        phase: "open",
+      }),
+    ],
+  };
+  const html = buildSetPrintHtml(energized);
+  assert.match(html, /<th>Energie<\/th>/);
+  assert.match(html, /<td class="energy">8<\/td>/);
+  assert.match(html, /<td class="energy">1<\/td>/);
+  assert.match(html, /<td class="energy">—<\/td>/);
+  const enHtml = buildSetPrintHtml(energized, tEn);
+  assert.match(enHtml, /<th>Energy<\/th>/);
+
+  const text = exportSetText(energized);
+  assert.match(text, /Peak Cut\s+\(.*· Energie 8/);
+  assert.match(text, /Soft Open\s+\(.*· Energie 1/);
+  assert.doesNotMatch(text, /Placeholder\s+\(.*Energie/);
+  const enText = exportSetText(energized, tEn);
+  assert.match(enText, /Peak Cut\s+\(.*· Energy 8/);
+  assert.doesNotMatch(enText, /Placeholder\s+\(.*Energy/);
+});
+
 test("importer errors carry keys and keep the German message", () => {
   assert.throws(() => parseRekordboxPdb(new ArrayBuffer(8)), /zu klein/);
   try {
