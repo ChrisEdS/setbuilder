@@ -32,19 +32,20 @@ export function GigReadyDialog({
   const canPick = stickPicker() !== null;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (!open) {
+      setBusy(false);
+      setError(null);
+    }
+  }
 
   useEffect(() => {
     const node = dialog.current;
     if (!node) return;
     if (open && !node.open) node.showModal();
     if (!open && node.open) node.close();
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) {
-      setBusy(false);
-      setError(null);
-    }
   }, [open]);
 
   function line(check: GigCheck): string {

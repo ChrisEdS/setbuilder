@@ -1808,24 +1808,24 @@ export function SetBuilder() {
     () => 0,
   );
 
-  const pendingChecks = useMemo(
-    () =>
-      pendingTake
-        ? assessGigReady({
-            tracks: draft.tracks,
-            action:
-              pendingTake === "stick"
-                ? "stick"
-                : pendingTake === "xml" || pendingTake === "m3u"
-                  ? "desk"
-                  : "booth",
-            fileInSession: stickFileInSession,
-            health: stickHealth,
-          })
-        : [],
-    // stickFilesEpoch: re-run after rememberStickFiles / hydrateStickMedia.
-    [pendingTake, draft.tracks, stickHealth, stickFilesEpoch],
-  );
+  const pendingChecks = useMemo(() => {
+    // Epoch bumps after rememberStickFiles / hydrateStickMedia; keep it read so
+    // fileInSession results refresh when the session store changes.
+    void stickFilesEpoch;
+    return pendingTake
+      ? assessGigReady({
+          tracks: draft.tracks,
+          action:
+            pendingTake === "stick"
+              ? "stick"
+              : pendingTake === "xml" || pendingTake === "m3u"
+                ? "desk"
+                : "booth",
+          fileInSession: stickFileInSession,
+          health: stickHealth,
+        })
+      : [];
+  }, [pendingTake, draft.tracks, stickHealth, stickFilesEpoch]);
 
   /** Re-pick the stick folder so gig-ready file paths match this session again. */
   async function reselectStickForGigReady() {
