@@ -13,7 +13,6 @@ import {
   slotLabel,
   transitionHint,
   transitionLabel,
-  type Lang,
   type Translate,
 } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n/react";
@@ -240,45 +239,6 @@ function normalizeTrack(track: SetTrack): SetTrack {
   return normalizeDraftTrack(track) ?? track;
 }
 
-const BRIEF_FIELDS = ["title", "vibe", "venue", "slot", "audience", "gear"] as const;
-
-const BRIEF_DEFAULTS: Record<Lang, Record<(typeof BRIEF_FIELDS)[number], string>> = {
-  de: briefDefaultsFor("de"),
-  en: briefDefaultsFor("en"),
-};
-
-function briefDefaultsFor(lang: Lang) {
-  const t = createTranslate(lang);
-  return {
-    title: t("builder.defaults.title"),
-    vibe: t("builder.defaults.vibe"),
-    venue: t("builder.defaults.venue"),
-    slot: t("builder.defaults.slot"),
-    audience: t("builder.defaults.audience"),
-    gear: t("builder.defaults.gear"),
-  };
-}
-
-/**
- * Display step for the sample brief: a field that still holds the sample text of the other
- * language is shown in the current one. Edited fields never change; the same object comes
- * back when nothing needs swapping.
- */
-function localizeBrief(draft: SetDraft, lang: Lang): SetDraft {
-  const other: Lang = lang === "de" ? "en" : "de";
-  let next = draft;
-  for (const field of BRIEF_FIELDS) {
-    if (
-      draft[field] === BRIEF_DEFAULTS[other][field] &&
-      draft[field] !== BRIEF_DEFAULTS[lang][field]
-    ) {
-      if (next === draft) next = { ...draft };
-      next[field] = BRIEF_DEFAULTS[lang][field];
-    }
-  }
-  return next;
-}
-
 function readStoredDraft(): SetDraft {
   // Storage refused the last write: the session copy is the truth.
   if (!draftPersisted) return cachedDraft;
@@ -451,13 +411,12 @@ function poolOffer(count: number, performanceCount: number): PoolOffer {
 }
 
 export function SetBuilder() {
-  const { t, lang } = useI18n();
-  const storedDraft = useSyncExternalStore(
+  const { t } = useI18n();
+  const draft = useSyncExternalStore(
     subscribeDraft,
     readStoredDraft,
     () => DEFAULT_SET,
   );
-  const draft = localizeBrief(storedDraft, lang);
   const [activePhase, setActivePhase] = useState<SetPhaseId>("open");
   const [activeRole, setActiveRole] = useState<TrackRole>("anchor");
   const [query, setQuery] = useState("");
@@ -2655,6 +2614,7 @@ export function SetBuilder() {
               <div className="setups-inline">
                 <input
                   value={draft.title}
+                  placeholder={t("builder.brief.titlePlaceholder")}
                   onChange={(event) =>
                     setDraft((current) => ({ ...current, title: event.target.value }))
                   }
@@ -2882,6 +2842,7 @@ export function SetBuilder() {
             <span>{t("builder.brief.title")}</span>
             <input
               value={draft.title}
+              placeholder={t("builder.brief.titlePlaceholder")}
               onChange={(e) =>
                 setDraft((c) => ({ ...c, title: e.target.value }))
               }
@@ -2949,6 +2910,7 @@ export function SetBuilder() {
                 <span>{t("builder.brief.vibe")}</span>
                 <input
                   value={draft.vibe}
+                  placeholder={t("builder.brief.vibePlaceholder")}
                   onChange={(e) =>
                     setDraft((c) => ({ ...c, vibe: e.target.value }))
                   }
@@ -2958,6 +2920,7 @@ export function SetBuilder() {
                 <span>{t("builder.brief.venue")}</span>
                 <input
                   value={draft.venue}
+                  placeholder={t("builder.brief.venuePlaceholder")}
                   onChange={(e) =>
                     setDraft((c) => ({ ...c, venue: e.target.value }))
                   }
@@ -2966,12 +2929,21 @@ export function SetBuilder() {
               <label>
                 <span>{t("builder.brief.slotKind")}</span>
                 <select
-                  value={draft.slotKind ?? "peaktime"}
+                  value={draft.slotKind ?? ""}
                   onChange={(e) => {
-                    const slotKind = e.target.value as SetSlotKind;
+                    const value = e.target.value;
+                    const slotKind = (
+                      value === "warmup" ||
+                      value === "support" ||
+                      value === "peaktime" ||
+                      value === "closing"
+                        ? value
+                        : undefined
+                    ) as SetSlotKind | undefined;
                     setDraft((c) => ({ ...c, slotKind }));
                   }}
                 >
+                  <option value="">{t("builder.brief.slotKindEmpty")}</option>
                   {SLOT_KINDS.map((kind) => (
                     <option key={kind.id} value={kind.id} title={slotHint(t, kind.id)}>
                       {slotLabel(t, kind.id)}
@@ -2983,6 +2955,7 @@ export function SetBuilder() {
                 <span>{t("builder.brief.audience")}</span>
                 <input
                   value={draft.audience}
+                  placeholder={t("builder.brief.audiencePlaceholder")}
                   onChange={(e) =>
                     setDraft((c) => ({ ...c, audience: e.target.value }))
                   }
@@ -2992,6 +2965,7 @@ export function SetBuilder() {
                 <span>{t("builder.brief.gear")}</span>
                 <input
                   value={draft.gear}
+                  placeholder={t("builder.brief.gearPlaceholder")}
                   onChange={(e) =>
                     setDraft((c) => ({ ...c, gear: e.target.value }))
                   }

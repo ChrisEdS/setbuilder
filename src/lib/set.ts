@@ -133,8 +133,8 @@ export type SetDraft = {
   vibe: string;
   venue: string;
   slot: string;
-  /** Dramaturgie-Rahmen laut Slot (Warm-up / Support / Peak / Closing) */
-  slotKind: SetSlotKind;
+  /** Dramaturgie-Rahmen laut Slot (Warm-up / Support / Peak / Closing). Absent = unset. */
+  slotKind?: SetSlotKind;
   audience: string;
   gear: string;
   /** Free-form brief notes (promoter, doors, curfew, …). */
@@ -253,13 +253,12 @@ export const TRANSITIONS: { id: TransitionVerb; label: string }[] = [
 ];
 
 export const DEFAULT_SET: SetDraft = {
-  title: "Nachtlinie 01",
-  vibe: "Tech House → Melodic Peak",
-  venue: "Club, mid-size, guter PA",
-  slot: "Peak Time · 60 Min",
-  slotKind: "peaktime",
-  audience: "Locals, dancefloor schon warm",
-  gear: "CDJs / USB",
+  title: "",
+  vibe: "",
+  venue: "",
+  slot: "",
+  audience: "",
+  gear: "",
   notes: "",
   durationMinutes: 60,
   blendMs: 120_000,

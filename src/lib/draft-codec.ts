@@ -243,7 +243,7 @@ export function normalizeStoredDraft(value: unknown): SetDraft | null {
     slot: text(raw.slot, DEFAULT_SET.slot),
     slotKind: slots.has(raw.slotKind as SetSlotKind)
       ? (raw.slotKind as SetSlotKind)
-      : "peaktime",
+      : undefined,
     audience: text(raw.audience, DEFAULT_SET.audience),
     gear: text(raw.gear, DEFAULT_SET.gear),
     notes: text(raw.notes),

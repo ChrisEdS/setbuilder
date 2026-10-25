@@ -31,12 +31,33 @@ test("migrates an older draft, normalizes tracks and preserves user text", () =>
   assert.equal(draft.schemaVersion, DRAFT_SCHEMA_VERSION);
   assert.equal(draft.title, "  My set  ");
   assert.equal(draft.vibe, "  keep spacing  ");
+  assert.equal(draft.slotKind, undefined);
   assert.equal(draft.tracks[0].note, "");
   assert.equal(draft.tracks[0].comment, "  my cue note  ");
   assert.equal(draft.tracks[0].energyLevel, 7);
   assert.equal(draft.tracks[0].energySource, "tag");
   assert.equal(draft.tracks[0].role, "groove");
   assert.equal(draft.blendMs, 120_000);
+});
+
+test("empty brief fields stay empty; slot kind stays unset without a valid value", () => {
+  const draft = normalizeStoredDraft({
+    title: "Bare",
+    tracks: [{ id: "t", name: "One" }],
+  });
+  assert.ok(draft);
+  assert.equal(draft.vibe, "");
+  assert.equal(draft.venue, "");
+  assert.equal(draft.slot, "");
+  assert.equal(draft.audience, "");
+  assert.equal(draft.gear, "");
+  assert.equal(draft.slotKind, undefined);
+  const withKind = normalizeStoredDraft({
+    title: "Peak",
+    slotKind: "peaktime",
+    tracks: [{ id: "t", name: "One" }],
+  });
+  assert.equal(withKind?.slotKind, "peaktime");
 });
 
 test("a measured Energy Level survives save and load, an anonymous 1 does not", () => {

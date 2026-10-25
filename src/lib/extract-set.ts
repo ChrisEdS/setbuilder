@@ -22,7 +22,6 @@ import {
 } from "@/lib/set-anchors";
 import type { SpotifyTrack } from "@/lib/spotify";
 import {
-  DEFAULT_SET,
   PHASES,
   blendMsOf,
   playedDurationMs,
@@ -304,12 +303,11 @@ function buildDraftFromPool(
   const base: SetDraft = {
     title: options.title?.trim() || playlistName,
     vibe: options.vibe?.trim() || t("analysis.extract.vibe", { name: playlistName }),
-    venue: options.venue ?? DEFAULT_SET.venue,
+    venue: options.venue ?? "",
     slot: options.slot ?? t("analysis.extract.slot", { minutes: durationMinutes }),
-    slotKind: DEFAULT_SET.slotKind,
-    audience: options.audience ?? DEFAULT_SET.audience,
-    gear: options.gear ?? DEFAULT_SET.gear,
-    notes: options.notes ?? DEFAULT_SET.notes ?? "",
+    audience: options.audience ?? "",
+    gear: options.gear ?? "",
+    notes: options.notes ?? "",
     durationMinutes,
     blendMs,
     tracks: withSafety,
