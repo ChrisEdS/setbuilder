@@ -13,23 +13,25 @@ Before the gig, the room is quiet. SETBUILDER is that room. You arrive with a re
 ## What you take with you
 
 - 🎚️ **A night with a shape.** Open, lift, peak, release. You see where there is still air and where it is already full.
+- ⏱️ **The night fitted to the slot.** Too long, it cuts. Too short — a song you took out, or a longer slot — it fills from the alternatives, then the playlist you loaded.
 - 🔑 **Keys that talk to each other.** Camelot along the set. A clash shows up while you still have time.
-- ⚡ **Energy that belongs to the song.** Read from the file, measured, or set by you. It sits on the track once it is real.
-- 📌 **Pins that stay in the set.** Opener and closer hold the ends. Mid pins survive trim and different songs, and still move when you sort.
+- ⚡ **Energy that belongs to the song.** Read from the file, measured, or set by you. It sits on the track once it is real, and on the sheet and the copied text when you know it.
+- 📌 **Pins that stay in the set.** Opener and closer hold the ends. Mid pins survive fit to slot and Different songs, and still move when you sort.
+- 🚫 **A song can sit the night out.** Mark it out of the set. It stays with the alternatives. Fit to slot and Different songs leave it there. Pin and out clear each other.
 - 🎛️ **Every join with its own length.** Cut, blend, echo-out. The slot clock follows what you write on the handoff. “—” takes the blend time from the brief.
 - 🎲 **Another night from the same crate.** Different songs. Or the playlist, the collection, the history, once they are in the room.
-- 🛟 **Plan B in your pocket.** Roles and alternatives for the moment the floor changes its mind.
+- 🛟 **Plan B in your pocket.** Roles and alternatives for the moment the floor changes its mind. Place one before or after a song, or pin it into the night.
 - 🎧 **Hear the handoff first.** A card you can drag and open up. Previous, this track, next. The same length as the setlist.
-- 🔍 **Only what fits.** Key, BPM, and energy pull the library in close. Fits after ranks what can follow a chosen track.
+- 🔍 **Only what fits.** Key, BPM, and energy pull the library in close. Fits after ranks what can follow a chosen track, and the song you add lands right after it.
 - 📝 **A line for the phase.** On the arc, when you want it. Driving, 128. It travels onto the sheet for the booth.
-- 🎒 **Ready when it holds.** The checklist first. Then the stick for the player, the sheet for the booth, the file for the computer. Or the set stays in SETBUILDER.
+- 🎒 **Ready when it holds.** The checklist first. If the files aren't in this session, pick the stick folder again right there. Then the stick for the player, the sheet for the booth, the file for the computer. Or the set stays in SETBUILDER.
 
 ## Four steps
 
-1. 📝 **Brief** — title, length, how close the joins should sit. The notes for the gig wait under Set info.
+1. 📝 **Brief** — title, the minutes of the slot, how close the joins should sit. The examples under Set info are placeholders. Lengthen the slot, then fit, and the night fills; shorten it, then fit, and it cuts.
 2. 🔌 **Load** — connect the stick. A collection can fill in the keys.
-3. 🎛️ **Build** — a playlist, your own songs, or both. Draw the crate in close, use Fits after when you need it, and set the phase, the role, and every join.
-4. 🎒 **Export** — the stick for the player, the sheet for the booth, a file for home.
+3. 🎛️ **Build** — a playlist, your own songs, or both. Draw the crate in close, use Fits after when the next song should land right behind one you chose, and set the phase, the role, and every join.
+4. 🎒 **Export** — the stick for the player, the sheet for the booth, a file for home. Known energy goes on the sheet and into the copied text.
 
 📖 **Walkthrough with screenshots:** [docs/GUIDE.md](docs/GUIDE.md)
 

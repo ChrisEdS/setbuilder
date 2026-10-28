@@ -13,23 +13,25 @@ Vor dem Gig ist es still. SETBUILDER ist dieser Raum. Du kommst mit einem rekord
 ## Was du mitnimmst
 
 - 🎚️ **Eine Nacht mit Form.** Open, Lift, Peak, Release. Du siehst, wo noch Luft ist und wo es schon voll ist.
+- ⏱️ **Die Nacht auf den Slot.** Zu lang, sie wird kürzer. Zu kurz — ein Song, den du rausgenommen hast, oder ein längerer Slot — sie füllt sich aus den Alternativen, dann aus der geladenen Playlist.
 - 🔑 **Keys, die miteinander reden.** Camelot entlang des Sets. Ein Clash fällt auf, solange du noch Zeit hast.
-- ⚡ **Energie, die zum Song gehört.** Aus der Datei gelesen, gemessen oder von dir gesetzt. Sie steht am Track, sobald sie fest ist.
-- 📌 **Pins, die im Set bleiben.** Opener und Closer halten die Enden. Mittel-Pins überstehen Kürzen und Andere Songs und wandern beim Sortieren mit.
+- ⚡ **Energie, die zum Song gehört.** Aus der Datei gelesen, gemessen oder von dir gesetzt. Sie steht am Track, sobald sie fest ist, und auf dem Zettel und im kopierten Text, wenn du sie kennst.
+- 📌 **Pins, die im Set bleiben.** Opener und Closer halten die Enden. Mittel-Pins überstehen Auf Slot setzen und Andere Songs und wandern beim Sortieren mit.
+- 🚫 **Ein Song kann die Nacht aussetzen.** Markier ihn raus aus dem Set. Er bleibt bei den Alternativen. Auf Slot setzen und Andere Songs lassen ihn dort. Pin und Raus lösen einander.
 - 🎛️ **Jeder Anschluss mit eigener Länge.** Cut, Blend, Echo-out. Die Uhr des Slots folgt dem, was du an den Übergang schreibst. „—“ nimmt die Blend-Zeit aus dem Brief.
 - 🎲 **Eine andere Nacht aus derselben Kiste.** Andere Songs. Oder die Playlist, die Collection, die History, sobald sie da ist.
-- 🛟 **Plan B in der Tasche.** Rollen und Alternativen für den Moment, in dem der Floor es sich anders überlegt.
+- 🛟 **Plan B in der Tasche.** Rollen und Alternativen für den Moment, in dem der Floor es sich anders überlegt. Setz eine davor oder dahinter, oder pinne sie in die Nacht.
 - 🎧 **Den Übergang vorher hören.** Eine Karte zum Ziehen und größer machen. Vorher, dieser Track, der nächste. Dieselbe Länge wie in der Setliste.
-- 🔍 **Nur noch, was passt.** Key, BPM und Energie holen die Bibliothek heran. Passt zu reiht, was hinter einem gewählten Track tragen kann.
+- 🔍 **Nur noch, was passt.** Key, BPM und Energie holen die Bibliothek heran. Passt zu reiht, was hinter einem gewählten Track tragen kann, und der Song, den du hinzufügst, landet direkt dahinter.
 - 📝 **Ein Satz für die Phase.** Auf dem Bogen, wenn du ihn brauchst. Treibend, 128. Er geht mit auf den Zettel für die Kabine.
-- 🎒 **Fertig, wenn es sitzt.** Erst die Checkliste. Dann der Stick für den Player, der Zettel für die Kabine, die Datei für den Rechner. Oder das Set bleibt in SETBUILDER.
+- 🎒 **Fertig, wenn es sitzt.** Erst die Checkliste. Wenn die Dateien nicht in dieser Sitzung sind, wähl den Stick-Ordner direkt dort noch einmal. Dann der Stick für den Player, der Zettel für die Kabine, die Datei für den Rechner. Oder das Set bleibt in SETBUILDER.
 
 ## Vier Schritte
 
-1. 📝 **Brief** — Titel, Länge, wie dicht die Übergänge sein sollen. Die Notizen zum Gig warten unter Set-Info.
+1. 📝 **Brief** — Titel, die Minuten des Slots, wie dicht die Übergänge sein sollen. Die Beispiele unter Set-Info sind Platzhalter. Den Slot länger machen, dann auf den Slot setzen, und die Nacht füllt sich; kürzer, und sie wird geschnitten.
 2. 🔌 **Laden** — Stick verbinden. Eine Collection darf die Keys nachreichen.
-3. 🎛️ **Bauen** — Playlist, eigene Songs oder beides. Eng die Kiste ein, nutz Passt zu wenn du es brauchst, und setz Phase, Rolle und jeden Anschluss.
-4. 🎒 **Exportieren** — Stick für den Player, Zettel für die Kabine, Datei für zu Hause.
+3. 🎛️ **Bauen** — Playlist, eigene Songs oder beides. Eng die Kiste ein, nutz Passt zu, wenn der nächste Song direkt hinter einem gewählten landen soll, und setz Phase, Rolle und jeden Anschluss.
+4. 🎒 **Exportieren** — Stick für den Player, Zettel für die Kabine, Datei für zu Hause. Bekannte Energie steht auf dem Zettel und im kopierten Text.
 
 📖 **Anleitung mit Screenshots:** [docs/GUIDE.de.md](docs/GUIDE.de.md)
 

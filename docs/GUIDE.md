@@ -2,7 +2,7 @@
 
 [Deutsch](GUIDE.de.md) · **English** · [README](../README.md)
 
-How to prepare a set with rekordbox: connect and understand the library → build → export. Screenshots show a set open in the app. The pictures are from 4.0. The words describe 4.2, including the library filters, the phase line, and energy on the details line.
+How to prepare a set with rekordbox: connect and understand the library → build → export. Screenshots show a set open in the app. The pictures are from 4.0. The words describe 4.3.2, including the library filters, the phase line, pins and exclude, fit to slot, and energy on the details line and the booth sheet.
 
 The shipping client is the desktop app (port **4317**). Browser development uses port **4327**. This document describes **4.3.2**. Stick write, players, and streaming accounts are still unverified.
 
@@ -10,7 +10,7 @@ The shipping client is the desktop app (port **4317**). Browser development uses
 
 ## How a set works with rekordbox
 
-1. **Brief:** title, duration, and average blend time. Set info (vibe, venue, slot, audience, gear, notes) folds away; it is notes for the gig, not the clock.
+1. **Brief:** title, slot duration in minutes, and average blend time. Those minutes are the clock **Fit to slot** uses: lengthen them, then fit, and the set fills; shorten them, then fit, and it cuts. Set info (vibe, venue, slot, audience, gear, notes) folds away. The examples in those fields are placeholders, and the fields start empty. They are notes for the gig. The clock stays in the minutes above.
 2. **Load stick & prepare:** connect the stick and optionally enrich the current set/library from collection XML, CSV or an unencrypted database.
 3. **Build set:** start with a stick playlist, add music, or do both; then check phases, roles, order, and each join.
 4. **Export:** save the set in SETBUILDER, update the stick playlist, make booth PDF/text, or export XML/M3U.
@@ -25,7 +25,7 @@ The shipping client is the desktop app (port **4317**). Browser development uses
 
 **Player check.** After a stick is chosen, a short strip shows one verdict and one primary action (prepare for player, eject, or open rekordbox). Details sit behind a toggle: green / amber / red dots mark real status (folder, database, player library); plain lines without a dot are info only (e.g. no SETBUILDER playlists yet). Green means Device Library players can use the stick; amber means a step is still needed — often *Prepare for player* so the old OneLibrary no longer hides your playlists, then *Eject*.
 
-**Collection enrichment.** In rekordbox, export via *File → Export Collection in XML…* and load the file. An unencrypted `master.db` and CSV work too. These sources index the library and match metadata such as key/BPM onto tracks already in the set; they do **not** start, replace or become the set by themselves. Playlist choice is under **Build set**. After import, the **Library** searches by artist, title, key or playlist. Under that search: key neighborhood (the same key, the relative major/minor, or ±1 on the wheel), BPM from/to, and energy from/to on the 1–10 scale. Those combine with the search and with **Fits after**, which ranks tracks that can follow a chosen set track. There is no danceability, emotion, or genre score. **5 others** pages through more matches.
+**Collection enrichment.** In rekordbox, export via *File → Export Collection in XML…* and load the file. An unencrypted `master.db` and CSV work too. These sources index the library and match metadata such as key/BPM onto tracks already in the set; they do **not** start, replace or become the set by themselves. Playlist choice is under **Build set**. After import, the **Library** searches by artist, title, key or playlist. Under that search: key neighborhood (the same key, the relative major/minor, or ±1 on the wheel), BPM from/to, and energy from/to on the 1–10 scale. Those combine with the search and with **Fits after**, which ranks tracks that can follow a chosen set track. Adding one from that list inserts it right after the chosen song. With **All tracks** selected, the new song is appended. There is no danceability, emotion, or genre score. **5 others** pages through more matches.
 
 **Energy.** The Energy Level (1–10) comes from Mixed In Key. SETBUILDER reads it from the rekordbox comment (for example `7A - Energy 6`, `Energie 6`), from Grouping / Label / Remixer in the collection XML or CSV (`Energy` / `Energie`), from a lone `6` or `E8` in those fields, or you set it by hand in the setlist. USB `export.pdb` has comments but not Grouping — reload tags in rekordbox and load the collection XML if energy stays empty.
 
@@ -44,7 +44,7 @@ Under **Build set**, choose **Start with a playlist** from the connected stick, 
 
 Collection XML/CSV/DB never triggers this choice because it only enriches metadata and the library.
 
-Each track shows its source (rekordbox), phase and role. The number and the drag grip stay on the title line; opening details does not move them. Phase and role sit on one row. The next row is icon buttons: play, rehearse, up, down, energy (lightning), replace, opener (flag), closer (checkered flag), and remove. Energy uses the same hover tip as the other icons. Under the title, the join from the previous track (“Adjacent key (±1) · +1 BPM · Energy +1”) and the reasoning (“Why here”). **Details** holds key, BPM, energy, the transition, its length, and the set note. The closed line reads like “7A · 125 BPM · Energy 7 · Long blend”. Energy is shown only when the level is known. Unknown energy, and the old anonymous Energy 1, stay blank. **How this works**, next to Build set, says what each of those is for. Change the order by dragging the grip or with the arrows.
+Each track shows its source (rekordbox), phase and role. The number and the drag grip stay on the title line; opening details does not move them. Phase and role sit on one row. The next row is icon buttons: play, rehearse, up, down, energy (lightning, when the track has a file), replace, opener (flag), closer (checkered flag), pin, exclude, and remove. On an alternative, replace is **Into set**. Opener and closer are only on a song in the performance. Energy uses the same hover tip as the other icons. The build picture is from 4.0, so pin, exclude, and Into set are not on it. Under the title, the join from the previous track (“Adjacent key (±1) · +1 BPM · Energy +1”) and the reasoning (“Why here”). **Details** holds key, BPM, energy, the transition, its length, and the set note. The closed line reads like “7A · 125 BPM · Energy 7 · Long blend”. Energy is shown only when the level is known. Unknown energy, and the old anonymous Energy 1, stay blank. **How this works**, next to Build set, says what each of those is for. Change the order by dragging the grip or with the arrows.
 
 A transition marks how you go into the next track — cut, short blend, long blend, EQ swap, echo-out, and the others. It is not written into the audio file. “—” means no mark, and that join keeps the average blend from the brief. **Length** is the overlap: that time comes off the playing time, so the slot line and the overrun follow it. The last track still loses its overlap. Pick a length or type one. A length you set, including 0, wins over the time the transition suggests. If you leave it, the chosen transition suggests a time. **Reset**, beside Export, asks first and then clears the set.
 
@@ -54,7 +54,7 @@ Preview plays in a compact floating card. Drag the title strip; pull the right e
 
 ![Preview player](screenshots/en/02-preview-player-v400.png)
 
-**Opener & closer.** Pin a performance track as **Opener** (stays first, phase Open) or **Closer** (stays last, phase Release). Extract suggests warm open / release pins; you can change or clear them anytime. Sorting keeps pinned ends — and without a pin, the current first and last performance tracks stay at the ends anyway.
+**Opener, closer, and pins.** Pin a performance track as **Opener** (stays first, phase Open) or **Closer** (stays last, phase Release). A mid **pin** keeps that song in the set through **Fit to slot** and **Different songs**, and still lets it move when you sort. Extract suggests warm open / release pins; you can change or clear them anytime. Sorting keeps pinned ends — and without a pin, the current first and last performance tracks stay at the ends anyway. **Exclude** marks a track out of the set. If it was in the performance, it moves to Alternatives and stays there. Fit to slot, refill, and Different songs leave it there. Clearing the exclude leaves it where it is. Pin and exclude clear each other: pinning clears the exclude, and excluding clears opener, closer, and the mid pin.
 
 **Edit set**
 - **Sort:** most techniques reorder only inside each phase (Alternatives stay at the end; opener/closer stay first/last overall). **Perfect · Max score** is different: it reorders the whole performance across phase seams, then re-lays Open→Release by timeline. Same menu on the setlist and on the Key path. If nothing moves, SETBUILDER says so — often key/energy/BPM are missing, or a phase has only one or two tracks.
@@ -71,9 +71,9 @@ Preview plays in a compact floating card. Drag the title strip; pull the right e
   | **Camelot journey** | Per phase: clockwise around the wheel (does not stack the same key) |
   | **Waves** | Per phase: in Peak, groove ↔ impact (anchor); else low/high energy |
 
-- **Different songs:** a short menu between Sort and Energy. **Different songs** uses the same pool as before (the playlist pool, otherwise the stick library). **From the playlist**, **From the collection**, and **From history** use that loaded source. An entry stays visible and is disabled, with a short reason, when its pool is not loaded. Confirms first; opener/closer pins stay, notes are lost.
+- **Different songs:** a short menu between Sort and Energy. **Different songs** uses the same pool as before (the playlist pool, otherwise the stick library). **From the playlist**, **From the collection**, and **From history** use that loaded source. An entry stays visible and is disabled, with a short reason, when its pool is not loaded. Confirms first; opener, closer, and mid-pins stay in the new draw, excluded tracks stay out, and notes are lost.
 - **Energy from files:** with stick files present, read tags, measure missing, recalculate all, or explicitly write known levels to MP3. Measuring does not write files. Without a stick, the menu shows that prerequisite and **Choose stick**. Without file paths, it shows that prerequisite instead of four empty actions.
-- **Trim to slot:** keeps, per phase, the tracks whose energy fits the band; the rest moves to Alternatives. One undo puts those tracks back in their previous role, phase, and place. A second trim replaces that snapshot.
+- **Fit to slot:** shortens the performance when it runs over the slot, and fills it when it started under — tracks you removed, or a longer slot. Fill takes Alternatives first, then the playlist stored with the set. A fit that starts over the slot only cuts. Excluded tracks stay out. Opener, closer, and mid-pins stay in. If nothing is left to add, the status says so. One undo puts the tracks that moved out or came in back at their previous role, phase, and place. A second fit replaces that snapshot.
 - **Assign roles:** Anchor on the strongest Peak tracks and the closer, Bridge at a phase change, key clash, BPM or energy jump, otherwise Groove
 - **Find Spotify links:** looks up a Spotify match for tracks without a link so you can preview them in the set (needs the Spotify credentials, see [Setup in the README](../README.md#setup)). Your rekordbox export is unaffected.
 
@@ -90,7 +90,7 @@ Every track has a phase (Open → Lift → Rise → Peak → Release) and a role
 | **Groove** | Room to breathe between peaks |
 | **Alternatives** | Plan B when the floor turns |
 
-Drag titles between the columns. **Plan B** asks for at least two fitting alternatives per phase. An alternative counts for the phase you pick under “Replaces”, as long as its energy fits the phase's band. Otherwise the reason is shown on the card. “Fill gaps” takes suggestions from your rekordbox library that fit the phase's tracks by energy, key and BPM.
+Drag titles between the columns. On an alternative, **Into set** places it before or after a song in the playlist, and **Pin** brings it into the performance and keeps it through fit to slot and Different songs. The roles picture is from 4.0, so those actions are not on it. **Plan B** asks for at least two fitting alternatives per phase. An alternative counts for the phase you pick under “Replaces”, as long as its energy fits the phase's band. Otherwise the reason is shown on the card. “Fill gaps” takes suggestions from your rekordbox library that fit the phase's tracks by energy, key and BPM.
 
 ## 4. Arc
 
@@ -117,7 +117,7 @@ Sort (especially **Perfect · Max score**), drag, or change key/energy in the se
 
 ![Take the set to the player and booth](screenshots/en/05-take-to-gig-v400.png)
 
-Before anything leaves, a checklist asks about missing files, keys, energy, a thin Plan B, and whether you have heard the set on the player. Only a gap that would make that action a lie blocks it. In the player, rehearse the join: previous, this track, next, the transition mark and the set note.
+Before anything leaves, a checklist asks about missing files, keys, energy, a thin Plan B, and whether you have heard the set on the player. Only a gap that would make that action a lie blocks it. If tracks have no file in this session, **Choose stick folder again** in that dialog picks the same folder once more so the files are back. In the player, rehearse the join: previous, this track, next, the transition mark and the set note.
 
 The **Export** menu is grouped by where the set goes next. **Save set**, under In SETBUILDER, opens the existing save under Connections & setups. It does not run the checklist and does not write the stick.
 
@@ -127,8 +127,8 @@ The **Export** menu is grouped by where the set goes next. **Save set**, under I
 
 ### For the booth
 
-- **PDF:** print view with brief, order, key, BPM, a phase line when you wrote one, and booth-only set notes (save as PDF in the print dialog)
-- **Copy text:** set with brief and booth-only set notes to the clipboard
+- **PDF:** print view with brief, order, key, BPM, energy when the level is known (otherwise a dash), a phase line when you wrote one, and booth-only set notes (save as PDF in the print dialog). The export picture is from 4.0, so the energy column is not on it.
+- **Copy text:** set with brief, known energy, and booth-only set notes to the clipboard. Unknown energy is left off the line.
 
 ### For the computer
 
