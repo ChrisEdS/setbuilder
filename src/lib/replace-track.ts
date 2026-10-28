@@ -6,7 +6,7 @@ import {
 } from "./harmonic";
 import { energyScore, energyStep, energyText } from "./energy";
 import { tDe, type Translate } from "@/lib/i18n/core";
-import { artistLine, type SetTrack } from "./set";
+import { artistLine, type SetTrack, type SourcePoolTrack } from "./set";
 
 export type ReplacementOption = {
   id: string;
@@ -139,6 +139,12 @@ export type LibraryReplacement<T> = {
   score: number;
 };
 
+export type PoolReplacement = {
+  track: SourcePoolTrack;
+  detail: string;
+  score: number;
+};
+
 /**
  * Ranks tracks of the whole library as a replacement for one set slot,
  * by Key and BPM distance to the previous and next performance track.
@@ -178,6 +184,65 @@ export function rankLibraryReplacements<
       score,
       detail: [
         `${candidate.keyCamelot || t("analysis.key.open")} · ${row.bpm ? `${row.bpm} BPM` : t("analysis.bpm.open")}${row.energy != null ? ` · E${row.energy}` : ""}`,
+        ...sides.map((side) => side.text),
+      ].join(" · "),
+    });
+  }
+  return scored.sort((a, b) => b.score - a.score).slice(0, limit);
+}
+
+/**
+ * Ranks playlist-pool tracks as in-place replacements for one performance
+ * slot. Skips other performance tracks; Alternatives and unused pool rows
+ * stay eligible.
+ */
+export function rankPoolReplacements(
+  tracks: SetTrack[],
+  targetId: string,
+  pool: readonly SourcePoolTrack[],
+  limit = 36,
+  t: Translate = tDe,
+): PoolReplacement[] {
+  const index = tracks.findIndex((track) => track.id === targetId);
+  if (index < 0 || tracks[index].role === "safety") return [];
+  const { prev, next } = neighbors(tracks, index);
+  const performance = tracks.filter((track) => track.role !== "safety");
+  const performanceIds = new Set(performance.map((track) => track.id));
+  const performanceNames = new Set(
+    performance.map(
+      (track) => `${track.artists.join(",")}|${track.name}`.toLowerCase(),
+    ),
+  );
+  const scored: PoolReplacement[] = [];
+  const seen = new Set<string>();
+  for (const track of pool) {
+    if (track.id === targetId) continue;
+    if (performanceIds.has(track.id)) continue;
+    const artist = track.artists[0] || "Unknown";
+    const nameKey = `${artist}|${track.name}`.toLowerCase();
+    if (performanceNames.has(nameKey)) continue;
+    if (seen.has(track.id) || seen.has(nameKey)) continue;
+    seen.add(track.id);
+    seen.add(nameKey);
+    const candidate = {
+      keyCamelot: track.keyCamelot || track.catalogKey || "",
+      bpm: track.bpm || track.catalogBpm || "",
+      energyLevel: track.energyLevel,
+    };
+    const sides = [
+      sidePhrase(prev, candidate, t("analysis.side.before"), t),
+      sidePhrase(next, candidate, t("analysis.side.after"), t),
+    ].filter(
+      (side): side is { text: string; score: number } => Boolean(side),
+    );
+    const score = sides.length
+      ? sides.reduce((sum, side) => sum + side.score, 0) / sides.length
+      : 0.5;
+    scored.push({
+      track,
+      score,
+      detail: [
+        `${candidate.keyCamelot || t("analysis.key.open")} · ${candidate.bpm ? `${candidate.bpm} BPM` : t("analysis.bpm.open")}${track.energyLevel != null ? ` · E${track.energyLevel}` : ""}`,
         ...sides.map((side) => side.text),
       ].join(" · "),
     });

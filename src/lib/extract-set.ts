@@ -5,7 +5,11 @@ import {
   orderByHarmonicPath,
   type HarmonicRelation,
 } from "@/lib/harmonic";
-import { orderPhase, type SetSortTechnique } from "@/lib/sort-set";
+import {
+  orderPhase,
+  orderPinnedSlotsOnly,
+  type SetSortTechnique,
+} from "@/lib/sort-set";
 import { PHASE_ENERGY, energyFitsPhase, energyStep, hasKnownEnergy } from "@/lib/energy";
 import { phaseLabel } from "@/lib/i18n/domain";
 import { LocalizedError } from "@/lib/i18n/error";
@@ -801,8 +805,15 @@ export function alternativesPulledIntoPerformance(before: SetDraft, after: SetDr
  * Reorder the performance and every non-excluded Alternative.
  * Opener and closer stay at the ends; mid-pins move with the cast.
  * Excluded tracks stay Alternatives. Does not trim to the slot.
+ *
+ * `perfectPins` is different: only mid-pins swap among their current slots;
+ * non-pins stay between those slots, Alternatives stay parked, phases stay.
  */
 export function reorderDraft(draft: SetDraft, technique: SetSortTechnique): SetDraft {
+  if (technique === "perfectPins") {
+    return reorderPinnedDraft(draft);
+  }
+
   const performance = draft.tracks.filter((track) => track.role !== "safety");
   const excluded = excludedSetIds(draft);
   const pulled = draft.tracks.filter(
@@ -847,6 +858,41 @@ export function reorderDraft(draft: SetDraft, technique: SetSortTechnique): SetD
   });
 
   return applySetAnchors({ ...draft, tracks: [...withRelations, ...stayingOut] });
+}
+
+/**
+ * Perfect-sort mid-pins into each other's slots. Non-pinned performance tracks
+ * stay where they are; opener/closer stay ends (applySetAnchors); Alternatives
+ * are not pulled in.
+ */
+function reorderPinnedDraft(draft: SetDraft): SetDraft {
+  const pinnedIds = withoutEndPins(
+    draft.pinnedIds,
+    draft.openerId,
+    draft.closerId,
+  );
+  if (!pinnedIds?.length) return draft;
+
+  const performance = draft.tracks.filter((track) => track.role !== "safety");
+  const safeties = draft.tracks.filter((track) => track.role === "safety");
+  const reordered = orderPinnedSlotsOnly(performance, pinnedIds);
+
+  const withRelations = reordered.map((track, index, arr) => {
+    const prev = index > 0 ? arr[index - 1] : null;
+    const relation = prev
+      ? harmonicRelation(prev.keyCamelot, track.keyCamelot)
+      : "unknown";
+    return {
+      ...track,
+      harmonicFromPrev: relation,
+      note: isGeneratedNote(track.note) ? "" : track.note,
+    };
+  });
+
+  return applySetAnchors({
+    ...draft,
+    tracks: [...withRelations, ...safeties],
+  });
 }
 
 /**

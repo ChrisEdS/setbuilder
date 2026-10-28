@@ -82,10 +82,15 @@ const de = {
   // ReplaceMenu
   "crates.replace.ariaLabel": "Alternative einsetzen",
   "crates.replace.title": "Ersatz einsetzen",
+  "crates.replace.exchangeAria": "Aus der Playlist tauschen",
+  "crates.replace.exchangeTitle": "Aus der Playlist tauschen",
   "crates.replace.target": "Für „{name}“",
   "crates.replace.empty":
     "Keine Alternativen. Einen Track auf die Rolle Alternativen setzen oder die Stick-Bibliothek laden.",
+  "crates.replace.exchangeEmpty":
+    "Kein anderer Playlist-Track passt hier zu Key, BPM und Energie.",
   "crates.replace.groupMine": "Aus deinen Alternativen",
+  "crates.replace.groupPlaylist": "Aus der Playlist",
   "crates.replace.groupLibrary":
     "Aus der Bibliothek, passend zu Vorgänger und Nachfolger",
   "crates.replace.groupLibraryTitle": "Aus deiner Bibliothek",
@@ -216,10 +221,15 @@ const en: Record<keyof typeof de, string> = {
 
   "crates.replace.ariaLabel": "Insert alternative",
   "crates.replace.title": "Insert replacement",
+  "crates.replace.exchangeAria": "Exchange from the playlist",
+  "crates.replace.exchangeTitle": "Exchange from the playlist",
   "crates.replace.target": "For “{name}”",
   "crates.replace.empty":
     "No alternatives. Set a track to the Alternatives role or load the stick library.",
+  "crates.replace.exchangeEmpty":
+    "No other playlist track fits key, BPM and energy here.",
   "crates.replace.groupMine": "From your alternatives",
+  "crates.replace.groupPlaylist": "From the playlist",
   "crates.replace.groupLibrary":
     "From the library, fitting the previous and next track",
   "crates.replace.groupLibraryTitle": "From your library",

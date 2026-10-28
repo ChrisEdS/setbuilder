@@ -10,6 +10,7 @@ import {
   orderByTempo,
   orderByTempoPulse,
   orderByWaves,
+  orderPinnedSlotsOnly,
 } from "./sort-set.ts";
 
 const t = (id: string, extra: Record<string, unknown> = {}) =>
@@ -372,6 +373,93 @@ test("reorderDraft leaves an unfit alternative phase and restores a stored role"
   assert.deepEqual(performance, ["a", "alt", "b", "c"]);
   assert.equal(performance[0], "a");
   assert.equal(performance[performance.length - 1], "c");
+});
+
+test("orderPinnedSlotsOnly reorders pins among pin slots and leaves gaps", () => {
+  // 9A then 8A: energy climb prefers 8A → 9A among the two pin slots.
+  const lineup = [
+    t("open", { keyCamelot: "1A", energyLevel: 3 }),
+    t("pin9", { keyCamelot: "9A", energyLevel: 8 }),
+    t("gap1", { keyCamelot: "5A", energyLevel: 5 }),
+    t("pin8", { keyCamelot: "8A", energyLevel: 7 }),
+    t("gap2", { keyCamelot: "2A", energyLevel: 4 }),
+    t("close", { keyCamelot: "10A", energyLevel: 2 }),
+  ];
+  const next = orderPinnedSlotsOnly(lineup, ["pin9", "pin8"]);
+  assert.deepEqual(
+    next.map((item) => item.id),
+    ["open", "pin8", "gap1", "pin9", "gap2", "close"],
+  );
+});
+
+test("orderPinnedSlotsOnly is a no-op with fewer than two pins in the lineup", () => {
+  const lineup = [t("a"), t("b"), t("c")];
+  assert.deepEqual(
+    orderPinnedSlotsOnly(lineup, ["b"]).map((item) => item.id),
+    ["a", "b", "c"],
+  );
+  assert.deepEqual(
+    orderPinnedSlotsOnly(lineup, []).map((item) => item.id),
+    ["a", "b", "c"],
+  );
+});
+
+test("reorderDraft perfectPins keeps non-pins, ends, alts and pin ids", () => {
+  const row = (
+    id: string,
+    keyCamelot: string,
+    energyLevel: number,
+    role: "groove" | "safety" = "groove",
+  ) =>
+    ({
+      id,
+      name: id,
+      artists: ["X"],
+      album: "",
+      durationMs: 180_000,
+      uri: "",
+      externalUrl: "",
+      imageUrl: null,
+      phase: "peak" as const,
+      role,
+      transition: "unset" as const,
+      bpm: "124",
+      keyCamelot,
+      energyLevel,
+      note: "",
+      why: role === "safety" ? "parked" : "",
+      safetyAlt: "",
+    });
+  // pin9 then pin8 is reverse of the preferred adjacent walk.
+  const draft = {
+    ...DEFAULT_SET,
+    openerId: "open",
+    closerId: "close",
+    pinnedIds: ["pin9", "pin8"],
+    excludedIds: ["ban"],
+    tracks: [
+      row("open", "1A", 3),
+      row("pin9", "9A", 8),
+      row("mid", "5A", 5),
+      row("pin8", "8A", 7),
+      row("close", "10A", 2),
+      row("alt", "3A", 6, "safety"),
+      row("ban", "11A", 1, "safety"),
+    ],
+  };
+  const next = reorderDraft(draft, "perfectPins");
+  const performance = next.tracks
+    .filter((item) => item.role !== "safety")
+    .map((item) => item.id);
+  // Pin slots stay at indexes 1 and 3; mid stays between them.
+  assert.deepEqual(performance, ["open", "pin8", "mid", "pin9", "close"]);
+  assert.equal(next.tracks.find((item) => item.id === "alt")?.role, "safety");
+  assert.equal(next.tracks.find((item) => item.id === "ban")?.role, "safety");
+  assert.equal(alternativesPulledIntoPerformance(draft, next), 0);
+  assert.equal(next.openerId, "open");
+  assert.equal(next.closerId, "close");
+  assert.deepEqual(next.pinnedIds, ["pin9", "pin8"]);
+  assert.deepEqual(next.excludedIds, ["ban"]);
 });
 
 test("reorderDraft perfect pulls an alternative in without taking the closer", () => {

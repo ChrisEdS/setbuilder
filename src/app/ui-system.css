@@ -811,17 +811,21 @@ html[data-frame="mac"] .set-shell .hero-copy {
   border-radius: 8px !important;
 }
 
+/* Inline (non-portal) replace shells are gone; keep overflow visible so a
+   stray .replace-menu inside the set never traps wheel. Drawer uses .replace-layer. */
 .set-shell .replace-menu {
-  overflow: auto;
+  overflow: visible;
 }
 
 .set-shell .replace-menu-head {
-  top: calc(-1 * var(--ui-space-2));
-  margin: calc(-1 * var(--ui-space-2)) calc(-1 * var(--ui-space-2)) 0;
+  position: relative;
+  top: auto;
+  margin: 0;
   padding: var(--ui-space-3);
   background: var(--ui-surface) !important;
 }
 
+.set-shell .replace-menu-head > .replace-menu-copy > strong,
 .set-shell .replace-menu-head > strong {
   font-size: var(--ui-font-xs);
   color: var(--ui-muted);
@@ -830,6 +834,7 @@ html[data-frame="mac"] .set-shell .hero-copy {
 .set-shell .replace-menu-head h4 {
   font-size: var(--ui-font-body);
   line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .set-shell .replace-list {
@@ -1150,14 +1155,16 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 /* Replace opens as a drawer so the setlist underneath does not reflow.
-   The floating player sits above this layer, so the drawer can cover the viewport. */
+   Sit above the floating player (z=110) so Close stays clickable. */
 .replace-layer {
   position: fixed;
   inset: 0;
-  z-index: 70;
+  z-index: 120;
   display: flex;
   justify-content: flex-end;
+  align-items: stretch;
   background: rgba(8, 8, 8, 0.62);
+  overscroll-behavior: contain;
 }
 
 /* Compact floating preview. Position comes from --player-* so a drag can move it
@@ -1556,30 +1563,48 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 .replace-layer .replace-menu {
+  display: flex;
+  flex-direction: column;
   width: min(36rem, 100%);
+  /* min-height:0 — flex item would otherwise grow with content past the
+     viewport, so .replace-menu-body never becomes a scrollport while body
+     overflow is locked. */
   height: 100%;
-  max-height: none;
+  max-height: 100%;
+  min-height: 0;
   margin: 0;
-  padding: var(--ui-space-4);
-  overflow: auto;
+  padding: 0;
+  overflow: hidden;
   border: 0;
   border-left: 1px solid var(--ui-border-strong);
   border-radius: 0;
   background: var(--ui-surface);
   box-shadow: -18px 0 48px rgba(0, 0, 0, 0.45);
-  gap: var(--ui-space-3);
+  gap: 0;
+  min-width: 0;
 }
 
 .replace-layer .replace-menu-head {
-  position: sticky;
-  top: calc(-1 * var(--ui-space-4));
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ui-space-3);
+  flex: 0 0 auto;
+  position: relative;
+  top: auto;
   z-index: 2;
-  margin: calc(-1 * var(--ui-space-4)) calc(-1 * var(--ui-space-4)) 0;
+  margin: 0;
   padding: var(--ui-space-4);
   background: var(--ui-surface);
   border-bottom: 1px solid var(--ui-border);
 }
 
+.replace-layer .replace-menu-copy {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.replace-layer .replace-menu-head > .replace-menu-copy > strong,
 .replace-layer .replace-menu-head > strong {
   font-size: var(--ui-font-xs);
   color: var(--ui-muted);
@@ -1590,6 +1615,40 @@ html[data-frame="mac"] .set-shell .hero-copy {
   color: #fff;
   font-size: var(--ui-font-body);
   line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.replace-layer .replace-close {
+  flex: 0 0 auto;
+  margin: 0;
+  min-height: 2.5rem;
+  padding: 0 0.85rem;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--ui-font-sm);
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.replace-layer .replace-close:hover {
+  background: var(--ui-surface-hover);
+}
+
+.replace-layer .replace-menu-body {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--ui-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-3);
 }
 
 .replace-layer .replace-menu-head p,
@@ -1665,8 +1724,9 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 @media (max-width: 720px) {
+  /* Leave a slim backdrop strip so tap-outside still closes on phones. */
   .replace-layer .replace-menu {
-    width: 100%;
+    width: calc(100% - 2.75rem);
   }
 }
 
@@ -1840,7 +1900,9 @@ dialog.stick-dialog.gig-ready-dialog .gig-ready-actions .btn {
   z-index: 120;
   display: flex;
   justify-content: flex-end;
+  align-items: stretch;
   background: rgba(8, 8, 8, 0.62);
+  overscroll-behavior: contain;
 }
 
 .guide-panel {
@@ -1848,9 +1910,13 @@ dialog.stick-dialog.gig-ready-dialog .gig-ready-actions .btn {
   flex-direction: column;
   width: min(26rem, 100%);
   height: 100%;
+  max-height: 100%;
+  min-height: 0;
   margin: 0;
   padding: var(--ui-space-4);
   overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   border: 0;
   border-left: 1px solid var(--ui-border-strong);
   border-radius: 0;

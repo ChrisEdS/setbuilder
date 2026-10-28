@@ -381,9 +381,12 @@ export function TrackEnergyMenu({
 export function SetSortMenu({
   disabled,
   onSort,
+  pinnedCount = 0,
 }: {
   disabled?: boolean;
   onSort: (technique: SetSortTechnique) => void;
+  /** Mid-pins in the performance (opener/closer excluded). Gates “pins only”. */
+  pinnedCount?: number;
 }) {
   const { t } = useI18n();
   return (
@@ -396,15 +399,23 @@ export function SetSortMenu({
       }
       disabled={disabled}
     >
-      {SET_SORTS.map((id) => (
-        <MenuItem
-          key={id}
-          title={t(`builder.sort.${id}`)}
-          hint={t(`builder.sort.${id}Hint`)}
-          disabled={disabled}
-          onClick={() => onSort(id)}
-        />
-      ))}
+      {SET_SORTS.map((id) => {
+        const pinsOnly = id === "perfectPins";
+        const needsPins = pinsOnly && pinnedCount < 2;
+        return (
+          <MenuItem
+            key={id}
+            title={t(`builder.sort.${id}`)}
+            hint={
+              needsPins
+                ? t("builder.sort.perfectPinsNeed")
+                : t(`builder.sort.${id}Hint`)
+            }
+            disabled={disabled || needsPins}
+            onClick={() => onSort(id)}
+          />
+        );
+      })}
     </Menu>
   );
 }

@@ -58,6 +58,30 @@ test("replace captures the previous draft and undo restores it", () => {
   assert.equal(undoPlaylistLoad(result.draft, result.undo), current);
 });
 
+test("replace from a stick playlist stores sourcePool on the draft", () => {
+  const set: RekordboxStickSet = {
+    ...incoming,
+    tracks: [
+      ...incoming.tracks,
+      {
+        id: "extra",
+        title: "Extra",
+        artist: "Cee",
+        album: "",
+        durationMs: 200_000,
+        bpm: "125",
+        keyRaw: "Em",
+        keyCamelot: "9A",
+        comment: "",
+        filePath: "/Extra.mp3",
+      },
+    ],
+  };
+  const result = applyPlaylistLoad(current, set, "replace");
+  assert.equal(result.draft.sourcePool?.length, 2);
+  assert.ok(result.draft.sourcePool?.every((track) => track.source === "rekordbox"));
+});
+
 test("merge keeps the current brief and does not offer replace undo", () => {
   const result = applyPlaylistLoad(current, incoming, "merge");
   assert.equal(result.draft.title, "Current");

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "@/lib/i18n/react";
+import { lockBodyScroll } from "@/lib/ui-scroll-lock";
 
 type Props = {
   onClose: () => void;
@@ -40,12 +41,11 @@ export function SetGuideDrawer({ onClose }: Props) {
       onCloseRef.current();
     }
     document.addEventListener("keydown", onKeyDown);
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const unlockScroll = lockBodyScroll();
     return () => {
       cancelAnimationFrame(frame);
       document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = previousOverflow;
+      unlockScroll();
       returnFocusRef.current?.focus();
     };
   }, []);

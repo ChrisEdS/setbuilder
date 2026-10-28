@@ -47,13 +47,17 @@ import {
 import { PlaceInSetMenu } from "@/components/PlaceInSetMenu";
 import { ReplaceMenu } from "@/components/ReplaceMenu";
 import { SetGuideDrawer } from "@/components/SetGuideDrawer";
+import { clearBodyScrollLock } from "@/lib/ui-scroll-lock";
 import type { LibraryRow } from "@/components/LibraryPanel";
 import {
+  draftWithPlaylistPool,
   historyPoolCount,
   libraryTrackToSetTrack,
   mediaPathsForDraft,
+  playlistPoolForDraft,
   readRekordboxStick,
   rehydrateStickCovers,
+  reshufflePoolForDraft,
   sourcePoolFromStickLibrary,
   stickLibraryPoolCount,
   stickLibraryRows,
@@ -138,7 +142,6 @@ import {
   undoTrimToSlot,
   type TrimRestore,
 } from "@/lib/extract-set";
-import { reshufflePoolForDraft } from "@/lib/rekordbox-stick";
 import {
   applySetAnchors,
   clearCloser,
@@ -169,6 +172,7 @@ import {
   type SetPhaseId,
   type SetSlotKind,
   type SetTrack,
+  type SourcePoolTrack,
   type TrackRole,
   type TransitionVerb,
   BLEND_PRESETS,
@@ -492,6 +496,7 @@ export function SetBuilder() {
   const [replaceUndo, setReplaceUndo] = useState<SetDraft | null>(null);
   const [trimUndo, setTrimUndo] = useState<TrimRestore[] | null>(null);
   const [replaceFor, setReplaceFor] = useState<string | null>(null);
+  const [exchangeFor, setExchangeFor] = useState<string | null>(null);
   const [placeFor, setPlaceFor] = useState<string | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
   /** Setliste: tracks whose key, BPM, energy and comment fields are open */
@@ -508,6 +513,26 @@ export function SetBuilder() {
   const [settingsOpenState, setSettingsOpen] = useState<boolean | null>(null);
   /** What the duration field shows while it is being edited (null = the draft value). */
   const [durationText, setDurationText] = useState<string | null>(null);
+  /** Debounce fit/fill after the brief minutes change, so typing 120 does not fit on 12. */
+  const durationFitTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (durationFitTimer.current != null) {
+        window.clearTimeout(durationFitTimer.current);
+      }
+    };
+  }, []);
+
+  // Drop a body overflow:hidden left by a drawer that never unlocked (HMR / nested close).
+  useEffect(() => {
+    if (
+      document.body.style.overflow === "hidden" &&
+      !document.querySelector(".replace-layer, .guide-layer")
+    ) {
+      clearBodyScrollLock();
+    }
+  }, []);
 
   // Native selects change their value when the wheel crosses them. The listener
   // exists only while the pointer is on a select, so the rest of the page can
@@ -1083,6 +1108,12 @@ export function SetBuilder() {
     () => performanceTracks(draft.tracks),
     [draft.tracks],
   );
+  const midPinnedCount = useMemo(() => {
+    const pins = withoutEndPins(draft.pinnedIds, draft.openerId, draft.closerId);
+    if (!pins?.length) return 0;
+    const inPerf = new Set(mainTracks.map((track) => track.id));
+    return pins.filter((id) => inPerf.has(id)).length;
+  }, [draft.pinnedIds, draft.openerId, draft.closerId, mainTracks]);
   const blendMs = blendMsOf(draft.blendMs);
   const filledMs = playedTotalMs(draft.tracks, blendMs);
   const plannedJoins = mainTracks.some((track) => track.transition && track.transition !== "unset");
@@ -1096,26 +1127,37 @@ export function SetBuilder() {
     return draft.tracks.filter((track) => track.role === roleFilter);
   }, [draft.tracks, mainTracks, roleFilter]);
 
-  const sourcePoolCount = draft.sourcePool?.length ?? 0;
+  const resolvedPlaylistPool = useMemo(
+    () => playlistPoolForDraft(draft, stickSets),
+    [draft, stickSets],
+  );
+  const playlistPoolCount = resolvedPlaylistPool.length;
   // Counts only. Building the pool looks up a cover for every library row, and
   // that used to run on every keystroke in the set.
   const reshuffleOffers = useMemo(() => {
     const performanceCount = mainTracks.length;
     const collectionCount = stickLibraryPoolCount(libraryRows);
     const historyCount = historyPoolCount(stickSets);
-    const storedReady = sourcePoolCount >= 2 && sourcePoolCount > performanceCount;
+    // Prefer the resolved playlist pool (stored or live stick) for "Different".
+    const playlistReady =
+      playlistPoolCount >= 2 && playlistPoolCount > performanceCount;
     const stickReady = collectionCount >= 2 && collectionCount > performanceCount;
     return {
-      different: storedReady
-        ? { ready: true as const, count: sourcePoolCount, fromStick: false }
+      different: playlistReady
+        ? { ready: true as const, count: playlistPoolCount, fromStick: false }
         : stickReady
           ? { ready: true as const, count: collectionCount, fromStick: true }
-          : poolOffer(Math.max(sourcePoolCount, collectionCount), performanceCount),
-      playlist: poolOffer(sourcePoolCount, performanceCount),
+          : poolOffer(Math.max(playlistPoolCount, collectionCount), performanceCount),
+      // Ready whenever a playlist pool exists — load-as-set may equal the
+      // performance until trim; reshuffle still re-packs to the slot.
+      playlist:
+        playlistPoolCount >= 2
+          ? ({ ready: true as const, count: playlistPoolCount } satisfies PoolOffer)
+          : ({ ready: false, reason: "missing" } satisfies PoolOffer),
       collection: poolOffer(collectionCount, performanceCount),
       history: poolOffer(historyCount, performanceCount),
     };
-  }, [mainTracks.length, sourcePoolCount, libraryRows, stickSets]);
+  }, [mainTracks.length, playlistPoolCount, libraryRows, stickSets]);
 
   const positions = useMemo(
     () => setPositionById(draft.tracks),
@@ -1862,6 +1904,7 @@ export function SetBuilder() {
       };
     });
     setReplaceFor(null);
+    setExchangeFor(null);
     setStatus(t("builder.status.replaced"));
   }
 
@@ -1894,6 +1937,66 @@ export function SetBuilder() {
       };
     });
     setReplaceFor(null);
+    setExchangeFor(null);
+    setStatus(
+      t("builder.status.replacedFromLibrary", { name: incoming.name, target: target.name }),
+    );
+  }
+
+  function replaceFromPool(targetId: string, poolTrack: SourcePoolTrack) {
+    const target = draft.tracks.find((track) => track.id === targetId);
+    if (!target) return;
+    const incoming: SetTrack = {
+      id: poolTrack.id,
+      name: poolTrack.name,
+      artists: poolTrack.artists,
+      album: poolTrack.album,
+      durationMs: poolTrack.durationMs,
+      uri: poolTrack.uri,
+      externalUrl: poolTrack.externalUrl,
+      imageUrl: poolTrack.imageUrl,
+      phase: target.phase,
+      role: target.role,
+      transition: "unset",
+      bpm: poolTrack.bpm || poolTrack.catalogBpm || "",
+      keyCamelot: poolTrack.keyCamelot || poolTrack.catalogKey || "",
+      energy: poolTrack.energy,
+      energyLevel: poolTrack.energyLevel,
+      energySource: poolTrack.energySource,
+      filePath: poolTrack.filePath,
+      source: poolTrack.source,
+      note: "",
+      comment: "",
+      why: "",
+      safetyAlt: "",
+    };
+    setDraft((current) => {
+      const existing = current.tracks.find((track) => track.id === incoming.id);
+      const tracks = swapIntoSlot(
+        existing ? current.tracks : [...current.tracks, incoming],
+        targetId,
+        incoming.id,
+        t,
+      );
+      const openerId = current.openerId === targetId ? incoming.id : current.openerId;
+      const closerId = current.closerId === targetId ? incoming.id : current.closerId;
+      return {
+        ...current,
+        openerId,
+        closerId,
+        pinnedIds: withoutEndPins(
+          current.pinnedIds?.map((item) => (item === targetId ? incoming.id : item)),
+          openerId,
+          closerId,
+        ),
+        excludedIds: normalizeExcludedIds(
+          current.excludedIds?.filter((item) => item !== targetId && item !== incoming.id),
+        ),
+        tracks,
+      };
+    });
+    setReplaceFor(null);
+    setExchangeFor(null);
     setStatus(
       t("builder.status.replacedFromLibrary", { name: incoming.name, target: target.name }),
     );
@@ -2141,6 +2244,23 @@ export function SetBuilder() {
     window.setTimeout(() => {
       try {
         const current = readStoredDraft();
+        if (technique === "perfectPins") {
+          const pins = withoutEndPins(
+            current.pinnedIds,
+            current.openerId,
+            current.closerId,
+          );
+          const inPerf = new Set(
+            current.tracks
+              .filter((track) => track.role !== "safety")
+              .map((track) => track.id),
+          );
+          const count = pins?.filter((id) => inPerf.has(id)).length ?? 0;
+          if (count < 2) {
+            endWork(t("builder.status.sorted.perfectPinsNeed"));
+            return;
+          }
+        }
         const next = reorderDraft(current, technique);
         const changed = next.tracks.some(
           (track, index) => track.id !== current.tracks[index]?.id,
@@ -2165,16 +2285,29 @@ export function SetBuilder() {
     const current = readStoredDraft();
     const performance = performanceTracks(current.tracks);
     const choice = (() => {
-      if (source === "different") return reshufflePoolForDraft(current, libraryRows);
-      const pool =
-        source === "playlist"
-          ? (current.sourcePool ?? [])
-          : sourcePoolFromStickLibrary(
-              source === "history" ? historyLibraryRows(stickSets) : libraryRows,
-              performance,
-            );
+      if (source === "different") {
+        const playlist = playlistPoolForDraft(current, stickSets);
+        if (playlist.length >= 2 && playlist.length > performance.length) {
+          return { pool: playlist, fromStick: false as const, keepPlaylistPool: true };
+        }
+        const fallback = reshufflePoolForDraft(current, libraryRows);
+        if (!fallback) return null;
+        return {
+          ...fallback,
+          keepPlaylistPool: !fallback.fromStick,
+        };
+      }
+      if (source === "playlist") {
+        const pool = playlistPoolForDraft(current, stickSets);
+        if (pool.length < 2) return null;
+        return { pool, fromStick: false as const, keepPlaylistPool: true };
+      }
+      const pool = sourcePoolFromStickLibrary(
+        source === "history" ? historyLibraryRows(stickSets) : libraryRows,
+        performance,
+      );
       if (pool.length < 2 || pool.length <= performance.length) return null;
-      return { pool, fromStick: source !== "playlist" };
+      return { pool, fromStick: true as const, keepPlaylistPool: false };
     })();
     if (!choice) {
       setStatus(t("builder.status.reshuffle.unavailable"));
@@ -2193,14 +2326,19 @@ export function SetBuilder() {
     }
     beginWork(t("builder.status.reshuffling"));
     const pool = choice.pool;
-    const fromStick = choice.fromStick;
+    const keepPlaylistPool = choice.keepPlaylistPool;
     window.setTimeout(() => {
       try {
         const next = reshuffleDraftFromPool(
           { ...current, sourcePool: pool },
           t,
         );
-        setDraft(fromStick ? { ...next, sourcePool: current.sourcePool } : next);
+        // Stick library/history draws must not overwrite a stored playlist pool.
+        setDraft(
+          keepPlaylistPool
+            ? next
+            : { ...next, sourcePool: current.sourcePool },
+        );
         setFocusTrackId(null);
         endWork(
           t("builder.status.reshuffle.done", {
@@ -2579,17 +2717,19 @@ export function SetBuilder() {
 
   function fitSlot() {
     setDraft((current) => {
-      const result = fitToSlot(current, t);
-      const under = result.beforeMs < current.durationMinutes * 60_000;
+      const resolved = draftWithPlaylistPool(current, stickSets);
+      const result = fitToSlot(resolved, t);
+      const slotMs = current.durationMinutes * 60_000;
+      const under = result.beforeMs < slotMs;
       if (!result.moved && !result.added) {
-        if (result.beforeMs > targetMs * 1.05) {
+        if (result.beforeMs > slotMs * 1.05) {
           setStatus(t("builder.status.fitStuck"));
         } else if (under) {
           setStatus(t("builder.status.fillStuck"));
         } else {
           setStatus(t("builder.status.fits"));
         }
-        return current;
+        return resolved;
       }
       setTrimUndo(result.restore.length ? result.restore : null);
       if (result.moved && result.added) {
@@ -2623,14 +2763,40 @@ export function SetBuilder() {
     });
   }
 
+  /** After the brief minutes change: same path as „Auf Slot setzen“ when over/under. */
+  function queueFitForNewDuration(minutes: number) {
+    if (durationFitTimer.current != null) {
+      window.clearTimeout(durationFitTimer.current);
+    }
+    durationFitTimer.current = window.setTimeout(() => {
+      durationFitTimer.current = null;
+      const current = readStoredDraft();
+      if (current.durationMinutes !== minutes || !current.tracks.length) return;
+      const filled = playedTotalMs(current.tracks, blendMsOf(current.blendMs));
+      const slotMs = minutes * 60_000;
+      // Same idle band as the Fit button — leave a fitting cast alone.
+      if (filled <= slotMs * 1.05 && filled >= slotMs) return;
+      fitSlot();
+    }, 450);
+  }
+
+  function commitDurationMinutes(minutes: number) {
+    const clamped = Math.min(MAX_DURATION, Math.max(MIN_DURATION, Math.round(minutes)));
+    setDraft((c) =>
+      c.durationMinutes === clamped ? c : { ...c, durationMinutes: clamped },
+    );
+    queueFitForNewDuration(clamped);
+  }
+
   function fillBestMatches() {
     setDraft((current) => {
-      const result = fillWithBestMatches(current, t);
+      const resolved = draftWithPlaylistPool(current, stickSets);
+      const result = fillWithBestMatches(resolved, t);
       if (!result.added) {
         if (result.idle === "unfit") setStatus(t("builder.status.fillNoMatch"));
         else if (result.idle === "full") setStatus(t("builder.status.fits"));
         else setStatus(t("builder.status.fillStuck"));
-        return current;
+        return resolved;
       }
       setTrimUndo(result.restore.length ? result.restore : null);
       setStatus(
@@ -2929,17 +3095,23 @@ export function SetBuilder() {
                   const text = e.target.value;
                   setDurationText(text);
                   const minutes = Number(text);
-                  if (text && Number.isFinite(minutes) && minutes >= MIN_DURATION && minutes <= MAX_DURATION) {
-                    setDraft((c) => ({ ...c, durationMinutes: minutes }));
+                  if (
+                    text &&
+                    Number.isFinite(minutes) &&
+                    minutes >= MIN_DURATION &&
+                    minutes <= MAX_DURATION
+                  ) {
+                    commitDurationMinutes(minutes);
                   }
                 }}
                 onBlur={() => {
                   const minutes = Number(durationText);
-                  if (durationText !== null && durationText !== "" && Number.isFinite(minutes)) {
-                    const clamped = Math.min(MAX_DURATION, Math.max(MIN_DURATION, Math.round(minutes)));
-                    if (clamped !== draft.durationMinutes) {
-                      setDraft((c) => ({ ...c, durationMinutes: clamped }));
-                    }
+                  if (
+                    durationText !== null &&
+                    durationText !== "" &&
+                    Number.isFinite(minutes)
+                  ) {
+                    commitDurationMinutes(minutes);
                   }
                   setDurationText(null);
                 }}
@@ -3627,6 +3799,7 @@ export function SetBuilder() {
             <SetSortMenu
               disabled={mainTracks.length < 2}
               onSort={sortSet}
+              pinnedCount={midPinnedCount}
             />
             <SetReshuffleMenu
               different={reshuffleOffers.different}
@@ -3706,9 +3879,25 @@ export function SetBuilder() {
           {trimUndoLive.length > 0 ? (
             <div className="stick-reload" role="status">
               <p>
-                {t("builder.trim.undoBody", {
-                  tracks: trackCount(trimUndoLive.length, t),
-                })}
+                {trimUndoLive.length === 1
+                  ? t("builder.trim.undoBody", {
+                      name:
+                        draft.tracks.find((track) => track.id === trimUndoLive[0].id)
+                          ?.name ?? trimUndoLive[0].id,
+                      position: trimUndoLive[0].index + 1,
+                    })
+                  : t("builder.trim.undoBodyMany", {
+                      details: trimUndoLive
+                        .map((item) =>
+                          t("builder.trim.undoDetail", {
+                            name:
+                              draft.tracks.find((track) => track.id === item.id)?.name ??
+                              item.id,
+                            position: item.index + 1,
+                          }),
+                        )
+                        .join(", "),
+                    })}
               </p>
               <div className="stick-reload-actions">
                 <button type="button" className="btn" onClick={undoTrim}>
@@ -4107,6 +4296,7 @@ export function SetBuilder() {
                                 aria-label={t("builder.row.placeInSet")}
                                 onClick={() => {
                                   setReplaceFor(null);
+                                  setExchangeFor(null);
                                   setPlaceFor((current) =>
                                     current === track.id ? null : track.id,
                                   );
@@ -4116,22 +4306,49 @@ export function SetBuilder() {
                               </button>
                             </Tip>
                           ) : (
-                            <Tip text={t("builder.row.replaceTitle")}>
-                              <button
-                                type="button"
-                                className="icon-action"
-                                aria-expanded={replaceFor === track.id}
-                                aria-label={t("builder.row.replace")}
-                                onClick={() => {
-                                  setPlaceFor(null);
-                                  setReplaceFor((current) =>
-                                    current === track.id ? null : track.id,
-                                  );
-                                }}
+                            <>
+                              <Tip
+                                text={
+                                  playlistPoolCount >= 2
+                                    ? t("builder.row.exchangeTitle")
+                                    : t("builder.row.exchangeMissing")
+                                }
                               >
-                                <ActionIcon name="replace" />
-                              </button>
-                            </Tip>
+                                <button
+                                  type="button"
+                                  className="icon-action"
+                                  aria-expanded={exchangeFor === track.id}
+                                  aria-label={t("builder.row.exchange")}
+                                  disabled={playlistPoolCount < 2}
+                                  onClick={() => {
+                                    setPlaceFor(null);
+                                    setReplaceFor(null);
+                                    setExchangeFor((current) =>
+                                      current === track.id ? null : track.id,
+                                    );
+                                  }}
+                                >
+                                  <ActionIcon name="exchange" />
+                                </button>
+                              </Tip>
+                              <Tip text={t("builder.row.replaceTitle")}>
+                                <button
+                                  type="button"
+                                  className="icon-action"
+                                  aria-expanded={replaceFor === track.id}
+                                  aria-label={t("builder.row.replace")}
+                                  onClick={() => {
+                                    setPlaceFor(null);
+                                    setExchangeFor(null);
+                                    setReplaceFor((current) =>
+                                      current === track.id ? null : track.id,
+                                    );
+                                  }}
+                                >
+                                  <ActionIcon name="replace" />
+                                </button>
+                              </Tip>
+                            </>
                           )}
                           {track.role !== "safety" ? (
                             <Tip
@@ -4313,6 +4530,21 @@ export function SetBuilder() {
                         library={libraryRows}
                         onReplaceFromLibrary={replaceFromLibrary}
                         onPlayRow={playLibraryRow}
+                        onPlayTrack={toggleTrackPreview}
+                        playingId={
+                          previewTransport.playing ? previewTransport.trackId : null
+                        }
+                      />
+                    ) : null}
+                    {exchangeFor === track.id ? (
+                      <ReplaceMenu
+                        tracks={draft.tracks}
+                        targetId={track.id}
+                        onReplace={replaceTrack}
+                        onClose={() => setExchangeFor(null)}
+                        playlistOnly
+                        playlistPool={resolvedPlaylistPool}
+                        onReplaceFromPool={replaceFromPool}
                         onPlayTrack={toggleTrackPreview}
                         playingId={
                           previewTransport.playing ? previewTransport.trackId : null
@@ -4635,6 +4867,7 @@ export function SetBuilder() {
                 tracks={draft.tracks}
                 onSort={sortSet}
                 onReorder={reorderTrack}
+                pinnedCount={midPinnedCount}
                 embedded
               />
             </div>

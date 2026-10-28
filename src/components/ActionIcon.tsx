@@ -7,6 +7,7 @@ type ActionIconName =
   | "down"
   | "energy"
   | "replace"
+  | "exchange"
   | "opener"
   | "closer"
   | "pin"
@@ -51,6 +52,14 @@ export function ActionIcon({ name }: { name: ActionIconName }) {
         <path d="m16.5 4.5 3 3-3 3" />
         <path d="M4.5 16.5H15" />
         <path d="m7.5 13.5-3 3 3 3" />
+      </>
+    ),
+    exchange: (
+      <>
+        <path d="M7 8h11" />
+        <path d="m15 5 3 3-3 3" />
+        <path d="M17 16H6" />
+        <path d="m9 13-3 3 3 3" />
       </>
     ),
     opener: (

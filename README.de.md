@@ -13,13 +13,14 @@ Vor dem Gig ist es still. SETBUILDER ist dieser Raum. Du kommst mit einem rekord
 ## Was du mitnimmst
 
 - 🎚️ **Eine Nacht mit Form.** Open, Lift, Peak, Release. Du siehst, wo noch Luft ist und wo es schon voll ist.
-- ⏱️ **Die Nacht auf den Slot.** Zu lang, sie wird kürzer. Zu kurz legt **Mit besten Matches füllen** Tracks nach, die zu Key, BPM und Energie passen — zuerst Alternativen, dann die geladene Playlist. Sortieren holt die übrigen Alternativen zurück in die Nacht. Ein Song, den du rausmarkiert hast, bleibt draußen.
-- 🔑 **Keys, die miteinander reden.** Camelot entlang des Sets. Ein Clash fällt auf, solange du noch Zeit hast.
+- ⏱️ **Die Nacht auf den Slot.** Zu lang, sie wird kürzer. Zu kurz legt **Mit besten Matches füllen** Tracks nach, die zu Key, BPM und Energie passen — zuerst Alternativen, dann die geladene Playlist. Die Slot-Dauer im Brief stößt denselben Lauf an wie **Auf Slot setzen**. Sortieren holt die übrigen Alternativen zurück in die Nacht. Ein Song, den du rausmarkiert hast, bleibt draußen. Das Rückgängig-Banner nennt Track und Rückplatz.
+- 🔑 **Keys, die miteinander reden.** Camelot entlang des Sets. Ein Clash fällt auf, solange du noch Zeit hast. **Perfekt · nur Pins** sortiert nur die Mittel-Pins untereinander; der Rest bleibt in den Lücken.
 - ⚡ **Energie, die zum Song gehört.** Aus der Datei gelesen, gemessen oder von dir gesetzt. Sie steht am Track, sobald sie fest ist, und auf dem Zettel und im kopierten Text, wenn du sie kennst.
-- 📌 **Pins, die im Set bleiben.** Opener und Closer halten die Enden. Mittel-Pins überstehen Auf Slot setzen und Andere Songs und wandern beim Sortieren mit.
+- 📌 **Pins, die im Set bleiben.** Opener und Closer halten die Enden. Mittel-Pins überstehen Auf Slot setzen und Andere Songs und wandern beim Sortieren mit — außer bei Perfekt · nur Pins.
 - 🚫 **Ein Song kann die Nacht aussetzen.** Markier ihn raus aus dem Set. Er bleibt bei den Alternativen. Auf Slot setzen und Andere Songs lassen ihn dort. Pin und Raus lösen einander.
+- 🔁 **Tauschen aus derselben Playlist.** Songs aus dem Playlist-Pool, die an dieser Stelle zu Key, BPM und Energie passen — getrennt vom allgemeinen Ersatz.
 - 🎛️ **Jeder Anschluss mit eigener Länge.** Cut, Blend, Echo-out. Die Uhr des Slots folgt dem, was du an den Übergang schreibst. „—“ nimmt die Blend-Zeit aus dem Brief.
-- 🎲 **Eine andere Nacht aus derselben Kiste.** Andere Songs. Oder die Playlist, die Collection, die History, sobald sie da ist.
+- 🎲 **Eine andere Nacht aus derselben Kiste.** Andere Songs. Oder die Playlist, die Collection, die History, sobald sie da ist. Nach dem Laden einer Stick-Playlist bleibt **Aus der Playlist** am Set verfügbar.
 - 🛟 **Plan B in der Tasche.** Rollen und Alternativen für den Moment, in dem der Floor es sich anders überlegt. Setz eine davor oder dahinter, oder pinne sie in die Nacht.
 - 🎧 **Den Übergang vorher hören.** Eine Karte zum Ziehen und größer machen. Vorher, dieser Track, der nächste. Dieselbe Länge wie in der Setliste.
 - 🔍 **Nur noch, was passt.** Key, BPM und Energie holen die Bibliothek heran. Passt zu reiht, was hinter einem gewählten Track tragen kann, und der Song, den du hinzufügst, landet direkt dahinter.
@@ -28,9 +29,9 @@ Vor dem Gig ist es still. SETBUILDER ist dieser Raum. Du kommst mit einem rekord
 
 ## Vier Schritte
 
-1. 📝 **Brief** — Titel, die Minuten des Slots, wie dicht die Übergänge sein sollen. Die Beispiele unter Set-Info sind Platzhalter. Den Slot länger machen, dann auf den Slot setzen, und die Nacht füllt sich; kürzer, und sie wird geschnitten.
+1. 📝 **Brief** — Titel, die Minuten des Slots, wie dicht die Übergänge sein sollen. Die Beispiele unter Set-Info sind Platzhalter. Den Slot länger oder kürzer machen — sobald die Minuten stehen, läuft derselbe Fit wie **Auf Slot setzen**.
 2. 🔌 **Laden** — Stick verbinden. Eine Collection darf die Keys nachreichen.
-3. 🎛️ **Bauen** — Playlist, eigene Songs oder beides. Eng die Kiste ein, nutz Passt zu, wenn der nächste Song direkt hinter einem gewählten landen soll, und setz Phase, Rolle und jeden Anschluss.
+3. 🎛️ **Bauen** — Playlist, eigene Songs oder beides. Eng die Kiste ein, nutz Passt zu, wenn der nächste Song direkt hinter einem gewählten landen soll, und setz Phase, Rolle und jeden Anschluss. Tauschen greift in denselben Playlist-Pool.
 4. 🎒 **Exportieren** — Stick für den Player, Zettel für die Kabine, Datei für zu Hause. Bekannte Energie steht auf dem Zettel und im kopierten Text.
 
 📖 **Anleitung mit Screenshots:** [docs/GUIDE.de.md](docs/GUIDE.de.md)

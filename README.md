@@ -13,13 +13,14 @@ Before the gig, the room is quiet. SETBUILDER is that room. You arrive with a re
 ## What you take with you
 
 - 🎚️ **A night with a shape.** Open, lift, peak, release. You see where there is still air and where it is already full.
-- ⏱️ **The night fitted to the slot.** Too long, it cuts. Too short, **Fill with best matches** adds tracks that fit key, BPM, and energy — alternatives first, then the playlist you loaded. Sorting brings the other alternatives back into the night. A song you marked out stays out.
-- 🔑 **Keys that talk to each other.** Camelot along the set. A clash shows up while you still have time.
+- ⏱️ **The night fitted to the slot.** Too long, it cuts. Too short, **Fill with best matches** adds tracks that fit key, BPM, and energy — alternatives first, then the playlist you loaded. Changing slot duration in the brief runs the same path as **Fit to slot**. Sorting brings the other alternatives back into the night. A song you marked out stays out. The undo banner names the track and the return position.
+- 🔑 **Keys that talk to each other.** Camelot along the set. A clash shows up while you still have time. **Perfect · pins only** sorts mid-pins among themselves; everything else stays in the gaps.
 - ⚡ **Energy that belongs to the song.** Read from the file, measured, or set by you. It sits on the track once it is real, and on the sheet and the copied text when you know it.
-- 📌 **Pins that stay in the set.** Opener and closer hold the ends. Mid pins survive fit to slot and Different songs, and still move when you sort.
+- 📌 **Pins that stay in the set.** Opener and closer hold the ends. Mid pins survive fit to slot and Different songs, and still move when you sort — except under Perfect · pins only.
 - 🚫 **A song can sit the night out.** Mark it out of the set. It stays with the alternatives. Fit to slot and Different songs leave it there. Pin and out clear each other.
+- 🔁 **Exchange from the same playlist.** Songs from the playlist pool that fit key, BPM and energy at this position — separate from general Replace.
 - 🎛️ **Every join with its own length.** Cut, blend, echo-out. The slot clock follows what you write on the handoff. “—” takes the blend time from the brief.
-- 🎲 **Another night from the same crate.** Different songs. Or the playlist, the collection, the history, once they are in the room.
+- 🎲 **Another night from the same crate.** Different songs. Or the playlist, the collection, the history, once they are in the room. After loading a stick playlist, **From the playlist** stays available on the set.
 - 🛟 **Plan B in your pocket.** Roles and alternatives for the moment the floor changes its mind. Place one before or after a song, or pin it into the night.
 - 🎧 **Hear the handoff first.** A card you can drag and open up. Previous, this track, next. The same length as the setlist.
 - 🔍 **Only what fits.** Key, BPM, and energy pull the library in close. Fits after ranks what can follow a chosen track, and the song you add lands right after it.
@@ -28,9 +29,9 @@ Before the gig, the room is quiet. SETBUILDER is that room. You arrive with a re
 
 ## Four steps
 
-1. 📝 **Brief** — title, the minutes of the slot, how close the joins should sit. The examples under Set info are placeholders. Lengthen the slot, then fit, and the night fills; shorten it, then fit, and it cuts.
+1. 📝 **Brief** — title, the minutes of the slot, how close the joins should sit. The examples under Set info are placeholders. Lengthen or shorten the slot — once the minutes settle, the same fit as **Fit to slot** runs.
 2. 🔌 **Load** — connect the stick. A collection can fill in the keys.
-3. 🎛️ **Build** — a playlist, your own songs, or both. Draw the crate in close, use Fits after when the next song should land right behind one you chose, and set the phase, the role, and every join.
+3. 🎛️ **Build** — a playlist, your own songs, or both. Draw the crate in close, use Fits after when the next song should land right behind one you chose, and set the phase, the role, and every join. Exchange reaches into the same playlist pool.
 4. 🎒 **Export** — the stick for the player, the sheet for the booth, a file for home. Known energy goes on the sheet and into the copied text.
 
 📖 **Walkthrough with screenshots:** [docs/GUIDE.md](docs/GUIDE.md)

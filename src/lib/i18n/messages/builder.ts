@@ -33,7 +33,7 @@ const de = {
   "builder.brief.gearPlaceholder": "CDJs / USB",
   "builder.brief.duration": "Slot-Dauer (Min)",
   "builder.brief.durationHint":
-    "Geplante Setlänge in Minuten. Auf Slot setzen kürzt Überlänge und füllt Unterlänge nach.",
+    "Geplante Setlänge in Minuten. Ändern stößt Auf Slot setzen an: Überlänge wird gekürzt, Unterlänge aus Alternativen und Playlist-Pool nachgefüllt.",
   "builder.brief.blend": "Blend-Zeit (Durchschnitt)",
   "builder.brief.blendHint": "Durchschnittliche Zeit vom Ende jedes Tracks, die in den Übergang geht. Die Spielzeit im Slot folgt sofort.",
   "builder.brief.blend.30000": "0:30 Quick",
@@ -243,7 +243,8 @@ const de = {
   "builder.pool.playlist": "Aus der Playlist",
   "builder.pool.playlistHint":
     "{count} Tracks der Playlist, aus der das Set kommt. Brief und Pins bleiben.",
-  "builder.pool.playlistMissing": "Keine Playlist hinter diesem Set.",
+  "builder.pool.playlistMissing":
+    "Keine Playlist verfügbar — Stick-Playlist als Set laden oder eine Playlist extrahieren.",
   "builder.pool.playlistSmall": "Die Playlist hat nicht mehr Tracks als das Set.",
   "builder.pool.collection": "Aus der Collection",
   "builder.pool.collectionHint":
@@ -307,6 +308,11 @@ const de = {
   "builder.sort.perfect": "Perfekt · Max Score",
   "builder.sort.perfectHint":
     "Ganzes Set: exakter Camelot-TSP (Held-Karp ≤18, sonst NN+2-opt/Or-opt). Clashes zuerst killen, dann Mix-Score. Opener/Closer bleiben. Phasen danach neu.",
+  "builder.sort.perfectPins": "Perfekt · nur Pins",
+  "builder.sort.perfectPinsHint":
+    "Nur gepinnte Tracks untereinander (Camelot-TSP). Nicht-Pins bleiben in den Lücken zwischen den Pin-Slots. Opener/Closer bleiben. Alternativen bleiben draußen. Mindestens zwei Pins nötig.",
+  "builder.sort.perfectPinsNeed":
+    "Mindestens zwei gepinnte Tracks nötig (Opener/Closer zählen hier nicht).",
   "builder.sort.harmonic": "Harmonisch",
   "builder.sort.harmonicHint":
     "Pro Phase: nächster Track verwandter Camelot-Key, weiche Energie, kleine BPM-Schritte. Opener/Closer bleiben. Hebt den Mix-Score, senkt Clashes.",
@@ -391,6 +397,11 @@ const de = {
   "builder.row.replace": "Ersatz",
   "builder.row.replaceTitle":
     "Ersatz aus deinen Alternativen oder aus der Bibliothek, passend zu Vorgänger und Nachfolger",
+  "builder.row.exchange": "Tauschen",
+  "builder.row.exchangeTitle":
+    "Songs aus der geladenen Playlist, die an dieser Stelle zu Key, BPM und Energie passen",
+  "builder.row.exchangeMissing":
+    "Keine Playlist verfügbar — Stick-Playlist als Set laden oder eine Playlist extrahieren.",
   "builder.row.setOpener": "Opener",
   "builder.row.setOpenerTitle":
     "Als ersten Track des Sets festlegen (Open). Bleibt beim Sortieren vorne.",
@@ -585,6 +596,10 @@ const de = {
   "builder.status.extracting": "Playlist wird gelesen…",
   "builder.status.sorted.perfect":
     "Perfekt sortiert: minimale Clashes, maximaler Mix-Score. Bogen prüfen — Opener/Closer bleiben. 100 % nur wenn alle Keys verbunden sind.",
+  "builder.status.sorted.perfectPins":
+    "Gepinnte Tracks perfekt sortiert. Nicht-Pins bleiben in den Lücken; Opener/Closer und Alternativen bleiben.",
+  "builder.status.sorted.perfectPinsNeed":
+    "Mindestens zwei gepinnte Tracks nötig (Opener/Closer zählen hier nicht).",
   "builder.status.sorted.harmonic":
     "Harmonisch sortiert (pro Phase): verwandte Keys beieinander. Opener/Closer bleiben. Mix-Score und Clashes im Bogen prüfen.",
   "builder.status.sorted.gentle":
@@ -622,7 +637,10 @@ const de = {
     "Slot aufgefüllt, {before} auf {after}. {added} in die Performance geholt.",
   "builder.status.fitAdjusted":
     "Slot angepasst, {before} auf {after}. {moved} zu Alternativen, {added} dazu.",
-  "builder.trim.undoBody": "{tracks} liegen bei den Alternativen.",
+  "builder.trim.undoBody":
+    "{name} liegt bei den Alternativen (zurück auf Platz {position}).",
+  "builder.trim.undoBodyMany": "{details} liegen bei den Alternativen.",
+  "builder.trim.undoDetail": "{name} (Platz {position})",
   "builder.trim.undo": "Zurückholen",
   "builder.trim.dismiss": "Lassen",
   "builder.trim.undoDone": "Wieder im Slot.",
@@ -736,7 +754,7 @@ const en: Record<keyof typeof de, string> = {
   "builder.brief.gearPlaceholder": "CDJs / USB",
   "builder.brief.duration": "Slot duration (min)",
   "builder.brief.durationHint":
-    "Planned set length in minutes. Fit to slot trims overflow and fills underflow.",
+    "Planned set length in minutes. Changing it runs Fit to slot: overflow is trimmed, underflow is filled from Alternatives and the playlist pool.",
   "builder.brief.blend": "Blend time (average)",
   "builder.brief.blendHint": "Average time from the end of each track that goes into the blend. Playing time in the slot follows at once.",
   "builder.brief.blend.30000": "0:30 Quick",
@@ -940,7 +958,8 @@ const en: Record<keyof typeof de, string> = {
   "builder.pool.playlist": "From the playlist",
   "builder.pool.playlistHint":
     "{count} tracks from the playlist that built this set. Brief and pins stay.",
-  "builder.pool.playlistMissing": "No playlist stored with this set.",
+  "builder.pool.playlistMissing":
+    "No playlist available — load a stick playlist as a set, or extract a playlist.",
   "builder.pool.playlistSmall": "The playlist has no more tracks than the set.",
   "builder.pool.collection": "From the collection",
   "builder.pool.collectionHint":
@@ -1004,6 +1023,11 @@ const en: Record<keyof typeof de, string> = {
   "builder.sort.perfect": "Perfect · Max score",
   "builder.sort.perfectHint":
     "Whole set: exact Camelot TSP (Held-Karp ≤18, else NN+2-opt/Or-opt). Kill clashes first, then max mix score. Opener/closer stay. Phases re-laid after.",
+  "builder.sort.perfectPins": "Perfect · pins only",
+  "builder.sort.perfectPinsHint":
+    "Only pinned tracks among themselves (Camelot TSP). Non-pins stay in the gaps between pin slots. Opener/closer stay. Alternatives stay out. Needs at least two pins.",
+  "builder.sort.perfectPinsNeed":
+    "Needs at least two pinned tracks (opener/closer do not count here).",
   "builder.sort.harmonic": "Harmonic",
   "builder.sort.harmonicHint":
     "Per phase: next track related Camelot key, smooth energy, small BPM steps. Opener/closer stay. Raises the mix score, cuts clashes.",
@@ -1087,6 +1111,11 @@ const en: Record<keyof typeof de, string> = {
   "builder.row.replace": "Replace",
   "builder.row.replaceTitle":
     "Replacement from your Alternatives or the library, matched to the previous and next track",
+  "builder.row.exchange": "Exchange",
+  "builder.row.exchangeTitle":
+    "Songs from the loaded playlist that fit key, BPM and energy at this position",
+  "builder.row.exchangeMissing":
+    "No playlist available — load a stick playlist as a set, or extract a playlist.",
   "builder.row.setOpener": "Opener",
   "builder.row.setOpenerTitle":
     "Pin as the first track of the set (Open). Stays first when you sort.",
@@ -1277,6 +1306,10 @@ const en: Record<keyof typeof de, string> = {
   "builder.status.extracting": "Reading the playlist…",
   "builder.status.sorted.perfect":
     "Sorted for max score: minimal clashes, maximal mix score. Check the Arc — opener/closer stay. 100% only when all keys connect.",
+  "builder.status.sorted.perfectPins":
+    "Pinned tracks sorted for max score. Non-pins stay in the gaps; opener/closer and Alternatives stay.",
+  "builder.status.sorted.perfectPinsNeed":
+    "Needs at least two pinned tracks (opener/closer do not count here).",
   "builder.status.sorted.harmonic":
     "Sorted harmonically (per phase): related keys together. Opener/closer stay. Check mix score and clashes on the Arc.",
   "builder.status.sorted.gentle":
@@ -1314,7 +1347,10 @@ const en: Record<keyof typeof de, string> = {
     "Slot filled, {before} up to {after}. {added} brought into the performance.",
   "builder.status.fitAdjusted":
     "Slot adjusted, {before} to {after}. {moved} to Alternatives, {added} added.",
-  "builder.trim.undoBody": "{tracks} are with the alternatives.",
+  "builder.trim.undoBody":
+    "{name} is with the alternatives (back at position {position}).",
+  "builder.trim.undoBodyMany": "{details} are with the alternatives.",
+  "builder.trim.undoDetail": "{name} (position {position})",
   "builder.trim.undo": "Bring back",
   "builder.trim.dismiss": "Leave them",
   "builder.trim.undoDone": "Back in the slot.",

@@ -4731,6 +4731,19 @@ button.drag-handle:active i {
   margin: 0;
 }
 
+.replace-menu-copy {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.replace-menu-head h4 {
+  overflow-wrap: anywhere;
+}
+
+.replace-close {
+  flex: 0 0 auto;
+}
+
 .replace-menu-head p,
 .replace-empty {
   margin: 0.2rem 0 0;
@@ -7952,6 +7965,13 @@ body {
   line-height: 1.35;
 }
 
+/* Strip card uses margin-top to align with multi-line start; header
+   rows are single-line with align-items:center, so drop the offset. */
+.stick-head-verdict .stick-strip-dot,
+.stick-head-live .stick-strip-dot {
+  margin-top: 0;
+}
+
 .library-panel .stick-import-head.has-status > .library-browser-title,
 .library-panel .stick-import-head.has-status .library-browser-heading {
   align-self: center;
@@ -8554,17 +8574,20 @@ body {
   transform: rotate(-135deg);
 }
 
-.replace-menu {
-  max-height: min(34rem, calc(100vh - 7rem));
+/* Drawer height + scrollport: .replace-layer rules in ui-system.css. */
+.replace-menu-body {
+  min-height: 0;
   overflow: auto;
-  scroll-padding-top: 6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
 }
 
 .replace-menu-head {
-  position: sticky;
-  top: -0.85rem;
+  position: relative;
+  top: auto;
   z-index: 3;
-  margin: -0.85rem -0.85rem 0;
+  margin: 0;
   padding: 0.85rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background: #181818;
@@ -8574,6 +8597,7 @@ body {
   margin: 0.2rem 0 0;
   color: #fff;
   font-size: 0.9rem;
+  overflow-wrap: anywhere;
 }
 
 .curve-overrun,
@@ -8687,10 +8711,6 @@ body {
     inset: auto 12px 76px 12px;
     width: auto !important;
     max-height: min(60vh, 28rem);
-  }
-
-  .replace-menu {
-    max-height: min(70vh, 34rem);
   }
 
   .replace-list li {

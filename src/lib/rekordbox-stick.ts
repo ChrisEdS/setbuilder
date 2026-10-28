@@ -95,10 +95,15 @@ export function applyStickSet(
 ): SetDraft {
   const totalMs = set.tracks.reduce((sum, track) => sum + track.durationMs, 0);
   // The slot stays what the brief says; a longer set is trimmed with "Auf Slot kürzen".
+  // Playlist load stores the full list as sourcePool so "Aus der Playlist" works
+  // even after trim; history is not a playlist pool.
+  const sourcePool =
+    set.kind === "playlist" ? sourcePoolFromStickSet(set) : undefined;
   return distributeRoles({
     ...draft,
     title: set.name,
     tracks: set.tracks.map((track, index) => toSetTrack(track, set, index, totalMs, t)),
+    sourcePool,
   });
 }
 
@@ -118,10 +123,128 @@ export function applyStickSetMode(
     incoming.tracks,
   );
   if (!fresh.length) return draft;
+  const sourcePool =
+    set.kind === "playlist"
+      ? mergeSourcePools(draft.sourcePool, incoming.sourcePool)
+      : draft.sourcePool;
   return {
     ...draft,
     tracks: [...draft.tracks, ...fresh],
+    ...(sourcePool ? { sourcePool } : { sourcePool: undefined }),
   };
+}
+
+/** Pool rows for a stick playlist, with the same ids as load-as-set tracks. */
+export function sourcePoolFromStickSet(set: RekordboxStickSet): SourcePoolTrack[] {
+  return set.tracks.map((track, index) => ({
+    id: `rekordbox:${set.id}:${track.id}:${index}`,
+    name: track.title,
+    artists: [track.artist || "Unknown"],
+    album: track.album || "rekordbox",
+    durationMs: track.durationMs,
+    uri: track.filePath || `rekordbox:${track.id}`,
+    externalUrl: "",
+    imageUrl: coverUrl(track.artworkPath),
+    bpm: track.bpm,
+    keyCamelot: track.keyCamelot,
+    energyLevel: track.energyLevel,
+    energySource: track.energyLevel != null ? ("tag" as const) : undefined,
+    filePath: track.filePath,
+    source: "rekordbox" as const,
+    catalogBpm: track.bpm,
+    catalogKey: track.keyCamelot,
+  }));
+}
+
+function mergeSourcePools(
+  existing: SourcePoolTrack[] | undefined,
+  incoming: SourcePoolTrack[] | undefined,
+): SourcePoolTrack[] | undefined {
+  if (!incoming?.length) return existing;
+  if (!existing?.length) return incoming;
+  const seen = new Set(existing.map((track) => track.id));
+  const extra = incoming.filter((track) => !seen.has(track.id));
+  return extra.length ? [...existing, ...extra] : existing;
+}
+
+/**
+ * Playlist pool for reshuffle / fill / exchange: prefer the stored extract or
+ * load-as-set pool; otherwise rebuild from a live stick playlist that matches
+ * this set (by title, then by track overlap).
+ */
+export function playlistPoolForDraft(
+  draft: SetDraft,
+  stickSets: ReadonlyArray<RekordboxStickSet> = [],
+): SourcePoolTrack[] {
+  const stored = draft.sourcePool ?? [];
+  if (stored.length) return stored;
+  return livePlaylistPoolForDraft(draft, stickSets);
+}
+
+/** Attach a live stick playlist as sourcePool when the draft has none stored. */
+export function draftWithPlaylistPool(
+  draft: SetDraft,
+  stickSets: ReadonlyArray<RekordboxStickSet> = [],
+): SetDraft {
+  if (draft.sourcePool?.length) return draft;
+  const pool = livePlaylistPoolForDraft(draft, stickSets);
+  return pool.length ? { ...draft, sourcePool: pool } : draft;
+}
+
+function livePlaylistPoolForDraft(
+  draft: SetDraft,
+  stickSets: ReadonlyArray<RekordboxStickSet>,
+): SourcePoolTrack[] {
+  const playlists = stickSets.filter(
+    (set) => set.kind === "playlist" && set.tracks.length >= 2,
+  );
+  if (!playlists.length) return [];
+
+  const title = foldName(draft.title);
+  const byTitle = playlists.filter(
+    (set) => foldName(set.name) === title || foldName(set.path.split("/").pop() ?? "") === title,
+  );
+  if (byTitle.length === 1) return sourcePoolFromStickSet(byTitle[0]);
+  if (byTitle.length > 1) {
+    return sourcePoolFromStickSet(bestPlaylistOverlap(byTitle, draft) ?? byTitle[0]);
+  }
+
+  const match = bestPlaylistOverlap(playlists, draft);
+  return match ? sourcePoolFromStickSet(match) : [];
+}
+
+function bestPlaylistOverlap(
+  playlists: ReadonlyArray<RekordboxStickSet>,
+  draft: SetDraft,
+): RekordboxStickSet | null {
+  const performance = draft.tracks.filter((track) => track.role !== "safety");
+  if (!performance.length) return null;
+  const paths = new Set(
+    performance
+      .map((track) => (track.filePath ? pathKey(track.filePath) : ""))
+      .filter(Boolean),
+  );
+  const names = new Set(
+    performance.map((track) => `${foldName(track.name)}|${foldName(track.artists[0] ?? "")}`),
+  );
+  let best: RekordboxStickSet | null = null;
+  let bestScore = 0;
+  for (const set of playlists) {
+    let score = 0;
+    for (const track of set.tracks) {
+      if (track.filePath && paths.has(pathKey(track.filePath))) {
+        score += 1;
+        continue;
+      }
+      if (names.has(`${foldName(track.title)}|${foldName(track.artist)}`)) score += 1;
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      best = set;
+    }
+  }
+  const needed = Math.min(3, Math.max(2, Math.ceil(performance.length * 0.5)));
+  return bestScore >= needed ? best : null;
 }
 
 function setsFromPdb(library: PdbLibrary): RekordboxStickSet[] {

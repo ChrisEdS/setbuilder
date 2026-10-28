@@ -19,6 +19,8 @@ type Props = {
   tracks: SetTrack[];
   onSort: (technique: SetSortTechnique) => void;
   onReorder: (fromId: string, toId: string) => void;
+  /** Mid-pins in the performance — gates “Perfect · pins only”. */
+  pinnedCount?: number;
   /** Rendered inside the set workspace: no own heading. */
   embedded?: boolean;
 };
@@ -30,7 +32,13 @@ function rich(text: string) {
     .map((part, index) => (index % 2 === 1 ? <strong key={index}>{part}</strong> : part));
 }
 
-export function HarmonicPath({ tracks, onSort, onReorder, embedded }: Props) {
+export function HarmonicPath({
+  tracks,
+  onSort,
+  onReorder,
+  pinnedCount = 0,
+  embedded,
+}: Props) {
   const { t } = useI18n();
   const performance = performanceTracks(tracks);
   const stats = pathStats(performance);
@@ -43,7 +51,11 @@ export function HarmonicPath({ tracks, onSort, onReorder, embedded }: Props) {
   const canSort = performance.length >= 2;
 
   const sortMenu = (
-    <SetSortMenu disabled={!canSort} onSort={onSort} />
+    <SetSortMenu
+      disabled={!canSort}
+      onSort={onSort}
+      pinnedCount={pinnedCount}
+    />
   );
 
   return (

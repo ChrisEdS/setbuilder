@@ -19,6 +19,7 @@ import type { SetPhaseId } from "@/lib/set";
 
 export const SET_SORTS = [
   "perfect",
+  "perfectPins",
   "harmonic",
   "gentle",
   "energy",
@@ -41,6 +42,37 @@ type Sortable = {
   role?: string;
 };
 
+/**
+ * Perfect-harmony reorder of mid-pins only: pin slot indices stay, non-pins
+ * between them stay put, opener/closer are not mid-pins and are left alone.
+ * Needs at least two pinned tracks in `tracks`; otherwise returns a copy.
+ */
+export function orderPinnedSlotsOnly<T extends Sortable & { id: string }>(
+  tracks: T[],
+  pinnedIds: Iterable<string>,
+): T[] {
+  const pinSet = new Set(
+    [...pinnedIds].map((id) => id.trim()).filter(Boolean),
+  );
+  if (pinSet.size === 0 || tracks.length <= 1) return [...tracks];
+
+  const slotIndexes: number[] = [];
+  const pinned: T[] = [];
+  tracks.forEach((track, index) => {
+    if (!pinSet.has(track.id)) return;
+    slotIndexes.push(index);
+    pinned.push(track);
+  });
+  if (pinned.length <= 1) return [...tracks];
+
+  const ordered = orderByPerfectHarmony(pinned);
+  const next = [...tracks];
+  slotIndexes.forEach((slot, i) => {
+    next[slot] = ordered[i];
+  });
+  return next;
+}
+
 export function orderPhase<T extends Sortable>(
   tracks: T[],
   phase: SetPhaseId,
@@ -53,6 +85,9 @@ export function orderPhase<T extends Sortable>(
       return orderByPerfectHarmony(
         tracks.map((track, index) => ({ ...track, id: track.id ?? `t${index}` })),
       );
+    case "perfectPins":
+      // Handled in reorderDraft (pin slots across the whole performance).
+      return tracks;
     case "harmonic":
       return orderByHarmonicPath(tracks, rise);
     case "gentle":
