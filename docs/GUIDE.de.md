@@ -2,9 +2,9 @@
 
 **Deutsch** · [English](GUIDE.md) · [README](../README.de.md)
 
-So bereitest du ein Set mit rekordbox vor: Bibliothek verbinden und verstehen → bauen → exportieren. Die Screenshots zeigen ein in der App geöffnetes Set. Die Bilder sind von 4.5. Der Text beschreibt **4.5.0**, einschließlich Bibliotheksfilter, Phasenzeile, Pins und Ausschluss, Auf Slot setzen (auch beim Ändern der Slot-Dauer), Tauschen aus der Playlist, Perfekt · nur Pins, Alternativen-Banner mit Rückplatz, und Energie in der Details-Zeile und auf dem Kabinenzettel.
+So bereitest du ein Set mit rekordbox vor: Bibliothek verbinden und verstehen → bauen → exportieren. Die Screenshots zeigen ein in der App geöffnetes Set. Die Bilder sind von 4.5. Der Text beschreibt **4.6.0**, einschließlich Bibliotheksfilter, Phasenzeile, Pins und Ausschluss, Auf Slot setzen (auch beim Ändern der Slot-Dauer), Tauschen aus der Playlist, Perfekt · nur Pins, Alternativen-Banner mit Rückplatz, und Energie in der Details-Zeile und auf dem Kabinenzettel.
 
-Die ausgelieferte App ist die Desktop-App (Port **4317**). Die Browser-Entwicklung nutzt Port **4327**. Dieses Dokument beschreibt **4.5.0**. Stick-Schreiben, Player und Streaming-Konten sind weiter ungeprüft.
+Die ausgelieferte App ist die Desktop-App (Port **4317**). Die Browser-Entwicklung nutzt Port **4327**. Dieses Dokument beschreibt **4.6.0**. Stick-Schreiben, Player und Streaming-Konten sind weiter ungeprüft.
 
 > **Vor dem Gig:** Stick immer am echten Player testen (Playlist sichtbar, Tracks spielbar). Backup behalten — SETBUILDER schreibt in `export.pdb` und legt Kopien unter `SETBUILDER-Backup/` ab, für deine Medien bist du selbst verantwortlich. Keine Garantie. Works on my machine. :)
 
