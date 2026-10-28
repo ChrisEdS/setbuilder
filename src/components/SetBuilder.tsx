@@ -129,7 +129,9 @@ import { pickStreamingMatch } from "@/lib/match-link";
 import { swapIntoSlot } from "@/lib/replace-track";
 import { CAMELOT_CODES, mixJoin, relationHint, trackDetailsSummary } from "@/lib/harmonic";
 import {
+  alternativesPulledIntoPerformance,
   distributeRoles,
+  fillWithBestMatches,
   fitToSlot,
   reorderDraft,
   reshuffleDraftFromPool,
@@ -2143,11 +2145,15 @@ export function SetBuilder() {
         const changed = next.tracks.some(
           (track, index) => track.id !== current.tracks[index]?.id,
         );
+        const pulled = alternativesPulledIntoPerformance(current, next);
         setDraft(next);
+        const sorted = t(`builder.status.sorted.${technique}`);
         endWork(
-          changed
-            ? t(`builder.status.sorted.${technique}`)
-            : t("builder.status.sorted.unchanged"),
+          pulled > 0
+            ? `${sorted} ${t("builder.status.sorted.pulled", { count: pulled })}`
+            : changed
+              ? sorted
+              : t("builder.status.sorted.unchanged"),
         );
       } catch {
         endWork(null);
@@ -2613,6 +2619,27 @@ export function SetBuilder() {
           }),
         );
       }
+      return result.draft;
+    });
+  }
+
+  function fillBestMatches() {
+    setDraft((current) => {
+      const result = fillWithBestMatches(current, t);
+      if (!result.added) {
+        if (result.idle === "unfit") setStatus(t("builder.status.fillNoMatch"));
+        else if (result.idle === "full") setStatus(t("builder.status.fits"));
+        else setStatus(t("builder.status.fillStuck"));
+        return current;
+      }
+      setTrimUndo(result.restore.length ? result.restore : null);
+      setStatus(
+        t("builder.status.filled", {
+          before: formatDuration(result.beforeMs),
+          after: formatDuration(result.afterMs),
+          added: trackCount(result.added, t),
+        }),
+      );
       return result.draft;
     });
   }
@@ -3646,6 +3673,16 @@ export function SetBuilder() {
                 }
               >
                 {t("builder.tool.fit")}
+              </button>
+            </Tip>
+            <Tip text={t("builder.tool.fillMatchesTip")}>
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={fillBestMatches}
+                disabled={draft.tracks.length === 0 || filledMs >= targetMs}
+              >
+                {t("builder.tool.fillMatches")}
               </button>
             </Tip>
             <Tip

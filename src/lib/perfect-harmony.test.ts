@@ -120,6 +120,8 @@ test("reorderDraft perfect reorders across phases and re-lays the arc", () => {
     ...DEFAULT_SET,
     openerId: null,
     closerId: null,
+    // Excluded Alternative stays out of the perfect path.
+    excludedIds: ["s"],
     tracks: [
       track("a", "open", "1A", 4),
       track("b", "open", "8A", 5),

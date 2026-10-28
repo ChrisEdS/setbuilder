@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { DEFAULT_SET } from "./set.ts";
-import { reorderDraft } from "./extract-set.ts";
+import { alternativesPulledIntoPerformance, reorderDraft } from "./extract-set.ts";
 import {
   orderByCamelotJourney,
   orderByEnergy,
@@ -144,27 +144,34 @@ test("energy roller dips only in peak; rise climbs like open", () => {
   );
 });
 
-test("reorderDraft keeps alternatives at the end and phases intact", () => {
+test("reorderDraft pulls a fitting alternative into the phase and keeps the cue", () => {
   const draft = {
     ...DEFAULT_SET,
     tracks: [
       { ...t("p1"), name: "A", artists: ["X"], album: "", durationMs: 1, uri: "", externalUrl: "", imageUrl: null, phase: "peak" as const, role: "groove" as const, transition: "unset" as const, note: "", safetyAlt: "" },
-      { ...t("s1", { energyLevel: 9 }), name: "B", artists: ["X"], album: "", durationMs: 1, uri: "", externalUrl: "", imageUrl: null, phase: "peak" as const, role: "safety" as const, transition: "unset" as const, note: "", safetyAlt: "" },
+      { ...t("s1", { energyLevel: 9 }), name: "B", artists: ["X"], album: "", durationMs: 1, uri: "", externalUrl: "", imageUrl: null, phase: "peak" as const, role: "safety" as const, transition: "unset" as const, note: "", why: "plan b", safetyAlt: "" },
       { ...t("p0", { energyLevel: 3 }), name: "C", artists: ["X"], album: "", durationMs: 1, uri: "", externalUrl: "", imageUrl: null, phase: "peak" as const, role: "anchor" as const, transition: "unset" as const, note: "Cue bei 2:10", safetyAlt: "" },
     ],
   };
   const next = reorderDraft(draft, "energy");
-  assert.equal(next.tracks[next.tracks.length - 1].role, "safety");
+  const promoted = next.tracks.find((track) => track.id === "s1");
+  // Peak energy 9 still fits, so the phase stays and energy can place it mid-phase.
+  assert.equal(promoted?.role, "groove");
+  assert.equal(promoted?.phase, "peak");
+  assert.equal(promoted?.why, "");
+  assert.equal(next.tracks.some((track) => track.role === "safety"), false);
   // Positional opener (p1) stays first even when energy would prefer p0.
   assert.deepEqual(
     next.tracks.filter((track) => track.role !== "safety").map((track) => track.id),
-    ["p1", "p0"],
+    ["p1", "s1", "p0"],
   );
+  assert.notEqual(next.tracks[next.tracks.length - 1].id, "s1");
   // Sorting never writes a machine note; a hand-written cue survives.
   assert.deepEqual(
-    next.tracks.filter((track) => track.role !== "safety").map((track) => track.note),
-    ["", "Cue bei 2:10"],
+    next.tracks.map((track) => track.note),
+    ["", "", "Cue bei 2:10"],
   );
+  assert.equal(alternativesPulledIntoPerformance(draft, next), 1);
 });
 
 test("reorderDraft energy keeps positional opener and closer without pins", () => {
@@ -258,4 +265,160 @@ test("switching sort techniques can change order; repeating one does not", () =>
     byEnergy.tracks.map((item) => item.id),
     energyAgain.tracks.map((item) => item.id),
   );
+});
+
+test("reorderDraft promotes a non-excluded alternative, keeps ends, and moves a mid pin", () => {
+  const row = (
+    id: string,
+    energyLevel: number,
+    role: "groove" | "safety" = "groove",
+  ) =>
+    ({
+      id,
+      name: id,
+      artists: ["X"],
+      album: "",
+      durationMs: 8 * 60_000,
+      uri: "",
+      externalUrl: "",
+      imageUrl: null,
+      phase: "peak" as const,
+      role,
+      transition: "unset" as const,
+      bpm: "124",
+      keyCamelot: "8A",
+      energyLevel,
+      note: "",
+      why: role === "safety" ? "trimmed" : "",
+      safetyAlt: "",
+    });
+  const draft = {
+    ...DEFAULT_SET,
+    durationMinutes: 5,
+    openerId: "a",
+    closerId: "d",
+    pinnedIds: ["b"],
+    excludedIds: ["ban"],
+    tracks: [
+      row("a", 8),
+      row("b", 9),
+      row("c", 4),
+      row("d", 2),
+      row("alt", 6, "safety"),
+      row("ban", 1, "safety"),
+    ],
+  };
+  const next = reorderDraft(draft, "energy");
+  const performance = next.tracks.filter((item) => item.role !== "safety").map((item) => item.id);
+  // Energy would put a late and d first; the ends stay, the pin walks toward the closer.
+  assert.deepEqual(performance, ["a", "c", "alt", "b", "d"]);
+  assert.equal(next.tracks.find((item) => item.id === "alt")?.role, "groove");
+  assert.equal(next.tracks.find((item) => item.id === "alt")?.phase, "peak");
+  assert.equal(next.tracks.find((item) => item.id === "alt")?.why, "");
+  assert.notEqual(performance[performance.length - 1], "alt");
+  assert.equal(next.tracks.find((item) => item.id === "ban")?.role, "safety");
+  assert.equal(next.tracks[next.tracks.length - 1].id, "ban");
+  assert.equal(next.openerId, "a");
+  assert.equal(next.closerId, "d");
+  assert.deepEqual(next.pinnedIds, ["b"]);
+  assert.deepEqual(next.excludedIds, ["ban"]);
+  assert.equal(next.tracks.length, draft.tracks.length);
+  assert.equal(alternativesPulledIntoPerformance(draft, next), 1);
+});
+
+test("reorderDraft leaves an unfit alternative phase and restores a stored role", () => {
+  const row = (
+    id: string,
+    phase: "open" | "peak",
+    energyLevel: number,
+    role: "groove" | "safety" = "groove",
+  ) =>
+    ({
+      id,
+      name: id,
+      artists: ["X"],
+      album: "",
+      durationMs: 1,
+      uri: "",
+      externalUrl: "",
+      imageUrl: null,
+      phase,
+      role,
+      transition: "unset" as const,
+      bpm: "124",
+      keyCamelot: "8A",
+      energyLevel,
+      note: "",
+      why: "",
+      safetyAlt: "",
+    });
+  const alt = {
+    ...row("alt", "open", 9, "safety"),
+    playedRole: "anchor" as const,
+    why: "trimmed",
+  };
+  const draft = {
+    ...DEFAULT_SET,
+    openerId: "a",
+    closerId: "c",
+    tracks: [row("a", "peak", 4), row("b", "peak", 6), row("c", "peak", 5), alt],
+  };
+  const next = reorderDraft(draft, "energy");
+  const promoted = next.tracks.find((item) => item.id === "alt");
+  const performance = next.tracks.filter((item) => item.role !== "safety").map((item) => item.id);
+  assert.equal(promoted?.role, "anchor");
+  assert.equal(promoted?.phase, "open");
+  assert.equal(promoted?.why, "");
+  assert.deepEqual(performance, ["a", "alt", "b", "c"]);
+  assert.equal(performance[0], "a");
+  assert.equal(performance[performance.length - 1], "c");
+});
+
+test("reorderDraft perfect pulls an alternative in without taking the closer", () => {
+  const row = (
+    id: string,
+    phase: "open" | "peak" | "release",
+    keyCamelot: string,
+    energyLevel: number,
+    role: "groove" | "safety" = "groove",
+  ) =>
+    ({
+      id,
+      name: id,
+      artists: ["X"],
+      album: "",
+      durationMs: 180_000,
+      uri: "",
+      externalUrl: "",
+      imageUrl: null,
+      phase,
+      role,
+      transition: "unset" as const,
+      bpm: "124",
+      keyCamelot,
+      energyLevel,
+      note: "",
+      why: "",
+      safetyAlt: "",
+    });
+  const draft = {
+    ...DEFAULT_SET,
+    openerId: null,
+    closerId: null,
+    tracks: [
+      row("a", "open", "1A", 4),
+      row("b", "peak", "8A", 7),
+      row("c", "release", "3A", 4),
+      row("alt", "peak", "9A", 8, "safety"),
+    ],
+  };
+  const next = reorderDraft(draft, "perfect");
+  const performance = next.tracks.filter((item) => item.role !== "safety");
+  assert.equal(performance[0].id, "a");
+  assert.equal(performance[performance.length - 1].id, "c");
+  assert.equal(next.tracks.find((item) => item.id === "alt")?.role, "groove");
+  assert.ok(performance.some((item) => item.id === "alt"));
+  assert.notEqual(performance[performance.length - 1].id, "alt");
+  assert.equal(next.tracks.some((item) => item.role === "safety"), false);
+  assert.equal(alternativesPulledIntoPerformance(draft, next), 1);
 });

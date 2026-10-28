@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useI18n } from "@/lib/i18n/react";
 
 export function PlaylistLoadDialog({
@@ -18,8 +18,10 @@ export function PlaylistLoadDialog({
 }) {
   const { t } = useI18n();
   const dialog = useRef<HTMLDialogElement>(null);
-  const shownName = useRef(name);
-  if (name) shownName.current = name;
+  // Keep the last playlist name while `name` clears on close, so the title
+  // does not blank before the dialog finishes closing.
+  const [shownName, setShownName] = useState(name);
+  if (name && name !== shownName) setShownName(name);
 
   useEffect(() => {
     const node = dialog.current;
@@ -45,7 +47,7 @@ export function PlaylistLoadDialog({
       }}
     >
       <h2 id="playlist-load-title">
-        {t("builder.playlist.confirmTitle", { name: shownName.current })}
+        {t("builder.playlist.confirmTitle", { name: shownName })}
       </h2>
       <p id="playlist-load-body">{t("builder.playlist.confirmBody")}</p>
       <div className="stick-actions">

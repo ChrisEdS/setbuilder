@@ -6,12 +6,15 @@ import {
   type HarmonicRelation,
 } from "@/lib/harmonic";
 import { orderPhase, type SetSortTechnique } from "@/lib/sort-set";
-import { PHASE_ENERGY, energyStep, hasKnownEnergy } from "@/lib/energy";
+import { PHASE_ENERGY, energyFitsPhase, energyStep, hasKnownEnergy } from "@/lib/energy";
 import { phaseLabel } from "@/lib/i18n/domain";
 import { LocalizedError } from "@/lib/i18n/error";
 import { isGeneratedNote } from "@/lib/i18n/stored";
 import { tDe, type Translate } from "@/lib/i18n/core";
+import { parseKeyValue } from "@/lib/key-import";
+import { inCamelotNeighborhood } from "@/lib/library-filter";
 import { bestPhaseFor } from "@/lib/plan-b";
+import { rankFitsAfter } from "@/lib/replace-track";
 import { orderByPerfectHarmony } from "@/lib/perfect-harmony";
 import {
   applySetAnchors,
@@ -749,22 +752,80 @@ function appendSafetyCrates(
   return [...withAlts, ...safetyTracks];
 }
 
-/** Reorder the performance inside each phase. Alternativen stay at the end. */
+const PLAYED_ROLES = new Set<TrackRole>(["anchor", "bridge", "groove"]);
+
+/**
+ * Role an Alternative takes when sort brings it back.
+ * A stored previous played role wins; otherwise groove.
+ */
+function roleWhenPromoted(track: SetTrack): TrackRole {
+  if (PLAYED_ROLES.has(track.role)) return track.role;
+  const stored = (track as SetTrack & { playedRole?: unknown }).playedRole;
+  if (stored === "anchor" || stored === "bridge" || stored === "groove") return stored;
+  return "groove";
+}
+
+/**
+ * Move one Alternative into the cast for sorting.
+ * Phase stays as stored: a phase that still fits is the bucket the per-phase
+ * sort uses; one that does not is left too, and the existing sort re-lays the
+ * arc the same way it already does for performance tracks (locked ends,
+ * perfect harmony by timeline).
+ */
+function promoteAlternativeForSort(track: SetTrack): SetTrack {
+  if (track.role !== "safety") return track;
+  return {
+    ...track,
+    role: roleWhenPromoted(track),
+    why: "",
+  };
+}
+
+/**
+ * How many Alternatives a sort actually brought back into the performance.
+ * Excluded tracks do not count.
+ */
+export function alternativesPulledIntoPerformance(before: SetDraft, after: SetDraft): number {
+  const afterById = new Map(after.tracks.map((track) => [track.id, track]));
+  const excluded = excludedSetIds(before);
+  let count = 0;
+  for (const track of before.tracks) {
+    if (track.role !== "safety" || excluded.has(track.id)) continue;
+    const next = afterById.get(track.id);
+    if (next && next.role !== "safety") count += 1;
+  }
+  return count;
+}
+
+/**
+ * Reorder the performance and every non-excluded Alternative.
+ * Opener and closer stay at the ends; mid-pins move with the cast.
+ * Excluded tracks stay Alternatives. Does not trim to the slot.
+ */
 export function reorderDraft(draft: SetDraft, technique: SetSortTechnique): SetDraft {
   const performance = draft.tracks.filter((track) => track.role !== "safety");
-  const safeties = draft.tracks.filter((track) => track.role === "safety");
-  // Pins win; otherwise keep the current first/last song at the ends.
+  const excluded = excludedSetIds(draft);
+  const pulled = draft.tracks.filter(
+    (track) => track.role === "safety" && !excluded.has(track.id),
+  );
+  const stayingOut = draft.tracks.filter(
+    (track) => track.role === "safety" && excluded.has(track.id),
+  );
+  // Pins win; otherwise keep the current first/last performance song at the ends.
+  // Measured before Alternatives join, so a parked track cannot become the closer.
   const startId = draft.openerId?.trim() || performance[0]?.id || null;
   const endId =
     draft.closerId?.trim() ||
     performance[performance.length - 1]?.id ||
     null;
 
+  const cast = [...performance, ...pulled.map(promoteAlternativeForSort)];
+
   const phased =
     technique === "perfect"
-      ? reorderPerformancePerfect(performance, draft)
+      ? reorderPerformancePerfect(cast, startId, endId)
       : PHASES.flatMap((phase) => {
-          const group = performance.filter((track) => track.phase === phase.id);
+          const group = cast.filter((track) => track.phase === phase.id);
           return orderPhase(group, phase.id, technique);
         });
 
@@ -785,7 +846,7 @@ export function reorderDraft(draft: SetDraft, technique: SetSortTechnique): SetD
     };
   });
 
-  return applySetAnchors({ ...draft, tracks: [...withRelations, ...safeties] });
+  return applySetAnchors({ ...draft, tracks: [...withRelations, ...stayingOut] });
 }
 
 /**
@@ -794,13 +855,17 @@ export function reorderDraft(draft: SetDraft, technique: SetSortTechnique): SetD
  *
  * Pins win when set; otherwise the current first/last performance tracks stay
  * so Perfect matches the “Opener/closer stay” copy without requiring a pin.
+ * Pass those ids from the performance before Alternatives are pulled in.
  */
-function reorderPerformancePerfect(performance: SetTrack[], draft: SetDraft): SetTrack[] {
+function reorderPerformancePerfect(
+  performance: SetTrack[],
+  fixedStartId: string | null,
+  fixedEndId: string | null,
+): SetTrack[] {
   if (performance.length <= 1) return performance;
   const ordered = orderByPerfectHarmony(performance, {
-    fixedStartId: draft.openerId ?? performance[0]?.id ?? null,
-    fixedEndId:
-      draft.closerId ?? performance[performance.length - 1]?.id ?? null,
+    fixedStartId: fixedStartId ?? performance[0]?.id ?? null,
+    fixedEndId: fixedEndId ?? performance[performance.length - 1]?.id ?? null,
   });
   return rephaseByTimeline(ordered);
 }
@@ -1244,6 +1309,237 @@ function fillUnderSlot(
 
   if (!added) return draft;
   return distributeRoles(next, t);
+}
+
+export type BestMatchFillResult = SlotFitResult & {
+  /** Why nothing was added. Null once at least one track is in the performance. */
+  idle: "full" | "empty" | "unfit" | null;
+};
+
+type FillBlendSide = {
+  id: string;
+  name: string;
+  artists: string[];
+  bpm: string;
+  keyCamelot: string;
+  energyLevel?: number;
+  phase: SetPhaseId;
+};
+
+function seedPhaseForEnergy(level: number | undefined, fallback: SetPhaseId): SetPhaseId {
+  if (level == null) return fallback;
+  return PHASES.find((phase) => energyFitsPhase(level, phase.id) === true)?.id ?? fallback;
+}
+
+/**
+ * Best rankFitsAfter score against the phase this track would join.
+ * Neighborhood, the ±6 BPM window and “no energy jump” are rankFitsAfter’s
+ * own gates; the phase band is bestPhaseFor + energyFitsPhase.
+ */
+function fillBlendRank(
+  candidate: FillBlendSide,
+  performance: SetTrack[],
+  t: Translate,
+): { score: number; phase: SetPhaseId } | null {
+  if (!candidate.keyCamelot.trim()) return null;
+  const phase = bestPhaseFor(
+    {
+      phase: candidate.phase,
+      bpm: candidate.bpm,
+      keyCamelot: candidate.keyCamelot,
+      energyLevel: candidate.energyLevel,
+    },
+    performance,
+  );
+  if (energyFitsPhase(candidate.energyLevel, phase) === false) return null;
+  const keyed = performance.filter((track) => track.keyCamelot.trim());
+  const phaseRefs = keyed.filter((track) => track.phase === phase);
+  const refs = phaseRefs.length ? phaseRefs : keyed;
+  if (!refs.length) return null;
+  const row = {
+    artist: candidate.artists[0] ?? "",
+    title: candidate.name,
+    key: candidate.keyCamelot,
+    bpm: candidate.bpm,
+    energy: candidate.energyLevel,
+  };
+  let best = -1;
+  for (const ref of refs) {
+    if (!inCamelotNeighborhood(ref.keyCamelot, candidate.keyCamelot)) continue;
+    const ranked = rankFitsAfter(
+      [row],
+      {
+        name: ref.name,
+        artists: ref.artists,
+        keyCamelot: ref.keyCamelot,
+        bpm: ref.bpm,
+        energyLevel: ref.energyLevel,
+      },
+      (raw) => parseKeyValue(raw) || raw,
+      t,
+    );
+    const score = ranked[0]?.score ?? -1;
+    if (score > best) best = score;
+  }
+  return best < 0 ? null : { score: best, phase };
+}
+
+function rankFillSources(
+  sources: FillBlendSide[],
+  performance: SetTrack[],
+  t: Translate,
+): { source: FillBlendSide; score: number; phase: SetPhaseId }[] {
+  const ranked: { source: FillBlendSide; score: number; phase: SetPhaseId }[] = [];
+  for (const source of sources) {
+    const hit = fillBlendRank(source, performance, t);
+    if (hit) ranked.push({ source, score: hit.score, phase: hit.phase });
+  }
+  ranked.sort((a, b) => b.score - a.score);
+  return ranked;
+}
+
+/**
+ * Fills remaining slot time with tracks that blend into the current
+ * performance. Qualifying Alternatives come before the playlist pool.
+ * Does not trim. Pins, opener and closer stay; excluded ids are never cast.
+ */
+export function fillWithBestMatches(
+  draft: SetDraft,
+  t: Translate = tDe,
+): BestMatchFillResult {
+  const targetMs = draft.durationMinutes * 60_000;
+  const blendMs = blendMsOf(draft.blendMs);
+  const excluded = excludedSetIds(draft);
+  const fallbackMs = 5 * 60_000;
+  const spanOf = (track: Pick<SetTrack, "durationMs" | "transition" | "overlapMs">) =>
+    trackPlayedMs(
+      {
+        durationMs: track.durationMs || fallbackMs,
+        transition: track.transition,
+        overlapMs: track.overlapMs,
+      },
+      blendMs,
+    );
+  const playingMs = (set: SetDraft) =>
+    set.tracks
+      .filter((track) => track.role !== "safety")
+      .reduce((sum, track) => sum + spanOf(track), 0);
+
+  const beforeMs = playingMs(draft);
+  const keptNow = draft.tracks.filter((track) => track.role !== "safety").length;
+  const idleResult = (idle: "full" | "empty" | "unfit"): BestMatchFillResult => ({
+    draft,
+    kept: keptNow,
+    moved: 0,
+    added: 0,
+    beforeMs,
+    afterMs: beforeMs,
+    restore: [],
+    idle,
+  });
+
+  if (beforeMs >= targetMs) return idleResult("full");
+
+  const restore: TrimRestore[] = [];
+  let next = draft;
+  let added = 0;
+
+  for (let guard = 0; guard < 80 && playingMs(next) < targetMs; guard++) {
+    const inSet = new Set(next.tracks.map((track) => track.id));
+    const performance = next.tracks.filter((track) => track.role !== "safety");
+    const altTracks = next.tracks.filter(
+      (track) => track.role === "safety" && !excluded.has(track.id),
+    );
+    const poolTracks = (next.sourcePool ?? []).filter(
+      (track) => !inSet.has(track.id) && !excluded.has(track.id),
+    );
+    const rankedAlts = rankFillSources(
+      altTracks.map((track) => ({
+        id: track.id,
+        name: track.name,
+        artists: track.artists,
+        bpm: track.bpm,
+        keyCamelot: track.keyCamelot,
+        energyLevel: track.energyLevel,
+        phase: track.phase,
+      })),
+      performance,
+      t,
+    );
+    const rankedPool = rankFillSources(
+      poolTracks.map((track) => ({
+        id: track.id,
+        name: track.name,
+        artists: track.artists,
+        bpm: track.bpm || track.catalogBpm || "",
+        keyCamelot: track.keyCamelot || track.catalogKey || "",
+        energyLevel: track.energyLevel,
+        phase: seedPhaseForEnergy(track.energyLevel, "lift"),
+      })),
+      performance,
+      t,
+    );
+    const pick = rankedAlts[0] ?? rankedPool[0] ?? null;
+    if (!pick) {
+      if (!added) return idleResult(altTracks.length + poolTracks.length > 0 ? "unfit" : "empty");
+      break;
+    }
+
+    const alt = altTracks.find((track) => track.id === pick.source.id) ?? null;
+    const poolHit = alt ? undefined : poolTracks.find((track) => track.id === pick.source.id);
+    let candidate: SetTrack;
+    if (alt) {
+      candidate = {
+        ...alt,
+        role: "groove",
+        phase: pick.phase,
+        why: t("analysis.why.filled"),
+      };
+    } else if (poolHit) {
+      candidate = poolTrackAsSetTrack(poolHit, pick.phase, t);
+    } else {
+      break;
+    }
+    const span = spanOf(candidate);
+    if (span <= 0) break;
+
+    const fromAltIndex = alt ? next.tracks.findIndex((track) => track.id === alt.id) : -1;
+    restore.push({
+      id: candidate.id,
+      role: "safety",
+      phase: alt?.phase ?? pick.phase,
+      index: fromAltIndex >= 0 ? fromAltIndex : next.tracks.length,
+      why: alt?.why ?? "",
+    });
+    added += 1;
+
+    const perf = next.tracks.filter(
+      (track) => track.role !== "safety" && track.id !== candidate.id,
+    );
+    const rest = next.tracks.filter(
+      (track) => track.role === "safety" && track.id !== candidate.id,
+    );
+    const closerId = next.closerId?.trim() || null;
+    const closer = closerId ? perf.find((track) => track.id === closerId) : undefined;
+    const body = closer ? perf.filter((track) => track.id !== closerId) : perf;
+    next = {
+      ...next,
+      tracks: [...(closer ? [...body, candidate, closer] : [...body, candidate]), ...rest],
+    };
+  }
+
+  if (!added) return idleResult("empty");
+  const finished = applySetAnchors(distributeRoles(next, t));
+  return {
+    draft: finished,
+    kept: finished.tracks.filter((track) => track.role !== "safety").length,
+    moved: 0,
+    added,
+    beforeMs,
+    afterMs: playingMs(finished),
+    restore,
+    idle: null,
+  };
 }
 
 /**

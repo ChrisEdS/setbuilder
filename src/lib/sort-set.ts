@@ -1,6 +1,7 @@
 /**
- * Ways to reorder a set inside each phase. Roles and Alternativen stay;
+ * Ways to reorder a set inside each phase. Roles stay as given;
  * only the played order in Open → Release changes.
+ * Non-excluded Alternatives are promoted in reorderDraft before this runs.
  *
  * Techniques follow Mixed In Key / Camelot community practice:
  * harmonic path, one-step energy, energy arcs, BPM ramps and neighbor chains,

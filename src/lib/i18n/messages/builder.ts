@@ -338,6 +338,9 @@ const de = {
     "Passt die Spielzeit an den Slot (kürzen und auffüllen). Ein gesetzter Übergang zählt mit seiner Zeit, sonst der Blend {mix}. Ausgeschlossene Tracks bleiben draußen.",
   "builder.tool.fitTipUnder":
     "Slot ist unterfüllt — füllt aus Alternativen, dann Playlist-Pool bis zur Slot-Dauer. Ohne Pool/Alternativen erscheint ein Hinweis.",
+  "builder.tool.fillMatches": "Mit besten Matches füllen",
+  "builder.tool.fillMatchesTip":
+    "Füllt die restliche Slot-Zeit mit Tracks, die zu Key, BPM und Energie passen. Pins bleiben. Ausgeschlossene Tracks bleiben draußen. Zuerst Alternativen, dann die geladene Playlist.",
   "builder.tool.assign": "Rollen verteilen",
   "builder.tool.assignTip":
     "Setzt Anchor, Bridge und Groove neu nach Phase, Key und BPM. Die Reihenfolge bleibt.",
@@ -600,6 +603,8 @@ const de = {
     "Wellen (pro Phase): im Peak Groove und Impact (Anchor). Opener/Closer bleiben.",
   "builder.status.sorted.unchanged":
     "Reihenfolge unverändert: innerhalb jeder Phase passt die Lage schon (Opener/Closer bleiben sowieso), oder Key, Energie und BPM fehlen. Tracks zwischen Phasen ziehen oder die Werte in der Setliste setzen.",
+  "builder.status.sorted.pulled":
+    "{count} Alternativen zurück in die Performance.",
   "builder.status.reshuffle.done":
     "Neue Auswahl aus dem Pool ({pool}): {tracks} Performance-Tracks. Bogen und Alternativen prüfen.",
   "builder.status.reshuffle.unavailable":
@@ -609,6 +614,8 @@ const de = {
     "Nicht weiter kürzbar: der erste und der letzte Track und ein Track pro Phase bleiben immer. Lange Tracks von Hand auf Alternativen setzen.",
   "builder.status.fillStuck":
     "Nichts zum Auffüllen: keine Alternativen und kein Playlist-Pool (oder alles ausgeschlossen). Playlist laden oder Tracks unter Alternativen lassen.",
+  "builder.status.fillNoMatch":
+    "Nichts passt zu Key, BPM und Energie. Alternativen und die geladene Playlist sind geprüft; ausgeschlossene Tracks bleiben draußen.",
   "builder.status.trimmed":
     "Slot gekürzt, {before} auf {after}. {kept} bleiben, {moved} bei den Alternativen.",
   "builder.status.filled":
@@ -1028,6 +1035,9 @@ const en: Record<keyof typeof de, string> = {
     "Fits playing time to the slot (trim and fill). A chosen transition counts with its own time, otherwise the {mix} blend. Excluded tracks stay out.",
   "builder.tool.fitTipUnder":
     "Slot is underfilled — fills from Alternatives, then the playlist pool up to the slot duration. Without a pool or Alternatives you get a status hint.",
+  "builder.tool.fillMatches": "Fill with best matches",
+  "builder.tool.fillMatchesTip":
+    "Fills the remaining slot time with tracks that fit key, BPM and energy. Pins stay. Excluded tracks stay out. Alternatives first, then the loaded playlist.",
   "builder.tool.assign": "Assign roles",
   "builder.tool.assignTip":
     "Re-sets Anchor, Bridge and Groove by phase, key and BPM. The order stays.",
@@ -1285,6 +1295,8 @@ const en: Record<keyof typeof de, string> = {
     "Waves (per phase): in Peak, groove and impact (anchor). Opener/closer stay.",
   "builder.status.sorted.unchanged":
     "Order unchanged: within each phase it already fits (opener/closer stay anyway), or key, energy and BPM are missing. Drag tracks across phases or set the values in the setlist.",
+  "builder.status.sorted.pulled":
+    "{count} alternatives back in the performance.",
   "builder.status.reshuffle.done":
     "New pick from the pool ({pool}): {tracks} performance tracks. Check the arc and Alternatives.",
   "builder.status.reshuffle.unavailable":
@@ -1294,6 +1306,8 @@ const en: Record<keyof typeof de, string> = {
     "Cannot trim further: the first and last track and one track per phase always stay. Move long tracks to Alternatives by hand.",
   "builder.status.fillStuck":
     "Nothing to fill with: no Alternatives and no playlist pool (or everything is excluded). Load a playlist or leave tracks in Alternatives.",
+  "builder.status.fillNoMatch":
+    "Nothing fits key, BPM and energy. Alternatives and the loaded playlist were checked; excluded tracks stay out.",
   "builder.status.trimmed":
     "Slot trimmed, {before} down to {after}. {kept} stay, {moved} with the alternatives.",
   "builder.status.filled":

@@ -5,6 +5,7 @@ import {
   canReshuffleDraft,
   distributeRoles,
   extractSetFromPlaylist,
+  fillWithBestMatches,
   fitToSlot,
   undoTrimToSlot,
   reshuffleDraftFromPool,
@@ -376,6 +377,103 @@ test("reshuffleDraftFromPool never casts excluded ids into the performance", () 
   const nextPerf = next.tracks.filter((track) => track.role !== "safety");
   assert.ok(!nextPerf.some((track) => track.id === ban));
   assert.deepEqual(next.excludedIds, [ban]);
+});
+
+test("fill with best matches prefers a closer key, BPM and energy fit", () => {
+  const performance = [
+    mk(0, "open", 4),
+    mk(1, "lift", 6),
+    mk(2, "release", 5),
+  ];
+  const clashAlt = {
+    ...mk(9, "peak", 9),
+    role: "safety" as const,
+    keyCamelot: "1A",
+    bpm: "90",
+    why: "plan b",
+  };
+  const draft: any = {
+    ...DEFAULT_SET,
+    durationMinutes: 15,
+    openerId: "t0",
+    closerId: "t2",
+    pinnedIds: ["t1"],
+    excludedIds: ["poolEx"],
+    tracks: [...performance, clashAlt],
+    sourcePool: [
+      poolRow(0, {
+        id: "poolEx",
+        name: "Excluded perfect",
+        keyCamelot: "8A",
+        bpm: "124",
+        energyLevel: 6,
+      }),
+      poolRow(1, {
+        id: "poolWorse",
+        name: "Worse",
+        keyCamelot: "9A",
+        bpm: "129",
+        energyLevel: 5,
+      }),
+      poolRow(2, {
+        id: "poolBest",
+        name: "Best",
+        keyCamelot: "8A",
+        bpm: "125",
+        energyLevel: 6,
+      }),
+    ],
+  };
+  const filled = fillWithBestMatches(draft);
+  const perf = filled.draft.tracks.filter((track: SetTrack) => track.role !== "safety");
+  assert.equal(filled.added, 1);
+  assert.equal(filled.moved, 0);
+  assert.equal(filled.idle, null);
+  assert.ok(perf.some((track: SetTrack) => track.id === "poolBest"));
+  assert.ok(!perf.some((track: SetTrack) => track.id === "poolWorse"));
+  assert.ok(!perf.some((track: SetTrack) => track.id === "poolEx"));
+  assert.equal(perf[0].id, "t0");
+  assert.equal(perf[perf.length - 1].id, "t2");
+  assert.ok(perf.some((track: SetTrack) => track.id === "t1" && track.role !== "safety"));
+  assert.equal(
+    filled.draft.tracks.find((track: SetTrack) => track.id === "t9")?.role,
+    "safety",
+  );
+  assert.deepEqual(filled.draft.pinnedIds, ["t1"]);
+  assert.deepEqual(filled.draft.excludedIds, ["poolEx"]);
+  assert.equal(filled.draft.openerId, "t0");
+  assert.equal(filled.draft.closerId, "t2");
+
+  const over = fillWithBestMatches({ ...draft, durationMinutes: 10 });
+  assert.equal(over.idle, "full");
+  assert.equal(over.added, 0);
+  assert.equal(over.moved, 0);
+  assert.deepEqual(
+    over.draft.tracks.filter((track: SetTrack) => track.role !== "safety").map((track: SetTrack) => track.id),
+    ["t0", "t1", "t2"],
+  );
+
+  const miss = fillWithBestMatches({
+    ...draft,
+    durationMinutes: 15,
+    tracks: performance,
+    excludedIds: undefined,
+    sourcePool: [
+      poolRow(4, {
+        id: "poolClash",
+        name: "Clash",
+        keyCamelot: "1A",
+        bpm: "160",
+        energyLevel: 10,
+      }),
+    ],
+  });
+  assert.equal(miss.added, 0);
+  assert.equal(miss.idle, "unfit");
+  assert.deepEqual(
+    miss.draft.tracks.map((track: SetTrack) => track.id),
+    ["t0", "t1", "t2"],
+  );
 });
 
 test("canFillDraft is false without Alternatives or unused pool", () => {
