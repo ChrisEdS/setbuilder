@@ -1,5 +1,9 @@
 import { isGeneratedNote } from "@/lib/i18n";
-import { withoutEndPins } from "@/lib/set-anchors";
+import {
+  normalizeExcludedIds,
+  withoutEndPins,
+  withoutKeepPins,
+} from "@/lib/set-anchors";
 import { hasKnownEnergy, isMetadataComment, parseEnergyLevel, settledEnergy } from "@/lib/energy";
 import { sanitizeDraftImages } from "@/lib/media";
 import {
@@ -79,6 +83,19 @@ function storedPins(
     value.filter((item): item is string => typeof item === "string"),
     openerId,
     closerId,
+  );
+}
+
+function storedExcluded(
+  value: unknown,
+  draft: Pick<SetDraft, "openerId" | "closerId" | "pinnedIds">,
+): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  return withoutKeepPins(
+    normalizeExcludedIds(
+      value.filter((item): item is string => typeof item === "string"),
+    ),
+    draft,
   );
 }
 
@@ -233,6 +250,7 @@ export function normalizeStoredDraft(value: unknown): SetDraft | null {
     : undefined;
   const openerId = storedId(raw.openerId);
   const closerId = storedId(raw.closerId);
+  const pinnedIds = storedPins(raw.pinnedIds, openerId, closerId);
   const draft: SetDraft = {
     ...DEFAULT_SET,
     ...raw,
@@ -250,7 +268,8 @@ export function normalizeStoredDraft(value: unknown): SetDraft | null {
     phaseNote: phaseNotes(raw.phaseNote),
     openerId,
     closerId,
-    pinnedIds: storedPins(raw.pinnedIds, openerId, closerId),
+    pinnedIds,
+    excludedIds: storedExcluded(raw.excludedIds, { openerId, closerId, pinnedIds }),
     durationMinutes: finite(raw.durationMinutes, DEFAULT_SET.durationMinutes),
     blendMs: blendMsOf(raw.blendMs),
     tracks,

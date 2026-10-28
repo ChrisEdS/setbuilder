@@ -166,12 +166,54 @@ export function withoutEndPins(
   return next.length ? next : undefined;
 }
 
+/** Drop blank ids and duplicates (exclude list — no end-pin filtering). */
+export function normalizeExcludedIds(ids: string[] | undefined): string[] | undefined {
+  const next: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of ids ?? []) {
+    const id = typeof raw === "string" ? raw.trim() : "";
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    next.push(id);
+  }
+  return next.length ? next : undefined;
+}
+
+/** Drop ids that are opener, closer or mid-pinned (exclude ↔ pin mutual exclusion). */
+export function withoutKeepPins(
+  ids: string[] | undefined,
+  draft: Pick<SetDraft, "openerId" | "closerId" | "pinnedIds">,
+): string[] | undefined {
+  const drop = keepInSetIds(draft);
+  const next: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of ids ?? []) {
+    const id = raw.trim();
+    if (!id || drop.has(id) || seen.has(id)) continue;
+    seen.add(id);
+    next.push(id);
+  }
+  return next.length ? next : undefined;
+}
+
 /** Opener, closer, and mid-pins: these tracks stay in the performance. */
 export function keepInSetIds(
   draft: Pick<SetDraft, "openerId" | "closerId" | "pinnedIds">,
 ): Set<string> {
   const ids = new Set<string>();
   for (const raw of [draft.openerId, draft.closerId, ...(draft.pinnedIds ?? [])]) {
+    const id = raw?.trim();
+    if (id) ids.add(id);
+  }
+  return ids;
+}
+
+/** Tracks that must not enter / stay in the performance. */
+export function excludedSetIds(
+  draft: Pick<SetDraft, "excludedIds">,
+): Set<string> {
+  const ids = new Set<string>();
+  for (const raw of draft.excludedIds ?? []) {
     const id = raw?.trim();
     if (id) ids.add(id);
   }
@@ -244,6 +286,8 @@ export function placeInPerformance(
     openerId,
     closerId,
     pinnedIds,
+    // Bringing a track into the set clears exclude on that id.
+    excludedIds: normalizeExcludedIds(draft.excludedIds?.filter((item) => item !== id)),
     tracks: [...performance, ...safeties],
   });
 }
@@ -268,6 +312,59 @@ export function toggleKeepPin(draft: SetDraft, trackId: string): SetDraft {
     openerId,
     closerId,
     pinnedIds: withoutEndPins([...(draft.pinnedIds ?? []), id], openerId, closerId),
+    excludedIds: normalizeExcludedIds(draft.excludedIds?.filter((item) => item !== id)),
+  };
+}
+
+/**
+ * Mark a track so trim, refill and reshuffle never cast it into the performance.
+ * Clears opener/closer/mid-pin on that id. If it is currently playing, demotes
+ * it to Alternatives (same parking as a trim demotion). Pass a localized `why`.
+ */
+export function toggleExclude(
+  draft: SetDraft,
+  trackId: string,
+  why = "",
+): SetDraft {
+  const id = trackId.trim();
+  if (!id) return draft;
+  const current = draft.excludedIds ?? [];
+  if (current.includes(id)) {
+    return {
+      ...draft,
+      excludedIds: normalizeExcludedIds(current.filter((item) => item !== id)),
+    };
+  }
+
+  const openerId = draft.openerId === id ? null : draft.openerId ?? null;
+  const closerId = draft.closerId === id ? null : draft.closerId ?? null;
+  const pinnedIds = withoutEndPins(
+    draft.pinnedIds?.filter((item) => item !== id),
+    openerId,
+    closerId,
+  );
+  const excludedIds = normalizeExcludedIds([...(draft.excludedIds ?? []), id]);
+  const track = draft.tracks.find((item) => item.id === id);
+  if (!track || track.role === "safety") {
+    return { ...draft, openerId, closerId, pinnedIds, excludedIds };
+  }
+
+  return {
+    ...draft,
+    openerId,
+    closerId,
+    pinnedIds,
+    excludedIds,
+    tracks: draft.tracks.map((item) =>
+      item.id === id
+        ? {
+            ...item,
+            role: "safety" as const,
+            phase: item.phase,
+            why,
+          }
+        : item,
+    ),
   };
 }
 
@@ -282,6 +379,7 @@ export function pinOpener(draft: SetDraft, trackId: string): SetDraft {
     openerId: id,
     closerId,
     pinnedIds: withoutEndPins(draft.pinnedIds, id, closerId),
+    excludedIds: normalizeExcludedIds(draft.excludedIds?.filter((item) => item !== id)),
   });
 }
 
@@ -296,6 +394,7 @@ export function pinCloser(draft: SetDraft, trackId: string): SetDraft {
     openerId,
     closerId: id,
     pinnedIds: withoutEndPins(draft.pinnedIds, openerId, id),
+    excludedIds: normalizeExcludedIds(draft.excludedIds?.filter((item) => item !== id)),
   });
 }
 

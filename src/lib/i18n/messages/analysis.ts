@@ -58,6 +58,9 @@ const de = {
   "analysis.why.safetyNet":
     "Safety net aus Playlist-Rest (nicht in der Performance-Reihenfolge)",
   "analysis.why.trimmed": "Beim Kürzen auf den Slot unter Alternativen gelegt",
+  "analysis.why.excluded":
+    "Ausgeschlossen — bleibt beim Kürzen, Auffüllen und bei Andere Songs außerhalb der Performance",
+  "analysis.why.filled": "Beim Auffüllen auf den Slot in die Performance geholt",
   "analysis.why.replacementFor": "Ersatz für {name}",
   "analysis.why.replacedBy": "Ersetzt durch {name}",
   "analysis.why.manual": "Manuell gesetzt",
@@ -253,6 +256,9 @@ const en: Record<keyof typeof de, string> = {
   "analysis.why.safetyNet":
     "Safety net from the rest of the playlist (not in the performance order)",
   "analysis.why.trimmed": "Moved to Alternatives when trimming to the slot",
+  "analysis.why.excluded":
+    "Excluded — stays out of the performance through trim, refill and Different songs",
+  "analysis.why.filled": "Brought into the performance when filling to the slot",
   "analysis.why.replacementFor": "Replacement for {name}",
   "analysis.why.replacedBy": "Replaced by {name}",
   "analysis.why.manual": "Set manually",

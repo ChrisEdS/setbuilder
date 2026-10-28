@@ -211,6 +211,20 @@ test("mid pins are kept and opener or closer ids are not stored twice", () => {
   assert.equal(JSON.parse(encodeStoredDraft(draft!)).schemaVersion, DRAFT_SCHEMA_VERSION);
 });
 
+test("excluded ids are kept and collide with pins are dropped", () => {
+  const draft = normalizeStoredDraft({
+    title: "Nachtlinie",
+    tracks: [],
+    openerId: "a",
+    pinnedIds: ["b"],
+    excludedIds: ["c", "a", "b", "c", "", 9],
+  });
+  assert.deepEqual(draft?.excludedIds, ["c"]);
+  const round = decodeStoredDraft(encodeStoredDraft(draft!));
+  assert.deepEqual(round?.excludedIds, ["c"]);
+  assert.equal(JSON.parse(encodeStoredDraft(draft!)).schemaVersion, DRAFT_SCHEMA_VERSION);
+});
+
 test("codec rejects unsafe shapes and versions the same storage payload", () => {
   assert.equal(decodeStoredDraft("{bad"), null);
   assert.equal(normalizeStoredDraft({ title: "x", tracks: "no" }), null);

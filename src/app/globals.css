@@ -3750,9 +3750,19 @@ label.btn:hover {
   color: #f2f2f2;
 }
 
+.anchor-pill.is-exclude {
+  background: color-mix(in oklab, #c45c26 55%, #1a1a1a);
+  color: #fff0e8;
+}
+
 .anchor-pill.is-closer {
   background: color-mix(in oklab, var(--mauve) 45%, #1a1a1a);
   color: #ffe8f0;
+}
+
+.timeline-tools button.is-exclude,
+.manual-controls .icon-action.is-exclude {
+  color: #e8a070;
 }
 
 .preview-art {

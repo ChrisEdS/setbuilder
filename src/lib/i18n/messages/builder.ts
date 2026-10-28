@@ -31,7 +31,9 @@ const de = {
   "builder.brief.audiencePlaceholder": "Locals, dancefloor schon warm",
   "builder.brief.gear": "Gear",
   "builder.brief.gearPlaceholder": "CDJs / USB",
-  "builder.brief.duration": "Dauer (Min)",
+  "builder.brief.duration": "Slot-Dauer (Min)",
+  "builder.brief.durationHint":
+    "Geplante Setlänge in Minuten. Auf Slot setzen kürzt Überlänge und füllt Unterlänge nach.",
   "builder.brief.blend": "Blend-Zeit (Durchschnitt)",
   "builder.brief.blendHint": "Durchschnittliche Zeit vom Ende jedes Tracks, die in den Übergang geht. Die Spielzeit im Slot folgt sofort.",
   "builder.brief.blend.30000": "0:30 Quick",
@@ -329,11 +331,13 @@ const de = {
   "builder.sort.waves": "Wellen",
   "builder.sort.wavesHint":
     "Pro Phase: im Peak wechseln Groove und Impact (Anchor); sonst Low/High-Energie. Davor steigt die Energie, danach fällt sie. Opener/Closer bleiben.",
-  "builder.tool.fit": "Auf Slot kürzen",
+  "builder.tool.fit": "Auf Slot setzen",
   "builder.tool.fitTip":
-    "Kürzt auf die Spielzeit im Brief. {mix} pro Track gehen an den Blend, deshalb bleibt mehr Dateilänge im Set. Der Rest wandert unter Alternativen.",
+    "Passt die Spielzeit an den Slot: zu lang → kürzt (Rest zu Alternativen); zu kurz → füllt aus Alternativen, dann Playlist-Pool. {mix} pro Track gehen an den Blend. Opener, Closer und Pins bleiben; ausgeschlossene Tracks nicht.",
   "builder.tool.fitTipPlan":
-    "Kürzt auf die Spielzeit im Brief. Ein gesetzter Übergang zählt mit seiner Zeit, sonst der Blend {mix}. Der Rest wandert unter Alternativen.",
+    "Passt die Spielzeit an den Slot (kürzen und auffüllen). Ein gesetzter Übergang zählt mit seiner Zeit, sonst der Blend {mix}. Ausgeschlossene Tracks bleiben draußen.",
+  "builder.tool.fitTipUnder":
+    "Slot ist unterfüllt — füllt aus Alternativen, dann Playlist-Pool bis zur Slot-Dauer. Ohne Pool/Alternativen erscheint ein Hinweis.",
   "builder.tool.assign": "Rollen verteilen",
   "builder.tool.assignTip":
     "Setzt Anchor, Bridge und Groove neu nach Phase, Key und BPM. Die Reihenfolge bleibt.",
@@ -404,6 +408,15 @@ const de = {
   "builder.row.clearPin": "Pin lösen",
   "builder.row.clearPinTip":
     "Pin lösen. Der Track bleibt im Set, kann aber beim Kürzen zu den Alternativen wandern.",
+  "builder.row.setExclude": "Ausschließen",
+  "builder.row.setExcludeTitle":
+    "Darf nicht in die Performance. Bleibt beim Kürzen, Auffüllen und bei Andere Songs draußen. Löst Pin/Opener/Closer.",
+  "builder.row.clearExclude": "Ausschluss lösen",
+  "builder.row.clearExcludeTip":
+    "Ausschluss lösen. Der Track kann wieder in die Performance, bleibt aber wo er ist.",
+  "builder.row.excludeBadge": "Raus",
+  "builder.row.excludeBadgeTip":
+    "Ausgeschlossen. Bleibt durch Kürzen, Auffüllen und Andere Songs außerhalb der Performance.",
   "builder.row.placeInSet": "Ins Set",
   "builder.row.placeInSetTip":
     "Alternative vor oder nach einem Song der aktuellen Playlist setzen.",
@@ -594,12 +607,20 @@ const de = {
   "builder.status.fits": "Das Set passt schon in den Slot.",
   "builder.status.fitStuck":
     "Nicht weiter kürzbar: der erste und der letzte Track und ein Track pro Phase bleiben immer. Lange Tracks von Hand auf Alternativen setzen.",
+  "builder.status.fillStuck":
+    "Nichts zum Auffüllen: keine Alternativen und kein Playlist-Pool (oder alles ausgeschlossen). Playlist laden oder Tracks unter Alternativen lassen.",
   "builder.status.trimmed":
     "Slot gekürzt, {before} auf {after}. {kept} bleiben, {moved} bei den Alternativen.",
+  "builder.status.filled":
+    "Slot aufgefüllt, {before} auf {after}. {added} in die Performance geholt.",
+  "builder.status.fitAdjusted":
+    "Slot angepasst, {before} auf {after}. {moved} zu Alternativen, {added} dazu.",
   "builder.trim.undoBody": "{tracks} liegen bei den Alternativen.",
   "builder.trim.undo": "Zurückholen",
   "builder.trim.dismiss": "Lassen",
   "builder.trim.undoDone": "Wieder im Slot.",
+  "builder.status.excluded": "Ausschluss: {name} → Alternativen (bleibt draußen).",
+  "builder.status.excludeCleared": "Ausschluss gelöst: {name}.",
   "builder.status.roles":
     "Rollen verteilt: Anchor auf Peak und Schluss, Bridge bei Phasenwechsel, Key-Clash, BPM- oder Energie-Sprung, sonst Groove.",
   "builder.status.noHits": "Keine Treffer — anderen Artist oder Track versuchen.",
@@ -706,7 +727,9 @@ const en: Record<keyof typeof de, string> = {
   "builder.brief.audiencePlaceholder": "Locals, floor already warm",
   "builder.brief.gear": "Gear",
   "builder.brief.gearPlaceholder": "CDJs / USB",
-  "builder.brief.duration": "Duration (min)",
+  "builder.brief.duration": "Slot duration (min)",
+  "builder.brief.durationHint":
+    "Planned set length in minutes. Fit to slot trims overflow and fills underflow.",
   "builder.brief.blend": "Blend time (average)",
   "builder.brief.blendHint": "Average time from the end of each track that goes into the blend. Playing time in the slot follows at once.",
   "builder.brief.blend.30000": "0:30 Quick",
@@ -998,11 +1021,13 @@ const en: Record<keyof typeof de, string> = {
   "builder.sort.waves": "Waves",
   "builder.sort.wavesHint":
     "Per phase: in Peak, groove and impact (anchor) alternate; else low/high energy. Before that energy rises, after that it falls. Opener/closer stay.",
-  "builder.tool.fit": "Trim to slot",
+  "builder.tool.fit": "Fit to slot",
   "builder.tool.fitTip":
-    "Trims to the playing time in the brief. {mix} per track go to the blend, so more file length stays in the set. The rest moves to Alternatives.",
+    "Fits playing time to the slot: too long → trims (rest to Alternatives); too short → fills from Alternatives, then the playlist pool. {mix} per track go to the blend. Opener, closer and pins stay; excluded tracks do not.",
   "builder.tool.fitTipPlan":
-    "Trims to the playing time in the brief. A chosen transition counts with its own time, otherwise the {mix} blend. The rest moves to Alternatives.",
+    "Fits playing time to the slot (trim and fill). A chosen transition counts with its own time, otherwise the {mix} blend. Excluded tracks stay out.",
+  "builder.tool.fitTipUnder":
+    "Slot is underfilled — fills from Alternatives, then the playlist pool up to the slot duration. Without a pool or Alternatives you get a status hint.",
   "builder.tool.assign": "Assign roles",
   "builder.tool.assignTip":
     "Re-sets Anchor, Bridge and Groove by phase, key and BPM. The order stays.",
@@ -1072,6 +1097,15 @@ const en: Record<keyof typeof de, string> = {
   "builder.row.clearPin": "Unpin",
   "builder.row.clearPinTip":
     "Unpin. The track stays in the set, and trim may move it to Alternatives.",
+  "builder.row.setExclude": "Exclude",
+  "builder.row.setExcludeTitle":
+    "Must not be in the performance. Stays out through trim, refill and Different songs. Clears pin/opener/closer.",
+  "builder.row.clearExclude": "Clear exclude",
+  "builder.row.clearExcludeTip":
+    "Clear exclude. The track may re-enter the performance; it stays where it is for now.",
+  "builder.row.excludeBadge": "Out",
+  "builder.row.excludeBadgeTip":
+    "Excluded. Stays out of the performance through trim, refill and Different songs.",
   "builder.row.placeInSet": "Into set",
   "builder.row.placeInSetTip":
     "Put this Alternative before or after a song in the current playlist.",
@@ -1258,12 +1292,20 @@ const en: Record<keyof typeof de, string> = {
   "builder.status.fits": "The set already fits the slot.",
   "builder.status.fitStuck":
     "Cannot trim further: the first and last track and one track per phase always stay. Move long tracks to Alternatives by hand.",
+  "builder.status.fillStuck":
+    "Nothing to fill with: no Alternatives and no playlist pool (or everything is excluded). Load a playlist or leave tracks in Alternatives.",
   "builder.status.trimmed":
     "Slot trimmed, {before} down to {after}. {kept} stay, {moved} with the alternatives.",
+  "builder.status.filled":
+    "Slot filled, {before} up to {after}. {added} brought into the performance.",
+  "builder.status.fitAdjusted":
+    "Slot adjusted, {before} to {after}. {moved} to Alternatives, {added} added.",
   "builder.trim.undoBody": "{tracks} are with the alternatives.",
   "builder.trim.undo": "Bring back",
   "builder.trim.dismiss": "Leave them",
   "builder.trim.undoDone": "Back in the slot.",
+  "builder.status.excluded": "Excluded: {name} → Alternatives (stays out).",
+  "builder.status.excludeCleared": "Exclude cleared: {name}.",
   "builder.status.roles":
     "Roles assigned: Anchor on the peak and the close, Bridge at a phase change, key clash, BPM or energy jump, otherwise Groove.",
   "builder.status.noHits": "No results — try another artist or track.",

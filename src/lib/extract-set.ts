@@ -15,8 +15,10 @@ import { bestPhaseFor } from "@/lib/plan-b";
 import { orderByPerfectHarmony } from "@/lib/perfect-harmony";
 import {
   applySetAnchors,
+  excludedSetIds,
   keepInSetIds,
   lockPerformanceEnds,
+  normalizeExcludedIds,
   withSuggestedAnchors,
   withoutEndPins,
 } from "@/lib/set-anchors";
@@ -102,6 +104,34 @@ export function canReshuffleDraft(draft: SetDraft): boolean {
 }
 
 /**
+ * True when Alternatives or the playlist pool can still supply a non-excluded
+ * track that is not already in the performance (for Trim-to-slot refill).
+ */
+export function canFillDraft(draft: SetDraft): boolean {
+  return fillCandidateCount(draft) > 0;
+}
+
+function fillCandidateCount(draft: SetDraft): number {
+  const excluded = excludedSetIds(draft);
+  const inPerformance = new Set(
+    draft.tracks.filter((track) => track.role !== "safety").map((track) => track.id),
+  );
+  let count = 0;
+  for (const track of draft.tracks) {
+    if (track.role !== "safety") continue;
+    if (excluded.has(track.id)) continue;
+    count += 1;
+  }
+  for (const track of draft.sourcePool ?? []) {
+    if (inPerformance.has(track.id)) continue;
+    if (draft.tracks.some((item) => item.id === track.id)) continue;
+    if (excluded.has(track.id)) continue;
+    count += 1;
+  }
+  return count;
+}
+
+/**
  * Shuffle the stored playlist pool and rebuild the set for the same brief.
  * Keeps title/vibe/venue/… and opener, closer, and mid-pins (forced into the cast).
  */
@@ -116,14 +146,20 @@ export function reshuffleDraftFromPool(
   const openerId = draft.openerId?.trim() || null;
   const closerId = draft.closerId?.trim() || null;
   const pinnedIds = withoutEndPins(draft.pinnedIds, openerId, closerId);
+  const excludedIds = normalizeExcludedIds(draft.excludedIds);
+  const excluded = new Set(excludedIds ?? []);
   const pinIds = new Set(
-    [openerId, closerId, ...(pinnedIds ?? [])].filter((id): id is string => Boolean(id)),
+    [openerId, closerId, ...(pinnedIds ?? [])]
+      .filter((id): id is string => Boolean(id))
+      .filter((id) => !excluded.has(id)),
   );
   const held = draft.tracks
     .filter((track) => track.role !== "safety" && pinIds.has(track.id))
     .filter((track) => !stored.some((row) => row.id === track.id))
     .map(setTrackAsPool);
-  const shuffled = shuffleCopy([...held, ...stored], random);
+  // Excluded ids never enter the cast — hard skip like a missing track.
+  const usable = [...held, ...stored].filter((track) => !excluded.has(track.id));
+  const shuffled = shuffleCopy(usable, random);
   const ordered = [
     ...shuffled.filter((track) => pinIds.has(track.id)),
     ...shuffled.filter((track) => !pinIds.has(track.id)),
@@ -182,11 +218,13 @@ export function reshuffleDraftFromPool(
       openerId,
       closerId,
       pinnedIds,
+      excludedIds,
     },
   );
   return {
     ...next,
     slotKind: draft.slotKind,
+    excludedIds,
     sourcePool: stored,
   };
 }
@@ -248,7 +286,12 @@ function buildDraftFromPool(
   playlistName: string,
   options: ExtractOptions,
   t: Translate,
-  pins: { openerId?: string | null; closerId?: string | null; pinnedIds?: string[] } = {},
+  pins: {
+    openerId?: string | null;
+    closerId?: string | null;
+    pinnedIds?: string[];
+    excludedIds?: string[];
+  } = {},
 ): SetDraft {
   const durationMinutes = Math.max(20, options.durationMinutes || 60);
   const blendMs = blendMsOf(options.blendMs);
@@ -257,11 +300,16 @@ function buildDraftFromPool(
   const openerId = pins.openerId?.trim() || null;
   const closerId = pins.closerId?.trim() || null;
   const pinnedIds = withoutEndPins(pins.pinnedIds, openerId, closerId);
+  const excludedIds = normalizeExcludedIds(pins.excludedIds);
+  const excluded = new Set(excludedIds ?? []);
+  const packPool = pool.filter((track) => !excluded.has(track.id));
 
   const selected = ensurePinsInPack(
-    packTracks(pool, targetMs, blendMs),
-    pool,
-    [openerId, closerId, ...(pinnedIds ?? [])].filter((id): id is string => Boolean(id)),
+    packTracks(packPool, targetMs, blendMs),
+    packPool,
+    [openerId, closerId, ...(pinnedIds ?? [])]
+      .filter((id): id is string => Boolean(id))
+      .filter((id) => !excluded.has(id)),
   );
   const catalogCount = selected.filter(
     (track) => track.bpm || track.catalogPopularity != null,
@@ -314,6 +362,7 @@ function buildDraftFromPool(
     openerId,
     closerId,
     pinnedIds,
+    excludedIds,
   };
 
   // Keep explicit pins at the ends; otherwise suggest warm open/release.
@@ -321,6 +370,7 @@ function buildDraftFromPool(
   return {
     ...anchored,
     pinnedIds: withoutEndPins(anchored.pinnedIds, anchored.openerId, anchored.closerId),
+    excludedIds,
   };
 }
 
@@ -814,27 +864,28 @@ export type TrimRestore = {
 export type SlotFitResult = {
   draft: SetDraft;
   kept: number;
+  /** Tracks demoted to Alternativen (trim / exclude sweep). */
   moved: number;
+  /** Tracks promoted into the performance (refill). */
+  added: number;
   beforeMs: number;
   afterMs: number;
-  /** Tracks moved to Alternativen, with the role, phase and place to restore. */
+  /** Tracks moved or filled, with the role, phase and place to restore. */
   restore: TrimRestore[];
 };
 
 /**
- * Trims a set whose playing time is longer than the slot. Each track gives
- * its mix time to the blend, so the file lengths that stay are longer than
- * the brief. Per phase the tracks are spread evenly (first of the opener and
- * last of the closer always stay) until that phase's share of the slot is
- * filled. Everything else moves to Alternativen.
+ * Fits playing time to the slot: demotes overflow to Alternativen, and when
+ * under the brief fills from Alternativen then the playlist pool. Opener,
+ * closer and mid-pins stay in the cast; excludedIds never enter it.
  */
 export function fitToSlot(draft: SetDraft, t: Translate = tDe): SlotFitResult {
   const targetMs = draft.durationMinutes * 60_000;
   const blendMs = blendMsOf(draft.blendMs);
-  const performance = draft.tracks.filter((track) => track.role !== "safety");
+  const excluded = excludedSetIds(draft);
   const protectedIds = keepInSetIds(draft);
   const fallbackMs = 5 * 60_000;
-  const spanOf = (track: SetTrack) =>
+  const spanOf = (track: Pick<SetTrack, "durationMs" | "transition" | "overlapMs">) =>
     trackPlayedMs(
       {
         durationMs: track.durationMs || fallbackMs,
@@ -843,102 +894,41 @@ export function fitToSlot(draft: SetDraft, t: Translate = tDe): SlotFitResult {
       },
       blendMs,
     );
-  const beforeMs = performance.reduce((sum, track) => sum + spanOf(track), 0);
-  if (!performance.length || beforeMs <= targetMs * 1.05) {
-    return { draft, kept: performance.length, moved: 0, beforeMs, afterMs: beforeMs, restore: [] };
-  }
+  const playingMs = (set: SetDraft) =>
+    set.tracks
+      .filter((track) => track.role !== "safety")
+      .reduce((sum, track) => sum + spanOf(track), 0);
 
+  const beforeMs = playingMs(draft);
+  const restore: TrimRestore[] = [];
   const moveIds = new Set<string>();
-  PHASES.forEach((phase, phaseIndex) => {
-    const group = performance.filter((track) => track.phase === phase.id);
-    if (!group.length) return;
-    const groupMs = group.reduce((sum, track) => sum + spanOf(track), 0);
-    const budget = targetMs * phase.share;
-    if (groupMs <= budget * 1.15) return;
-    const avg = groupMs / group.length;
-    const count = Math.min(group.length, Math.max(1, Math.round(budget / avg)));
-    const keep = new Set<number>();
-    const band = PHASE_ENERGY[phase.id];
-    for (let i = 0; i < count; i++) {
-      // One track per segment: the one whose Energy Level sits in the phase
-      // band, otherwise the one in the middle of the segment.
-      const start = Math.floor((i * group.length) / count);
-      const end = Math.max(start + 1, Math.floor(((i + 1) * group.length) / count));
-      const middle = Math.min(group.length - 1, Math.floor(((i + 0.5) * group.length) / count));
-      let best = middle;
-      let bestCost = Infinity;
-      for (let j = start; j < end && j < group.length; j++) {
-        const level = group[j].energyLevel;
-        const gap =
-          level == null ? 0 : Math.max(0, band.min - level, level - band.max);
-        const cost = gap * 10 + Math.abs(j - middle) * 0.1;
-        if (cost < bestCost) {
-          bestCost = cost;
-          best = j;
-        }
-      }
-      keep.add(best);
-    }
-    if (phaseIndex === 0) keep.add(0);
-    if (phaseIndex === PHASES.length - 1) keep.add(group.length - 1);
-    group.forEach((track, index) => {
-      if (protectedIds.has(track.id)) return;
-      if (!keep.has(index)) moveIds.add(track.id);
-    });
-  });
+  const addedIds = new Set<string>();
 
-  // Rounding per phase can leave the playing time over the slot. Take out one
-  // more track at a time from the phase that overshoots its budget the most,
-  // never the first or last track and never the last one left in a phase.
-  for (let guard = 0; guard < performance.length; guard++) {
-    const kept = performance.filter((track) => !moveIds.has(track.id));
-    const total = kept.reduce((sum, track) => sum + spanOf(track), 0);
-    if (total <= targetMs * 1.05) break;
-    let pick: SetTrack | null = null;
-    let worst = 0;
-    for (const phase of PHASES) {
-      const group = kept.filter((track) => track.phase === phase.id);
-      if (group.length < 2) continue;
-      const ratio =
-        group.reduce((sum, track) => sum + spanOf(track), 0) / (targetMs * phase.share);
-      if (ratio <= worst) continue;
-      const band = PHASE_ENERGY[phase.id];
-      const removable = group.filter(
-        (track) =>
-          track.id !== performance[0].id &&
-          track.id !== performance[performance.length - 1].id &&
-          !protectedIds.has(track.id),
-      );
-      if (!removable.length) continue;
-      // Out-of-band energy goes first, otherwise the track nearest the middle.
-      const gapOf = (track: SetTrack) =>
-        track.energyLevel == null
-          ? 0
-          : Math.max(0, band.min - track.energyLevel, track.energyLevel - band.max);
-      pick = [...removable].sort(
-        (a, b) =>
-          gapOf(b) - gapOf(a) ||
-          Math.abs(group.indexOf(a) - (group.length - 1) / 2) -
-            Math.abs(group.indexOf(b) - (group.length - 1) / 2),
-      )[0];
-      worst = ratio;
-    }
-    if (!pick) break;
-    moveIds.add(pick.id);
+  // Sweep: excluded tracks must not stay in the performance.
+  for (const track of draft.tracks) {
+    if (track.role === "safety") continue;
+    if (!excluded.has(track.id)) continue;
+    moveIds.add(track.id);
   }
 
-  const placed = (ids: Set<string>): SetDraft => {
-    const remaining = draft.tracks.filter((track) => !ids.has(track.id));
+  const demoteWhy = (id: string) =>
+    excluded.has(id) ? t("analysis.why.excluded") : t("analysis.why.trimmed");
+
+  const demote = (source: SetDraft, ids: Set<string>): SetDraft => {
+    if (!ids.size) return source;
+    const remaining = source.tracks.filter(
+      (track) => track.role !== "safety" && !ids.has(track.id),
+    );
     return distributeRoles(
       {
-        ...draft,
-        tracks: draft.tracks.map((track) =>
+        ...source,
+        tracks: source.tracks.map((track) =>
           ids.has(track.id)
             ? {
                 ...track,
                 role: "safety" as TrackRole,
                 phase: bestPhaseFor(track, remaining),
-                why: t("analysis.why.trimmed"),
+                why: demoteWhy(track.id),
               }
             : track,
         ),
@@ -946,51 +936,134 @@ export function fitToSlot(draft: SetDraft, t: Translate = tDe): SlotFitResult {
       t,
     );
   };
-  const playingMs = (set: SetDraft) =>
-    set.tracks
-      .filter((track) => track.role !== "safety")
-      .reduce((sum, track) => sum + spanOf(track), 0);
 
-  let next = placed(moveIds);
-  // Role assignment gives each join its own overlap, which can put time back.
-  // Keep moving until the clock that the slot actually uses is inside the brief.
-  for (let guard = 0; playingMs(next) > targetMs * 1.05 && guard < performance.length; guard++) {
-    const kept = next.tracks.filter((track) => track.role !== "safety");
-    let pick: SetTrack | null = null;
-    let worst = 0;
-    for (const phase of PHASES) {
-      const group = kept.filter((track) => track.phase === phase.id);
-      if (group.length < 2) continue;
-      const ratio =
-        group.reduce((sum, track) => sum + spanOf(track), 0) / (targetMs * phase.share);
-      if (ratio <= worst) continue;
+  let working = demote(draft, moveIds);
+
+  const performance = working.tracks.filter((track) => track.role !== "safety");
+
+  if (playingMs(working) > targetMs * 1.05 && performance.length) {
+    PHASES.forEach((phase, phaseIndex) => {
+      const group = performance.filter((track) => track.phase === phase.id);
+      if (!group.length) return;
+      const groupMs = group.reduce((sum, track) => sum + spanOf(track), 0);
+      const budget = targetMs * phase.share;
+      if (groupMs <= budget * 1.15) return;
+      const avg = groupMs / group.length;
+      const count = Math.min(group.length, Math.max(1, Math.round(budget / avg)));
+      const keep = new Set<number>();
       const band = PHASE_ENERGY[phase.id];
-      const removable = group.filter(
-        (track) =>
-          track.id !== performance[0].id &&
-          track.id !== performance[performance.length - 1].id &&
-          !protectedIds.has(track.id),
-      );
-      if (!removable.length) continue;
-      const gapOf = (track: SetTrack) =>
-        track.energyLevel == null
-          ? 0
-          : Math.max(0, band.min - track.energyLevel, track.energyLevel - band.max);
-      pick = [...removable].sort(
-        (a, b) =>
-          gapOf(b) - gapOf(a) ||
-          Math.abs(group.indexOf(a) - (group.length - 1) / 2) -
-            Math.abs(group.indexOf(b) - (group.length - 1) / 2),
-      )[0];
-      worst = ratio;
+      for (let i = 0; i < count; i++) {
+        const start = Math.floor((i * group.length) / count);
+        const end = Math.max(start + 1, Math.floor(((i + 1) * group.length) / count));
+        const middle = Math.min(
+          group.length - 1,
+          Math.floor(((i + 0.5) * group.length) / count),
+        );
+        let best = middle;
+        let bestCost = Infinity;
+        for (let j = start; j < end && j < group.length; j++) {
+          const level = group[j].energyLevel;
+          const gap =
+            level == null ? 0 : Math.max(0, band.min - level, level - band.max);
+          const cost = gap * 10 + Math.abs(j - middle) * 0.1;
+          if (cost < bestCost) {
+            bestCost = cost;
+            best = j;
+          }
+        }
+        keep.add(best);
+      }
+      if (phaseIndex === 0) keep.add(0);
+      if (phaseIndex === PHASES.length - 1) keep.add(group.length - 1);
+      group.forEach((track, index) => {
+        if (protectedIds.has(track.id) || excluded.has(track.id)) return;
+        if (!keep.has(index)) moveIds.add(track.id);
+      });
+    });
+
+    for (let guard = 0; guard < performance.length; guard++) {
+      const kept = performance.filter((track) => !moveIds.has(track.id));
+      const total = kept.reduce((sum, track) => sum + spanOf(track), 0);
+      if (total <= targetMs * 1.05) break;
+      let pick: SetTrack | null = null;
+      let worst = 0;
+      for (const phase of PHASES) {
+        const group = kept.filter((track) => track.phase === phase.id);
+        if (group.length < 2) continue;
+        const ratio =
+          group.reduce((sum, track) => sum + spanOf(track), 0) /
+          (targetMs * phase.share);
+        if (ratio <= worst) continue;
+        const band = PHASE_ENERGY[phase.id];
+        const removable = group.filter(
+          (track) =>
+            track.id !== performance[0].id &&
+            track.id !== performance[performance.length - 1].id &&
+            !protectedIds.has(track.id) &&
+            !excluded.has(track.id),
+        );
+        if (!removable.length) continue;
+        const gapOf = (track: SetTrack) =>
+          track.energyLevel == null
+            ? 0
+            : Math.max(0, band.min - track.energyLevel, track.energyLevel - band.max);
+        pick = [...removable].sort(
+          (a, b) =>
+            gapOf(b) - gapOf(a) ||
+            Math.abs(group.indexOf(a) - (group.length - 1) / 2) -
+              Math.abs(group.indexOf(b) - (group.length - 1) / 2),
+        )[0];
+        worst = ratio;
+      }
+      if (!pick) break;
+      moveIds.add(pick.id);
     }
-    if (!pick) break;
-    moveIds.add(pick.id);
-    next = placed(moveIds);
+
+    working = demote(draft, moveIds);
+    // Role assignment can put time back; keep demoting until inside the brief.
+    for (
+      let guard = 0;
+      playingMs(working) > targetMs * 1.05 && guard < performance.length;
+      guard++
+    ) {
+      const kept = working.tracks.filter((track) => track.role !== "safety");
+      let pick: SetTrack | null = null;
+      let worst = 0;
+      for (const phase of PHASES) {
+        const group = kept.filter((track) => track.phase === phase.id);
+        if (group.length < 2) continue;
+        const ratio =
+          group.reduce((sum, track) => sum + spanOf(track), 0) /
+          (targetMs * phase.share);
+        if (ratio <= worst) continue;
+        const band = PHASE_ENERGY[phase.id];
+        const removable = group.filter(
+          (track) =>
+            track.id !== performance[0]?.id &&
+            track.id !== performance[performance.length - 1]?.id &&
+            !protectedIds.has(track.id) &&
+            !excluded.has(track.id),
+        );
+        if (!removable.length) continue;
+        const gapOf = (track: SetTrack) =>
+          track.energyLevel == null
+            ? 0
+            : Math.max(0, band.min - track.energyLevel, track.energyLevel - band.max);
+        pick = [...removable].sort(
+          (a, b) =>
+            gapOf(b) - gapOf(a) ||
+            Math.abs(group.indexOf(a) - (group.length - 1) / 2) -
+              Math.abs(group.indexOf(b) - (group.length - 1) / 2),
+        )[0];
+        worst = ratio;
+      }
+      if (!pick) break;
+      moveIds.add(pick.id);
+      working = demote(draft, moveIds);
+    }
   }
 
-  const keptTracks = next.tracks.filter((track) => track.role !== "safety");
-  const restore: TrimRestore[] = [];
+  // Snapshot demotions against the original draft for undo.
   draft.tracks.forEach((track, index) => {
     if (!moveIds.has(track.id)) return;
     restore.push({
@@ -1001,14 +1074,176 @@ export function fitToSlot(draft: SetDraft, t: Translate = tDe): SlotFitResult {
       why: track.why,
     });
   });
+
+  // Refill only when we started under the slot. After a trim that began over,
+  // do not pull the just-demoted tracks straight back into the performance.
+  const afterTrimMs = playingMs(working);
+  if (beforeMs < targetMs && afterTrimMs < targetMs) {
+    const softCap = targetMs * 1.06;
+    const filled = fillUnderSlot(working, {
+      targetMs,
+      softCap,
+      spanOf,
+      excluded,
+      t,
+      onAdd: (snapshot) => {
+        addedIds.add(snapshot.id);
+        restore.push(snapshot);
+      },
+    });
+    working = filled;
+  }
+
+  // Never leave excluded ids in the performance after fill.
+  const stray = working.tracks.filter(
+    (track) => track.role !== "safety" && excluded.has(track.id),
+  );
+  if (stray.length) {
+    for (const track of stray) moveIds.add(track.id);
+    working = demote(working, new Set(stray.map((track) => track.id)));
+  }
+
+  const keptTracks = working.tracks.filter((track) => track.role !== "safety");
+  const unchanged = moveIds.size === 0 && addedIds.size === 0;
+  if (unchanged) {
+    return {
+      draft,
+      kept: keptTracks.length,
+      moved: 0,
+      added: 0,
+      beforeMs,
+      afterMs: beforeMs,
+      restore: [],
+    };
+  }
+
   return {
-    draft: next,
+    draft: applySetAnchors(working),
     kept: keptTracks.length,
     moved: moveIds.size,
+    added: addedIds.size,
     beforeMs,
-    afterMs: playingMs(next),
+    afterMs: playingMs(working),
     restore,
   };
+}
+
+function poolTrackAsSetTrack(
+  track: SourcePoolTrack,
+  phase: SetPhaseId,
+  t: Translate,
+): SetTrack {
+  return {
+    id: track.id,
+    name: track.name,
+    artists: track.artists,
+    album: track.album,
+    durationMs: track.durationMs,
+    uri: track.uri,
+    externalUrl: track.externalUrl,
+    imageUrl: track.imageUrl,
+    phase,
+    role: "groove",
+    transition: "unset",
+    bpm: track.bpm || track.catalogBpm || "",
+    keyCamelot: track.keyCamelot || track.catalogKey || "",
+    energy: track.energy,
+    energyLevel: track.energyLevel,
+    energySource: track.energySource,
+    filePath: track.filePath,
+    source: track.source,
+    note: "",
+    why: t("analysis.why.filled"),
+    safetyAlt: "",
+  };
+}
+
+/**
+ * Promote Alternativen, then unused sourcePool tracks, until playing time
+ * reaches the slot (soft cap like packTracks). Never casts excluded ids.
+ */
+function fillUnderSlot(
+  draft: SetDraft,
+  opts: {
+    targetMs: number;
+    softCap: number;
+    spanOf: (track: Pick<SetTrack, "durationMs" | "transition" | "overlapMs">) => number;
+    excluded: Set<string>;
+    t: Translate;
+    onAdd: (snapshot: TrimRestore) => void;
+  },
+): SetDraft {
+  let next = draft;
+  let added = 0;
+  const { targetMs, softCap, spanOf, excluded, t, onAdd } = opts;
+
+  const playing = () =>
+    next.tracks
+      .filter((track) => track.role !== "safety")
+      .reduce((sum, track) => sum + spanOf(track), 0);
+
+  for (let guard = 0; guard < 80 && playing() < targetMs; guard++) {
+    const inSet = new Set(next.tracks.map((track) => track.id));
+    const performance = next.tracks.filter((track) => track.role !== "safety");
+    const safeties = next.tracks.filter((track) => track.role === "safety");
+
+    const alt = safeties.find((track) => !excluded.has(track.id));
+    let candidate: SetTrack | null = null;
+    let fromAltIndex = -1;
+
+    if (alt) {
+      fromAltIndex = next.tracks.findIndex((track) => track.id === alt.id);
+      candidate = {
+        ...alt,
+        role: "groove",
+        why: t("analysis.why.filled"),
+      };
+    } else {
+      const poolHit = (next.sourcePool ?? []).find(
+        (track) => !inSet.has(track.id) && !excluded.has(track.id),
+      );
+      if (!poolHit) break;
+      const phase = bestPhaseFor(
+        {
+          phase: "lift",
+          bpm: poolHit.bpm || poolHit.catalogBpm || "",
+          keyCamelot: poolHit.keyCamelot || poolHit.catalogKey || "",
+          energyLevel: poolHit.energyLevel,
+        },
+        performance,
+      );
+      candidate = poolTrackAsSetTrack(poolHit, phase, t);
+    }
+
+    if (!candidate) break;
+    const span = spanOf(candidate);
+    const current = playing();
+    if (current + span > softCap && current >= targetMs * 0.9) break;
+
+    onAdd({
+      id: candidate.id,
+      role: "safety",
+      phase: alt?.phase ?? candidate.phase,
+      index: fromAltIndex >= 0 ? fromAltIndex : next.tracks.length,
+      why: alt?.why ?? "",
+    });
+    added += 1;
+
+    if (alt) {
+      const promoted = candidate;
+      const others = next.tracks.filter((track) => track.id !== promoted.id);
+      const perf = others.filter((track) => track.role !== "safety");
+      const rest = others.filter((track) => track.role === "safety");
+      next = { ...next, tracks: [...perf, promoted, ...rest] };
+    } else {
+      const perf = next.tracks.filter((track) => track.role !== "safety");
+      const rest = next.tracks.filter((track) => track.role === "safety");
+      next = { ...next, tracks: [...perf, candidate, ...rest] };
+    }
+  }
+
+  if (!added) return draft;
+  return distributeRoles(next, t);
 }
 
 /**

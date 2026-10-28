@@ -10,6 +10,7 @@ type ActionIconName =
   | "opener"
   | "closer"
   | "pin"
+  | "exclude"
   | "rehearse"
   | "remove";
 
@@ -71,6 +72,12 @@ export function ActionIcon({ name }: { name: ActionIconName }) {
         <path d="M9 10.5 12 4l3 6.5" />
         <path d="M8 10.5h8" />
         <path d="M12 10.5V20" />
+      </>
+    ),
+    exclude: (
+      <>
+        <circle cx="12" cy="12" r="7.25" />
+        <path d="M8 8l8 8" />
       </>
     ),
     rehearse: (

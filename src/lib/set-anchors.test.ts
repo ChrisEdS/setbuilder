@@ -6,6 +6,7 @@ import {
   pinCloser,
   pinOpener,
   placeInPerformance,
+  toggleExclude,
   toggleKeepPin,
   suggestCloserId,
   suggestOpenerId,
@@ -249,4 +250,45 @@ test("applySetAnchors never duplicates a one-track set as opener and closer", ()
   assert.equal(next.tracks[0].id, "solo");
   assert.equal(next.openerId, "solo");
   assert.equal(next.closerId, "solo");
+});
+
+test("exclude demotes a performance track and clears pins on that id", () => {
+  const draft = {
+    ...DEFAULT_SET,
+    openerId: "a",
+    closerId: "c",
+    pinnedIds: ["b"],
+    tracks: [
+      track("a", { phase: "open" }),
+      track("b", { phase: "peak" }),
+      track("c", { phase: "release" }),
+    ],
+  };
+  const excluded = toggleExclude(draft, "b", "raus");
+  assert.deepEqual(excluded.excludedIds, ["b"]);
+  assert.equal(excluded.pinnedIds, undefined);
+  assert.equal(excluded.tracks.find((item) => item.id === "b")?.role, "safety");
+  assert.equal(excluded.tracks.find((item) => item.id === "b")?.why, "raus");
+  assert.equal(excluded.openerId, "a");
+
+  const cleared = toggleExclude(
+    { ...draft, excludedIds: ["a"], openerId: null },
+    "a",
+  );
+  // Toggling exclude off leaves the track where it is.
+  assert.equal(cleared.excludedIds, undefined);
+
+  const pinned = toggleKeepPin(
+    { ...draft, pinnedIds: undefined, excludedIds: ["b"] },
+    "b",
+  );
+  assert.equal(pinned.excludedIds, undefined);
+  assert.deepEqual(pinned.pinnedIds, ["b"]);
+
+  const opened = pinOpener(
+    { ...draft, openerId: null, pinnedIds: undefined, excludedIds: ["b"] },
+    "b",
+  );
+  assert.equal(opened.excludedIds, undefined);
+  assert.equal(opened.openerId, "b");
 });

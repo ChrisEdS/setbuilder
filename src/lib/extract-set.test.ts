@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  canFillDraft,
   canReshuffleDraft,
   distributeRoles,
   extractSetFromPlaylist,
@@ -10,6 +11,7 @@ import {
 } from "./extract-set.ts";
 import { tEn } from "./i18n/core.ts";
 import { DEFAULT_SET, playedDurationMs, playedTotalMs, trackPlayedMs } from "./set.ts";
+import type { SetTrack, SourcePoolTrack } from "./set.ts";
 import type { SpotifyTrack } from "./spotify.ts";
 
 const mk = (i: number, phase: string, energy?: number) => ({
@@ -275,4 +277,113 @@ test("canReshuffleDraft is false without a usable pool", () => {
   // Two tracks both fit a 60-min soft pack of at least 8? Actually pack takes
   // both; pool size == performance → cannot reshuffle for a different cast.
   assert.equal(canReshuffleDraft(tiny), false);
+});
+
+function poolRow(i: number, over: Partial<SourcePoolTrack> = {}): SourcePoolTrack {
+  return {
+    id: `pool${i}`,
+    name: `Pool ${i}`,
+    artists: ["P"],
+    album: "",
+    durationMs: 5 * 60_000,
+    uri: "",
+    externalUrl: "",
+    imageUrl: null,
+    bpm: "124",
+    keyCamelot: "8A",
+    ...over,
+  };
+}
+
+test("slot fit fills underflow from Alternatives then the pool", () => {
+  const performance = [
+    mk(0, "open", 3),
+    mk(1, "peak", 8),
+    mk(2, "release", 4),
+  ];
+  const alt = { ...mk(3, "lift", 5), role: "safety" as const, why: "plan b" };
+  const draft: any = {
+    ...DEFAULT_SET,
+    durationMinutes: 60,
+    tracks: [...performance, alt],
+    sourcePool: [poolRow(10), poolRow(11), poolRow(12), poolRow(13), poolRow(14)],
+  };
+  assert.ok(canFillDraft(draft));
+  const before = playedTotalMs(performance, draft.blendMs);
+  assert.ok(before < 60 * 60_000);
+  const fitted = fitToSlot(draft);
+  assert.ok(fitted.added > 0);
+  assert.equal(fitted.moved, 0);
+  assert.ok(fitted.afterMs > fitted.beforeMs);
+  assert.ok(fitted.afterMs <= 60 * 60_000 * 1.06);
+  const perf = fitted.draft.tracks.filter((track: SetTrack) => track.role !== "safety");
+  assert.ok(perf.some((track: SetTrack) => track.id === "t3"), "alt promoted");
+  assert.ok(
+    perf.some((track: SetTrack) => track.id.startsWith("pool")),
+    "pool used after alts",
+  );
+});
+
+test("slot fit still demotes overflow and never casts excluded ids", () => {
+  const energies = [3, 5, 4, 5, 6, 5, 6, 7, 8, 6, 7, 9, 5, 9, 8, 4, 5, 4, 6];
+  const phases = [
+    "open", "open", "open", "lift", "lift", "lift", "rise", "rise", "rise", "rise",
+    "peak", "peak", "peak", "peak", "peak", "peak", "release", "release", "release",
+  ];
+  const tracks = energies.map((energy, index) => mk(index, phases[index], energy));
+  const draft: any = {
+    ...DEFAULT_SET,
+    durationMinutes: 60,
+    tracks,
+    excludedIds: ["t5", "t12"],
+  };
+  const fitted = fitToSlot(draft);
+  assert.ok(fitted.moved > 0 || fitted.added === 0);
+  const perf = fitted.draft.tracks.filter((track: SetTrack) => track.role !== "safety");
+  assert.ok(!perf.some((track: SetTrack) => track.id === "t5"));
+  assert.ok(!perf.some((track: SetTrack) => track.id === "t12"));
+  assert.ok(fitted.afterMs <= 60 * 60_000 * 1.05);
+});
+
+test("slot fill skips excluded Alternatives and pool tracks", () => {
+  const performance = [mk(0, "open", 3), mk(1, "release", 4)];
+  const altOk = { ...mk(2, "lift", 5), role: "safety" as const };
+  const altNo = { ...mk(3, "peak", 8), role: "safety" as const };
+  const draft: any = {
+    ...DEFAULT_SET,
+    durationMinutes: 45,
+    tracks: [...performance, altOk, altNo],
+    excludedIds: ["t3", "pool9"],
+    sourcePool: [poolRow(9), poolRow(8), poolRow(7)],
+  };
+  const fitted = fitToSlot(draft);
+  const perf = fitted.draft.tracks.filter((track: SetTrack) => track.role !== "safety");
+  assert.ok(perf.some((track: SetTrack) => track.id === "t2"));
+  assert.ok(!perf.some((track: SetTrack) => track.id === "t3"));
+  assert.ok(!perf.some((track: SetTrack) => track.id === "pool9"));
+});
+
+test("reshuffleDraftFromPool never casts excluded ids into the performance", () => {
+  const crate = Array.from({ length: 40 }, (_, i) => spotifyTrack(i));
+  let draft = extractSetFromPlaylist(crate, "Excluded Night", {
+    durationMinutes: 45,
+  });
+  const performance = draft.tracks.filter((track) => track.role !== "safety");
+  const ban = performance[Math.floor(performance.length / 2)]?.id;
+  assert.ok(ban);
+  draft = { ...draft, excludedIds: [ban] };
+  const next = reshuffleDraftFromPool(draft, tEn, () => 0.5);
+  const nextPerf = next.tracks.filter((track) => track.role !== "safety");
+  assert.ok(!nextPerf.some((track) => track.id === ban));
+  assert.deepEqual(next.excludedIds, [ban]);
+});
+
+test("canFillDraft is false without Alternatives or unused pool", () => {
+  assert.equal(canFillDraft({ ...DEFAULT_SET, tracks: [] }), false);
+  const onlyPerf = {
+    ...DEFAULT_SET,
+    tracks: [mk(0, "open"), mk(1, "release")],
+    sourcePool: undefined,
+  };
+  assert.equal(canFillDraft(onlyPerf), false);
 });

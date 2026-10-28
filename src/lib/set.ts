@@ -150,6 +150,11 @@ export type SetDraft = {
    * They still move freely when the set is sorted. Opener and closer are not listed here.
    */
   pinnedIds?: string[];
+  /**
+   * Tracks that must stay out of the performance through trim, refill and reshuffle.
+   * Mutually exclusive with opener/closer/mid-pins. May sit in Alternatives.
+   */
+  excludedIds?: string[];
   durationMinutes: number;
   /** How much of each track's end is the blend into the next one. */
   blendMs: number;

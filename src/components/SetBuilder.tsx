@@ -142,7 +142,9 @@ import {
   clearOpener,
   pinCloser,
   pinOpener,
+  normalizeExcludedIds,
   placeInPerformance,
+  toggleExclude,
   toggleKeepPin,
   withoutEndPins,
 } from "@/lib/set-anchors";
@@ -1625,6 +1627,7 @@ export function SetBuilder() {
           )
         : current.sourcePool;
       const demoted = patch.role === "safety";
+      const promoted = patch.role && patch.role !== "safety";
       return {
         ...current,
         openerId: demoted && current.openerId === id ? null : current.openerId,
@@ -1632,6 +1635,9 @@ export function SetBuilder() {
         pinnedIds: demoted
           ? withoutEndPins(current.pinnedIds?.filter((item) => item !== id), null, null)
           : current.pinnedIds,
+        excludedIds: promoted
+          ? normalizeExcludedIds(current.excludedIds?.filter((item) => item !== id))
+          : current.excludedIds,
         tracks,
         sourcePool,
       };
@@ -1645,6 +1651,7 @@ export function SetBuilder() {
       openerId: current.openerId === id ? null : current.openerId,
       closerId: current.closerId === id ? null : current.closerId,
       pinnedIds: withoutEndPins(current.pinnedIds?.filter((item) => item !== id), null, null),
+      excludedIds: normalizeExcludedIds(current.excludedIds?.filter((item) => item !== id)),
       tracks: current.tracks.filter((track) => track.id !== id),
     }));
   }
@@ -1842,6 +1849,12 @@ export function SetBuilder() {
           openerId,
           closerId,
         ),
+        // Replacement enters the performance — drop exclude on both ids.
+        excludedIds: normalizeExcludedIds(
+          current.excludedIds?.filter(
+            (item) => item !== targetId && item !== replacementId,
+          ),
+        ),
         tracks,
       };
     });
@@ -1870,6 +1883,9 @@ export function SetBuilder() {
           current.pinnedIds?.map((item) => (item === targetId ? incoming.id : item)),
           openerId,
           closerId,
+        ),
+        excludedIds: normalizeExcludedIds(
+          current.excludedIds?.filter((item) => item !== targetId && item !== incoming.id),
         ),
         tracks,
       };
@@ -2557,22 +2573,45 @@ export function SetBuilder() {
   function fitSlot() {
     setDraft((current) => {
       const result = fitToSlot(current, t);
-      if (!result.moved) {
-        // Nothing moved: either it fits, or only untouchable tracks are left (first, last, one per phase).
-        setStatus(
-          t(result.beforeMs > targetMs * 1.05 ? "builder.status.fitStuck" : "builder.status.fits"),
-        );
+      const under = result.beforeMs < current.durationMinutes * 60_000;
+      if (!result.moved && !result.added) {
+        if (result.beforeMs > targetMs * 1.05) {
+          setStatus(t("builder.status.fitStuck"));
+        } else if (under) {
+          setStatus(t("builder.status.fillStuck"));
+        } else {
+          setStatus(t("builder.status.fits"));
+        }
         return current;
       }
-      setTrimUndo(result.restore);
-      setStatus(
-        t("builder.status.trimmed", {
-          before: formatDuration(result.beforeMs),
-          after: formatDuration(result.afterMs),
-          kept: trackCount(result.kept, t),
-          moved: trackCount(result.moved, t),
-        }),
-      );
+      setTrimUndo(result.restore.length ? result.restore : null);
+      if (result.moved && result.added) {
+        setStatus(
+          t("builder.status.fitAdjusted", {
+            before: formatDuration(result.beforeMs),
+            after: formatDuration(result.afterMs),
+            moved: trackCount(result.moved, t),
+            added: trackCount(result.added, t),
+          }),
+        );
+      } else if (result.added) {
+        setStatus(
+          t("builder.status.filled", {
+            before: formatDuration(result.beforeMs),
+            after: formatDuration(result.afterMs),
+            added: trackCount(result.added, t),
+          }),
+        );
+      } else {
+        setStatus(
+          t("builder.status.trimmed", {
+            before: formatDuration(result.beforeMs),
+            after: formatDuration(result.afterMs),
+            kept: trackCount(result.kept, t),
+            moved: trackCount(result.moved, t),
+          }),
+        );
+      }
       return result.draft;
     });
   }
@@ -2848,35 +2887,37 @@ export function SetBuilder() {
               }
             />
           </label>
-          <label>
-            <span>{t("builder.brief.duration")}</span>
-            <input
-              type="number"
-              min={MIN_DURATION}
-              max={MAX_DURATION}
-              inputMode="numeric"
-              value={durationText ?? draft.durationMinutes}
-              onChange={(e) => {
-                // Let the field go empty while typing; the draft follows valid values.
-                const text = e.target.value;
-                setDurationText(text);
-                const minutes = Number(text);
-                if (text && Number.isFinite(minutes) && minutes >= MIN_DURATION && minutes <= MAX_DURATION) {
-                  setDraft((c) => ({ ...c, durationMinutes: minutes }));
-                }
-              }}
-              onBlur={() => {
-                const minutes = Number(durationText);
-                if (durationText !== null && durationText !== "" && Number.isFinite(minutes)) {
-                  const clamped = Math.min(MAX_DURATION, Math.max(MIN_DURATION, Math.round(minutes)));
-                  if (clamped !== draft.durationMinutes) {
-                    setDraft((c) => ({ ...c, durationMinutes: clamped }));
+          <Tip text={t("builder.brief.durationHint")}>
+            <label>
+              <span>{t("builder.brief.duration")}</span>
+              <input
+                type="number"
+                min={MIN_DURATION}
+                max={MAX_DURATION}
+                inputMode="numeric"
+                value={durationText ?? draft.durationMinutes}
+                onChange={(e) => {
+                  // Let the field go empty while typing; the draft follows valid values.
+                  const text = e.target.value;
+                  setDurationText(text);
+                  const minutes = Number(text);
+                  if (text && Number.isFinite(minutes) && minutes >= MIN_DURATION && minutes <= MAX_DURATION) {
+                    setDraft((c) => ({ ...c, durationMinutes: minutes }));
                   }
-                }
-                setDurationText(null);
-              }}
-            />
-          </label>
+                }}
+                onBlur={() => {
+                  const minutes = Number(durationText);
+                  if (durationText !== null && durationText !== "" && Number.isFinite(minutes)) {
+                    const clamped = Math.min(MAX_DURATION, Math.max(MIN_DURATION, Math.round(minutes)));
+                    if (clamped !== draft.durationMinutes) {
+                      setDraft((c) => ({ ...c, durationMinutes: clamped }));
+                    }
+                  }
+                  setDurationText(null);
+                }}
+              />
+            </label>
+          </Tip>
           <label>
             <span>{t("builder.brief.blend")}</span>
             <select
@@ -3607,16 +3648,23 @@ export function SetBuilder() {
               onWrite={() => void writeEnergyToFiles()}
             />
             <Tip
-              text={t(plannedJoins ? "builder.tool.fitTipPlan" : "builder.tool.fitTip", {
-                mix: formatDuration(blendMs),
-              })}
-              disabled={filledMs <= targetMs * 1.05}
+              text={t(
+                filledMs < targetMs
+                  ? "builder.tool.fitTipUnder"
+                  : plannedJoins
+                    ? "builder.tool.fitTipPlan"
+                    : "builder.tool.fitTip",
+                { mix: formatDuration(blendMs) },
+              )}
             >
               <button
                 type="button"
                 className="btn ghost"
                 onClick={fitSlot}
-                disabled={filledMs <= targetMs * 1.05}
+                disabled={
+                  draft.tracks.length === 0 ||
+                  (filledMs <= targetMs * 1.05 && filledMs >= targetMs)
+                }
               >
                 {t("builder.tool.fit")}
               </button>
@@ -3852,7 +3900,8 @@ export function SetBuilder() {
                         </button>
                         {draft.openerId === track.id ||
                         draft.closerId === track.id ||
-                        draft.pinnedIds?.includes(track.id) ? (
+                        draft.pinnedIds?.includes(track.id) ||
+                        draft.excludedIds?.includes(track.id) ? (
                           <span className="anchor-pills">
                             {draft.openerId === track.id ? (
                               <Tip text={t("builder.row.openerBadgeTip")}>
@@ -3869,9 +3918,16 @@ export function SetBuilder() {
                               </Tip>
                             ) : null}
                             {draft.pinnedIds?.includes(track.id) ? (
-                              <Tip text={t("builder.row.pinBadgeTip")} end>
+                              <Tip text={t("builder.row.pinBadgeTip")}>
                                 <em className="anchor-pill is-pin">
                                   {t("builder.row.pinBadge")}
+                                </em>
+                              </Tip>
+                            ) : null}
+                            {draft.excludedIds?.includes(track.id) ? (
+                              <Tip text={t("builder.row.excludeBadgeTip")} end>
+                                <em className="anchor-pill is-exclude">
+                                  {t("builder.row.excludeBadge")}
                                 </em>
                               </Tip>
                             ) : null}
@@ -4160,6 +4216,48 @@ export function SetBuilder() {
                               }}
                             >
                               <ActionIcon name="pin" />
+                            </button>
+                          </Tip>
+                          <Tip
+                            text={
+                              draft.excludedIds?.includes(track.id)
+                                ? t("builder.row.clearExcludeTip")
+                                : t("builder.row.setExcludeTitle")
+                            }
+                          >
+                            <button
+                              type="button"
+                              className={
+                                draft.excludedIds?.includes(track.id)
+                                  ? "icon-action is-exclude"
+                                  : "icon-action"
+                              }
+                              aria-label={
+                                draft.excludedIds?.includes(track.id)
+                                  ? t("builder.row.clearExclude")
+                                  : t("builder.row.setExclude")
+                              }
+                              aria-pressed={Boolean(draft.excludedIds?.includes(track.id))}
+                              onClick={() => {
+                                const wasExcluded = draft.excludedIds?.includes(track.id);
+                                setDraft((current) =>
+                                  toggleExclude(
+                                    current,
+                                    track.id,
+                                    t("analysis.why.excluded"),
+                                  ),
+                                );
+                                setStatus(
+                                  t(
+                                    wasExcluded
+                                      ? "builder.status.excludeCleared"
+                                      : "builder.status.excluded",
+                                    { name: track.name },
+                                  ),
+                                );
+                              }}
+                            >
+                              <ActionIcon name="exclude" />
                             </button>
                           </Tip>
                           <Tip text={t("builder.row.removeTip")} end>

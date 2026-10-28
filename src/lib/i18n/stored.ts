@@ -31,6 +31,8 @@ export const WHY_KEYS = [
   "analysis.why.peakSignature",
   "analysis.why.safetyNet",
   "analysis.why.trimmed",
+  "analysis.why.excluded",
+  "analysis.why.filled",
   "analysis.why.replacementFor",
   "analysis.why.replacedBy",
   "analysis.why.manual",
