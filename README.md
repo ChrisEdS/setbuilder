@@ -4,7 +4,7 @@
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
 
-**Version 4.4.1** · Out of the playlist.
+**Version 4.5.0** · Out of the playlist.
 
 The stick is the material. You draw the arc, set the join, and hear if it holds.
 
@@ -13,7 +13,7 @@ Before the gig, the room is quiet. SETBUILDER is that room. You arrive with a re
 ## What you take with you
 
 - 🎚️ **A night with a shape.** Open, lift, peak, release. You see where there is still air and where it is already full.
-- ⏱️ **The night fitted to the slot.** Too long, it cuts. Too short — a song you took out, or a longer slot — it fills from the alternatives, then the playlist you loaded.
+- ⏱️ **The night fitted to the slot.** Too long, it cuts. Too short, **Fill with best matches** adds tracks that fit key, BPM, and energy — alternatives first, then the playlist you loaded. Sorting brings the other alternatives back into the night. A song you marked out stays out.
 - 🔑 **Keys that talk to each other.** Camelot along the set. A clash shows up while you still have time.
 - ⚡ **Energy that belongs to the song.** Read from the file, measured, or set by you. It sits on the track once it is real, and on the sheet and the copied text when you know it.
 - 📌 **Pins that stay in the set.** Opener and closer hold the ends. Mid pins survive fit to slot and Different songs, and still move when you sort.

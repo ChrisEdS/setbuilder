@@ -2,9 +2,9 @@
 
 **Deutsch** · [English](GUIDE.md) · [README](../README.de.md)
 
-So bereitest du ein Set mit rekordbox vor: Bibliothek verbinden und verstehen → bauen → exportieren. Die Screenshots zeigen ein in der App geöffnetes Set. Die Bilder sind von 4.0. Der Text beschreibt 4.4.1, einschließlich Bibliotheksfilter, die Phasenzeile, Pins und Ausschluss, Auf Slot setzen, und Energie in der Details-Zeile und auf dem Kabinenzettel.
+So bereitest du ein Set mit rekordbox vor: Bibliothek verbinden und verstehen → bauen → exportieren. Die Screenshots zeigen ein in der App geöffnetes Set. Die Bilder sind von 4.0. Der Text beschreibt 4.5.0, einschließlich Bibliotheksfilter, die Phasenzeile, Pins und Ausschluss, Auf Slot setzen, und Energie in der Details-Zeile und auf dem Kabinenzettel.
 
-Die ausgelieferte App ist die Desktop-App (Port **4317**). Die Browser-Entwicklung nutzt Port **4327**. Dieses Dokument beschreibt **4.4.1**. Stick-Schreiben, Player und Streaming-Konten sind weiter ungeprüft.
+Die ausgelieferte App ist die Desktop-App (Port **4317**). Die Browser-Entwicklung nutzt Port **4327**. Dieses Dokument beschreibt **4.5.0**. Stick-Schreiben, Player und Streaming-Konten sind weiter ungeprüft.
 
 > **Vor dem Gig:** Stick immer am echten Player testen (Playlist sichtbar, Tracks spielbar). Backup behalten — SETBUILDER schreibt in `export.pdb` und legt Kopien unter `SETBUILDER-Backup/` ab, für deine Medien bist du selbst verantwortlich. Keine Garantie. Works on my machine. :)
 
@@ -73,7 +73,7 @@ Der Vorhör-Player ist eine kompakte schwebende Karte. Am Titelstreifen ziehen; 
 
 - **Andere Songs:** ein kurzes Menü zwischen Sortieren und Energie. **Andere Tracks** nutzt denselben Pool wie früher (den Playlist-Pool, sonst die Stick-Bibliothek). **Aus der Playlist**, **Aus der Collection** und **Aus der History** nehmen diese geladene Quelle. Ein Eintrag bleibt sichtbar und ist deaktiviert, mit kurzer Begründung, wenn sein Pool nicht geladen ist. Vorher die Rückfrage; Opener, Closer und Mittel-Pins bleiben in der neuen Ziehung, ausgeschlossene Tracks bleiben draußen, Notizen gehen verloren.
 - **Energie aus Dateien:** mit Stick-Dateien Tags lesen, fehlende messen, alle neu berechnen oder gesetzte Level ausdrücklich in MP3 schreiben. Messen schreibt keine Dateien. Ohne Stick zeigt das Menü diese Voraussetzung und **Stick wählen**. Ohne Dateipfade steht die Voraussetzung statt vier leerer Aktionen.
-- **Auf Slot setzen:** kürzt die Performance, wenn sie über dem Slot liegt, und füllt sie, wenn sie unter dem Slot gestartet ist — Tracks, die du entfernt hast, oder ein längerer Slot. Gefüllt wird zuerst aus Alternativen, dann aus der Playlist, die am Set hängt. Ein Setzen, das über dem Slot startet, kürzt nur. Ausgeschlossene Tracks bleiben draußen. Opener, Closer und Mittel-Pins bleiben drin. Ist nichts mehr zum Nachlegen da, sagt das der Status. Ein Rückgängig holt die Tracks, die rausgewandert oder dazugekommen sind, in Rolle, Phase und Platz zurück. Ein zweites Setzen ersetzt diese Momentaufnahme.
+- **Auf Slot setzen:** kürzt die Performance, wenn sie über dem Slot liegt. Ein Setzen, das über dem Slot startet, kürzt nur. **Mit besten Matches füllen** ist die eigene Aktion, wenn das Set zu kurz ist: sie legt Tracks nach, die zu Key, BPM und Energie passen, zuerst Alternativen, dann die Playlist am Set, bis der Slot voll ist. Ausgeschlossene Tracks bleiben draußen. Opener, Closer und Mittel-Pins bleiben drin. Qualifiziert sich nichts, sagt das der Status. Sortieren holt nicht ausgeschlossene Alternativen zurück in die Performance und kürzt das Set nicht auf den Slot. Ein Rückgängig holt die Tracks, die rausgewandert oder dazugekommen sind, in Rolle, Phase und Platz zurück. Ein zweites Setzen ersetzt diese Momentaufnahme.
 - **Rollen verteilen:** Anchor auf den stärksten Peak-Tracks und den Schluss, Bridge bei Phasenwechsel, Key-Clash, BPM- oder Energie-Sprung, sonst Groove
 - **Spotify-Links suchen:** sucht zu Tracks ohne Link einen Spotify-Treffer, damit du sie im Set vorhören kannst (braucht die Spotify-Zugangsdaten, siehe [Setup im README](../README.de.md#setup)). Der rekordbox-Export bleibt davon unberührt.
 

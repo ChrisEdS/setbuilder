@@ -4,7 +4,7 @@
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
 
-**Version 4.4.1** · Raus aus der Playlist.
+**Version 4.5.0** · Raus aus der Playlist.
 
 Der Stick ist das Material. Du ziehst den Bogen, setzt den Anschluss und hörst, ob er trägt.
 
@@ -13,7 +13,7 @@ Vor dem Gig ist es still. SETBUILDER ist dieser Raum. Du kommst mit einem rekord
 ## Was du mitnimmst
 
 - 🎚️ **Eine Nacht mit Form.** Open, Lift, Peak, Release. Du siehst, wo noch Luft ist und wo es schon voll ist.
-- ⏱️ **Die Nacht auf den Slot.** Zu lang, sie wird kürzer. Zu kurz — ein Song, den du rausgenommen hast, oder ein längerer Slot — sie füllt sich aus den Alternativen, dann aus der geladenen Playlist.
+- ⏱️ **Die Nacht auf den Slot.** Zu lang, sie wird kürzer. Zu kurz legt **Mit besten Matches füllen** Tracks nach, die zu Key, BPM und Energie passen — zuerst Alternativen, dann die geladene Playlist. Sortieren holt die übrigen Alternativen zurück in die Nacht. Ein Song, den du rausmarkiert hast, bleibt draußen.
 - 🔑 **Keys, die miteinander reden.** Camelot entlang des Sets. Ein Clash fällt auf, solange du noch Zeit hast.
 - ⚡ **Energie, die zum Song gehört.** Aus der Datei gelesen, gemessen oder von dir gesetzt. Sie steht am Track, sobald sie fest ist, und auf dem Zettel und im kopierten Text, wenn du sie kennst.
 - 📌 **Pins, die im Set bleiben.** Opener und Closer halten die Enden. Mittel-Pins überstehen Auf Slot setzen und Andere Songs und wandern beim Sortieren mit.

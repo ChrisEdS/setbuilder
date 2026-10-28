@@ -2,9 +2,9 @@
 
 [Deutsch](GUIDE.de.md) · **English** · [README](../README.md)
 
-How to prepare a set with rekordbox: connect and understand the library → build → export. Screenshots show a set open in the app. The pictures are from 4.0. The words describe 4.4.1, including the library filters, the phase line, pins and exclude, fit to slot, and energy on the details line and the booth sheet.
+How to prepare a set with rekordbox: connect and understand the library → build → export. Screenshots show a set open in the app. The pictures are from 4.0. The words describe 4.5.0, including the library filters, the phase line, pins and exclude, fit to slot, and energy on the details line and the booth sheet.
 
-The shipping client is the desktop app (port **4317**). Browser development uses port **4327**. This document describes **4.4.1**. Stick write, players, and streaming accounts are still unverified.
+The shipping client is the desktop app (port **4317**). Browser development uses port **4327**. This document describes **4.5.0**. Stick write, players, and streaming accounts are still unverified.
 
 > **Before the gig:** Always test the stick on the actual player (playlist visible, tracks playable). Keep a backup — SETBUILDER writes to `export.pdb` and keeps copies under `SETBUILDER-Backup/`, but you are responsible for your media. No warranty. Works on my machine. :)
 
@@ -73,7 +73,7 @@ Preview plays in a compact floating card. Drag the title strip; pull the right e
 
 - **Different songs:** a short menu between Sort and Energy. **Different songs** uses the same pool as before (the playlist pool, otherwise the stick library). **From the playlist**, **From the collection**, and **From history** use that loaded source. An entry stays visible and is disabled, with a short reason, when its pool is not loaded. Confirms first; opener, closer, and mid-pins stay in the new draw, excluded tracks stay out, and notes are lost.
 - **Energy from files:** with stick files present, read tags, measure missing, recalculate all, or explicitly write known levels to MP3. Measuring does not write files. Without a stick, the menu shows that prerequisite and **Choose stick**. Without file paths, it shows that prerequisite instead of four empty actions.
-- **Fit to slot:** shortens the performance when it runs over the slot, and fills it when it started under — tracks you removed, or a longer slot. Fill takes Alternatives first, then the playlist stored with the set. A fit that starts over the slot only cuts. Excluded tracks stay out. Opener, closer, and mid-pins stay in. If nothing is left to add, the status says so. One undo puts the tracks that moved out or came in back at their previous role, phase, and place. A second fit replaces that snapshot.
+- **Fit to slot:** shortens the performance when it runs over the slot. A fit that starts over the slot only cuts. **Fill with best matches** is the separate action when the set is short: it adds tracks that fit key, BPM, and energy, Alternatives first, then the playlist stored with the set, until the slot is full. Excluded tracks stay out. Opener, closer, and mid-pins stay in. If nothing qualifies, the status says so. Sorting brings non-excluded Alternatives back into the performance and does not cut the set to the slot. One undo puts the tracks that moved out or came in back at their previous role, phase, and place. A second fit replaces that snapshot.
 - **Assign roles:** Anchor on the strongest Peak tracks and the closer, Bridge at a phase change, key clash, BPM or energy jump, otherwise Groove
 - **Find Spotify links:** looks up a Spotify match for tracks without a link so you can preview them in the set (needs the Spotify credentials, see [Setup in the README](../README.md#setup)). Your rekordbox export is unaffected.
 
