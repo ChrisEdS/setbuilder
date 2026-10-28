@@ -1,5 +1,14 @@
-const { app, BrowserWindow, Menu, dialog, shell, nativeImage, ipcMain } = require("electron");
-const { spawn, spawnSync } = require("child_process");
+const {
+  app,
+  BrowserWindow,
+  Menu,
+  dialog,
+  shell,
+  nativeImage,
+  ipcMain,
+  utilityProcess,
+} = require("electron");
+const { spawnSync } = require("child_process");
 const fs = require("fs");
 const http = require("http");
 const path = require("path");
@@ -63,6 +72,7 @@ app.setName("SETBUILDER");
 })();
 
 let mainWindow = null;
+/** @type {{ exitCode: number | null, killed: boolean, kill: () => boolean } | null} */
 let server = null;
 let serverLog = "";
 let updateReady = false;
@@ -318,11 +328,13 @@ function startServer() {
   fs.mkdirSync(dataDir(), { recursive: true });
   const logFile = path.join(app.getPath("userData"), "server.log");
   const log = fs.createWriteStream(logFile, { flags: "a" });
-  server = spawn(process.execPath, [entry], {
+  // Do not spawn(process.execPath) with ELECTRON_RUN_AS_NODE: on macOS that
+  // launches Contents/MacOS/SETBUILDER again and shows a naked "exec" Dock tile
+  // labeled SETBUILDER. utilityProcess runs via Helper (LSUIElement) instead.
+  const child = utilityProcess.fork(entry, [], {
     cwd: root,
     env: {
       ...process.env,
-      ELECTRON_RUN_AS_NODE: "1",
       NODE_ENV: "production",
       HOSTNAME: APP_HOST,
       PORT: String(PORT),
@@ -332,24 +344,40 @@ function startServer() {
       // Legacy env name still read by older server builds / docs.
       SETFORM_DATA_DIR: dataDir(),
     },
-    stdio: ["ignore", "pipe", "pipe"],
+    stdio: "pipe",
+    serviceName: "SETBUILDER Server",
   });
-  server.stdout.on("data", (chunk) => {
+  let exitCode = null;
+  let killed = false;
+  child.stdout?.on("data", (chunk) => {
     remember(chunk);
     log.write(chunk);
   });
-  server.stderr.on("data", (chunk) => {
+  child.stderr?.on("data", (chunk) => {
     remember(chunk);
     log.write(chunk);
   });
-  server.on("exit", (code) => {
-    if (code && code !== 0 && mainWindow && !mainWindow.isDestroyed()) {
+  child.on("exit", (code) => {
+    exitCode = typeof code === "number" ? code : 1;
+    if (exitCode && exitCode !== 0 && mainWindow && !mainWindow.isDestroyed()) {
       dialog.showErrorBox(
         "SETBUILDER",
-        `Der Server ist beendet (Code ${code}).\n\n${serverLog.slice(-800)}`,
+        `Der Server ist beendet (Code ${exitCode}).\n\n${serverLog.slice(-800)}`,
       );
     }
   });
+  server = {
+    get exitCode() {
+      return exitCode;
+    },
+    get killed() {
+      return killed;
+    },
+    kill() {
+      killed = true;
+      return child.kill();
+    },
+  };
 }
 
 function installMenu() {
@@ -548,5 +576,5 @@ app.on("window-all-closed", () => {
 });
 
 app.on("before-quit", () => {
-  if (server && !server.killed) server.kill("SIGTERM");
+  if (server && !server.killed) server.kill();
 });

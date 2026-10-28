@@ -837,13 +837,48 @@ html[data-frame="mac"] .set-shell .hero-copy {
   overflow: visible !important;
 }
 
+/* Two messages (prompt + stick error) share this bar with the actions.
+   globals.css puts every child in one nowrap flex row and forbids wrapping
+   on p, so the lines shrink and paint on top of each other. Text stays in
+   column 1 and grows the bar; buttons stay in column 2. */
 .set-shell .stick-reload {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  height: auto;
   margin: 0 0 var(--ui-space-3) !important;
   padding: var(--ui-space-3) var(--ui-space-4) !important;
   gap: var(--ui-space-3) !important;
   border: 1px solid var(--ui-border) !important;
   border-radius: var(--ui-card-radius) !important;
   background: var(--ui-surface-raised) !important;
+}
+
+.set-shell .stick-reload > :not(.stick-reload-actions) {
+  min-width: 0;
+}
+
+.set-shell .stick-reload-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.set-shell .stick-reload p {
+  white-space: normal;
+  overflow-wrap: break-word;
+  line-height: 1.45;
+}
+
+.set-shell .stick-reload .stick-warn {
+  margin-top: 0;
+}
+
+.set-shell .stick-reload-actions {
+  justify-self: end;
+  align-self: center;
+  flex-wrap: nowrap;
 }
 
 .set-shell .banner.status {
@@ -2065,6 +2100,35 @@ dialog.reset-set-dialog .stick-actions {
   gap: 0.4rem;
   margin: 0;
   padding: 0;
+}
+
+/* Load-playlist confirm. Same stick-dialog shell as reset / stick write,
+   wide enough for the playlist name and Replace / Merge / Cancel. */
+dialog.stick-dialog.playlist-load-dialog[open] {
+  width: min(34rem, calc(100vw - 1.5rem));
+  padding: 1.2rem 1.3rem 1.15rem;
+}
+
+dialog.stick-dialog.playlist-load-dialog h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+dialog.stick-dialog.playlist-load-dialog p {
+  margin: 0;
+  color: var(--ui-muted);
+  font-size: var(--ui-font-sm);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 560px) {
+  dialog.stick-dialog.playlist-load-dialog[open] {
+    width: min(34rem, calc(100vw - 1rem));
+    padding: 1.05rem 1.05rem 1rem;
+  }
 }
 
 /*

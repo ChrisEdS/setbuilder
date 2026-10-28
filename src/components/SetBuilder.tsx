@@ -33,6 +33,7 @@ import { HarmonicPath } from "@/components/HarmonicPath";
 import { LibraryBrowser, LibraryPanel } from "@/components/LibraryPanel";
 import { StickSetList, type StickStatusSlice } from "@/components/RekordboxStick";
 import { GigReadyDialog } from "@/components/GigReadyDialog";
+import { PlaylistLoadDialog } from "@/components/PlaylistLoadDialog";
 import { ResetSetDialog } from "@/components/ResetSetDialog";
 import { AppUpdateCard } from "@/components/AppUpdateCard";
 import { OverlapField } from "@/components/OverlapField";
@@ -3041,39 +3042,17 @@ export function SetBuilder() {
         </p>
       ) : null}
 
-      {pendingStickSet ? (
-        <div className="stick-reload" role="alertdialog" aria-modal="false">
-          <div>
-            <strong>
-              {t("builder.playlist.confirmTitle", { name: pendingStickSet.name })}
-            </strong>
-            <p>{t("builder.playlist.confirmBody")}</p>
-          </div>
-          <div className="stick-reload-actions">
-            <button
-              type="button"
-              className="btn danger"
-              onClick={() => applyLoadedStickSet(pendingStickSet, "replace")}
-            >
-              {t("builder.playlist.replace")}
-            </button>
-            <button
-              type="button"
-              className="btn"
-              onClick={() => applyLoadedStickSet(pendingStickSet, "merge")}
-            >
-              {t("builder.playlist.merge")}
-            </button>
-            <button
-              type="button"
-              className="btn ghost"
-              onClick={() => setPendingStickSet(null)}
-            >
-              {t("builder.playlist.cancel")}
-            </button>
-          </div>
-        </div>
-      ) : null}
+      <PlaylistLoadDialog
+        open={pendingStickSet !== null}
+        name={pendingStickSet?.name ?? ""}
+        onClose={() => setPendingStickSet(null)}
+        onReplace={() => {
+          if (pendingStickSet) applyLoadedStickSet(pendingStickSet, "replace");
+        }}
+        onMerge={() => {
+          if (pendingStickSet) applyLoadedStickSet(pendingStickSet, "merge");
+        }}
+      />
 
       {replaceUndo ? (
         <div className="stick-reload" role="status">
