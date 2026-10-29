@@ -681,7 +681,8 @@ html[data-frame="mac"] .set-shell .hero-copy {
   gap: 0.375rem !important;
 }
 
-.set-shell .timeline-tools > .tip {
+.set-shell .timeline-tools > .tip,
+.set-shell .timeline-tools-tail > .tip {
   width: var(--ui-control-height);
   min-width: var(--ui-control-height);
   height: var(--ui-control-height);
@@ -725,6 +726,16 @@ html[data-frame="mac"] .set-shell .hero-copy {
   border-color: rgba(30, 215, 96, 0.55) !important;
 }
 
+/* Details · collapse · trash stay one unit (never orphan the bin). */
+.set-shell .timeline-tools-tail {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.3rem;
+  flex: 0 0 auto;
+  min-width: max-content;
+}
+
 
 .set-shell .manual-row.is-compact {
   align-items: center;
@@ -732,10 +743,12 @@ html[data-frame="mac"] .set-shell .hero-copy {
   padding-bottom: 0.35rem !important;
 }
 
-/* Number · handle · cover · copy · tools share one vertical center. */
+/* Compact one-liner only — expanded rows use Comfortable chrome. */
 .set-shell .manual-row.is-compact .manual-row-main {
   align-items: center !important;
   column-gap: 0.7rem;
+  /* Title may truncate; tools keep their width so trash does not orphan. */
+  grid-template-columns: minmax(0, 1fr) max-content;
 }
 
 .set-shell .manual-row.is-compact .manual-controls {
@@ -744,8 +757,21 @@ html[data-frame="mac"] .set-shell .hero-copy {
   flex-wrap: wrap !important;
   align-items: center !important;
   align-self: center;
+  justify-content: flex-end;
+  min-width: max-content;
   min-height: 0;
   padding-top: 0 !important;
+}
+
+/* Compact → expanded: same main grid as Comfortable, plus Zuklappen. */
+.set-shell .manual-row.is-compact-open .manual-row-main {
+  align-items: start;
+  column-gap: 2.5rem;
+  grid-template-columns: minmax(14rem, 1fr) auto;
+}
+
+.set-shell .manual-row.is-compact-open .manual-controls {
+  min-width: 0;
 }
 
 .set-shell .manual-row.is-compact .manual-select {
@@ -800,7 +826,10 @@ html[data-frame="mac"] .set-shell .hero-copy {
   display: none !important;
 }
 
-/* Compact list toolbar: one row — no lone wrap of Details/Zuklappen/trash. */
+/*
+ * Compact list tools must be flex — the default tools grid sizes each child to
+ * one icon cell and clips the Details/Zuklappen/trash tail.
+ */
 .set-shell .manual-list.is-compact .timeline-tools {
   display: flex !important;
   flex-wrap: wrap !important;
@@ -810,8 +839,23 @@ html[data-frame="mac"] .set-shell .hero-copy {
   gap: 0.3rem !important;
   height: auto;
   min-height: 2rem;
-  max-width: 100%;
+  max-width: none;
   overflow: visible;
+}
+
+.set-shell .manual-list.is-compact .manual-row.is-compact .timeline-tools {
+  min-width: max-content;
+}
+
+.set-shell .manual-list.is-compact .timeline-tools-tail {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.3rem;
+  flex: 0 0 auto;
+  min-width: max-content;
+  width: auto;
+  max-width: none;
 }
 
 .set-shell .manual-list.is-compact .timeline-tools .icon-action.is-tools-toggle.is-open {
@@ -821,6 +865,7 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 .set-shell .manual-list.is-compact .timeline-tools > .tip:has(> .icon-action),
+.set-shell .manual-list.is-compact .timeline-tools-tail > .tip:has(> .icon-action),
 .set-shell .manual-list.is-compact .timeline-tools > .track-energy {
   box-sizing: border-box;
   flex: 0 0 2rem;
@@ -842,6 +887,7 @@ html[data-frame="mac"] .set-shell .hero-copy {
   max-height: 2rem !important;
 }
 
+.set-shell .manual-list.is-compact .timeline-tools-tail > .tip.compact-details-tip,
 .set-shell .manual-list.is-compact .timeline-tools > .tip.compact-details-tip {
   flex: 0 0 auto;
   width: auto !important;
@@ -851,8 +897,14 @@ html[data-frame="mac"] .set-shell .hero-copy {
   margin: 0 !important;
 }
 
-.set-shell .manual-list.is-compact .timeline-tools > .tip:has(> .icon-action.danger) {
+.set-shell .manual-list.is-compact .timeline-tools-tail > .tip:has(> .icon-action.danger) {
+  box-sizing: border-box;
   flex: 0 0 2rem;
+  width: 2rem !important;
+  min-width: 2rem !important;
+  max-width: 2rem !important;
+  height: 2rem !important;
+  margin: 0 !important;
 }
 
 .set-shell .manual-list.is-compact .compact-details-btn {
@@ -934,18 +986,20 @@ html[data-frame="mac"] .set-shell .hero-copy {
 
 /* Status, validation and waiting feedback follow the same compact card. */
 
-/* Source badge on the title line — slightly larger; rekordbox always brand red. */
+/* Source badge — readable mark; rekordbox always brand red. */
 .set-shell .manual-title-line .source-badge,
 .set-shell .manual-row.is-compact .source-badge,
+.set-shell .manual-row.is-compact-open .source-badge,
 .set-shell .anchor-pills .source-badge {
-  width: 1.15rem !important;
-  height: 1.15rem !important;
+  width: 1.45rem !important;
+  height: 1.45rem !important;
   margin: 0 !important;
   background: transparent !important;
 }
 
 .set-shell .manual-title-line .source-badge.source-rekordbox,
 .set-shell .manual-row.is-compact .source-badge.source-rekordbox,
+.set-shell .manual-row.is-compact-open .source-badge.source-rekordbox,
 .set-shell .anchor-pills .source-badge.source-rekordbox,
 .set-shell .source-badge.source-rekordbox {
   color: #c8143c !important;
@@ -953,14 +1007,15 @@ html[data-frame="mac"] .set-shell .hero-copy {
 
 .set-shell .manual-title-line .source-badge .source-badge-icon,
 .set-shell .manual-row.is-compact .source-badge .source-badge-icon,
+.set-shell .manual-row.is-compact-open .source-badge .source-badge-icon,
 .set-shell .anchor-pills .source-badge .source-badge-icon {
-  width: 0.95rem !important;
-  height: 0.95rem !important;
+  width: 1.2rem !important;
+  height: 1.2rem !important;
 }
 
 .set-shell .manual-meta .source-badge {
-  width: 1.35rem;
-  height: 1.35rem;
+  width: 1.45rem;
+  height: 1.45rem;
 }
 
 .set-shell :is(.banner, .field-notice) {

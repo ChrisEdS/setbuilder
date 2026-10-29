@@ -82,7 +82,7 @@ const de = {
   "builder.stickReload.later": "Später",
   "builder.stickLost.title": "Stick getrennt",
   "builder.stickLost.body":
-    "Der Stick ist während der Sitzung weg — oft mitten im Vorhören. Das Set bleibt. Stick wieder anstecken und verbinden.",
+    "Der Stick ist nicht mehr erreichbar. Dein Set bleibt. Steck ihn wieder an und verbinde.",
   "builder.stickLost.reconnect": "Stick verbinden",
   "builder.stickLost.choose": "Stick wählen",
   "builder.stickLost.busy": "Verbinde den Stick…",
@@ -837,7 +837,7 @@ const en: Record<keyof typeof de, string> = {
   "builder.stickReload.later": "Later",
   "builder.stickLost.title": "Stick disconnected",
   "builder.stickLost.body":
-    "The stick dropped during this session — often mid-preview. The set stays. Plug the stick back in and reconnect.",
+    "The stick is no longer reachable. Your set stays. Plug it back in and reconnect.",
   "builder.stickLost.reconnect": "Reconnect stick",
   "builder.stickLost.choose": "Choose stick",
   "builder.stickLost.busy": "Reconnecting the stick…",

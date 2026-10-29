@@ -509,6 +509,8 @@ export function SetBuilder() {
   stickLostOpenRef.current = stickLostOpen;
   const resumePreviewAfterStick = useRef(false);
   const stickGoneStreak = useRef(0);
+  /** Poll must not open “stick lost” until the stick was reachable in this session. */
+  const stickSeenAliveThisSession = useRef(false);
   const chooseStickRef = useRef<(() => void) | null>(null);
   const reconnectStickRef = useRef<(() => Promise<boolean>) | null>(null);
   // Long work (stick read, tag scan, sort) keeps the status line up until it finishes.
@@ -556,12 +558,12 @@ export function SetBuilder() {
     const bodyOpen = openDetails.has(trackId);
     const rowExpanded = listDensity !== "compact" || expandedRows.has(trackId);
     if (!rowExpanded) {
-      // From a compact one-liner: open Comfortable chrome, then only the lower body.
+      // From a compact one-liner: Comfortable chrome + open the lower body.
       setExpandedRows((current) => new Set(current).add(trackId));
       setOpenDetails((current) => new Set(current).add(trackId));
       return;
     }
-    // Row already expanded: Details only folds the lower body (summary stays).
+    // Expanded compact / Comfortable: the native summary toggles the body.
     setOpenDetails((current) => {
       const next = new Set(current);
       if (bodyOpen) next.delete(trackId);
@@ -819,6 +821,8 @@ export function SetBuilder() {
           finish(null);
           return;
         }
+        stickSeenAliveThisSession.current = true;
+        stickGoneStreak.current = 0;
         setStickReady(true);
         const targets = readStoredDraft().tracks.filter(
           (track) => Boolean(track.filePath?.trim()) && !hasKnownEnergy(track),
@@ -1947,6 +1951,8 @@ export function SetBuilder() {
         const stick = await readStickFromHandle(handle);
         await hydrateStickMedia(handle, mediaPathsForDraft(draft, stick.library));
         setLibraryRows(stickLibraryRows(stick.library, stick.sets));
+        stickSeenAliveThisSession.current = true;
+        stickGoneStreak.current = 0;
         setStickReady(true);
       },
       {
@@ -1965,6 +1971,8 @@ export function SetBuilder() {
         const stick = await readRekordboxStick(files);
         rememberStickFiles(files);
         setLibraryRows(stickLibraryRows(stick.library, stick.sets));
+        stickSeenAliveThisSession.current = true;
+        stickGoneStreak.current = 0;
         setStickReady(true);
       },
       {
@@ -1981,6 +1989,8 @@ export function SetBuilder() {
   function reportStickLost(fromPreview: boolean) {
     if (stickLostOpenRef.current) return;
     if (!stickReady && stickFileCount() === 0) return;
+    // Cold start / leftover File handles: not a mid-session drop.
+    if (!fromPreview && !stickSeenAliveThisSession.current) return;
     if (!fromPreview && Date.now() < stickLostQuietUntil.current) return;
     if (fromPreview || getPreviewTransportSnapshot().playing) {
       resumePreviewAfterStick.current = true;
@@ -1991,9 +2001,10 @@ export function SetBuilder() {
   }
 
   function afterStickRestored() {
+    stickSeenAliveThisSession.current = true;
+    stickGoneStreak.current = 0;
     setStickReady(true);
     setStatus(t("builder.stickLost.restored"));
-    stickGoneStreak.current = 0;
     if (!resumePreviewAfterStick.current) return;
     resumePreviewAfterStick.current = false;
     window.setTimeout(() => requestPreviewResume(), 80);
@@ -2096,7 +2107,17 @@ export function SetBuilder() {
       if (cancelled || stickLostOpenRef.current) return;
       const state = await probeStickAlive(samplePath);
       if (cancelled || stickLostOpenRef.current) return;
-      if (state === "alive" || state === "idle") {
+      if (state === "alive") {
+        stickSeenAliveThisSession.current = true;
+        stickGoneStreak.current = 0;
+        return;
+      }
+      if (state === "idle") {
+        stickGoneStreak.current = 0;
+        return;
+      }
+      // Cold start / leftover handles: stay quiet until the stick was alive here.
+      if (!stickSeenAliveThisSession.current) {
         stickGoneStreak.current = 0;
         return;
       }
@@ -4401,8 +4422,8 @@ export function SetBuilder() {
             >
               {visibleTimeline.map((track) => {
                 const detailsOpen = openDetails.has(track.id);
-                // Compact one-liner until Details expands the row. Folding the
-                // lower body keeps Comfortable chrome + the summary line.
+                // Compact one-liner until Details expands into Comfortable chrome
+                // (+ Zuklappen). Native <details> summary then matches Comfortable.
                 const rowExpanded =
                   listDensity !== "compact" || expandedRows.has(track.id);
                 const rowCompact = !rowExpanded;
@@ -4913,39 +4934,39 @@ export function SetBuilder() {
                               </button>
                             </Tip>
                           ) : null}
-                          {listDensity === "compact" ? (
-                            <>
-                              {rowCompact ? (
-                                <Tip
-                                  text={
-                                    toolsOpen
-                                      ? t("builder.list.fewerToolsTip")
-                                      : t("builder.list.moreToolsTip")
-                                  }
-                                >
-                                  <button
-                                    type="button"
-                                    className={
-                                      toolsOpen
-                                        ? "icon-action is-tools-toggle is-open"
-                                        : "icon-action is-tools-toggle"
-                                    }
-                                    aria-expanded={toolsOpen}
-                                    aria-label={
-                                      toolsOpen
-                                        ? t("builder.list.fewerTools")
-                                        : t("builder.list.moreTools")
-                                    }
-                                    onClick={(event) => {
-                                      event.preventDefault();
-                                      event.stopPropagation();
-                                      toggleToolRow(track.id);
-                                    }}
-                                  >
-                                    <ActionIcon name="more" />
-                                  </button>
-                                </Tip>
-                              ) : null}
+                          {listDensity === "compact" && rowCompact ? (
+                            <Tip
+                              text={
+                                toolsOpen
+                                  ? t("builder.list.fewerToolsTip")
+                                  : t("builder.list.moreToolsTip")
+                              }
+                            >
+                              <button
+                                type="button"
+                                className={
+                                  toolsOpen
+                                    ? "icon-action is-tools-toggle is-open"
+                                    : "icon-action is-tools-toggle"
+                                }
+                                aria-expanded={toolsOpen}
+                                aria-label={
+                                  toolsOpen
+                                    ? t("builder.list.fewerTools")
+                                    : t("builder.list.moreTools")
+                                }
+                                onClick={(event) => {
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  toggleToolRow(track.id);
+                                }}
+                              >
+                                <ActionIcon name="more" />
+                              </button>
+                            </Tip>
+                          ) : null}
+                          <span className="timeline-tools-tail">
+                            {listDensity === "compact" && rowCompact ? (
                               <Tip
                                 className="compact-details-tip"
                                 text={t("builder.list.detailsTitle")}
@@ -4966,39 +4987,42 @@ export function SetBuilder() {
                                   onClick={() => toggleTrackDetails(track.id)}
                                 >
                                   <span>{t("builder.list.details")}</span>
-                                  <span className="compact-details-chevron" aria-hidden="true" />
+                                  <span
+                                    className="compact-details-chevron"
+                                    aria-hidden="true"
+                                  />
                                 </button>
                               </Tip>
-                              {rowExpanded ? (
-                                <Tip
-                                  className="compact-details-tip"
-                                  text={t("builder.list.collapseRowTip")}
-                                  end
+                            ) : null}
+                            {listDensity === "compact" && rowExpanded ? (
+                              <Tip
+                                className="compact-details-tip"
+                                text={t("builder.list.collapseRowTip")}
+                                end
+                              >
+                                <button
+                                  type="button"
+                                  className="compact-details-btn is-collapse"
+                                  aria-label={t("builder.list.collapseRow")}
+                                  onClick={() => collapseTrackRow(track.id)}
                                 >
-                                  <button
-                                    type="button"
-                                    className="compact-details-btn is-collapse"
-                                    aria-label={t("builder.list.collapseRow")}
-                                    onClick={() => collapseTrackRow(track.id)}
-                                  >
-                                    <span>{t("builder.list.collapseRow")}</span>
-                                  </button>
-                                </Tip>
-                              ) : null}
-                            </>
-                          ) : null}
-                          <Tip text={t("builder.row.removeTip")} end>
-                            <button
-                              type="button"
-                              className="icon-action danger"
-                              onClick={() => removeTrack(track.id)}
-                              aria-label={t("builder.row.removeAria", {
-                                name: track.name,
-                              })}
-                            >
-                              <ActionIcon name="remove" />
-                            </button>
-                          </Tip>
+                                  <span>{t("builder.list.collapseRow")}</span>
+                                </button>
+                              </Tip>
+                            ) : null}
+                            <Tip text={t("builder.row.removeTip")} end>
+                              <button
+                                type="button"
+                                className="icon-action danger"
+                                onClick={() => removeTrack(track.id)}
+                                aria-label={t("builder.row.removeAria", {
+                                  name: track.name,
+                                })}
+                              >
+                                <ActionIcon name="remove" />
+                              </button>
+                            </Tip>
+                          </span>
                         </div>
                       </div>
                     </div>

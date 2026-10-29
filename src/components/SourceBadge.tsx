@@ -6,8 +6,8 @@ import { Tip } from "@/components/Hint";
 const svgProps: SVGProps<SVGSVGElement> = {
   className: "source-badge-icon",
   viewBox: "0 0 24 24",
-  width: 12,
-  height: 12,
+  width: 16,
+  height: 16,
   "aria-hidden": true,
 };
 

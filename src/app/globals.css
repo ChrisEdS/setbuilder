@@ -4625,9 +4625,10 @@ button.drag-handle:active i {
 
 .anchor-pills .source-badge,
 .manual-title-line .source-badge,
-.manual-row.is-compact .source-badge {
-  width: 1.2rem;
-  height: 1.2rem;
+.manual-row.is-compact .source-badge,
+.manual-row.is-compact-open .source-badge {
+  width: 1.45rem;
+  height: 1.45rem;
   margin: 0;
   flex: none;
   background: transparent !important;
@@ -4635,9 +4636,10 @@ button.drag-handle:active i {
 
 .manual-title-line .source-badge .source-badge-icon,
 .manual-row.is-compact .source-badge .source-badge-icon,
+.manual-row.is-compact-open .source-badge .source-badge-icon,
 .anchor-pills .source-badge .source-badge-icon {
-  width: 0.95rem;
-  height: 0.95rem;
+  width: 1.2rem;
+  height: 1.2rem;
 }
 
 .manual-title-line .source-badge.source-rekordbox,
