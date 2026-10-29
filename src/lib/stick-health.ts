@@ -173,7 +173,8 @@ export type StickActionCaps = {
 /**
  * One next step per verdict, pure and testable.
  * broken → rekordbox; needsRekordbox → prepare (or rekordbox when we only saw files);
- * hidden folder → rekordbox recreates PIONEER, else eject and try; ready or set aside → eject.
+ * hidden folder → rekordbox recreates PIONEER; ready → no primary (eject is secondary /
+ * post-write footer only — never auto-lead with eject during normal use).
  */
 export type StickActionOpts = {
   /** Import / read context: fix problems first; eject belongs after writing the set. */
@@ -195,9 +196,10 @@ export function primaryStickAction(
     case "needsRekordbox":
       return caps.canPrepare ? "prepare" : rekordbox;
     case "ready":
-      return eject;
+      // Eject is intentional (write-dialog footer / details), not the default CTA.
+      return null;
     case "hiddenFolder":
-      return health.libraryAside ? (eject ?? rekordbox) : (rekordbox ?? eject);
+      return health.libraryAside ? rekordbox : (rekordbox ?? eject);
     case "incomplete":
       return null;
   }

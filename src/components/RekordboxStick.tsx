@@ -11,12 +11,13 @@ import {
 import { errorText } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n/react";
 import { rememberStickFiles } from "@/lib/stick-audio";
+import { requestPreviewPause } from "@/lib/preview-transport";
 import { formatDuration, trackCount } from "@/lib/set";
 import {
   isPickerBlocked,
   loadPersistedStickHandle,
-  pauseBeforeStickEject,
   pickAndRememberStick,
+  prepareStickEject,
   readStickFromHandle,
   requestStickEject,
   requestStickRepair,
@@ -499,11 +500,12 @@ export function RekordboxStick({
       onEject: healthRoot
         ? async () => {
             const name = healthRoot.name;
-            // Drop live FS only — keep IndexedDB handle for soft reconnect.
+            // Full release before diskutil — keeps macOS from “Disk Not Ejected Properly”.
+            requestPreviewPause();
             setHealthRoot(null);
             setHealth(null);
             refreshRememberedFlag();
-            await pauseBeforeStickEject();
+            await prepareStickEject();
             await requestStickEject(name);
           }
         : undefined,
@@ -662,10 +664,11 @@ export function RekordboxStick({
                 healthRoot
                   ? async () => {
                       const name = healthRoot.name;
+                      requestPreviewPause();
                       setHealthRoot(null);
                       setHealth(null);
                       refreshRememberedFlag();
-                      await pauseBeforeStickEject();
+                      await prepareStickEject();
                       await requestStickEject(name);
                     }
                   : undefined

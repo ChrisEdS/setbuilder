@@ -1,6 +1,6 @@
 import { LocalizedError } from "@/lib/i18n/error";
 import { readRekordboxStick, type RekordboxStickRead } from "@/lib/rekordbox-stick";
-import { rememberStickFiles } from "@/lib/stick-audio";
+import { forgetStickFiles, rememberStickFiles } from "@/lib/stick-audio";
 import { findStickDatabase, type DirLike, type FileLike } from "@/lib/rekordbox-stick-write";
 import { STICK_IDB_NAME, STICK_IDB_NAME_LEGACY } from "@/lib/storage-keys";
 
@@ -249,9 +249,64 @@ export async function pickAndRememberStick(
   return handle;
 }
 
+async function deleteHandleFromDb(name: string): Promise<void> {
+  if (typeof indexedDB === "undefined") return;
+  try {
+    const db = await openDb(name);
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const tx = db.transaction(STORE, "readwrite");
+        tx.objectStore(STORE).delete(KEY);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    } finally {
+      db.close();
+    }
+  } catch {
+    /* ignore — eject still proceeds with live refs cleared */
+  }
+}
+
+/**
+ * Drop live stick refs Chromium may hold (session handle + remembered Files /
+ * blob URLs). Keeps the IndexedDB handle until eject succeeds so a failed eject
+ * can soft-reconnect without re-picking the folder.
+ */
+export function softReleaseStickSession(): void {
+  sessionHandle = null;
+  handleLoad = null;
+  forgetStickFiles();
+}
+
+/** Forget the persisted folder handle after a successful OS eject. */
+export async function forgetPersistedStickHandle(): Promise<void> {
+  sessionHandle = null;
+  handleLoad = null;
+  await deleteHandleFromDb(DB_NAME);
+  await deleteHandleFromDb(DB_NAME_LEGACY);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("setbuilder-stick-released"));
+  }
+}
+
 /** Brief pause after dropping File System Access handles so diskutil is not Resource busy. */
-export function pauseBeforeStickEject(ms = 450): Promise<void> {
+export function pauseBeforeStickEject(ms = 900): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Preview off → soft-release FSA/Files → wait. Does not clear IndexedDB yet
+ * (see forgetPersistedStickHandle after a successful eject).
+ */
+export async function prepareStickEject(): Promise<void> {
+  if (typeof window !== "undefined") {
+    // Preview must drop <audio src> before we revoke stick blob URLs.
+    window.dispatchEvent(new Event("setbuilder-stick-will-eject"));
+  }
+  await pauseBeforeStickEject(200);
+  softReleaseStickSession();
+  await pauseBeforeStickEject();
 }
 
 export async function requestStickEject(name: string): Promise<void> {
@@ -262,6 +317,8 @@ export async function requestStickEject(name: string): Promise<void> {
   });
   const body = (await response.json().catch(() => ({}))) as { ejected?: boolean };
   if (!response.ok || !body.ejected) throw new Error("eject");
+  // Only after diskutil succeeded — otherwise the stick is still mounted.
+  await forgetPersistedStickHandle();
 }
 
 /** diskutil repairVolume — clears dirty FAT that makes CDJs remount the stick read-only. */

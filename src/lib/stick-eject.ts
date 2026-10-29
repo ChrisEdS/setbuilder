@@ -3,8 +3,8 @@
  * It is not rekordbox’s eject (that also rewrites OneLibrary).
  *
  * Pioneer CDJ/XDJ remount a stick read-only when FAT was left dirty
- * (“Disk not ejected properly”). So we sync, wait for diskutil, force-unmount
- * if Chromium still holds the volume, and only report success when the mount is gone.
+ * (“Disk not ejected properly”). So we sync, soft-eject via diskutil, and
+ * only report success when the mount is gone — never force-unmount.
  */
 
 import { existsSync } from "node:fs";
@@ -106,8 +106,8 @@ export function launchEject(path: string, platform = process.platform): void {
 }
 
 /**
- * Flush, eject, and confirm the mount point is gone.
- * Retries when Chromium File System Access still holds the volume; force-unmounts as last resort.
+ * Flush, soft-eject, and confirm the mount point is gone.
+ * Retries while the volume is busy; never force-unmounts (that dirties FAT).
  */
 export async function runEject(
   path: string,
@@ -122,7 +122,9 @@ export async function runEject(
     await exec("/bin/sync", []).catch(() => ({ code: 1, stdout: "", stderr: "" }));
   }
 
-  const delays = [0, 400, 900, 1600];
+  // Soft eject only. `diskutil unmount force` is what triggers macOS
+  // “Disk Not Ejected Properly” / dirty FAT — callers must release FSA first.
+  const delays = [0, 500, 1100, 2000, 3200];
   let lastDetail = "";
   for (const delay of delays) {
     if (delay) await sleep(delay);
@@ -135,23 +137,6 @@ export async function runEject(
     }
     lastDetail = detailOf(result);
     if (!isBusy(lastDetail)) break;
-  }
-
-  if (!exists(path)) return;
-
-  // Chromium often keeps FSA directory handles open → Resource busy.
-  // Force-unmount still flushes; then try eject again (or accept unmounted volume).
-  if (platform === "darwin") {
-    const forced = await exec("diskutil", ["unmount", "force", path]);
-    if (!exists(path) || forced.code === 0) {
-      if (await waitUntilGone(path, exists)) return;
-      const again = await exec(spec.command, spec.args);
-      if (again.code === 0 && (await waitUntilGone(path, exists))) return;
-      if (!exists(path)) return;
-      lastDetail = detailOf(again) || detailOf(forced) || lastDetail;
-    } else {
-      lastDetail = detailOf(forced) || lastDetail;
-    }
   }
 
   if (!exists(path)) return;

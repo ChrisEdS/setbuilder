@@ -209,6 +209,11 @@ export function rememberStickFiles(files: File[]) {
   bumpStickEpoch();
 }
 
+/** Drop remembered stick Files and blob URLs so the volume is not held open. */
+export function forgetStickFiles(): void {
+  rememberStickFiles([]);
+}
+
 export function stickFileCount(): number {
   return stickFiles.length;
 }

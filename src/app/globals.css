@@ -7696,11 +7696,46 @@ body {
   line-height: 1.5;
   overflow-wrap: break-word;
 }
+/*
+ * Modal copy layers — same in every stick-dialog:
+ * status = done / current fact, next = what to do, info = background only.
+ */
+.stick-dialog .modal-status,
+.stick-dialog .stick-write-status {
+  margin: 0 0 0.55rem;
+  color: var(--ink);
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+.stick-dialog .modal-next,
+.stick-dialog .stick-write-next,
+.stick-dialog .stick-write-done-next {
+  margin: 0.15rem 0 0.55rem;
+  padding: 0.55rem 0.75rem;
+  border-left: 3px solid color-mix(in srgb, var(--ok, #22c55e) 70%, #94a3b8);
+  border-radius: 0 10px 10px 0;
+  background: color-mix(in srgb, #fff 6%, transparent);
+  color: #f8fafc;
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+.stick-dialog .modal-info,
 .stick-dialog .stick-safety,
 .stick-dialog .stick-hint {
   color: var(--muted);
   font-size: 0.84rem;
+  font-weight: 400;
   line-height: 1.45;
+}
+.stick-dialog .modal-status-title,
+.stick-dialog .stick-write-status-title {
+  display: block;
+  margin: 0 0 0.25rem;
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 700;
 }
 .stick-dialog .stick-safety-fold {
   margin: 0 0 0.85rem;
@@ -7823,20 +7858,21 @@ body {
   background: color-mix(in srgb, var(--ok, #22c55e) 12%, #1a1a1a);
 }
 
-.stick-dialog .stick-write-done > strong {
-  color: #fff;
-  font-size: 1.05rem;
-  font-weight: 700;
-}
-
 .stick-dialog .stick-write-done > p {
   margin: 0;
 }
 
-.stick-dialog .stick-write-done-next {
-  color: #f8fafc !important;
-  font-weight: 600;
-  font-size: 0.95rem !important;
+.stick-dialog .stick-write-done .modal-next,
+.stick-dialog .stick-write-done .stick-write-next,
+.stick-dialog .stick-write-done .stick-write-done-next {
+  margin-top: 0.35rem;
+  margin-bottom: 0;
+}
+
+.stick-dialog .stick-write-done .modal-info,
+.stick-dialog .stick-write-done .stick-hint {
+  margin-top: 0.15rem;
+  margin-bottom: 0;
 }
 
 .stick-dialog .stick-strip {

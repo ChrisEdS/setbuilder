@@ -111,17 +111,27 @@ export function GigReadyDialog({
       }}
     >
       <h2 id="gig-ready-title">{t("builder.ready.title")}</h2>
-      <p className="gig-ready-intro">{t("builder.ready.intro")}</p>
-      <ul className="gig-ready-list">
+      <p className="gig-ready-intro modal-info">{t("builder.ready.intro")}</p>
+      <ul className="gig-ready-list" aria-label={t("builder.ready.title")}>
         {checks.map((check) => (
-          <li key={check.id} className={check.severity === "block" ? "is-block" : undefined}>
+          <li
+            key={check.id}
+            className={
+              check.severity === "block"
+                ? "is-block modal-status"
+                : "is-ack modal-status"
+            }
+          >
             {check.severity === "block" ? <strong>{t("builder.ready.block")}. </strong> : null}
             {line(check)}
           </li>
         ))}
       </ul>
+      <p className="modal-next">
+        {blocked ? t("builder.ready.nextBlocked") : t("builder.ready.nextOk")}
+      </p>
       {canReselect ? (
-        <p className="gig-ready-hint">{t("builder.ready.reselectStickTip")}</p>
+        <p className="gig-ready-hint modal-info">{t("builder.ready.reselectStickTip")}</p>
       ) : null}
       {error ? (
         <p className="gig-ready-warn stick-warn" role="alert">

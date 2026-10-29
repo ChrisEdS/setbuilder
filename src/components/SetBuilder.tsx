@@ -2109,6 +2109,16 @@ export function SetBuilder() {
   }
 
   useEffect(() => {
+    function onStickReleased() {
+      setStickReady(false);
+      stickGoneStreak.current = 0;
+      stickSeenAliveThisSession.current = false;
+    }
+    window.addEventListener("setbuilder-stick-released", onStickReleased);
+    return () => window.removeEventListener("setbuilder-stick-released", onStickReleased);
+  }, []);
+
+  useEffect(() => {
     if (!stickReady && stickFileCount() === 0) {
       stickGoneStreak.current = 0;
       return;

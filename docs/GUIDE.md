@@ -2,9 +2,9 @@
 
 [Deutsch](GUIDE.de.md) · **English** · [README](../README.md)
 
-How to prepare a set with rekordbox: connect and understand the library → build → export. Screenshots show a set open in the app. The pictures are from 4.5. The words describe **4.7.5**, including the library filters, the phase line, pins and exclude, fit to slot (also when you change the slot minutes), Exchange from the playlist, Perfect · pins only, undo for Sort, the alternatives banner with the real performance place, energy on the details line and the booth sheet, and **Compact / Comfortable** on the setlist.
+How to prepare a set with rekordbox: connect and understand the library → build → export. Screenshots show a set open in the app. The pictures are from 4.5. The words describe **4.7.6**, including the library filters, the phase line, pins and exclude, fit to slot (also when you change the slot minutes), Exchange from the playlist, Perfect · pins only, undo for Sort, the alternatives banner with the real performance place, energy on the details line and the booth sheet, and **Compact / Comfortable** on the setlist.
 
-The shipping client is the desktop app (port **4317**). Browser development uses port **4327**. This document describes **4.7.5**. Stick write, players, and streaming accounts are still unverified.
+The shipping client is the desktop app (port **4317**). Browser development uses port **4327**. This document describes **4.7.6**. Stick write, players, and streaming accounts are still unverified.
 
 > **Before the gig:** Always test the stick on the actual player (playlist visible, tracks playable). Keep a backup — SETBUILDER writes to `export.pdb` and keeps copies under `SETBUILDER-Backup/`, but you are responsible for your media. No warranty. Works on my machine. :)
 

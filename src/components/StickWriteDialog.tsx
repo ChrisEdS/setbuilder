@@ -18,10 +18,11 @@ import {
   type StickWriteDone,
 } from "@/lib/rekordbox-stick-write";
 import type { SetDraft, SetTrack } from "@/lib/set";
+import { requestPreviewPause } from "@/lib/preview-transport";
 import {
   loadPersistedStickHandle,
-  pauseBeforeStickEject,
   pickAndRememberStick,
+  prepareStickEject,
   requestStickEject,
   requestStickRepair,
   stickPermission,
@@ -80,10 +81,11 @@ export function StickWriteDialog({
     setEjecting(true);
     setEjectFailed(false);
     try {
-      // Drop FSA handle so diskutil is not Resource busy / dirty FAT.
+      // Stop preview + drop every FSA/File ref before diskutil (avoids force-unmount).
+      requestPreviewPause();
       root.current = null;
       setHealth(null);
-      await pauseBeforeStickEject();
+      await prepareStickEject();
       await requestStickEject(name);
       setEjected(true);
     } catch {
@@ -246,17 +248,19 @@ export function StickWriteDialog({
 
       {step.kind === "idle" || step.kind === "error" ? (
         <>
-          <p>{t("library.stickWrite.intro")}</p>
+          <p className="modal-status">{t("library.stickWrite.intro")}</p>
+          <p className="modal-next">{t("library.stickWrite.introNext")}</p>
+          <p className="modal-info">{t("library.stickWrite.introInfo")}</p>
           <details className="stick-safety-fold">
             <summary>{t("library.stickWrite.safetyMore")}</summary>
-            <p className="stick-safety">{t("library.stickWrite.safetyDetails")}</p>
+            <p className="stick-safety modal-info">{t("library.stickWrite.safetyDetails")}</p>
           </details>
           {step.kind === "error" ? (
             <p className="stick-warn" role="alert">
               {step.text}
             </p>
           ) : null}
-          <p className="stick-hint">{t("library.stickWrite.chooseHint")}</p>
+          <p className="modal-info stick-hint">{t("library.stickWrite.chooseHint")}</p>
           <div className="stick-actions">
             <button type="button" className="btn ghost" onClick={onClose}>
               {t("library.stickWrite.close")}
@@ -268,12 +272,16 @@ export function StickWriteDialog({
         </>
       ) : null}
 
-      {busy ? <p role="status">{t(`library.stickWrite.busy.${step.label}`)}</p> : null}
+      {busy ? (
+        <p className="modal-status" role="status">
+          {t(`library.stickWrite.busy.${step.label}`)}
+        </p>
+      ) : null}
 
       {plan ? (
         <>
           <div className="stick-write-copy">
-            <p>
+            <p className="modal-status stick-write-status">
               {missing.length
                 ? t("library.stickWrite.found", {
                     found: plan.match.matched.length,
@@ -349,26 +357,33 @@ export function StickWriteDialog({
                 <p className="stick-warn" role="alert">
                   {t("library.stickWrite.refused", { reason: errorText(plan.refusal, t) })}
                 </p>
-                <p className="stick-hint">{t("library.stickWrite.healHint")}</p>
+                <p className="modal-info stick-hint">{t("library.stickWrite.healHint")}</p>
               </>
             ) : plan.alreadyOnStick ? (
               <>
-                <p>{t("library.stickWrite.alreadyThere", { name: plan.playlistName })}</p>
-                {readyToLeave ? (
-                  <p className="stick-write-next">{t("library.stickWrite.nextReady")}</p>
-                ) : (
-                  <p className="stick-hint">{t("library.stickWrite.rewriteHint")}</p>
-                )}
+                <p className="modal-status stick-write-status">
+                  {t("library.stickWrite.alreadyThere", { name: plan.playlistName })}
+                </p>
+                {ejected ? (
+                  <p className="modal-next stick-write-next" role="status">
+                    {t("library.stickWrite.ejected")}
+                  </p>
+                ) : readyToLeave ? (
+                  <p className="modal-next stick-write-next">{t("library.stickWrite.nextReady")}</p>
+                ) : null}
+                {!ejected ? (
+                  <p className="modal-info stick-hint">{t("library.stickWrite.rewriteHint")}</p>
+                ) : null}
               </>
             ) : plan.skippedPerformance && plan.alternativesName ? (
-              <p>
+              <p className="modal-next stick-write-next">
                 {t("library.stickWrite.willAddAltsOnly", {
                   name: plan.playlistName,
                   alts: plan.alternativesName,
                 })}
               </p>
             ) : plan.performanceCount || plan.alternativesCount ? (
-              <p>
+              <p className="modal-next stick-write-next">
                 {plan.performanceCount
                   ? t("library.stickWrite.willWrite", {
                       name: plan.playlistName,
@@ -383,33 +398,30 @@ export function StickWriteDialog({
               <p className="stick-warn">{t("library.stickWrite.noneFound")}</p>
             )}
           </div>
-          {health ? (
+          {health && !ejected ? (
             <StickHealthCard
               health={health}
               checking={checkingHealth}
               canFix
+              // Never lead with Eject while planning/writing — only the footer after write.
+              deprioritizeEject
               deferPrimaryAction={readyToLeave}
               {...healthHandlers}
             />
-          ) : plan.hasLibraryDb ? (
-            <p className="stick-hint">{t("library.stickWrite.oneLibrary")}</p>
+          ) : plan.hasLibraryDb && !ejected ? (
+            <p className="modal-info stick-hint">{t("library.stickWrite.oneLibrary")}</p>
           ) : null}
           {ejectFailed ? (
             <p className="stick-warn" role="alert">
               {t("library.stickWrite.ejectFailed")}
             </p>
           ) : null}
-          {ejected ? (
-            <p role="status">{t("library.stickWrite.ejected")}</p>
-          ) : (
+          {!ejected ? (
             <details className="stick-safety-fold">
               <summary>{t("library.stickWrite.safetyMore")}</summary>
               <p className="stick-safety">{t("library.stickWrite.safetyDetails")}</p>
-              {plan.alreadyOnStick ? (
-                <p className="stick-hint">{t("library.stickWrite.rewriteHint")}</p>
-              ) : null}
             </details>
-          )}
+          ) : null}
           <div className="stick-actions">
             {ejected ? (
               <button type="button" className="btn" onClick={onClose}>
@@ -481,8 +493,10 @@ export function StickWriteDialog({
       {step.kind === "done" ? (
         <>
           <div className="stick-write-done" role="status">
-            <strong>{t("library.stickWrite.doneTitle")}</strong>
-            <p>
+            <strong className="modal-status-title stick-write-status-title">
+              {t("library.stickWrite.doneTitle")}
+            </strong>
+            <p className="modal-status stick-write-status">
               {t("library.stickWrite.done", {
                 name: step.result.playlistName,
                 count: step.result.trackCount,
@@ -491,16 +505,14 @@ export function StickWriteDialog({
                 ? ` ${t("library.stickWrite.doneAlts", { name: step.result.alternativesName })}`
                 : ""}
             </p>
-            {!ejected ? (
-              <p className="stick-write-done-next">{t("library.stickWrite.doneNext")}</p>
-            ) : (
-              <p className="stick-write-done-next">{t("library.stickWrite.ejected")}</p>
-            )}
-            <p className="stick-hint">
+            <p className="modal-next stick-write-next">
+              {ejected ? t("library.stickWrite.ejected") : t("library.stickWrite.doneNext")}
+            </p>
+            <p className="modal-info stick-hint">
               {t("library.stickWrite.doneBackup", { backup: step.result.backupName })}
             </p>
             {step.sidecars.length ? (
-              <p className="stick-hint">
+              <p className="modal-info stick-hint">
                 {t("library.stickWrite.sidecar", { files: step.sidecars.join(", ") })}
               </p>
             ) : null}
@@ -561,7 +573,10 @@ export function StickWriteDialog({
 
       {step.kind === "restored" ? (
         <>
-          <p role="status">{t("library.stickWrite.restoreDone", { backup: step.backup })}</p>
+          <p className="modal-status" role="status">
+            {t("library.stickWrite.restoreDone", { backup: step.backup })}
+          </p>
+          <p className="modal-next">{t("library.stickWrite.restoreNext")}</p>
           <div className="stick-actions">
             <button type="button" className="btn" onClick={onClose}>
               {t("library.stickWrite.close")}

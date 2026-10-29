@@ -195,12 +195,12 @@ test("one primary action per verdict", () => {
     verdict,
     libraryAside,
   });
-  assert.equal(primaryStickAction(at("ready"), ALL), "eject");
-  assert.equal(primaryStickAction(at("ready", true), ALL), "eject");
+  assert.equal(primaryStickAction(at("ready"), ALL), null);
+  assert.equal(primaryStickAction(at("ready", true), ALL), null);
   assert.equal(primaryStickAction(at("needsRekordbox"), ALL), "prepare");
   assert.equal(primaryStickAction(at("broken"), ALL), "openRekordbox");
   assert.equal(primaryStickAction(at("hiddenFolder"), ALL), "openRekordbox");
-  assert.equal(primaryStickAction(at("hiddenFolder", true), ALL), "eject");
+  assert.equal(primaryStickAction(at("hiddenFolder", true), ALL), "openRekordbox");
   assert.equal(primaryStickAction(at("empty"), ALL), null);
   assert.equal(primaryStickAction(at("incomplete"), ALL), null);
 });
@@ -235,8 +235,12 @@ test("on the import path, eject stays secondary when the stick is ready", () => 
 
 test("secondary actions never repeat the primary and only restore when a backup exists", () => {
   const caps = { ...ALL, canRestore: true };
-  assert.deepEqual(secondaryStickActions({ verdict: "ready", libraryAside: false }, caps), ["openRekordbox"]);
+  assert.deepEqual(secondaryStickActions({ verdict: "ready", libraryAside: false }, caps), [
+    "eject",
+    "openRekordbox",
+  ]);
   assert.deepEqual(secondaryStickActions({ verdict: "ready", libraryAside: true }, caps), [
+    "eject",
     "openRekordbox",
     "restore",
   ]);
@@ -247,7 +251,7 @@ test("secondary actions never repeat the primary and only restore when a backup 
   assert.deepEqual(secondaryStickActions({ verdict: "broken", libraryAside: false }, caps), ["eject"]);
   assert.deepEqual(
     secondaryStickActions({ verdict: "ready", libraryAside: true }, { ...caps, canRestore: false }),
-    ["openRekordbox"],
+    ["eject", "openRekordbox"],
   );
   assert.deepEqual(secondaryStickActions({ verdict: "empty", libraryAside: false }, { ...NONE, canRestore: false }), []);
 });

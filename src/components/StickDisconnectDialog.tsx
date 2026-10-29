@@ -146,14 +146,17 @@ export function StickDisconnectDialog({
       }}
     >
       <h2 id="stick-disconnect-title">{t("builder.stickLost.title")}</h2>
-      <p id="stick-disconnect-body">{t("builder.stickLost.body")}</p>
-      {busy ? <p className="stick-hint">{t("builder.stickLost.busy")}</p> : null}
+      <div id="stick-disconnect-body">
+        <p className="modal-status">{t("builder.stickLost.status")}</p>
+        <p className="modal-next">{t("builder.stickLost.next")}</p>
+      </div>
+      {busy ? <p className="modal-info stick-hint">{t("builder.stickLost.busy")}</p> : null}
       {error ? (
         <p className="stick-warn" role="alert">
           {error}
         </p>
       ) : null}
-      <label className="stick-dismiss">
+      <label className="stick-dismiss modal-info">
         <input
           type="checkbox"
           checked={doNotShowAgain}

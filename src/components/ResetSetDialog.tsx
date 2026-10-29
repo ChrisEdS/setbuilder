@@ -35,7 +35,10 @@ export function ResetSetDialog({
       }}
     >
       <h2 id="reset-set-title">{t("builder.reset.title")}</h2>
-      <p id="reset-set-body">{t("builder.reset.body")}</p>
+      <p id="reset-set-body" className="modal-status">
+        {t("builder.reset.body")}
+      </p>
+      <p className="modal-next">{t("builder.reset.next")}</p>
       <div className="stick-actions">
         <button type="button" className="btn ghost" onClick={onClose}>
           {t("builder.reset.cancel")}

@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  forgetStickFiles,
   isStickAudioPath,
   lookupRememberedStickFile,
   matchStickFile,
   rememberStickFiles,
   stickArtworkUrl,
   stickAudioUrl,
+  stickFileCount,
   stickFileInSession,
   type StickFileRef,
 } from "./stick-audio.ts";
@@ -36,5 +38,7 @@ test("stickArtworkUrl resolves Collection JPEGs and stickAudioUrl ignores them",
   assert.ok(cover?.startsWith("blob:"));
   assert.equal(stickAudioUrl("/PIONEER/Artwork/00001/a1_m.jpg"), null);
   assert.ok(stickAudioUrl("/Contents/Night Drive.mp3")?.startsWith("blob:"));
-  rememberStickFiles([]);
+  forgetStickFiles();
+  assert.equal(stickFileCount(), 0);
+  assert.equal(stickAudioUrl("/Contents/Night Drive.mp3"), null);
 });

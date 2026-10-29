@@ -48,6 +48,8 @@ const de = {
 
   "builder.ready.title": "Vor dem Mitnehmen",
   "builder.ready.intro": "Kurz prüfen, dann mitnehmen.",
+  "builder.ready.nextBlocked": "Nächster Schritt: Blocker beheben — oder Stick-Ordner erneut wählen.",
+  "builder.ready.nextOk": "Nächster Schritt: mitnehmen — oder zurück und Set anpassen.",
   "builder.ready.continue": "Trotzdem mitnehmen",
   "builder.ready.close": "Zurück",
   "builder.ready.block": "Hält diese Aktion auf",
@@ -83,6 +85,8 @@ const de = {
   "builder.stickLost.title": "Stick getrennt",
   "builder.stickLost.body":
     "Der Stick ist nicht mehr erreichbar. Dein Set bleibt. Steck ihn wieder an und verbinde.",
+  "builder.stickLost.status": "Der Stick ist nicht mehr erreichbar. Dein Set bleibt.",
+  "builder.stickLost.next": "Nächster Schritt: Stick wieder anstecken und verbinden.",
   "builder.stickLost.reconnect": "Stick verbinden",
   "builder.stickLost.choose": "Stick wählen",
   "builder.stickLost.busy": "Verbinde den Stick…",
@@ -121,6 +125,7 @@ const de = {
   "builder.playlist.confirmTitle": "Playlist „{name}“ laden?",
   "builder.playlist.confirmBody":
     "Im aktuellen Set stehen bereits Tracks. Ersetzen überschreibt die Setliste; Zusammenführen behält sie und hängt nur neue Tracks an.",
+  "builder.playlist.confirmNext": "Nächster Schritt: Ersetzen oder Zusammenführen wählen.",
   "builder.playlist.replace": "Ersetzen",
   "builder.playlist.merge": "Zusammenführen",
   "builder.playlist.cancel": "Abbrechen",
@@ -751,6 +756,7 @@ const de = {
   // Destructive actions and storage
   "builder.reset.title": "Set zurücksetzen?",
   "builder.reset.body": "Das aktuelle Set wird geleert.",
+  "builder.reset.next": "Nächster Schritt: Bestätigen — oder abbrechen und behalten.",
   "builder.reset.confirm": "Zurücksetzen",
   "builder.reset.cancel": "Abbrechen",
   "builder.storage.blocked":
@@ -804,6 +810,8 @@ const en: Record<keyof typeof de, string> = {
 
   "builder.ready.title": "Before you take it",
   "builder.ready.intro": "A short check, then take it with you.",
+  "builder.ready.nextBlocked": "Next: fix the blockers — or choose the stick folder again.",
+  "builder.ready.nextOk": "Next: take it with you — or go back and adjust the set.",
   "builder.ready.continue": "Take it anyway",
   "builder.ready.close": "Back",
   "builder.ready.block": "Stops this action",
@@ -838,6 +846,8 @@ const en: Record<keyof typeof de, string> = {
   "builder.stickLost.title": "Stick disconnected",
   "builder.stickLost.body":
     "The stick is no longer reachable. Your set stays. Plug it back in and reconnect.",
+  "builder.stickLost.status": "The stick is no longer reachable. Your set stays.",
+  "builder.stickLost.next": "Next: plug the stick back in and reconnect.",
   "builder.stickLost.reconnect": "Reconnect stick",
   "builder.stickLost.choose": "Choose stick",
   "builder.stickLost.busy": "Reconnecting the stick…",
@@ -876,6 +886,7 @@ const en: Record<keyof typeof de, string> = {
   "builder.playlist.confirmTitle": "Load playlist “{name}”?",
   "builder.playlist.confirmBody":
     "The current set already has tracks. Replace overwrites the set list; Merge keeps it and appends only new tracks.",
+  "builder.playlist.confirmNext": "Next: choose Replace or Merge.",
   "builder.playlist.replace": "Replace",
   "builder.playlist.merge": "Merge",
   "builder.playlist.cancel": "Cancel",
@@ -1489,6 +1500,7 @@ const en: Record<keyof typeof de, string> = {
 
   "builder.reset.title": "Reset the set?",
   "builder.reset.body": "The current set is cleared.",
+  "builder.reset.next": "Next: confirm — or cancel and keep the set.",
   "builder.reset.confirm": "Reset",
   "builder.reset.cancel": "Cancel",
   "builder.storage.blocked":

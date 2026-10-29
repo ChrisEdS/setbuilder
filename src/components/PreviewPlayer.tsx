@@ -190,6 +190,22 @@ function PreviewDock({
   }, [track.id, playing]);
 
   useEffect(() => {
+    function onStickWillEject() {
+      const audio = audioRef.current;
+      if (audio) {
+        audio.pause();
+        audio.removeAttribute("src");
+        audio.load();
+      }
+      setPlaying(false);
+      setSrc(null);
+      hadStickSrc.current = false;
+    }
+    window.addEventListener("setbuilder-stick-will-eject", onStickWillEject);
+    return () => window.removeEventListener("setbuilder-stick-will-eject", onStickWillEject);
+  }, []);
+
+  useEffect(() => {
     if (transport.pauseToken === seenPauseToken.current) return;
     seenPauseToken.current = transport.pauseToken;
     const audio = audioRef.current;
