@@ -46,6 +46,7 @@ export function ActionIcon({ name }: { name: ActionIconName }) {
     up: <path d="m7.5 11 4.5-4.5L16.5 11M12 7v11" />,
     down: <path d="m7.5 13 4.5 4.5L16.5 13M12 17V6" />,
     energy: <path d="m13 3-7 10.5h6.25L11.5 21 19 10.5h-6.25L13 3Z" />,
+    // Opposing straight arrows = Ersatz (swap with another track).
     replace: (
       <>
         <path d="M19.5 7.5H9" />
@@ -54,13 +55,14 @@ export function ActionIcon({ name }: { name: ActionIconName }) {
         <path d="m7.5 13.5-3 3 3 3" />
       </>
     ),
-    // Circular cycle — must not look like `replace` (opposing straight arrows).
+    // Playlist bars + curved arrow = Tauschen aus der Playlist (must not match replace).
     exchange: (
       <>
-        <path d="M7.5 9.2a5.2 5.2 0 0 1 8.6-2.8" />
-        <path d="m14.8 4.2 1.4 2.9-3 .3" />
-        <path d="M16.5 14.8a5.2 5.2 0 0 1-8.6 2.8" />
-        <path d="m9.2 19.8-1.4-2.9 3-.3" />
+        <path d="M4 7h8" />
+        <path d="M4 12h8" />
+        <path d="M4 17h5" />
+        <path d="M16.5 6.5a4.5 4.5 0 0 1 0 11" />
+        <path d="m14.2 15.2 2.3 2.3 2.3-2.3" />
       </>
     ),
     opener: (

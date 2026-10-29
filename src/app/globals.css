@@ -473,6 +473,15 @@ textarea {
   white-space: nowrap;
 }
 
+.app-update-banner {
+  border-color: color-mix(in srgb, var(--accent, #1ed760) 45%, var(--line-strong, #333)) !important;
+  background: color-mix(in srgb, var(--accent, #1ed760) 10%, #1a1a1a) !important;
+}
+
+.app-update-banner .stick-reload-copy strong {
+  color: #fff;
+}
+
 .app-update-strip {
   display: flex;
   flex-wrap: wrap;

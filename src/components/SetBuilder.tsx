@@ -3403,6 +3403,8 @@ export function SetBuilder() {
         </p>
       ) : null}
 
+      <AppUpdateCard variant="banner" />
+
       <PlaylistLoadDialog
         open={pendingStickSet !== null}
         name={pendingStickSet?.name ?? ""}

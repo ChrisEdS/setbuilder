@@ -567,6 +567,13 @@ const de = {
   "builder.setups.fallbackName": "Setup",
   "builder.app.statusUnsignedShort":
     "Nicht mit Apple signiert — Updates manuell von GitHub laden.",
+  "builder.app.bannerTitle": "Version {version} ist verfügbar",
+  "builder.app.bannerBody":
+    "Eine neuere SETBUILDER-Version liegt bereit. Laden und installieren, wenn es passt.",
+  "builder.app.bannerReadyTitle": "Version {version} ist geladen",
+  "builder.app.bannerReadyBody":
+    "Neu starten, um die Version zu installieren. Das offene Set bleibt erhalten.",
+  "builder.app.bannerDismiss": "Später",
 
   // Status toasts
   "builder.status.added": "+ {name} → {phase} / {role}",
@@ -1295,6 +1302,13 @@ const en: Record<keyof typeof de, string> = {
   "builder.setups.fallbackName": "Setup",
   "builder.app.statusUnsignedShort":
     "Not Apple-signed — download updates manually from GitHub.",
+  "builder.app.bannerTitle": "Version {version} is available",
+  "builder.app.bannerBody":
+    "A newer SETBUILDER build is ready. Download and install when it suits you.",
+  "builder.app.bannerReadyTitle": "Version {version} is downloaded",
+  "builder.app.bannerReadyBody":
+    "Restart to install. Your open set stays.",
+  "builder.app.bannerDismiss": "Later",
 
   "builder.status.added": "+ {name} → {phase} / {role}",
   "builder.status.addedAfter": "+ {name} after {after} → {phase} / {role}",
