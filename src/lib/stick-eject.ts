@@ -1,6 +1,10 @@
 /**
  * OS-level eject of a Pioneer stick. This flushes the write cache.
  * It is not rekordbox’s eject (that also rewrites OneLibrary).
+ *
+ * Pioneer CDJ/XDJ remount a stick read-only when FAT was left dirty
+ * (“Disk not ejected properly”). So we sync, wait for diskutil, force-unmount
+ * if Chromium still holds the volume, and only report success when the mount is gone.
  */
 
 import { existsSync } from "node:fs";
@@ -37,9 +41,137 @@ export function ejectCommand(
   return null;
 }
 
+export function repairCommand(
+  platform: string,
+  path: string,
+): { command: string; args: string[] } | null {
+  if (platform === "darwin") return { command: "diskutil", args: ["repairVolume", path] };
+  return null;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export type ProcessResult = { code: number; stdout: string; stderr: string };
+
+/** Test seam — real spawn by default. */
+export async function runProcess(
+  command: string,
+  args: string[],
+): Promise<ProcessResult> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"] });
+    let stdout = "";
+    let stderr = "";
+    child.stdout?.on("data", (chunk: Buffer | string) => {
+      stdout += String(chunk);
+    });
+    child.stderr?.on("data", (chunk: Buffer | string) => {
+      stderr += String(chunk);
+    });
+    child.on("error", (error) => reject(error));
+    child.on("close", (code) => {
+      resolve({ code: code ?? 1, stdout, stderr });
+    });
+  });
+}
+
+function detailOf(result: ProcessResult): string {
+  return (result.stderr || result.stdout).trim() || `exit ${result.code}`;
+}
+
+function isBusy(detail: string): boolean {
+  return /busy|in use|unable to unmount|resource busy/i.test(detail);
+}
+
+async function waitUntilGone(
+  path: string,
+  exists: (file: string) => boolean,
+  attempts = 8,
+): Promise<boolean> {
+  for (let i = 0; i < attempts; i++) {
+    if (!exists(path)) return true;
+    await sleep(120);
+  }
+  return !exists(path);
+}
+
+/** Fire-and-forget (legacy). Prefer `runEject` so the UI learns success vs busy. */
 export function launchEject(path: string, platform = process.platform): void {
   const spec = ejectCommand(platform, path);
   if (!spec) throw new Error("eject-unsupported");
   const child = spawn(spec.command, spec.args, { detached: true, stdio: "ignore" });
   child.unref();
+}
+
+/**
+ * Flush, eject, and confirm the mount point is gone.
+ * Retries when Chromium File System Access still holds the volume; force-unmounts as last resort.
+ */
+export async function runEject(
+  path: string,
+  platform = process.platform,
+  exists: (file: string) => boolean = existsSync,
+  exec: typeof runProcess = runProcess,
+): Promise<void> {
+  const spec = ejectCommand(platform, path);
+  if (!spec) throw new Error("eject-unsupported");
+
+  if (platform === "darwin") {
+    await exec("/bin/sync", []).catch(() => ({ code: 1, stdout: "", stderr: "" }));
+  }
+
+  const delays = [0, 400, 900, 1600];
+  let lastDetail = "";
+  for (const delay of delays) {
+    if (delay) await sleep(delay);
+    if (!exists(path)) return;
+    const result = await exec(spec.command, spec.args);
+    if (result.code === 0) {
+      if (await waitUntilGone(path, exists)) return;
+      lastDetail = "eject reported ok but volume still mounted";
+      continue;
+    }
+    lastDetail = detailOf(result);
+    if (!isBusy(lastDetail)) break;
+  }
+
+  if (!exists(path)) return;
+
+  // Chromium often keeps FSA directory handles open → Resource busy.
+  // Force-unmount still flushes; then try eject again (or accept unmounted volume).
+  if (platform === "darwin") {
+    const forced = await exec("diskutil", ["unmount", "force", path]);
+    if (!exists(path) || forced.code === 0) {
+      if (await waitUntilGone(path, exists)) return;
+      const again = await exec(spec.command, spec.args);
+      if (again.code === 0 && (await waitUntilGone(path, exists))) return;
+      if (!exists(path)) return;
+      lastDetail = detailOf(again) || detailOf(forced) || lastDetail;
+    } else {
+      lastDetail = detailOf(forced) || lastDetail;
+    }
+  }
+
+  if (!exists(path)) return;
+  throw new Error(lastDetail || "eject-failed");
+}
+
+/**
+ * Clears a dirty FAT volume (common cause of CDJ “readonly”) while the stick is on the Mac.
+ * Does not reformat; uses diskutil First Aid equivalent.
+ */
+export async function runRepairVolume(
+  path: string,
+  platform = process.platform,
+  exec: typeof runProcess = runProcess,
+): Promise<void> {
+  const spec = repairCommand(platform, path);
+  if (!spec) throw new Error("repair-unsupported");
+  if (platform === "darwin") {
+    await exec("/bin/sync", []).catch(() => ({ code: 1, stdout: "", stderr: "" }));
+  }
+  const result = await exec(spec.command, spec.args);
+  if (result.code !== 0) throw new Error(detailOf(result) || "repair-failed");
 }

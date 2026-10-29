@@ -243,6 +243,8 @@ const de = {
   "library.stickWrite.refused": "Dieser Stick kann nicht sicher beschrieben werden. {reason}",
   "library.stickWrite.write": "Auf Stick schreiben",
   "library.stickWrite.done": "Fertig: „{name}“ mit {count} Titeln steht auf dem Stick.",
+  "library.stickWrite.doneTitle": "Set steht auf dem Stick",
+  "library.stickWrite.doneNext": "Nächster Schritt: auswerfen, abziehen, in den Player.",
   "library.stickWrite.doneBackup": "Sicherung unter SETBUILDER-Backup/{backup}. Stick auswerfen, dann abziehen.",
   "library.stickWrite.restore": "Sicherung zurück",
   "library.stickWrite.restoreConfirm": "Die Stick-Datenbank wird durch die letzte SETBUILDER-Sicherung ersetzt. Playlists, die SETBUILDER danach angelegt hat, verschwinden wieder. Fortfahren?",
@@ -260,6 +262,17 @@ const de = {
   "library.stickHealth.verdict.empty": "Noch nicht bereit: Auf dem Stick liegen noch keine Playlists.",
   "library.stickHealth.verdict.broken": "Keine lesbare rekordbox-Datenbank auf diesem Stick.",
   "library.stickHealth.verdict.incomplete": "Nur eine Datei gewählt — für den Player-Check den ganzen Stick wählen.",
+  "library.stickHealth.verdict.ejected": "Ausgeworfen — Stick abziehen und in den Player stecken.",
+  "library.stickHealth.verdict.ejectFailed":
+    "Auswerfen fehlgeschlagen — nicht abziehen. Zuerst reparieren oder im Finder auswerfen.",
+  "library.stickHealth.verdict.writeDone":
+    "Geschrieben — jetzt auswerfen, dann Stick in den Player.",
+  "library.stickHealth.meaning.ejected":
+    "Der Stick ist vom Mac getrennt. Abziehen und in den Player. Wenn du ihn wieder hier brauchst: Stick wählen und erneut prüfen.",
+  "library.stickHealth.meaning.writeDone":
+    "Das Set liegt auf dem Stick. Ohne Auswerfen riskierst du „Disk not ejected properly“, kaputte Dateien und Players die den Stick nur lesend zeigen.",
+  "library.stickHealth.meaning.ejectFailed":
+    "Der Stick ist noch gemountet. Nicht abziehen — sonst setzen CDJs ihn oft auf Nur-Lesen. Tippe „Stick reparieren“, dann erneut „Auswerfen“. Alternativ im Finder auswerfen und warten bis das Symbol verschwindet.",
   "library.stickHealth.next.eject": "Grün geschafft. Nächster Schritt: Auswerfen, dann Stick in den Player.",
   "library.stickHealth.next.prepare": "Zum Grün: „Für Player vorbereiten“ tippen — danach wird der Punkt grün, dann auswerfen.",
   "library.stickHealth.next.openRekordbox": "Zum Grün: In rekordbox öffnen, Stick dort auswerfen und die Device Library schreiben lassen.",
@@ -292,7 +305,9 @@ const de = {
   "library.stickHealth.tip.prepare":
     "Macht den Status grün für CDJ-3000 / XDJ-XZ: legt die alte Player-Bibliothek sicher beiseite. Danach auswerfen.",
   "library.stickHealth.tip.eject":
-    "Stick sicher auswerfen, bevor du ihn abziehst und in den Player steckst.",
+    "Stick sicher auswerfen, bevor du ihn abziehst und in den Player steckst. SETBUILDER wartet auf diskutil und prüft, dass der Stick wirklich weg ist.",
+  "library.stickHealth.tip.repair":
+    "Behebt einen „schmutzigen“ FAT-Zustand (häufige Ursache für Nur-Lesen am CDJ). Stick bleibt eingesteckt; danach erneut auswerfen.",
   "library.stickHealth.tip.openRekordbox":
     "rekordbox öffnen, dort den Stick auswerfen und die Player-Bibliothek schreiben lassen — danach hier erneut prüfen.",
   "library.stickHealth.tip.restore":
@@ -326,13 +341,22 @@ const de = {
   "library.stickHealth.fix.eject": "Auswerfen",
   "library.stickHealth.fix.ejecting": "Werfe aus…",
   "library.stickHealth.fix.ejected": "Ausgeworfen. Stick abziehen und in den Player.",
-  "library.stickHealth.fix.ejectFailed": "Auswerfen hat nicht geklappt. Im Finder auswerfen, bevor du ihn abziehst.",
+  "library.stickHealth.fix.ejectFailed":
+    "Auswerfen hat nicht geklappt. Nicht abziehen — „Stick reparieren“, dann erneut auswerfen (oder im Finder).",
+  "library.stickHealth.fix.repair": "Stick reparieren",
+  "library.stickHealth.fix.repairing": "Repariere Stick…",
+  "library.stickHealth.fix.repaired":
+    "Reparatur fertig. Jetzt auswerfen — erst dann abziehen und in den Player.",
+  "library.stickHealth.fix.repairFailed":
+    "Reparatur fehlgeschlagen. In der Festplattendienstprogramm Erste Hilfe versuchen, dann hier erneut auswerfen.",
   "library.stickHealth.fix.restore": "OneLibrary zurücklegen",
   "library.stickHealth.fix.failed": "Hat nicht geklappt. Stick noch eingesteckt und Zugriff erlaubt?",
   "library.stickHealth.prepare.open": "rekordbox öffnen",
   "library.stickHealth.prepare.opening": "Öffne rekordbox…",
   "library.stickHealth.prepare.opened": "rekordbox läuft. Dort den Stick auswerfen, dann hier erneut prüfen.",
   "library.stickHealth.prepare.failed": "rekordbox ließ sich nicht öffnen.",
+  "library.stickWrite.healHint":
+    "Zum Heilen in SETBUILDER: „Sicherung zurück“ stellt export.pdb wieder her; „OneLibrary zurücklegen“ / „Für Player vorbereiten“ regelt die Player-Bibliothek; bei Nur-Lesen am Player zuerst „Stick reparieren“, dann sauber auswerfen.",
   "library.menu.reset": "Zurücksetzen",
   "library.menu.resetHint":
     "Set leeren und zum Beispiel-Brief zurück. Gespeicherte Setups bleiben.",
@@ -582,6 +606,8 @@ const en: Record<keyof typeof de, string> = {
   "library.stickWrite.refused": "This stick can't be written to safely. {reason}",
   "library.stickWrite.write": "Write to stick",
   "library.stickWrite.done": "Done: “{name}” with {count} tracks is on the stick.",
+  "library.stickWrite.doneTitle": "Set is on the stick",
+  "library.stickWrite.doneNext": "Next: eject, unplug, put it in the player.",
   "library.stickWrite.doneBackup": "Backup under SETBUILDER-Backup/{backup}. Eject the stick, then unplug.",
   "library.stickWrite.restore": "Restore backup",
   "library.stickWrite.restoreConfirm": "The stick database will be replaced by the last SETBUILDER backup. Playlists SETBUILDER added after it disappear again. Continue?",
@@ -599,6 +625,17 @@ const en: Record<keyof typeof de, string> = {
   "library.stickHealth.verdict.empty": "Not ready yet: there are no playlists on the stick.",
   "library.stickHealth.verdict.broken": "No readable rekordbox database on this stick.",
   "library.stickHealth.verdict.incomplete": "Only one file picked — choose the whole stick for the player check.",
+  "library.stickHealth.verdict.ejected": "Ejected — unplug the stick and put it in the player.",
+  "library.stickHealth.verdict.ejectFailed":
+    "Eject failed — do not unplug. Repair first, or eject in Finder.",
+  "library.stickHealth.verdict.writeDone":
+    "Written — eject now, then put the stick in the player.",
+  "library.stickHealth.meaning.ejected":
+    "The stick is disconnected from the Mac. Unplug it and put it in the player. When you need it here again: choose the stick and check again.",
+  "library.stickHealth.meaning.writeDone":
+    "The set is on the stick. Skipping eject risks “Disk not ejected properly”, damaged files, and players that show the stick read-only.",
+  "library.stickHealth.meaning.ejectFailed":
+    "The stick is still mounted. Do not unplug — CDJs often remount it read-only. Tap “Repair stick”, then “Eject” again. Or eject in Finder and wait until the icon disappears.",
   "library.stickHealth.next.eject": "You’re green. Next: eject, then put the stick in the player.",
   "library.stickHealth.next.prepare": "To go green: tap “Prepare for player” — the dot turns green, then eject.",
   "library.stickHealth.next.openRekordbox": "To go green: open in rekordbox, eject the stick there, and let it write the device library.",
@@ -631,7 +668,9 @@ const en: Record<keyof typeof de, string> = {
   "library.stickHealth.tip.prepare":
     "Turns the status green for CDJ-3000 / XDJ-XZ: moves the old player library aside safely. Then eject.",
   "library.stickHealth.tip.eject":
-    "Eject the stick safely before you unplug it and put it in the player.",
+    "Eject the stick safely before you unplug it and put it in the player. SETBUILDER waits for diskutil and checks the stick is really gone.",
+  "library.stickHealth.tip.repair":
+    "Fixes a dirty FAT state (common cause of CDJ read-only). Stick stays plugged in; eject again afterwards.",
   "library.stickHealth.tip.openRekordbox":
     "Open rekordbox, eject the stick there, and let it write the player library — then check again here.",
   "library.stickHealth.tip.restore":
@@ -665,13 +704,22 @@ const en: Record<keyof typeof de, string> = {
   "library.stickHealth.fix.eject": "Eject",
   "library.stickHealth.fix.ejecting": "Ejecting…",
   "library.stickHealth.fix.ejected": "Ejected. Unplug the stick and put it in the player.",
-  "library.stickHealth.fix.ejectFailed": "Eject failed. Eject in Finder before you pull it out.",
+  "library.stickHealth.fix.ejectFailed":
+    "Eject failed. Do not unplug — tap “Repair stick”, then eject again (or use Finder).",
+  "library.stickHealth.fix.repair": "Repair stick",
+  "library.stickHealth.fix.repairing": "Repairing stick…",
+  "library.stickHealth.fix.repaired":
+    "Repair done. Eject now — only then unplug and put it in the player.",
+  "library.stickHealth.fix.repairFailed":
+    "Repair failed. Try Disk Utility First Aid, then eject here again.",
   "library.stickHealth.fix.restore": "Put OneLibrary back",
   "library.stickHealth.fix.failed": "That did not work. Is the stick still plugged in and access allowed?",
   "library.stickHealth.prepare.open": "Open rekordbox",
   "library.stickHealth.prepare.opening": "Opening rekordbox…",
   "library.stickHealth.prepare.opened": "rekordbox is running. Eject the stick there, then check again here.",
   "library.stickHealth.prepare.failed": "rekordbox could not be opened.",
+  "library.stickWrite.healHint":
+    "To heal in SETBUILDER: “Restore backup” puts export.pdb back; “Put OneLibrary back” / “Prepare for player” fixes the player library; if the player shows read-only, “Repair stick” first, then eject cleanly.",
   "library.menu.reset": "Reset",
   "library.menu.resetHint":
     "Clear the set and return to the sample brief. Saved setups stay.",

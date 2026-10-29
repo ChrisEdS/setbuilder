@@ -65,7 +65,7 @@ function unsupported(): PdbWriteError {
   return new PdbWriteError(
     "exports.pdbWrite.unsupported",
     undefined,
-    "Diese Stick-Datenbank hat ein Layout, das SETBUILDER nicht sicher beschreiben kann. Es wurde nichts verändert.",
+    "Diese Stick-Datenbank lässt sich gerade nicht sicher beschreiben — nichts wurde verändert. Als Nächstes in SETBUILDER: „Sicherung zurück“ oder „OneLibrary zurücklegen“, dann erneut schreiben. Bei Nur-Lesen am Player zuerst „Stick reparieren“, danach auswerfen.",
   );
 }
 
@@ -209,8 +209,11 @@ function readPage(
   const used = view.getUint16(start + 0x1e, true);
   const large = view.getUint16(start + 0x22, true);
   if (rows > slots) return null;
-  // A "large" row count other than 0x1fff means the real count is stored there. Not handled.
-  if (large > rows && large !== 0x1fff) return null;
+  // 0x22 is often "rows − 1" on pristine pages. After deletions rekordbox leaves a
+  // stale high-water mark (commonly slots − 1). 0x1fff means unused. Present-bit
+  // counting below already validates `rows` — do not refuse writable pages for a
+  // lagging 0x22 (that blocked rewrite on real SanDisk sticks).
+  if (large !== 0x1fff && large > slots) return null;
 
   const heapEnd = HEAP + used;
   if (heapEnd + indexBytes(slots) !== pageLen - free) return null;
@@ -610,10 +613,13 @@ export function replacePlaylistInPdb(
   if (!entries) throw unsupported();
   const entryChain = tableChain(work.view, pageLen, entries);
   if (!entryChain.length || entryChain.at(-1) !== entries.last) throw unsupported();
-  const states = entryChain.map((index) => readPage(work.view, pageLen, index, ENTRIES));
-  if (states.some((state) => state === null)) throw unsupported();
+  // Index pages (flag 0x40) sit in the chain on real sticks — skip them like addPlaylist does.
+  const states = entryChain
+    .map((index) => readPage(work.view, pageLen, index, ENTRIES))
+    .filter((page): page is PageState => page !== null);
+  if (!states.length) throw unsupported();
 
-  for (const page of states as PageState[]) {
+  for (const page of states) {
     for (let slot = 0; slot < page.slots; slot++) {
       const group = Math.floor(slot / 16);
       const bit = 1 << (slot % 16);
@@ -634,7 +640,7 @@ export function replacePlaylistInPdb(
     view.setUint32(8, input.playlistId, true);
     return row;
   });
-  const writableStates = (states as PageState[]).slice().reverse();
+  const writableStates = states.slice().reverse();
   place(work, entries, writableStates, rows);
   work.view.setUint32(0x14, work.sequence, true);
   const result: ReplacePlaylistResult = {

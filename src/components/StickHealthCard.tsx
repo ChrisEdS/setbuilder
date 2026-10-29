@@ -177,7 +177,7 @@ function facts(health: StickHealth, t: Translate): Fact[] {
   return list;
 }
 
-type Busy = StickAction | "restore" | null;
+type Busy = StickAction | "restore" | "repair" | null;
 
 export function StickHealthCard({
   health,
@@ -186,8 +186,11 @@ export function StickHealthCard({
   onPrepare,
   onRestoreLibrary,
   onEject,
+  onRepair,
   canFix,
   deprioritizeEject,
+  /** After a successful stick write: lead with eject, not the generic ready line. */
+  afterWrite = false,
   placement = "card",
   trailing,
 }: {
@@ -197,10 +200,13 @@ export function StickHealthCard({
   onPrepare?: () => void | Promise<void>;
   onRestoreLibrary?: () => void | Promise<void>;
   onEject?: () => void | Promise<void>;
+  /** Clears dirty FAT (CDJ read-only) while the stick is still on the Mac. */
+  onRepair?: () => void | Promise<void>;
   /** We hold the whole stick, not just a file list — prepare and restore can write. */
   canFix?: boolean;
   /** Stick-Status after import: eject stays available but not as the main action. */
   deprioritizeEject?: boolean;
+  afterWrite?: boolean;
   /** `header` sits in the Rekordbox-stick bar: verdict in the middle, actions on the right. */
   placement?: "card" | "header";
   trailing?: ReactNode;
@@ -211,6 +217,8 @@ export function StickHealthCard({
   const [busy, setBusy] = useState<Busy>(null);
   const [note, setNote] = useState<MessageKey | null>(null);
   const [noteOk, setNoteOk] = useState(false);
+  /** After a successful eject — override the green “ready” strip so unplug is obvious. */
+  const [ejected, setEjected] = useState(false);
   // null = follow verdict (warn/bad open); after the DJ toggles, keep their choice
   // until the verdict changes.
   const [userOpen, setUserOpen] = useState<boolean | null>(null);
@@ -218,9 +226,11 @@ export function StickHealthCard({
   if (health.verdict !== seenVerdict) {
     setSeenVerdict(health.verdict);
     setUserOpen(null);
+    setEjected(false);
   }
   const open =
-    userOpen ?? (health.verdict !== "ready" && health.verdict !== "empty");
+    userOpen ??
+    ((!ejected && health.verdict !== "ready" && health.verdict !== "empty") || ejected);
 
   useEffect(() => {
     let ignore = false;
@@ -243,10 +253,25 @@ export function StickHealthCard({
     canOpenRekordbox: rekordbox,
     canRestore: Boolean(canFix && onRestoreLibrary),
   };
-  const actionOpts = deprioritizeEject ? { deprioritizeEject: true as const } : undefined;
-  const primary = primaryStickAction(health, caps, actionOpts);
-  const secondary = secondaryStickActions(health, caps, actionOpts);
-  const tone = verdictTone(health);
+  const actionOpts = deprioritizeEject && !afterWrite
+    ? { deprioritizeEject: true as const }
+    : undefined;
+  const primary = ejected
+    ? null
+    : afterWrite && caps.canEject && health.verdict === "ready"
+      ? ("eject" as const)
+      : primaryStickAction(health, caps, actionOpts);
+  const secondary = ejected
+    ? ([] as ReturnType<typeof secondaryStickActions>)
+    : secondaryStickActions(health, caps, actionOpts).filter((kind) => kind !== primary);
+  const ejectFailed = note === "library.stickHealth.fix.ejectFailed";
+  const tone = ejected
+    ? "mute"
+    : ejectFailed
+      ? "warn"
+      : afterWrite && !ejected
+        ? "ok"
+        : verdictTone(health);
 
   async function openRekordbox() {
     const response = await fetch("/api/desktop/rekordbox", { method: "POST" });
@@ -263,16 +288,22 @@ export function StickHealthCard({
     try {
       if (kind === "prepare") await onPrepare?.();
       else if (kind === "restore") await onRestoreLibrary?.();
-      else if (kind === "eject") await onEject?.();
-      else await openRekordbox();
+      else if (kind === "repair") await onRepair?.();
+      else if (kind === "eject") {
+        await onEject?.();
+        setEjected(true);
+        setNoteOk(true);
+        setNote(null);
+        return;
+      } else await openRekordbox();
       setNoteOk(true);
       setNote(
-        kind === "eject"
-          ? "library.stickHealth.fix.ejected"
-          : kind === "prepare"
-            ? "library.stickHealth.fix.done"
-            : kind === "restore"
-              ? "library.stickHealth.fix.restored"
+        kind === "prepare"
+          ? "library.stickHealth.fix.done"
+          : kind === "restore"
+            ? "library.stickHealth.fix.restored"
+            : kind === "repair"
+              ? "library.stickHealth.fix.repaired"
               : "library.stickHealth.prepare.opened",
       );
     } catch {
@@ -280,22 +311,26 @@ export function StickHealthCard({
       setNote(
         kind === "eject"
           ? "library.stickHealth.fix.ejectFailed"
-          : kind === "openRekordbox"
-            ? "library.stickHealth.prepare.failed"
-            : "library.stickHealth.fix.failed",
+          : kind === "repair"
+            ? "library.stickHealth.fix.repairFailed"
+            : kind === "openRekordbox"
+              ? "library.stickHealth.prepare.failed"
+              : "library.stickHealth.fix.failed",
       );
     } finally {
       setBusy(null);
     }
   }
 
-  function label(kind: StickAction | "restore"): string {
+  function label(kind: StickAction | "restore" | "repair"): string {
     const working = busy === kind;
     switch (kind) {
       case "prepare":
         return t(working ? "library.stickHealth.fix.preparing" : "library.stickHealth.fix.prepare");
       case "eject":
         return t(working ? "library.stickHealth.fix.ejecting" : "library.stickHealth.fix.eject");
+      case "repair":
+        return t(working ? "library.stickHealth.fix.repairing" : "library.stickHealth.fix.repair");
       case "openRekordbox":
         return t(working ? "library.stickHealth.prepare.opening" : "library.stickHealth.prepare.open");
       case "restore":
@@ -303,12 +338,14 @@ export function StickHealthCard({
     }
   }
 
-  function tip(kind: StickAction | "restore"): string {
+  function tip(kind: StickAction | "restore" | "repair"): string {
     switch (kind) {
       case "prepare":
         return t("library.stickHealth.tip.prepare");
       case "eject":
         return t("library.stickHealth.tip.eject");
+      case "repair":
+        return t("library.stickHealth.tip.repair");
       case "openRekordbox":
         return t("library.stickHealth.tip.openRekordbox");
       case "restore":
@@ -316,8 +353,20 @@ export function StickHealthCard({
     }
   }
 
-  const verdict = t(verdictKey(health, caps.canPrepare));
-  const followUp = note ? (
+  const verdict = ejected
+    ? t("library.stickHealth.verdict.ejected")
+    : ejectFailed
+      ? t("library.stickHealth.verdict.ejectFailed")
+      : afterWrite && health.verdict === "ready"
+        ? t("library.stickHealth.verdict.writeDone")
+        : t(verdictKey(health, caps.canPrepare));
+  const followUp = ejected ? (
+    <p className="stick-strip-note is-ejected">{t("library.stickHealth.meaning.ejected")}</p>
+  ) : ejectFailed ? (
+    <p className="stick-strip-note is-bad">{t("library.stickHealth.meaning.ejectFailed")}</p>
+  ) : afterWrite && health.verdict === "ready" ? (
+    <p className="stick-strip-note is-write-done">{t("library.stickHealth.meaning.writeDone")}</p>
+  ) : note ? (
     <p className={"stick-strip-note" + (noteOk ? " is-ok" : " is-bad")}>{t(note)}</p>
   ) : primary ? (
     <p className="stick-strip-next">{t(nextKey(primary))}</p>
@@ -366,8 +415,36 @@ export function StickHealthCard({
         </div>
       ) : null;
 
+  const showRepair = Boolean(onRepair) && !ejected && (ejectFailed || afterWrite || health.verdict === "ready");
   const actions = (
     <div className={placement === "header" ? "stick-strip-actions stick-actions" : "stick-strip-actions"}>
+      {ejected && onRecheck ? (
+        <Tip text={t("library.stickHealth.recheckTip")} disabled={checking || busy !== null}>
+          <button
+            type="button"
+            className="btn"
+            disabled={checking || busy !== null}
+            onClick={() => {
+              setEjected(false);
+              void onRecheck();
+            }}
+          >
+            {checking ? t("library.loading") : t("library.stickHealth.recheck")}
+          </button>
+        </Tip>
+      ) : null}
+      {ejectFailed && onRepair ? (
+        <Tip text={tip("repair")} disabled={busy !== null}>
+          <button
+            type="button"
+            className={"btn" + (busy === "repair" ? " is-busy" : "")}
+            disabled={busy !== null}
+            onClick={() => void run("repair")}
+          >
+            {label("repair")}
+          </button>
+        </Tip>
+      ) : null}
       {primary ? (
         <Tip text={tip(primary)} disabled={busy !== null}>
           <button
@@ -377,6 +454,18 @@ export function StickHealthCard({
             onClick={() => void run(primary)}
           >
             {label(primary)}
+          </button>
+        </Tip>
+      ) : null}
+      {showRepair && !ejectFailed ? (
+        <Tip text={tip("repair")} disabled={busy !== null} end={!trailing && !primary}>
+          <button
+            type="button"
+            className={"btn ghost" + (busy === "repair" ? " is-busy" : "")}
+            disabled={busy !== null}
+            onClick={() => void run("repair")}
+          >
+            {label("repair")}
           </button>
         </Tip>
       ) : null}

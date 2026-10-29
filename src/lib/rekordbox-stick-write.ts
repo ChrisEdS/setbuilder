@@ -490,7 +490,7 @@ export async function rewriteSetToStick(
   );
   if (!existingName || candidates.length !== 1) {
     throw stickError(
-      "exports.pdbWrite.unsupported",
+      "exports.stickWrite.alreadyThere",
       "Die bestehende Playlist konnte nicht eindeutig gefunden werden. Es wurde nichts verändert.",
     );
   }

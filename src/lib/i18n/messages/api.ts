@@ -60,7 +60,12 @@ const de = {
   "api.eject.badVolume": "Der Stick-Name ist unsicher oder kein Laufwerk.",
   "api.eject.notPioneer": "Unter diesem Namen liegt kein rekordbox-Stick.",
   "api.eject.unsupported": "Auswerfen kann SETBUILDER nur auf dem Mac.",
-  "api.eject.failed": "Der Stick ließ sich nicht auswerfen.",
+  "api.eject.failed": "Der Stick ließ sich nicht auswerfen. Zuerst „Stick reparieren“, dann erneut auswerfen — nicht einfach abziehen.",
+  "api.eject.stillMounted": "Auswerfen meldete Erfolg, aber der Stick ist noch gemountet. Nicht abziehen — „Stick reparieren“ oder im Finder auswerfen.",
+  "api.repair.badVolume": "Der Stick-Name ist unsicher oder kein Laufwerk.",
+  "api.repair.notPioneer": "Unter diesem Namen liegt kein rekordbox-Stick.",
+  "api.repair.unsupported": "Stick-Reparatur kann SETBUILDER nur auf dem Mac.",
+  "api.repair.failed": "Die Stick-Reparatur ist fehlgeschlagen. In der Festplattendienstprogramm → Erste Hilfe versuchen.",
 } as const;
 
 const en: Record<keyof typeof de, string> = {
@@ -115,7 +120,15 @@ const en: Record<keyof typeof de, string> = {
   "api.eject.badVolume": "The stick name is unsafe or not a volume.",
   "api.eject.notPioneer": "There is no rekordbox stick under that name.",
   "api.eject.unsupported": "SETBUILDER can only eject on a Mac.",
-  "api.eject.failed": "The stick could not be ejected.",
+  "api.eject.failed":
+    "The stick could not be ejected. Try “Repair stick”, then eject again — do not yank it.",
+  "api.eject.stillMounted":
+    "Eject reported success but the stick is still mounted. Do not unplug — use “Repair stick” or eject in Finder.",
+  "api.repair.badVolume": "The stick name is unsafe or not a volume.",
+  "api.repair.notPioneer": "There is no rekordbox stick under that name.",
+  "api.repair.unsupported": "SETBUILDER can only repair sticks on a Mac.",
+  "api.repair.failed":
+    "Stick repair failed. Try Disk Utility → First Aid on the volume.",
 };
 
 export const api = { de, en };

@@ -7550,8 +7550,41 @@ body {
   margin-bottom: 0;
 }
 
+.stick-dialog .stick-write-done {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0 0 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--ok, #22c55e) 45%, var(--line-strong, #333));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--ok, #22c55e) 12%, #1a1a1a);
+}
+
+.stick-dialog .stick-write-done > strong {
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.stick-dialog .stick-write-done > p {
+  margin: 0;
+}
+
+.stick-dialog .stick-write-done-next {
+  color: #f8fafc !important;
+  font-weight: 600;
+  font-size: 0.95rem !important;
+}
+
 .stick-dialog .stick-strip {
   margin: 0;
+}
+
+.stick-strip.is-ok .stick-strip-note.is-write-done,
+.stick-head-more .stick-strip-note.is-write-done {
+  color: #e2e8f0;
+  font-weight: 550;
 }
 
 .stick-reload {
@@ -8048,6 +8081,23 @@ body {
 
 .stick-head-cluster.is-bad .stick-strip-dot {
   background: var(--danger);
+}
+
+.stick-head-cluster.is-mute .stick-strip-dot,
+.stick-strip.is-mute .stick-strip-dot {
+  background: #94a3b8;
+}
+
+.stick-head-cluster.is-mute .stick-strip-verdict,
+.stick-strip.is-mute .stick-strip-verdict {
+  color: #e2e8f0;
+  font-weight: 650;
+}
+
+.stick-head-more .stick-strip-note.is-ejected,
+.stick-strip .stick-strip-note.is-ejected {
+  color: #cbd5e1;
+  font-weight: 500;
 }
 
 .stick-head-more .stick-strip-note,

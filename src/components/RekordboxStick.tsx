@@ -15,9 +15,11 @@ import { formatDuration, trackCount } from "@/lib/set";
 import {
   isPickerBlocked,
   loadPersistedStickHandle,
+  pauseBeforeStickEject,
   pickAndRememberStick,
   readStickFromHandle,
   requestStickEject,
+  requestStickRepair,
   stickPermission,
   stickPicker,
 } from "@/lib/stick-session";
@@ -34,6 +36,7 @@ export type StickStatusSlice = {
   onPrepare?: () => void | Promise<void>;
   onRestoreLibrary?: () => void | Promise<void>;
   onEject?: () => void | Promise<void>;
+  onRepair?: () => void | Promise<void>;
 };
 
 type Props = {
@@ -426,7 +429,21 @@ export function RekordboxStick({
             await refreshHealth({ handle: healthRoot });
           }
         : undefined,
-      onEject: healthRoot ? () => requestStickEject(healthRoot.name) : undefined,
+      onRepair: healthRoot
+        ? async () => {
+            await requestStickRepair(healthRoot.name);
+            await refreshHealth({ handle: healthRoot });
+          }
+        : undefined,
+      onEject: healthRoot
+        ? async () => {
+            const name = healthRoot.name;
+            setHealthRoot(null);
+            setHealth(null);
+            await pauseBeforeStickEject();
+            await requestStickEject(name);
+          }
+        : undefined,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- handlers recreated; slice is for display only
   }, [health, checkingHealth, healthRoot, onStickStatus]);
@@ -556,7 +573,25 @@ export function RekordboxStick({
                     }
                   : undefined
               }
-              onEject={healthRoot ? () => requestStickEject(healthRoot.name) : undefined}
+              onRepair={
+                healthRoot
+                  ? async () => {
+                      await requestStickRepair(healthRoot.name);
+                      await refreshHealth({ handle: healthRoot });
+                    }
+                  : undefined
+              }
+              onEject={
+                healthRoot
+                  ? async () => {
+                      const name = healthRoot.name;
+                      setHealthRoot(null);
+                      setHealth(null);
+                      await pauseBeforeStickEject();
+                      await requestStickEject(name);
+                    }
+                  : undefined
+              }
               trailing={chooseActions}
             />
           ) : (

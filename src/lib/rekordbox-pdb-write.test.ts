@@ -143,6 +143,24 @@ test("takes the blank reserved page inside the file when the tree table is full"
   assert.ok(names.includes("Tree"));
 });
 
+test("rewrites a playlist even when an entry page has a stale 0x22 high-water mark", () => {
+  // Real SanDisk sticks leave 0x22 as slots-1 after deletions; that used to refuse replace.
+  const source = fixture();
+  const view = new DataView(source);
+  const start = ENTRY_LAST * PAGE;
+  const bitfield =
+    view.getUint8(start + 24) | (view.getUint8(start + 25) << 8) | (view.getUint8(start + 26) << 16);
+  const slots = bitfield & 0x1fff;
+  const rows = (bitfield >> 13) & 0x7ff;
+  view.setUint16(start + 0x22, Math.max(rows, slots > 0 ? slots - 1 : 0), true);
+  const result = replacePlaylistInPdb(source, { playlistId: 3, trackIds: [7, 8] });
+  const after = parseRekordboxPdb(result.buffer.slice(0));
+  assert.deepEqual(
+    after.playlists.find((item) => item.id === 3)?.trackIds,
+    [7, 8],
+  );
+});
+
 test("refuses, and changes nothing, when the reserved page is not blank", () => {
   const source = fixture({ fillTree: true });
   new Uint8Array(source)[TREE_RESERVED * PAGE + 100] = 1;

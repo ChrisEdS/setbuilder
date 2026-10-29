@@ -20,8 +20,10 @@ import {
 import type { SetDraft, SetTrack } from "@/lib/set";
 import {
   loadPersistedStickHandle,
+  pauseBeforeStickEject,
   pickAndRememberStick,
   requestStickEject,
+  requestStickRepair,
   stickPermission,
   stickPicker,
 } from "@/lib/stick-session";
@@ -296,9 +298,12 @@ export function StickWriteDialog({
               </div>
             ) : null}
             {plan.refusal ? (
-              <p className="stick-warn" role="alert">
-                {t("library.stickWrite.refused", { reason: errorText(plan.refusal, t) })}
-              </p>
+              <>
+                <p className="stick-warn" role="alert">
+                  {t("library.stickWrite.refused", { reason: errorText(plan.refusal, t) })}
+                </p>
+                <p className="stick-hint">{t("library.stickWrite.healHint")}</p>
+              </>
             ) : plan.alreadyOnStick ? (
               <>
                 <p>{t("library.stickWrite.alreadyThere", { name: plan.playlistName })}</p>
@@ -343,9 +348,20 @@ export function StickWriteDialog({
                 await restorePlayerLibrary(root.current);
                 await refreshHealth(root.current);
               }}
+              onRepair={async () => {
+                const name = root.current?.name;
+                if (!name) throw new Error("folder");
+                await requestStickRepair(name);
+                await refreshHealth();
+              }}
               onEject={async () => {
-                if (!root.current) throw new Error("folder");
-                await requestStickEject(root.current.name);
+                const name = root.current?.name;
+                if (!name) throw new Error("folder");
+                // Drop FSA handle so diskutil is not Resource busy / dirty FAT.
+                root.current = null;
+                setHealth(null);
+                await pauseBeforeStickEject();
+                await requestStickEject(name);
               }}
             />
           ) : plan.hasLibraryDb ? (
@@ -381,8 +397,9 @@ export function StickWriteDialog({
 
       {step.kind === "done" ? (
         <>
-          <div className="stick-write-copy">
-            <p role="status">
+          <div className="stick-write-done" role="status">
+            <strong>{t("library.stickWrite.doneTitle")}</strong>
+            <p>
               {t("library.stickWrite.done", {
                 name: step.result.playlistName,
                 count: step.result.trackCount,
@@ -391,6 +408,7 @@ export function StickWriteDialog({
                 ? ` ${t("library.stickWrite.doneAlts", { name: step.result.alternativesName })}`
                 : ""}
             </p>
+            <p className="stick-write-done-next">{t("library.stickWrite.doneNext")}</p>
             <p className="stick-hint">
               {t("library.stickWrite.doneBackup", { backup: step.result.backupName })}
             </p>
@@ -405,6 +423,7 @@ export function StickWriteDialog({
               health={health}
               checking={checkingHealth}
               canFix
+              afterWrite
               onRecheck={() => void refreshHealth()}
               onPrepare={async () => {
                 if (!root.current) throw new Error("folder");
@@ -416,9 +435,19 @@ export function StickWriteDialog({
                 await restorePlayerLibrary(root.current);
                 await refreshHealth(root.current);
               }}
+              onRepair={async () => {
+                const name = root.current?.name;
+                if (!name) throw new Error("folder");
+                await requestStickRepair(name);
+                await refreshHealth();
+              }}
               onEject={async () => {
-                if (!root.current) throw new Error("folder");
-                await requestStickEject(root.current.name);
+                const name = root.current?.name;
+                if (!name) throw new Error("folder");
+                root.current = null;
+                setHealth(null);
+                await pauseBeforeStickEject();
+                await requestStickEject(name);
               }}
             />
           ) : null}

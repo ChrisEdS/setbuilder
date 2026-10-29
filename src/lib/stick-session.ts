@@ -249,6 +249,11 @@ export async function pickAndRememberStick(
   return handle;
 }
 
+/** Brief pause after dropping File System Access handles so diskutil is not Resource busy. */
+export function pauseBeforeStickEject(ms = 450): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export async function requestStickEject(name: string): Promise<void> {
   const response = await fetch("/api/desktop/eject", {
     method: "POST",
@@ -257,4 +262,15 @@ export async function requestStickEject(name: string): Promise<void> {
   });
   const body = (await response.json().catch(() => ({}))) as { ejected?: boolean };
   if (!response.ok || !body.ejected) throw new Error("eject");
+}
+
+/** diskutil repairVolume — clears dirty FAT that makes CDJs remount the stick read-only. */
+export async function requestStickRepair(name: string): Promise<void> {
+  const response = await fetch("/api/desktop/repair", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+  });
+  const body = (await response.json().catch(() => ({}))) as { repaired?: boolean };
+  if (!response.ok || !body.repaired) throw new Error("repair");
 }

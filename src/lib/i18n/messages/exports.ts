@@ -59,7 +59,8 @@ const de = {
   "exports.pdb.tooSmall": "Die Datei ist zu klein für eine rekordbox export.pdb.",
   "exports.pdb.notPdb": "Das ist keine rekordbox export.pdb. Auf dem Stick liegt sie unter PIONEER/rekordbox/export.pdb.",
   "exports.pdb.empty": "export.pdb gelesen, aber ohne Tracks oder Playlists.",
-  "exports.pdbWrite.unsupported": "Diese Stick-Datenbank hat ein Layout, das SETBUILDER nicht sicher beschreiben kann. Es wurde nichts verändert.",
+  "exports.pdbWrite.unsupported":
+    "Diese Stick-Datenbank lässt sich gerade nicht sicher beschreiben — nichts wurde verändert. Als Nächstes in SETBUILDER: „Sicherung zurück“ (export.pdb) oder „OneLibrary zurücklegen“, dann erneut schreiben. Wenn der Player den Stick nur lesend zeigt: zuerst „Stick reparieren“, danach auswerfen.",
   "exports.pdbWrite.noRoom": "In der Stick-Datenbank ist kein Platz mehr für eine weitere Playlist. Es wurde nichts verändert.",
   "exports.pdbWrite.unknownTracks": "Ein Titel des Sets liegt nicht in dieser Stick-Datenbank.",
   "exports.pdbWrite.verifyFailed": "Die Prüfung der neuen Stick-Datenbank ist fehlgeschlagen ({detail}).",
@@ -128,7 +129,8 @@ const en: Record<keyof typeof de, string> = {
   "exports.pdb.tooSmall": "The file is too small to be a rekordbox export.pdb.",
   "exports.pdb.notPdb": "This is not a rekordbox export.pdb. On the stick it is located at PIONEER/rekordbox/export.pdb.",
   "exports.pdb.empty": "export.pdb was read, but it has no tracks or playlists.",
-  "exports.pdbWrite.unsupported": "This stick database has a layout SETBUILDER can't safely write to. Nothing was changed.",
+  "exports.pdbWrite.unsupported":
+    "This stick database can't be written safely right now — nothing was changed. Next in SETBUILDER: “Restore backup” (export.pdb) or “Restore OneLibrary”, then write again. If the player shows the stick read-only: “Repair stick” first, then eject.",
   "exports.pdbWrite.noRoom": "The stick database has no room left for another playlist. Nothing was changed.",
   "exports.pdbWrite.unknownTracks": "A track of the set is not in this stick database.",
   "exports.pdbWrite.verifyFailed": "Checking the new stick database failed ({detail}).",
