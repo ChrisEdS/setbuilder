@@ -213,6 +213,27 @@ export function stickFileCount(): number {
   return stickFiles.length;
 }
 
+/**
+ * Probe whether a remembered stick File still yields bytes (volume still mounted).
+ * `null` means there is nothing in the session to check.
+ */
+export async function probeRememberedStickByte(
+  filePath?: string,
+): Promise<boolean | null> {
+  if (!stickFiles.length) return null;
+  const wanted = filePath?.trim() ?? "";
+  const file = wanted
+    ? lookupRemembered(wanted, stickAudioBaseName(wanted), "any")
+    : stickFiles[0] ?? null;
+  if (!file) return null;
+  try {
+    await file.slice(0, Math.min(1, file.size || 1)).arrayBuffer();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** True when the current stick session still holds this rekordbox path. */
 export function stickFileInSession(filePath: string): boolean {
   const path = filePath.trim();

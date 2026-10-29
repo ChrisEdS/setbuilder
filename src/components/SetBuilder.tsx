@@ -35,6 +35,7 @@ import { StickSetList, type StickStatusSlice } from "@/components/RekordboxStick
 import { GigReadyDialog } from "@/components/GigReadyDialog";
 import { PlaylistLoadDialog } from "@/components/PlaylistLoadDialog";
 import { ResetSetDialog } from "@/components/ResetSetDialog";
+import { StickDisconnectDialog } from "@/components/StickDisconnectDialog";
 import { AppUpdateCard } from "@/components/AppUpdateCard";
 import { OverlapField } from "@/components/OverlapField";
 import { PreviewPlayer } from "@/components/PreviewPlayer";
@@ -71,6 +72,7 @@ import {
   readStickFromHandle,
   stickPermission,
 } from "@/lib/stick-session";
+import { probeStickAlive } from "@/lib/stick-alive";
 import {
   getStickFilesEpoch,
   rememberStickFiles,
@@ -483,6 +485,11 @@ export function SetBuilder() {
   const energyBusy =
     analyzingEnergy || workQueue.energyBusy;
   const [stickReady, setStickReady] = useState(false);
+  const [stickLostOpen, setStickLostOpen] = useState(false);
+  const stickLostOpenRef = useRef(false);
+  stickLostOpenRef.current = stickLostOpen;
+  const resumePreviewAfterStick = useRef(false);
+  const stickGoneStreak = useRef(0);
   const chooseStickRef = useRef<(() => void) | null>(null);
   // Long work (stick read, tag scan, sort) keeps the status line up until it finishes.
   const statusHold = useRef(0);
@@ -1881,6 +1888,129 @@ export function SetBuilder() {
       },
     );
   }
+
+  const stickLostQuietUntil = useRef(0);
+
+  function reportStickLost(fromPreview: boolean) {
+    if (stickLostOpenRef.current) return;
+    if (!stickReady && stickFileCount() === 0) return;
+    if (!fromPreview && Date.now() < stickLostQuietUntil.current) return;
+    if (fromPreview || getPreviewTransportSnapshot().playing) {
+      resumePreviewAfterStick.current = true;
+      requestPreviewPause();
+    }
+    setStickLostOpen(true);
+  }
+
+  function afterStickRestored() {
+    setStickReady(true);
+    setStatus(t("builder.stickLost.restored"));
+    stickGoneStreak.current = 0;
+    if (!resumePreviewAfterStick.current) return;
+    resumePreviewAfterStick.current = false;
+    window.setTimeout(() => requestPreviewResume(), 80);
+  }
+
+  async function restoreStickFromHandle(
+    handle: Awaited<ReturnType<typeof loadPersistedStickHandle>>,
+    key: string,
+  ): Promise<boolean> {
+    if (!handle) return false;
+    await enqueueWork(
+      async () => {
+        const stick = await readStickFromHandle(handle);
+        await hydrateStickMedia(
+          handle,
+          mediaPathsForDraft(readStoredDraft(), stick.library),
+        );
+        setLibraryRows(stickLibraryRows(stick.library, stick.sets));
+        afterStickRestored();
+      },
+      {
+        operation: "stick-reconnect",
+        key,
+        label: t("builder.work.stickReconnect"),
+        target: handle.name,
+      },
+    );
+    return true;
+  }
+
+  async function autoReconnectLostStick(): Promise<boolean> {
+    const existing = await loadPersistedStickHandle().catch(() => null);
+    if (!existing) return false;
+    if (!(await stickPermission(existing, "read", true))) return false;
+    if ((await probeStickAlive()) !== "alive") return false;
+    return restoreStickFromHandle(existing, `stick-lost-auto:${draft.title}`);
+  }
+
+  async function reconnectLostStick(): Promise<boolean> {
+    const existing = await loadPersistedStickHandle().catch(() => null);
+    const handle =
+      existing && (await stickPermission(existing, "read", true))
+        ? existing
+        : await pickAndRememberStick("read");
+    if (!handle) return false;
+    return restoreStickFromHandle(handle, `stick-lost:${draft.title}`);
+  }
+
+  async function reconnectLostStickFiles(files: File[]): Promise<boolean> {
+    if (!files.length) return false;
+    await enqueueWork(
+      async () => {
+        const stick = await readRekordboxStick(files);
+        rememberStickFiles(files);
+        setLibraryRows(stickLibraryRows(stick.library, stick.sets));
+        afterStickRestored();
+      },
+      {
+        operation: "stick-reconnect",
+        key: `stick-lost-files:${files[0]?.webkitRelativePath.split("/")[0] ?? "stick"}`,
+        label: t("builder.work.stickReconnect"),
+        target: files[0]?.webkitRelativePath.split("/")[0],
+      },
+    );
+    return true;
+  }
+
+  useEffect(() => {
+    if (!stickReady && stickFileCount() === 0) {
+      stickGoneStreak.current = 0;
+      return;
+    }
+    let cancelled = false;
+    const samplePath =
+      draft.tracks.find((track) => track.filePath?.trim())?.filePath?.trim() ??
+      "";
+
+    async function tick() {
+      if (cancelled || stickLostOpenRef.current) return;
+      const state = await probeStickAlive(samplePath);
+      if (cancelled || stickLostOpenRef.current) return;
+      if (state === "alive" || state === "idle") {
+        stickGoneStreak.current = 0;
+        return;
+      }
+      stickGoneStreak.current += 1;
+      const playingStick = getPreviewTransportSnapshot().playing;
+      // Preview path opens immediately via onStickMediaLost; poll needs two hits.
+      if (playingStick || stickGoneStreak.current >= 2) {
+        reportStickLost(false);
+      }
+    }
+
+    const id = window.setInterval(() => void tick(), 4000);
+    const onFocus = () => void tick();
+    window.addEventListener("focus", onFocus);
+    void tick();
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+      window.removeEventListener("focus", onFocus);
+    };
+    // stickReady / file epoch / whether the draft still has stick paths.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stickReady, stickFilesEpoch, draft.tracks.length]);
 
   function replaceTrack(targetId: string, replacementId: string) {
     setDraft((current) => {
@@ -3821,6 +3951,17 @@ export function SetBuilder() {
               onClose={() => setResetOpen(false)}
               onConfirm={confirmReset}
             />
+            <StickDisconnectDialog
+              open={stickLostOpen}
+              onClose={() => {
+                resumePreviewAfterStick.current = false;
+                stickLostQuietUntil.current = Date.now() + 20_000;
+                setStickLostOpen(false);
+              }}
+              onAutoReconnect={autoReconnectLostStick}
+              onReconnect={reconnectLostStick}
+              onReconnectFiles={reconnectLostStickFiles}
+            />
           </div>
           {draft.tracks.length > 0 ? (
           <SetTools
@@ -4958,6 +5099,7 @@ export function SetBuilder() {
           setRehearsal(false);
         }}
         blendMs={blendMs}
+        onStickMediaLost={() => reportStickLost(true)}
         rehearsal={
           rehearsal
             ? {

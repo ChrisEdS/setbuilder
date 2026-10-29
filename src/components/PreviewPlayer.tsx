@@ -90,6 +90,8 @@ type Props = {
   onClose: () => void;
   blendMs?: number;
   rehearsal?: Rehearsal | null;
+  /** Fired when stick-backed preview audio fails after it had a playable source. */
+  onStickMediaLost?: () => void;
 };
 
 type LocalIssue = "missing" | "unsupported" | "error" | null;
@@ -132,6 +134,7 @@ function PreviewDock({
   onHeight,
   onChange,
   onClose,
+  onStickMediaLost,
   rehearsal,
 }: {
   track: PlayTrack;
@@ -146,6 +149,7 @@ function PreviewDock({
   onHeight: (height: number) => void;
   onChange: (id: string) => void;
   onClose: () => void;
+  onStickMediaLost?: () => void;
   rehearsal?: Rehearsal | null;
 }) {
   const { t } = useI18n();
@@ -164,6 +168,9 @@ function PreviewDock({
   const [src, setSrc] = useState<string | null>(seed.src);
   const [localIssue, setLocalIssue] = useState<LocalIssue>(seed.issue);
   const [playing, setPlaying] = useState(false);
+  const hadStickSrc = useRef(Boolean(seed.src && filePath));
+  const stickLostRef = useRef(onStickMediaLost);
+  stickLostRef.current = onStickMediaLost;
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const transport = useSyncExternalStore(
@@ -208,6 +215,7 @@ function PreviewDock({
     const quick = filePath
       ? lookupStickAudio(filePath, fileBase || track.name)
       : ({ kind: "missing" } as const);
+    if (quick.kind === "url") hadStickSrc.current = true;
 
     void (async () => {
       if (!filePath) return;
@@ -230,6 +238,7 @@ function PreviewDock({
           return;
         }
         objectUrl = URL.createObjectURL(resolved.file);
+        hadStickSrc.current = true;
         setLocalIssue(null);
         setSrc(objectUrl);
       } catch {
@@ -526,6 +535,7 @@ function PreviewDock({
               onError={() => {
                 setLocalIssue("error");
                 setSrc(null);
+                if (filePath && hadStickSrc.current) stickLostRef.current?.();
               }}
             />
             <span className="preview-time">{formatTime(currentTime)}</span>
@@ -689,6 +699,7 @@ export function PreviewPlayer({
   onClose,
   blendMs = BLEND_MS,
   rehearsal,
+  onStickMediaLost,
 }: Props) {
   const isClient = useIsClient();
   const stickEpoch = useStickFilesEpoch();
@@ -713,6 +724,7 @@ export function PreviewPlayer({
       onHeight={setHeight}
       onChange={onChange}
       onClose={onClose}
+      onStickMediaLost={onStickMediaLost}
       rehearsal={rehearsal}
     />,
     document.body,
