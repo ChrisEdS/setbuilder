@@ -222,16 +222,31 @@ function subscribeListDensity(onChange: () => void) {
   return () => window.removeEventListener("setbuilder-list-density", onChange);
 }
 
-function MixJoinLine({ tracks, track }: { tracks: SetTrack[]; track: SetTrack }) {
+function MixJoinLine({
+  tracks,
+  track,
+  inline = false,
+}: {
+  tracks: SetTrack[];
+  track: SetTrack;
+  /** Sit on the compact Details row (span, not a block paragraph). */
+  inline?: boolean;
+}) {
   const { t } = useI18n();
   const index = tracks.findIndex((item) => item.id === track.id);
   const join = index > 0 ? mixJoin(tracks[index - 1], track, t) : null;
   if (!join) return null;
+  const className = `mix-join harm-${join.relation}`;
+  const title = relationHint(join.relation, t);
+  if (inline) {
+    return (
+      <em className={className} title={title}>
+        {join.label}
+      </em>
+    );
+  }
   return (
-    <p
-      className={`mix-join harm-${join.relation}`}
-      title={relationHint(join.relation, t)}
-    >
+    <p className={className} title={title}>
       {join.label}
     </p>
   );
@@ -4535,12 +4550,6 @@ export function SetBuilder() {
                               {track.durationMs
                                 ? ` · ${formatDuration(track.durationMs)}`
                                 : ""}
-                              {rowCompact ? (
-                                <>
-                                  {" · "}
-                                  {trackDetailsSummary(track, t)}
-                                </>
-                              ) : null}
                             </span>
                           </span>
                         </button>
@@ -5036,6 +5045,27 @@ export function SetBuilder() {
                         </div>
                       </div>
                     </div>
+                    {rowCompact ? (
+                      <div className="compact-details-line">
+                        <button
+                          type="button"
+                          className="compact-details-trigger"
+                          aria-expanded={detailsOpen}
+                          aria-label={
+                            detailsOpen
+                              ? t("builder.list.detailsClose")
+                              : t("builder.list.detailsOpen")
+                          }
+                          onClick={() => toggleTrackDetails(track.id)}
+                        >
+                          <span className="td-label">{t("builder.row.details")}</span>
+                          <span className="td-values">{trackDetailsSummary(track, t)}</span>
+                        </button>
+                        {track.role !== "safety" ? (
+                          <MixJoinLine tracks={mainTracks} track={track} inline />
+                        ) : null}
+                      </div>
+                    ) : null}
                     {track.role !== "safety" || track.why ? (
                       <div className="manual-subline">
                         {track.role !== "safety" ? (
