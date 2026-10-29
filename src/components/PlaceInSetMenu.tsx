@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Tip } from "@/components/Hint";
 import { useI18n } from "@/lib/i18n/react";
-import { performanceTracks, type SetTrack } from "@/lib/set";
+import { formatDuration, performanceTracks, type SetTrack } from "@/lib/set";
 import { lockBodyScroll } from "@/lib/ui-scroll-lock";
 
 type Props = {
@@ -13,6 +13,17 @@ type Props = {
   onPlace: (relativeId: string, side: "before" | "after") => void;
   onClose: () => void;
 };
+
+function trackMeta(track: SetTrack): string {
+  return [
+    track.keyCamelot || "—",
+    track.bpm,
+    track.energyLevel != null ? `E${track.energyLevel}` : "",
+    track.durationMs > 0 ? formatDuration(track.durationMs) : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
 
 /** Pick a performance track and drop this Alternative before or after it. */
 export function PlaceInSetMenu({ tracks, altId, onPlace, onClose }: Props) {
@@ -63,6 +74,14 @@ export function PlaceInSetMenu({ tracks, altId, onPlace, onClose }: Props) {
           <div className="replace-menu-copy">
             <strong>{t("builder.place.title")}</strong>
             <h4>{t("builder.place.target", { name: alt?.name ?? "" })}</h4>
+            {alt ? (
+              <>
+                <p className="place-target-artist">
+                  {alt.artists.join(", ") || t("common.unknown")}
+                </p>
+                <em className="replace-meta place-target-meta">{trackMeta(alt)}</em>
+              </>
+            ) : null}
             <p>{t("builder.place.hint")}</p>
           </div>
           <button
@@ -90,15 +109,7 @@ export function PlaceInSetMenu({ tracks, altId, onPlace, onClose }: Props) {
                       <span>{track.artists.join(", ") || t("common.unknown")}</span>
                     </div>
                   </div>
-                  <em className="replace-meta">
-                    {[
-                      track.keyCamelot || "—",
-                      track.bpm,
-                      track.energyLevel != null ? `E${track.energyLevel}` : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </em>
+                  <em className="replace-meta">{trackMeta(track)}</em>
                   <div className="place-actions">
                     <Tip text={t("builder.place.beforeTip")}>
                       <button
