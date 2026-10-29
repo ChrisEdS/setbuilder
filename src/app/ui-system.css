@@ -741,14 +741,48 @@ html[data-frame="mac"] .set-shell .hero-copy {
   align-items: center;
   padding-top: 0.4rem !important;
   padding-bottom: 0.35rem !important;
+  container-type: inline-size;
+  container-name: compact-row;
+}
+
+/*
+ * Compact tools overflow:
+ *  - roomy row (≥56rem): every action icon, no “…”
+ *  - tight row: secondary actions behind “…”, title keeps a readable min width
+ * Selectors inside @container must not re-qualify the container as a descendant.
+ */
+@container compact-row (max-width: 55.98rem) {
+  .timeline-tools > .compact-extra {
+    display: none !important;
+  }
+}
+
+.set-shell .manual-row.is-compact.is-tools-open .timeline-tools > .compact-extra {
+  display: flex !important;
+}
+
+.set-shell .manual-row.is-compact.is-tools-open .timeline-tools > span.compact-extra {
+  display: flex !important;
+  align-items: center;
+}
+
+@container compact-row (min-width: 55.99rem) {
+  .timeline-tools > .compact-tools-toggle-tip {
+    display: none !important;
+  }
+
+  .timeline-tools > span.compact-extra {
+    display: flex !important;
+    align-items: center;
+  }
 }
 
 /* Compact one-liner only — expanded rows use Comfortable chrome. */
 .set-shell .manual-row.is-compact .manual-row-main {
   align-items: center !important;
   column-gap: 0.7rem;
-  /* Title may truncate; tools keep their width so trash does not orphan. */
-  grid-template-columns: minmax(0, 1fr) max-content;
+  /* Keep title readable; tools stay max-content (overflow handled above). */
+  grid-template-columns: minmax(12rem, 1fr) max-content;
 }
 
 .set-shell .manual-row.is-compact .manual-controls {

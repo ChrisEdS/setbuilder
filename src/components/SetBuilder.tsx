@@ -4428,8 +4428,9 @@ export function SetBuilder() {
                   listDensity !== "compact" || expandedRows.has(track.id);
                 const rowCompact = !rowExpanded;
                 const toolsOpen = openToolRows.has(track.id);
-                // Compact one-liner: only primary actions until “…Mehr” reveals the rest.
-                const showExtraTools = !rowCompact || toolsOpen;
+                // Compact one-liner: extras stay mounted; CSS shows them when the
+                // row is wide enough or when “…Mehr” is open.
+                const extraToolsClass = rowCompact ? "compact-extra" : "";
                 return (
                 <li
                   key={`${track.role}-${track.id}`}
@@ -4671,8 +4672,11 @@ export function SetBuilder() {
                               )}
                             </button>
                           </Tip>
-                          {showExtraTools && track.role !== "safety" ? (
-                            <Tip text={t("builder.row.rehearseTip")}>
+                          {track.role !== "safety" ? (
+                            <Tip
+                              className={extraToolsClass}
+                              text={t("builder.row.rehearseTip")}
+                            >
                               <button
                                 type="button"
                                 className={
@@ -4688,43 +4692,47 @@ export function SetBuilder() {
                               </button>
                             </Tip>
                           ) : null}
-                          {showExtraTools ? (
-                            <Tip text={t("builder.row.moveUpTip")}>
-                              <button
-                                type="button"
-                                className="icon-action"
-                                onClick={() => moveTrack(track.id, -1)}
-                                aria-label={t("builder.row.moveUpAria", { name: track.name })}
-                              >
-                                <ActionIcon name="up" />
-                              </button>
-                            </Tip>
-                          ) : null}
-                          {showExtraTools ? (
-                            <Tip text={t("builder.row.moveDownTip")}>
-                              <button
-                                type="button"
-                                className="icon-action"
-                                onClick={() => moveTrack(track.id, 1)}
-                                aria-label={t("builder.row.moveDownAria", { name: track.name })}
-                              >
-                                <ActionIcon name="down" />
-                              </button>
-                            </Tip>
-                          ) : null}
-                          {showExtraTools && track.filePath?.trim() ? (
-                            <TrackEnergyMenu
-                              name={track.name}
-                              busy={energyPendingIds.has(track.id)}
-                              level={hasKnownEnergy(track) ? track.energyLevel : undefined}
-                              onMeasure={() => void recalculateTrackEnergy(track)}
-                              onSetLevel={(level) =>
-                                patchTrack(track.id, {
-                                  energyLevel: level,
-                                  energySource: "manual",
-                                })
-                              }
-                            />
+                          <Tip
+                            className={extraToolsClass}
+                            text={t("builder.row.moveUpTip")}
+                          >
+                            <button
+                              type="button"
+                              className="icon-action"
+                              onClick={() => moveTrack(track.id, -1)}
+                              aria-label={t("builder.row.moveUpAria", { name: track.name })}
+                            >
+                              <ActionIcon name="up" />
+                            </button>
+                          </Tip>
+                          <Tip
+                            className={extraToolsClass}
+                            text={t("builder.row.moveDownTip")}
+                          >
+                            <button
+                              type="button"
+                              className="icon-action"
+                              onClick={() => moveTrack(track.id, 1)}
+                              aria-label={t("builder.row.moveDownAria", { name: track.name })}
+                            >
+                              <ActionIcon name="down" />
+                            </button>
+                          </Tip>
+                          {track.filePath?.trim() ? (
+                            <span className={extraToolsClass || undefined}>
+                              <TrackEnergyMenu
+                                name={track.name}
+                                busy={energyPendingIds.has(track.id)}
+                                level={hasKnownEnergy(track) ? track.energyLevel : undefined}
+                                onMeasure={() => void recalculateTrackEnergy(track)}
+                                onSetLevel={(level) =>
+                                  patchTrack(track.id, {
+                                    energyLevel: level,
+                                    energySource: "manual",
+                                  })
+                                }
+                              />
+                            </span>
                           ) : null}
                           {track.role === "safety" ? (
                             <Tip text={t("builder.row.placeInSetTip")}>
@@ -4789,8 +4797,9 @@ export function SetBuilder() {
                               </Tip>
                             </>
                           )}
-                          {showExtraTools && track.role !== "safety" ? (
+                          {track.role !== "safety" ? (
                             <Tip
+                              className={extraToolsClass}
                               text={
                                 draft.openerId === track.id
                                   ? t("builder.row.clearOpenerTip")
@@ -4822,8 +4831,9 @@ export function SetBuilder() {
                               </button>
                             </Tip>
                           ) : null}
-                          {showExtraTools && track.role !== "safety" ? (
+                          {track.role !== "safety" ? (
                             <Tip
+                              className={extraToolsClass}
                               text={
                                 draft.closerId === track.id
                                   ? t("builder.row.clearCloserTip")
@@ -4890,52 +4900,52 @@ export function SetBuilder() {
                               <ActionIcon name="pin" />
                             </button>
                           </Tip>
-                          {showExtraTools ? (
-                            <Tip
-                              text={
+                          <Tip
+                            className={extraToolsClass}
+                            text={
+                              draft.excludedIds?.includes(track.id)
+                                ? t("builder.row.clearExcludeTip")
+                                : t("builder.row.setExcludeTitle")
+                            }
+                          >
+                            <button
+                              type="button"
+                              className={
                                 draft.excludedIds?.includes(track.id)
-                                  ? t("builder.row.clearExcludeTip")
-                                  : t("builder.row.setExcludeTitle")
+                                  ? "icon-action is-exclude"
+                                  : "icon-action"
                               }
+                              aria-label={
+                                draft.excludedIds?.includes(track.id)
+                                  ? t("builder.row.clearExclude")
+                                  : t("builder.row.setExclude")
+                              }
+                              aria-pressed={Boolean(draft.excludedIds?.includes(track.id))}
+                              onClick={() => {
+                                const wasExcluded = draft.excludedIds?.includes(track.id);
+                                setDraft((current) =>
+                                  toggleExclude(
+                                    current,
+                                    track.id,
+                                    t("analysis.why.excluded"),
+                                  ),
+                                );
+                                setStatus(
+                                  t(
+                                    wasExcluded
+                                      ? "builder.status.excludeCleared"
+                                      : "builder.status.excluded",
+                                    { name: track.name },
+                                  ),
+                                );
+                              }}
                             >
-                              <button
-                                type="button"
-                                className={
-                                  draft.excludedIds?.includes(track.id)
-                                    ? "icon-action is-exclude"
-                                    : "icon-action"
-                                }
-                                aria-label={
-                                  draft.excludedIds?.includes(track.id)
-                                    ? t("builder.row.clearExclude")
-                                    : t("builder.row.setExclude")
-                                }
-                                aria-pressed={Boolean(draft.excludedIds?.includes(track.id))}
-                                onClick={() => {
-                                  const wasExcluded = draft.excludedIds?.includes(track.id);
-                                  setDraft((current) =>
-                                    toggleExclude(
-                                      current,
-                                      track.id,
-                                      t("analysis.why.excluded"),
-                                    ),
-                                  );
-                                  setStatus(
-                                    t(
-                                      wasExcluded
-                                        ? "builder.status.excludeCleared"
-                                        : "builder.status.excluded",
-                                      { name: track.name },
-                                    ),
-                                  );
-                                }}
-                              >
-                                <ActionIcon name="exclude" />
-                              </button>
-                            </Tip>
-                          ) : null}
+                              <ActionIcon name="exclude" />
+                            </button>
+                          </Tip>
                           {listDensity === "compact" && rowCompact ? (
                             <Tip
+                              className="compact-tools-toggle-tip"
                               text={
                                 toolsOpen
                                   ? t("builder.list.fewerToolsTip")
