@@ -110,6 +110,7 @@ import {
   uniqueIncomingDraftTracks,
 } from "@/lib/draft-codec";
 import { ActionIcon } from "@/components/ActionIcon";
+import { SourceBadge } from "@/components/SourceBadge";
 import { TrackArt } from "@/components/TrackArt";
 import { bestPhaseFor } from "@/lib/plan-b";
 import {
@@ -160,7 +161,7 @@ import { energyStatusLine, hasKnownEnergy } from "@/lib/energy";
 import { assessGigReady } from "@/lib/gig-ready";
 import type { StickHealth } from "@/lib/stick-health";
 import type { SetSortTechnique } from "@/lib/sort-set";
-import { looksLikeMusicLink, sourceLabel } from "@/lib/music-link";
+import { looksLikeMusicLink } from "@/lib/music-link";
 import {
   DEFAULT_SET,
   PHASES,
@@ -3837,11 +3838,11 @@ export function SetBuilder() {
                             <div>
                               <strong>{track.name}</strong>
                               <span>
-                                <em
-                                  className={`source-pill source-${track.source || "spotify"}`}
-                                >
-                                  {sourceLabel(track.source || "spotify")}
-                                </em>
+                                <SourceBadge
+                                  source={track.source || "spotify"}
+                                  tip={t("builder.row.sourceTip")}
+                                  inline
+                                />
                                 {track.artists.join(", ")}
                                 {track.durationMs
                                   ? ` · ${formatDuration(track.durationMs)}`
@@ -4243,45 +4244,58 @@ export function SetBuilder() {
                   ))}
                 </div>
                 ) : null}
-                <p className="panel-inline-status builder-status">
-                  {roleFilter === "all"
-                    ? (() => {
-                        const playingMs = visibleTimeline.reduce(
-                          (sum, track) => sum + trackPlayedMs(track, blendMs),
-                          0,
-                        );
-                        const overMs = visibleTimeline.reduce(
-                          (sum, track) =>
-                            sum + Math.max(0, track.durationMs - trackPlayedMs(track, blendMs)),
-                          0,
-                        );
-                        const tooLong = filledMs > targetMs * 1.05;
-                        const withBlend = overMs >= 1000;
-                        return t(
-                          tooLong
-                            ? withBlend
-                              ? "builder.list.headAllLongBlend"
-                              : "builder.list.headAllLong"
-                            : withBlend
-                              ? "builder.list.headAllBlend"
-                              : "builder.list.headAll",
-                          {
-                            tracks: trackCount(visibleTimeline.length, t),
-                            duration: formatDuration(playingMs),
-                            over: formatDuration(overMs),
-                            mix: mixLabel,
-                            minutes: draft.durationMinutes,
-                          },
-                        );
-                      })()
-                    : t("builder.list.headRole", {
-                        role: roleLabel(t, roleFilter),
-                        tracks: trackCount(visibleTimeline.length, t),
-                        duration: formatDuration(
-                          visibleTimeline.reduce((sum, track) => sum + track.durationMs, 0),
-                        ),
-                      })}
-                </p>
+                {(() => {
+                  const listStatus =
+                    roleFilter === "all"
+                      ? (() => {
+                          const playingMs = visibleTimeline.reduce(
+                            (sum, track) => sum + trackPlayedMs(track, blendMs),
+                            0,
+                          );
+                          const overMs = visibleTimeline.reduce(
+                            (sum, track) =>
+                              sum +
+                              Math.max(0, track.durationMs - trackPlayedMs(track, blendMs)),
+                            0,
+                          );
+                          const tooLong = filledMs > targetMs * 1.05;
+                          const withBlend = overMs >= 1000;
+                          return t(
+                            tooLong
+                              ? withBlend
+                                ? "builder.list.headAllLongBlend"
+                                : "builder.list.headAllLong"
+                              : withBlend
+                                ? "builder.list.headAllBlend"
+                                : "builder.list.headAll",
+                            {
+                              tracks: trackCount(visibleTimeline.length, t),
+                              duration: formatDuration(playingMs),
+                              over: formatDuration(overMs),
+                              mix: mixLabel,
+                              minutes: draft.durationMinutes,
+                            },
+                          );
+                        })()
+                      : t("builder.list.headRole", {
+                          role: roleLabel(t, roleFilter),
+                          tracks: trackCount(visibleTimeline.length, t),
+                          duration: formatDuration(
+                            visibleTimeline.reduce(
+                              (sum, track) => sum + track.durationMs,
+                              0,
+                            ),
+                          ),
+                        });
+                  return (
+                    <p
+                      className="panel-inline-status builder-status"
+                      title={listStatus}
+                    >
+                      {listStatus}
+                    </p>
+                  );
+                })()}
                 <div className="list-head-tools">
                   <div
                     className="seg list-density"
@@ -4311,47 +4325,47 @@ export function SetBuilder() {
                       </button>
                     </Tip>
                   </div>
-                  {visibleTimeline.length > 0 ? (
-                    <Tip text={t("builder.list.detailsTitle")} end>
-                      <button
-                        type="button"
-                        className="list-setting"
-                        aria-pressed={
-                          visibleTimeline.length > 0 &&
-                          visibleTimeline.every((track) => openDetails.has(track.id))
-                        }
-                        disabled={visibleTimeline.length === 0}
-                        onClick={() => {
-                          const allOpen = visibleTimeline.every((track) =>
-                            openDetails.has(track.id),
-                          );
-                          if (allOpen) {
-                            // Close lower bodies; in Kompakt also fold rows back.
-                            setOpenDetails(new Set());
-                            if (listDensity === "compact") {
-                              setExpandedRows(new Set());
-                            }
-                            return;
-                          }
-                          const ids = visibleTimeline.map((track) => track.id);
-                          setOpenDetails(new Set(ids));
-                          if (listDensity === "compact") {
-                            setExpandedRows((current) => {
-                              const next = new Set(current);
-                              for (const id of ids) next.add(id);
-                              return next;
-                            });
-                          }
-                        }}
-                      >
-                        {visibleTimeline.length > 0 &&
-                        visibleTimeline.every((track) => openDetails.has(track.id))
-                          ? t("builder.list.detailsClose")
-                          : t("builder.list.detailsOpen")}
-                      </button>
-                    </Tip>
-                  ) : null}
                 </div>
+                {visibleTimeline.length > 0 ? (
+                  <Tip text={t("builder.list.detailsTitle")} className="list-details-tip" end>
+                    <button
+                      type="button"
+                      className="list-setting list-details-toggle"
+                      aria-pressed={
+                        visibleTimeline.length > 0 &&
+                        visibleTimeline.every((track) => openDetails.has(track.id))
+                      }
+                      disabled={visibleTimeline.length === 0}
+                      onClick={() => {
+                        const allOpen = visibleTimeline.every((track) =>
+                          openDetails.has(track.id),
+                        );
+                        if (allOpen) {
+                          // Close lower bodies; in Kompakt also fold rows back.
+                          setOpenDetails(new Set());
+                          if (listDensity === "compact") {
+                            setExpandedRows(new Set());
+                          }
+                          return;
+                        }
+                        const ids = visibleTimeline.map((track) => track.id);
+                        setOpenDetails(new Set(ids));
+                        if (listDensity === "compact") {
+                          setExpandedRows((current) => {
+                            const next = new Set(current);
+                            for (const id of ids) next.add(id);
+                            return next;
+                          });
+                        }
+                      }}
+                    >
+                      {visibleTimeline.length > 0 &&
+                      visibleTimeline.every((track) => openDetails.has(track.id))
+                        ? t("builder.list.detailsClose")
+                        : t("builder.list.detailsOpen")}
+                    </button>
+                  </Tip>
+                ) : null}
               </div>
               {visibleTimeline.length === 0 ? (
                 <div className="empty">
@@ -4448,6 +4462,13 @@ export function SetBuilder() {
                           <span className="manual-copy">
                             <span className="manual-title-line">
                               <strong title={track.name}>{track.name}</strong>
+                              {rowCompact ? (
+                                <SourceBadge
+                                  source={track.source}
+                                  tip={t("builder.row.sourceTip")}
+                                  inline
+                                />
+                              ) : null}
                               {rowCompact && draft.openerId === track.id ? (
                                 <em className="anchor-pill is-opener">{t("builder.row.openerBadge")}</em>
                               ) : null}
@@ -4470,24 +4491,18 @@ export function SetBuilder() {
                                 <>
                                   {" · "}
                                   {trackDetailsSummary(track, t)}
-                                  <em
-                                    className={
-                                      "source-mark" +
-                                      (track.source === "rekordbox" ? " is-rekordbox" : "")
-                                    }
-                                  >
-                                    {sourceLabel(track.source)}
-                                  </em>
                                 </>
                               ) : null}
                             </span>
                           </span>
                         </button>
-                        {draft.openerId === track.id ||
-                        draft.closerId === track.id ||
-                        draft.pinnedIds?.includes(track.id) ||
-                        draft.excludedIds?.includes(track.id) ? (
+                        {!rowCompact ? (
                           <span className="anchor-pills">
+                            <SourceBadge
+                              source={track.source}
+                              tip={t("builder.row.sourceTip")}
+                              inline
+                            />
                             {draft.openerId === track.id ? (
                               <Tip text={t("builder.row.openerBadgeTip")}>
                                 <em className="anchor-pill is-opener">
@@ -4510,7 +4525,7 @@ export function SetBuilder() {
                               </Tip>
                             ) : null}
                             {draft.excludedIds?.includes(track.id) ? (
-                              <Tip text={t("builder.row.excludeBadgeTip")} end>
+                              <Tip text={t("builder.row.excludeBadgeTip")}>
                                 <em className="anchor-pill is-exclude">
                                   {t("builder.row.excludeBadge")}
                                 </em>
@@ -4521,13 +4536,6 @@ export function SetBuilder() {
                       </div>
                       <div className="manual-controls">
                         <div className="manual-meta">
-                          <Tip text={t("builder.row.sourceTip")} className="compact-omit">
-                            <em
-                              className={`source-pill source-${track.source || "manual"}`}
-                            >
-                              {sourceLabel(track.source)}
-                            </em>
-                          </Tip>
                           <Tip text={t("builder.row.phaseHint")} className="compact-omit">
                             <select
                               value={track.phase}

@@ -21,6 +21,8 @@ type TipProps = {
   className?: string;
   /** Bubble aligns to the right edge of the trigger (default is left). Use on trailing controls. */
   end?: boolean;
+  /** Use span inside phrasing parents (e.g. title line) so Tip stays valid HTML. */
+  as?: "div" | "span";
 };
 
 type BubblePos = {
@@ -100,8 +102,16 @@ function PortalBubble({
  * Bubbles portal to document.body and clamp to the viewport so overflow:hidden
  * parents and left-edge tabs never clip the text.
  */
-export function Tip({ text, disabled, children, className, end = false }: TipProps) {
-  const wrapRef = useRef<HTMLDivElement>(null);
+export function Tip({
+  text,
+  disabled,
+  children,
+  className,
+  end = false,
+  as = "div",
+}: TipProps) {
+  const wrapRef = useRef<HTMLElement>(null);
+  const Wrap = as;
   const bubbleRef = useRef<HTMLSpanElement>(null);
   const hideTimer = useRef<number | null>(null);
   const [open, setOpen] = useState(false);
@@ -181,8 +191,10 @@ export function Tip({ text, disabled, children, className, end = false }: TipPro
   if (!text.trim()) return <>{children}</>;
 
   return (
-    <div
-      ref={wrapRef}
+    <Wrap
+      ref={(node) => {
+        wrapRef.current = node;
+      }}
       className={["tip", end ? "tip-end" : "", open ? "is-open" : "", className]
         .filter(Boolean)
         .join(" ")}
@@ -202,7 +214,7 @@ export function Tip({ text, disabled, children, className, end = false }: TipPro
       {open && pos ? (
         <PortalBubble id={tipId} text={text} pos={pos} bubbleRef={bubbleRef} />
       ) : null}
-    </div>
+    </Wrap>
   );
 }
 
