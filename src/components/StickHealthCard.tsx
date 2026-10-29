@@ -265,16 +265,29 @@ export function StickHealthCard({
   // Eject-failed always keeps repair as the strip primary, even when the parent
   // normally owns the CTA — the DJ must not unplug until repair/retry.
   const ejectFailed = note === "library.stickHealth.fix.ejectFailed";
+  // After write or repair the copy says “eject now” — that CTA must be visible.
+  const repairedOk = noteOk && note === "library.stickHealth.fix.repaired";
+  const leadWithEject =
+    caps.canEject && health.verdict === "ready" && (afterWrite || repairedOk);
   const primary = ejected
     ? null
     : deferPrimaryAction && !ejectFailed
       ? null
-      : afterWrite && caps.canEject && health.verdict === "ready"
+      : leadWithEject
         ? ("eject" as const)
         : primaryStickAction(health, caps, actionOpts);
+  // Header: keep Eject on the bar when ready (ghost), not only under Details.
+  const rowEject =
+    placement === "header" &&
+    caps.canEject &&
+    !ejected &&
+    primary !== "eject" &&
+    health.verdict === "ready";
   const secondary = ejected
     ? ([] as ReturnType<typeof secondaryStickActions>)
-    : secondaryStickActions(health, caps, actionOpts).filter((kind) => kind !== primary);
+    : secondaryStickActions(health, caps, actionOpts).filter(
+        (kind) => kind !== primary && !(kind === "eject" && rowEject),
+      );
   const tone = ejected
     ? "mute"
     : ejectFailed
@@ -467,8 +480,24 @@ export function StickHealthCard({
           </button>
         </Tip>
       ) : null}
+      {rowEject ? (
+        <Tip text={tip("eject")} disabled={busy !== null}>
+          <button
+            type="button"
+            className={"btn ghost" + (busy === "eject" ? " is-busy" : "")}
+            disabled={busy !== null}
+            onClick={() => void run("eject")}
+          >
+            {label("eject")}
+          </button>
+        </Tip>
+      ) : null}
       {showRepair && !ejectFailed ? (
-        <Tip text={tip("repair")} disabled={busy !== null} end={!trailing && !primary}>
+        <Tip
+          text={tip("repair")}
+          disabled={busy !== null}
+          end={!trailing && !primary && !rowEject}
+        >
           <button
             type="button"
             className={"btn ghost" + (busy === "repair" ? " is-busy" : "")}
