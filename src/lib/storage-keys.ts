@@ -24,6 +24,10 @@ export const LIST_DENSITY_KEY_LEGACY = "setform-list-density-v1";
 export const STICK_IDB_NAME = "setbuilder-stick";
 export const STICK_IDB_NAME_LEGACY = "setform-stick";
 
+/** Persist “do not show again” for the mid-session stick-lost dialog. */
+export const STICK_LOST_HIDE_KEY = "setbuilder-stick-lost-hide-v1";
+export const STICK_LOST_HIDE_KEY_LEGACY = "setform-stick-lost-hide-v1";
+
 /** Read new key, else legacy; if only legacy exists, copy to new. */
 export function readLocal(key: string, legacy: string): string | null {
   if (typeof localStorage === "undefined") return null;

@@ -35,7 +35,10 @@ import { StickSetList, type StickStatusSlice } from "@/components/RekordboxStick
 import { GigReadyDialog } from "@/components/GigReadyDialog";
 import { PlaylistLoadDialog } from "@/components/PlaylistLoadDialog";
 import { ResetSetDialog } from "@/components/ResetSetDialog";
-import { StickDisconnectDialog } from "@/components/StickDisconnectDialog";
+import {
+  isStickLostDialogHidden,
+  StickDisconnectDialog,
+} from "@/components/StickDisconnectDialog";
 import { AppUpdateCard } from "@/components/AppUpdateCard";
 import { OverlapField } from "@/components/OverlapField";
 import { PreviewPlayer } from "@/components/PreviewPlayer";
@@ -529,6 +532,8 @@ export function SetBuilder() {
   const [openDetails, setOpenDetails] = useState<Set<string>>(() => new Set());
   /** Compact list: rows expanded to Comfortable chrome; independent of the details body. */
   const [expandedRows, setExpandedRows] = useState<Set<string>>(() => new Set());
+  /** Compact one-liner: show the secondary action icons without opening Details. */
+  const [openToolRows, setOpenToolRows] = useState<Set<string>>(() => new Set());
   const listDensity = useSyncExternalStore(
     subscribeListDensity,
     storedListDensity,
@@ -541,8 +546,10 @@ export function SetBuilder() {
     if (next === "compact") {
       setExpandedRows(new Set());
       setOpenDetails(new Set());
+      setOpenToolRows(new Set());
     } else {
       setExpandedRows(new Set());
+      setOpenToolRows(new Set());
     }
   }
   function toggleTrackDetails(trackId: string) {
@@ -573,6 +580,20 @@ export function SetBuilder() {
       if (!current.has(trackId)) return current;
       const next = new Set(current);
       next.delete(trackId);
+      return next;
+    });
+    setOpenToolRows((current) => {
+      if (!current.has(trackId)) return current;
+      const next = new Set(current);
+      next.delete(trackId);
+      return next;
+    });
+  }
+  function toggleToolRow(trackId: string) {
+    setOpenToolRows((current) => {
+      const next = new Set(current);
+      if (next.has(trackId)) next.delete(trackId);
+      else next.add(trackId);
       return next;
     });
   }
@@ -1965,6 +1986,7 @@ export function SetBuilder() {
       resumePreviewAfterStick.current = true;
       requestPreviewPause();
     }
+    if (isStickLostDialogHidden()) return;
     setStickLostOpen(true);
   }
 
@@ -4384,6 +4406,9 @@ export function SetBuilder() {
                 const rowExpanded =
                   listDensity !== "compact" || expandedRows.has(track.id);
                 const rowCompact = !rowExpanded;
+                const toolsOpen = openToolRows.has(track.id);
+                // Compact one-liner: only primary actions until “…Mehr” reveals the rest.
+                const showExtraTools = !rowCompact || toolsOpen;
                 return (
                 <li
                   key={`${track.role}-${track.id}`}
@@ -4392,6 +4417,7 @@ export function SetBuilder() {
                     "manual-row",
                     rowCompact ? "is-compact" : "",
                     listDensity === "compact" && rowExpanded ? "is-compact-open" : "",
+                    rowCompact && toolsOpen ? "is-tools-open" : "",
                     focusTrackId === track.id ? "focused" : "",
                     dragId === track.id ? "is-dragging" : "",
                     overId === track.id && dragId !== track.id ? "is-over" : "",
@@ -4525,7 +4551,7 @@ export function SetBuilder() {
                               </Tip>
                             ) : null}
                             {draft.excludedIds?.includes(track.id) ? (
-                              <Tip text={t("builder.row.excludeBadgeTip")}>
+                              <Tip text={t("builder.row.excludeBadgeTip")} end>
                                 <em className="anchor-pill is-exclude">
                                   {t("builder.row.excludeBadge")}
                                 </em>
@@ -4624,8 +4650,8 @@ export function SetBuilder() {
                               )}
                             </button>
                           </Tip>
-                          {track.role !== "safety" ? (
-                            <Tip text={t("builder.row.rehearseTip")} className="compact-omit">
+                          {showExtraTools && track.role !== "safety" ? (
+                            <Tip text={t("builder.row.rehearseTip")}>
                               <button
                                 type="button"
                                 className={
@@ -4641,28 +4667,31 @@ export function SetBuilder() {
                               </button>
                             </Tip>
                           ) : null}
-                          <Tip text={t("builder.row.moveUpTip")} className="compact-omit">
-                            <button
-                              type="button"
-                              className="icon-action"
-                              onClick={() => moveTrack(track.id, -1)}
-                              aria-label={t("builder.row.moveUpAria", { name: track.name })}
-                            >
-                              <ActionIcon name="up" />
-                            </button>
-                          </Tip>
-                          <Tip text={t("builder.row.moveDownTip")} className="compact-omit">
-                            <button
-                              type="button"
-                              className="icon-action"
-                              onClick={() => moveTrack(track.id, 1)}
-                              aria-label={t("builder.row.moveDownAria", { name: track.name })}
-                            >
-                              <ActionIcon name="down" />
-                            </button>
-                          </Tip>
-                          {track.filePath?.trim() ? (
-                            <span className="compact-omit">
+                          {showExtraTools ? (
+                            <Tip text={t("builder.row.moveUpTip")}>
+                              <button
+                                type="button"
+                                className="icon-action"
+                                onClick={() => moveTrack(track.id, -1)}
+                                aria-label={t("builder.row.moveUpAria", { name: track.name })}
+                              >
+                                <ActionIcon name="up" />
+                              </button>
+                            </Tip>
+                          ) : null}
+                          {showExtraTools ? (
+                            <Tip text={t("builder.row.moveDownTip")}>
+                              <button
+                                type="button"
+                                className="icon-action"
+                                onClick={() => moveTrack(track.id, 1)}
+                                aria-label={t("builder.row.moveDownAria", { name: track.name })}
+                              >
+                                <ActionIcon name="down" />
+                              </button>
+                            </Tip>
+                          ) : null}
+                          {showExtraTools && track.filePath?.trim() ? (
                             <TrackEnergyMenu
                               name={track.name}
                               busy={energyPendingIds.has(track.id)}
@@ -4675,7 +4704,6 @@ export function SetBuilder() {
                                 })
                               }
                             />
-                            </span>
                           ) : null}
                           {track.role === "safety" ? (
                             <Tip text={t("builder.row.placeInSetTip")}>
@@ -4740,9 +4768,8 @@ export function SetBuilder() {
                               </Tip>
                             </>
                           )}
-                          {track.role !== "safety" ? (
+                          {showExtraTools && track.role !== "safety" ? (
                             <Tip
-                              className="compact-omit"
                               text={
                                 draft.openerId === track.id
                                   ? t("builder.row.clearOpenerTip")
@@ -4774,9 +4801,8 @@ export function SetBuilder() {
                               </button>
                             </Tip>
                           ) : null}
-                          {track.role !== "safety" ? (
+                          {showExtraTools && track.role !== "safety" ? (
                             <Tip
-                              className="compact-omit"
                               text={
                                 draft.closerId === track.id
                                   ? t("builder.row.clearCloserTip")
@@ -4843,51 +4869,83 @@ export function SetBuilder() {
                               <ActionIcon name="pin" />
                             </button>
                           </Tip>
-                          <Tip
-                            className="compact-omit"
-                            text={
-                              draft.excludedIds?.includes(track.id)
-                                ? t("builder.row.clearExcludeTip")
-                                : t("builder.row.setExcludeTitle")
-                            }
-                          >
-                            <button
-                              type="button"
-                              className={
+                          {showExtraTools ? (
+                            <Tip
+                              text={
                                 draft.excludedIds?.includes(track.id)
-                                  ? "icon-action is-exclude"
-                                  : "icon-action"
+                                  ? t("builder.row.clearExcludeTip")
+                                  : t("builder.row.setExcludeTitle")
                               }
-                              aria-label={
-                                draft.excludedIds?.includes(track.id)
-                                  ? t("builder.row.clearExclude")
-                                  : t("builder.row.setExclude")
-                              }
-                              aria-pressed={Boolean(draft.excludedIds?.includes(track.id))}
-                              onClick={() => {
-                                const wasExcluded = draft.excludedIds?.includes(track.id);
-                                setDraft((current) =>
-                                  toggleExclude(
-                                    current,
-                                    track.id,
-                                    t("analysis.why.excluded"),
-                                  ),
-                                );
-                                setStatus(
-                                  t(
-                                    wasExcluded
-                                      ? "builder.status.excludeCleared"
-                                      : "builder.status.excluded",
-                                    { name: track.name },
-                                  ),
-                                );
-                              }}
                             >
-                              <ActionIcon name="exclude" />
-                            </button>
-                          </Tip>
+                              <button
+                                type="button"
+                                className={
+                                  draft.excludedIds?.includes(track.id)
+                                    ? "icon-action is-exclude"
+                                    : "icon-action"
+                                }
+                                aria-label={
+                                  draft.excludedIds?.includes(track.id)
+                                    ? t("builder.row.clearExclude")
+                                    : t("builder.row.setExclude")
+                                }
+                                aria-pressed={Boolean(draft.excludedIds?.includes(track.id))}
+                                onClick={() => {
+                                  const wasExcluded = draft.excludedIds?.includes(track.id);
+                                  setDraft((current) =>
+                                    toggleExclude(
+                                      current,
+                                      track.id,
+                                      t("analysis.why.excluded"),
+                                    ),
+                                  );
+                                  setStatus(
+                                    t(
+                                      wasExcluded
+                                        ? "builder.status.excludeCleared"
+                                        : "builder.status.excluded",
+                                      { name: track.name },
+                                    ),
+                                  );
+                                }}
+                              >
+                                <ActionIcon name="exclude" />
+                              </button>
+                            </Tip>
+                          ) : null}
                           {listDensity === "compact" ? (
                             <>
+                              {rowCompact ? (
+                                <Tip
+                                  text={
+                                    toolsOpen
+                                      ? t("builder.list.fewerToolsTip")
+                                      : t("builder.list.moreToolsTip")
+                                  }
+                                >
+                                  <button
+                                    type="button"
+                                    className={
+                                      toolsOpen
+                                        ? "icon-action is-tools-toggle is-open"
+                                        : "icon-action is-tools-toggle"
+                                    }
+                                    aria-expanded={toolsOpen}
+                                    aria-label={
+                                      toolsOpen
+                                        ? t("builder.list.fewerTools")
+                                        : t("builder.list.moreTools")
+                                    }
+                                    onClick={(event) => {
+                                      event.preventDefault();
+                                      event.stopPropagation();
+                                      toggleToolRow(track.id);
+                                    }}
+                                  >
+                                    <ActionIcon name="more" />
+                                  </button>
+                                </Tip>
+                              ) : null}
                               <Tip
                                 className="compact-details-tip"
                                 text={t("builder.list.detailsTitle")}

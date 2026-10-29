@@ -725,16 +725,23 @@ html[data-frame="mac"] .set-shell .hero-copy {
   border-color: rgba(30, 215, 96, 0.55) !important;
 }
 
-/* Compact: number · handle · cover · copy · actions share one vertical center. */
+
+.set-shell .manual-row.is-compact {
+  align-items: center;
+  padding-top: 0.4rem !important;
+  padding-bottom: 0.35rem !important;
+}
+
+/* Number · handle · cover · copy · tools share one vertical center. */
 .set-shell .manual-row.is-compact .manual-row-main {
   align-items: center !important;
-  column-gap: 0.85rem;
+  column-gap: 0.7rem;
 }
 
 .set-shell .manual-row.is-compact .manual-controls {
   display: flex !important;
   flex-direction: row !important;
-  flex-wrap: nowrap !important;
+  flex-wrap: wrap !important;
   align-items: center !important;
   align-self: center;
   min-height: 0;
@@ -743,8 +750,8 @@ html[data-frame="mac"] .set-shell .hero-copy {
 
 .set-shell .manual-row.is-compact .manual-select {
   grid-template-columns: 32px minmax(0, 1fr) !important;
-  column-gap: 0.6rem !important;
-  gap: 0 0.6rem !important;
+  column-gap: 0.55rem !important;
+  gap: 0 0.55rem !important;
   align-items: center !important;
   padding: 0 !important;
 }
@@ -760,18 +767,33 @@ html[data-frame="mac"] .set-shell .hero-copy {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 0.14rem;
+  gap: 0.12rem;
   padding-top: 0;
   line-height: 1.25;
   min-width: 0;
 }
 
-.set-shell .manual-row.is-compact .manual-copy > span {
-  margin-top: 0;
+.set-shell .manual-row.is-compact .manual-copy > span:not(.manual-title-line) {
+  margin-top: 0 !important;
 }
 
 .set-shell .manual-row.is-compact .manual-title-line {
-  gap: 0.35rem;
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.28rem;
+}
+
+.set-shell .manual-row.is-compact .manual-title-line > strong {
+  line-height: 1.15;
+}
+
+.set-shell .manual-row.is-compact .manual-title-line > .tip:has(.source-badge),
+.set-shell .manual-row.is-compact .manual-title-line > .source-badge,
+.set-shell .manual-row.is-compact .manual-title-line > .anchor-pill {
+  flex: none;
+  align-self: center;
+  margin: 0 !important;
 }
 
 .set-shell .manual-row.is-compact .manual-meta {
@@ -781,7 +803,7 @@ html[data-frame="mac"] .set-shell .hero-copy {
 /* Compact list toolbar: one row — no lone wrap of Details/Zuklappen/trash. */
 .set-shell .manual-list.is-compact .timeline-tools {
   display: flex !important;
-  flex-wrap: nowrap !important;
+  flex-wrap: wrap !important;
   align-items: center;
   align-self: center;
   justify-content: flex-end;
@@ -789,17 +811,18 @@ html[data-frame="mac"] .set-shell .hero-copy {
   height: auto;
   min-height: 2rem;
   max-width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: thin;
+  overflow: visible;
+}
+
+.set-shell .manual-list.is-compact .timeline-tools .icon-action.is-tools-toggle.is-open {
+  background: color-mix(in oklab, var(--spotify) 18%, #242424) !important;
+  border-color: rgba(30, 215, 96, 0.55) !important;
+  color: #fff !important;
 }
 
 .set-shell .manual-list.is-compact .timeline-tools > .tip:has(> .icon-action),
 .set-shell .manual-list.is-compact .timeline-tools > .track-energy {
   box-sizing: border-box;
-  display: inline-flex !important;
-  align-items: center;
-  justify-content: center;
   flex: 0 0 2rem;
   width: 2rem !important;
   min-width: 2rem !important;
@@ -820,9 +843,6 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 .set-shell .manual-list.is-compact .timeline-tools > .tip.compact-details-tip {
-  display: inline-flex !important;
-  align-items: center;
-  justify-content: center;
   flex: 0 0 auto;
   width: auto !important;
   min-width: max-content !important;
@@ -885,16 +905,14 @@ html[data-frame="mac"] .set-shell .hero-copy {
   display: none;
 }
 
-.set-shell .manual-row.is-compact .source-badge {
-  width: 1rem !important;
-  height: 1rem !important;
-  margin-left: 0.3rem;
-  background: transparent !important;
+.set-shell .manual-row.is-compact .source-mark {
+  background: none !important;
+  color: #8d8d8d !important;
+  font-weight: 650;
 }
 
-.set-shell .manual-meta .source-badge {
-  width: 1.35rem;
-  height: 1.35rem;
+.set-shell .manual-row.is-compact .source-mark.is-rekordbox {
+  color: #c8143c !important;
 }
 
 .set-shell .manual-list.is-compact .compact-details-chevron {
@@ -915,6 +933,36 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 /* Status, validation and waiting feedback follow the same compact card. */
+
+/* Source badge on the title line — slightly larger; rekordbox always brand red. */
+.set-shell .manual-title-line .source-badge,
+.set-shell .manual-row.is-compact .source-badge,
+.set-shell .anchor-pills .source-badge {
+  width: 1.15rem !important;
+  height: 1.15rem !important;
+  margin: 0 !important;
+  background: transparent !important;
+}
+
+.set-shell .manual-title-line .source-badge.source-rekordbox,
+.set-shell .manual-row.is-compact .source-badge.source-rekordbox,
+.set-shell .anchor-pills .source-badge.source-rekordbox,
+.set-shell .source-badge.source-rekordbox {
+  color: #c8143c !important;
+}
+
+.set-shell .manual-title-line .source-badge .source-badge-icon,
+.set-shell .manual-row.is-compact .source-badge .source-badge-icon,
+.set-shell .anchor-pills .source-badge .source-badge-icon {
+  width: 0.95rem !important;
+  height: 0.95rem !important;
+}
+
+.set-shell .manual-meta .source-badge {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
 .set-shell :is(.banner, .field-notice) {
   margin: 0 0 var(--ui-space-3) !important;
   padding: var(--ui-space-3) var(--ui-space-4) !important;
@@ -1281,10 +1329,6 @@ html[data-frame="mac"] .set-shell .hero-copy {
 
   .set-shell .timeline-tools {
     flex-wrap: wrap;
-  }
-
-  .set-shell .manual-list.is-compact .timeline-tools {
-    flex-wrap: nowrap !important;
   }
 }
 
@@ -2273,25 +2317,18 @@ dialog.stick-dialog.gig-ready-dialog .gig-ready-actions .btn {
 .set-shell .manual-row {
   grid-template-columns: max-content minmax(0, 1fr);
   align-items: start;
-  column-gap: 0.65rem !important;
+  column-gap: 0.55rem !important;
   row-gap: 0.55rem;
-  /* Leave room past the focus rail so the index isn’t clipped. */
   padding-left: 0.7rem !important;
   padding-right: 0.35rem !important;
 }
 
 .set-shell .manual-row.is-compact {
-  align-items: center;
   row-gap: 0.08rem;
-  column-gap: 0.5rem !important;
-  padding-top: 0.45rem !important;
-  padding-bottom: 0.4rem !important;
 }
 
 .set-shell .manual-row.is-compact-open {
-  align-items: start;
   row-gap: 0.55rem;
-  column-gap: 0.65rem !important;
 }
 
 .set-shell .manual-body {
@@ -2344,7 +2381,7 @@ dialog.stick-dialog.gig-ready-dialog .gig-ready-actions .btn {
   padding-top: 0;
   flex-wrap: nowrap;
   justify-content: flex-start;
-  gap: 0.45rem;
+  gap: 0.4rem;
   width: max-content;
   min-width: max-content;
   max-width: none;
@@ -2352,21 +2389,12 @@ dialog.stick-dialog.gig-ready-dialog .gig-ready-actions .btn {
   margin: 0;
 }
 
-.set-shell .manual-index > .tip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  line-height: 0;
-}
-
 .set-shell .manual-index > em.set-pos {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   flex: 0 0 auto;
   width: auto;
-  min-width: 1.1ch;
+  min-width: 0;
   height: 100%;
   margin: 0;
   overflow: visible;
@@ -2386,18 +2414,19 @@ dialog.stick-dialog.gig-ready-dialog .gig-ready-actions .btn {
 .set-shell .manual-row.is-compact .manual-index {
   align-self: center;
   height: 32px;
-  gap: 0.4rem;
+  gap: 0.35rem;
 }
 
 .set-shell .manual-row.is-compact .manual-index > em.set-pos {
-  font-size: 1.22rem;
+  font-size: 1.2rem;
   line-height: 1;
   transform: none;
 }
 
-.set-shell .manual-row.is-compact-open .manual-index {
-  align-self: start;
-  height: 44px;
+.set-shell .manual-row.is-compact .manual-index > .tip {
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
 }
 
 .set-shell .manual-select {
@@ -2507,6 +2536,26 @@ dialog.stick-dialog.stick-disconnect-dialog p {
 dialog.stick-dialog.stick-disconnect-dialog .stick-warn,
 dialog.stick-dialog.stick-disconnect-dialog .stick-hint {
   margin-top: 0.65rem;
+}
+
+dialog.stick-dialog.stick-disconnect-dialog .stick-dismiss {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+  color: var(--ui-muted);
+  font-size: var(--ui-font-sm);
+  line-height: 1.35;
+  cursor: pointer;
+  user-select: none;
+}
+
+dialog.stick-dialog.stick-disconnect-dialog .stick-dismiss input {
+  width: 0.95rem;
+  height: 0.95rem;
+  margin: 0;
+  accent-color: #fff;
+  cursor: pointer;
 }
 
 dialog.stick-dialog.stick-disconnect-dialog .stick-actions {

@@ -13,7 +13,8 @@ type ActionIconName =
   | "pin"
   | "exclude"
   | "rehearse"
-  | "remove";
+  | "remove"
+  | "more";
 
 const svgProps: SVGProps<SVGSVGElement> = {
   className: "action-icon",
@@ -106,6 +107,13 @@ export function ActionIcon({ name }: { name: ActionIconName }) {
         <path d="M9.5 7V5h5v2" />
         <path d="m8 7 .8 12.5h6.4L16 7" />
         <path d="M10.5 11v5M13.5 11v5" />
+      </>
+    ),
+    more: (
+      <>
+        <circle cx="6.5" cy="12" r="1.35" fill="currentColor" stroke="none" />
+        <circle cx="12" cy="12" r="1.35" fill="currentColor" stroke="none" />
+        <circle cx="17.5" cy="12" r="1.35" fill="currentColor" stroke="none" />
       </>
     ),
   };

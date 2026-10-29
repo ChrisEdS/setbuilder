@@ -4,6 +4,20 @@ import { useEffect, useRef, useState } from "react";
 import { errorText } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n/react";
 import { stickPicker } from "@/lib/stick-session";
+import {
+  readLocal,
+  STICK_LOST_HIDE_KEY,
+  STICK_LOST_HIDE_KEY_LEGACY,
+  writeLocal,
+} from "@/lib/storage-keys";
+
+export function isStickLostDialogHidden(): boolean {
+  return readLocal(STICK_LOST_HIDE_KEY, STICK_LOST_HIDE_KEY_LEGACY) === "1";
+}
+
+export function hideStickLostDialogForever(): void {
+  writeLocal(STICK_LOST_HIDE_KEY, "1");
+}
 
 export function StickDisconnectDialog({
   open,
@@ -30,9 +44,11 @@ export function StickDisconnectDialog({
   const canPick = stickPicker() !== null;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [doNotShowAgain, setDoNotShowAgain] = useState(false);
   const [wasOpen, setWasOpen] = useState(open);
   const autoReconnectRef = useRef(onAutoReconnect);
   const onCloseRef = useRef(onClose);
+  const doNotShowAgainRef = useRef(doNotShowAgain);
   const tRef = useRef(t);
 
   // Adjust local UI when the dialog closes — React's recommended "adjust state
@@ -42,6 +58,7 @@ export function StickDisconnectDialog({
     if (!open) {
       setBusy(false);
       setError(null);
+      setDoNotShowAgain(false);
     }
   }
 
@@ -54,8 +71,17 @@ export function StickDisconnectDialog({
   }, [onClose]);
 
   useEffect(() => {
+    doNotShowAgainRef.current = doNotShowAgain;
+  }, [doNotShowAgain]);
+
+  useEffect(() => {
     tRef.current = t;
   }, [t]);
+
+  function finishClose() {
+    if (doNotShowAgainRef.current) hideStickLostDialogForever();
+    onCloseRef.current();
+  }
 
   useEffect(() => {
     const node = dialog.current;
@@ -80,7 +106,7 @@ export function StickDisconnectDialog({
         .current?.()
         .then((ok) => {
           if (cancelled) return;
-          if (ok) onCloseRef.current();
+          if (ok) finishClose();
         })
         .catch((caught) => {
           if (!cancelled) setError(errorText(caught, tRef.current));
@@ -99,7 +125,7 @@ export function StickDisconnectDialog({
     setBusy(true);
     setError(null);
     try {
-      if (await job()) onClose();
+      if (await job()) finishClose();
     } catch (caught) {
       setError(errorText(caught, t));
     } finally {
@@ -113,10 +139,10 @@ export function StickDisconnectDialog({
       className="stick-dialog stick-disconnect-dialog"
       aria-labelledby="stick-disconnect-title"
       aria-describedby="stick-disconnect-body"
-      onClose={onClose}
+      onClose={() => onCloseRef.current()}
       onCancel={(event) => {
         event.preventDefault();
-        if (!busy) onClose();
+        if (!busy) finishClose();
       }}
     >
       <h2 id="stick-disconnect-title">{t("builder.stickLost.title")}</h2>
@@ -127,8 +153,17 @@ export function StickDisconnectDialog({
           {error}
         </p>
       ) : null}
+      <label className="stick-dismiss">
+        <input
+          type="checkbox"
+          checked={doNotShowAgain}
+          disabled={busy}
+          onChange={(event) => setDoNotShowAgain(event.target.checked)}
+        />
+        <span>{t("builder.stickLost.doNotShowAgain")}</span>
+      </label>
       <div className="stick-actions">
-        <button type="button" className="btn ghost" onClick={onClose} disabled={busy}>
+        <button type="button" className="btn ghost" onClick={finishClose} disabled={busy}>
           {t("builder.stickLost.later")}
         </button>
         {canPick ? (
