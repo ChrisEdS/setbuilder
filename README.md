@@ -4,7 +4,7 @@
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
 
-**Version 4.6.8** · Out of the playlist.
+**Version 4.7.0** · Out of the playlist.
 
 The stick is the material. You draw the arc, set the join, and hear if it holds.
 
@@ -23,6 +23,7 @@ Before the gig, the room is quiet. SETBUILDER is that room. You arrive with a re
 - 🎲 **Another night from the same crate.** Different songs. Or the playlist, the collection, the history, once they are in the room. After loading a stick playlist, **From the playlist** stays available on the set.
 - 🛟 **Plan B in your pocket.** Roles and alternatives for the moment the floor changes its mind. Place one before or after a song, or pin it into the night.
 - 🎧 **Hear the handoff first.** A card you can drag and open up. Previous, this track, next. The same length as the setlist.
+- 📋 **Compact or Comfortable.** On the setlist you pick the row density. Compact keeps play, pin, exchange and remove on one line. **Details** opens only note, key, BPM, energy and blend; **Collapse** or choosing **Compact** again makes the row small.
 - 🔍 **Only what fits.** Key, BPM, and energy pull the library in close. Fits after ranks what can follow a chosen track, and the song you add lands right after it.
 - 📝 **A line for the phase.** On the arc, when you want it. Driving, 128. It travels onto the sheet for the booth.
 - 🎒 **Ready when it holds.** The checklist first. If the files aren't in this session, pick the stick folder again right there. Then the stick for the player, the sheet for the booth, the file for the computer. Or the set stays in SETBUILDER.

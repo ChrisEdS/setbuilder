@@ -196,12 +196,27 @@ import {
   DRAFT_STORAGE_KEY as STORAGE_KEY,
   DRAFT_STORAGE_KEY_LEGACY,
   DRAFT_STORAGE_KEY_V3_LEGACY,
+  LIST_DENSITY_KEY,
+  LIST_DENSITY_KEY_LEGACY,
   readLocal,
   SETUPS_EVENT,
   SETUPS_STORAGE_KEY as SETUPS_KEY,
   SETUPS_STORAGE_KEY_LEGACY,
   writeLocal,
 } from "@/lib/storage-keys";
+
+type ListDensity = "comfortable" | "compact";
+
+function storedListDensity(): ListDensity {
+  return readLocal(LIST_DENSITY_KEY, LIST_DENSITY_KEY_LEGACY) === "compact"
+    ? "compact"
+    : "comfortable";
+}
+
+function subscribeListDensity(onChange: () => void) {
+  window.addEventListener("setbuilder-list-density", onChange);
+  return () => window.removeEventListener("setbuilder-list-density", onChange);
+}
 
 function MixJoinLine({ tracks, track }: { tracks: SetTrack[]; track: SetTrack }) {
   const { t } = useI18n();
@@ -509,8 +524,57 @@ export function SetBuilder() {
   const [exchangeFor, setExchangeFor] = useState<string | null>(null);
   const [placeFor, setPlaceFor] = useState<string | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
-  /** Setliste: tracks whose key, BPM, energy and comment fields are open */
+  /** Setliste: tracks whose key/BPM/note body is open (summary stays visible). */
   const [openDetails, setOpenDetails] = useState<Set<string>>(() => new Set());
+  /** Compact list: rows expanded to Comfortable chrome; independent of the details body. */
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(() => new Set());
+  const listDensity = useSyncExternalStore(
+    subscribeListDensity,
+    storedListDensity,
+    () => "comfortable" as ListDensity,
+  );
+  function chooseListDensity(next: ListDensity) {
+    writeLocal(LIST_DENSITY_KEY, next);
+    window.dispatchEvent(new Event("setbuilder-list-density"));
+    // Kompakt must always look compact — drop per-row expansions.
+    if (next === "compact") {
+      setExpandedRows(new Set());
+      setOpenDetails(new Set());
+    } else {
+      setExpandedRows(new Set());
+    }
+  }
+  function toggleTrackDetails(trackId: string) {
+    const bodyOpen = openDetails.has(trackId);
+    const rowExpanded = listDensity !== "compact" || expandedRows.has(trackId);
+    if (!rowExpanded) {
+      // From a compact one-liner: open Comfortable chrome, then only the lower body.
+      setExpandedRows((current) => new Set(current).add(trackId));
+      setOpenDetails((current) => new Set(current).add(trackId));
+      return;
+    }
+    // Row already expanded: Details only folds the lower body (summary stays).
+    setOpenDetails((current) => {
+      const next = new Set(current);
+      if (bodyOpen) next.delete(trackId);
+      else next.add(trackId);
+      return next;
+    });
+  }
+  function collapseTrackRow(trackId: string) {
+    setOpenDetails((current) => {
+      if (!current.has(trackId)) return current;
+      const next = new Set(current);
+      next.delete(trackId);
+      return next;
+    });
+    setExpandedRows((current) => {
+      if (!current.has(trackId)) return current;
+      const next = new Set(current);
+      next.delete(trackId);
+      return next;
+    });
+  }
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   const dragIdRef = useRef<string | null>(null);
@@ -4218,31 +4282,76 @@ export function SetBuilder() {
                         ),
                       })}
                 </p>
-                {visibleTimeline.length > 0 ? (
-                  <Tip text={t("builder.list.detailsTitle")} end>
-                    <button
-                      type="button"
-                      className="list-setting"
-                      aria-pressed={
-                        visibleTimeline.length > 0 &&
+                <div className="list-head-tools">
+                  <div
+                    className="seg list-density"
+                    role="group"
+                    aria-label={t("builder.list.densityAria")}
+                  >
+                    <Tip text={t("builder.list.densityTitle")}>
+                      <button
+                        type="button"
+                        className={
+                          listDensity === "comfortable" ? "seg-item active" : "seg-item"
+                        }
+                        aria-pressed={listDensity === "comfortable"}
+                        onClick={() => chooseListDensity("comfortable")}
+                      >
+                        {t("builder.list.comfortable")}
+                      </button>
+                    </Tip>
+                    <Tip text={t("builder.list.densityTitle")} end>
+                      <button
+                        type="button"
+                        className={listDensity === "compact" ? "seg-item active" : "seg-item"}
+                        aria-pressed={listDensity === "compact"}
+                        onClick={() => chooseListDensity("compact")}
+                      >
+                        {t("builder.list.compact")}
+                      </button>
+                    </Tip>
+                  </div>
+                  {visibleTimeline.length > 0 ? (
+                    <Tip text={t("builder.list.detailsTitle")} end>
+                      <button
+                        type="button"
+                        className="list-setting"
+                        aria-pressed={
+                          visibleTimeline.length > 0 &&
+                          visibleTimeline.every((track) => openDetails.has(track.id))
+                        }
+                        disabled={visibleTimeline.length === 0}
+                        onClick={() => {
+                          const allOpen = visibleTimeline.every((track) =>
+                            openDetails.has(track.id),
+                          );
+                          if (allOpen) {
+                            // Close lower bodies; in Kompakt also fold rows back.
+                            setOpenDetails(new Set());
+                            if (listDensity === "compact") {
+                              setExpandedRows(new Set());
+                            }
+                            return;
+                          }
+                          const ids = visibleTimeline.map((track) => track.id);
+                          setOpenDetails(new Set(ids));
+                          if (listDensity === "compact") {
+                            setExpandedRows((current) => {
+                              const next = new Set(current);
+                              for (const id of ids) next.add(id);
+                              return next;
+                            });
+                          }
+                        }}
+                      >
+                        {visibleTimeline.length > 0 &&
                         visibleTimeline.every((track) => openDetails.has(track.id))
-                      }
-                      disabled={visibleTimeline.length === 0}
-                      onClick={() =>
-                        setOpenDetails((current) =>
-                          visibleTimeline.every((track) => current.has(track.id))
-                            ? new Set()
-                            : new Set(visibleTimeline.map((track) => track.id)),
-                        )
-                      }
-                    >
-                      {visibleTimeline.length > 0 &&
-                      visibleTimeline.every((track) => openDetails.has(track.id))
-                        ? t("builder.list.detailsClose")
-                        : t("builder.list.detailsOpen")}
-                    </button>
-                  </Tip>
-                ) : null}
+                          ? t("builder.list.detailsClose")
+                          : t("builder.list.detailsOpen")}
+                      </button>
+                    </Tip>
+                  ) : null}
+                </div>
               </div>
               {visibleTimeline.length === 0 ? (
                 <div className="empty">
@@ -4250,13 +4359,25 @@ export function SetBuilder() {
                   <p>{t("builder.list.emptyHint")}</p>
                 </div>
               ) : (
-            <ol className="manual-list">
-              {visibleTimeline.map((track) => (
+            <ol
+              className={"manual-list" + (listDensity === "compact" ? " is-compact" : "")}
+              data-density={listDensity}
+            >
+              {visibleTimeline.map((track) => {
+                const detailsOpen = openDetails.has(track.id);
+                // Compact one-liner until Details expands the row. Folding the
+                // lower body keeps Comfortable chrome + the summary line.
+                const rowExpanded =
+                  listDensity !== "compact" || expandedRows.has(track.id);
+                const rowCompact = !rowExpanded;
+                return (
                 <li
                   key={`${track.role}-${track.id}`}
                   id={`track-${track.id}`}
                   className={[
                     "manual-row",
+                    rowCompact ? "is-compact" : "",
+                    listDensity === "compact" && rowExpanded ? "is-compact-open" : "",
                     focusTrackId === track.id ? "focused" : "",
                     dragId === track.id ? "is-dragging" : "",
                     overId === track.id && dragId !== track.id ? "is-over" : "",
@@ -4281,6 +4402,7 @@ export function SetBuilder() {
                   }}
                 >
                   <span className="manual-index">
+                    <em className="set-pos">{positions.get(track.id) ?? "—"}</em>
                     <Tip text={t("builder.row.dragTitle")}>
                       <button
                         type="button"
@@ -4310,7 +4432,6 @@ export function SetBuilder() {
                         <i />
                       </button>
                     </Tip>
-                    <em className="set-pos">{positions.get(track.id) ?? "—"}</em>
                   </span>
                   <div className="manual-body">
                     <div className="manual-row-main">
@@ -4320,14 +4441,45 @@ export function SetBuilder() {
                           className="manual-select"
                           onClick={() => setFocusTrackId(track.id)}
                         >
-                          <TrackArt url={track.imageUrl} size={44} />
+                          <TrackArt
+                            url={track.imageUrl}
+                            size={rowCompact ? 32 : 44}
+                          />
                           <span className="manual-copy">
-                            <strong>{track.name}</strong>
+                            <span className="manual-title-line">
+                              <strong title={track.name}>{track.name}</strong>
+                              {rowCompact && draft.openerId === track.id ? (
+                                <em className="anchor-pill is-opener">{t("builder.row.openerBadge")}</em>
+                              ) : null}
+                              {rowCompact && draft.closerId === track.id ? (
+                                <em className="anchor-pill is-closer">{t("builder.row.closerBadge")}</em>
+                              ) : null}
+                              {rowCompact && draft.pinnedIds?.includes(track.id) ? (
+                                <em className="anchor-pill is-pin">{t("builder.row.pinBadge")}</em>
+                              ) : null}
+                              {rowCompact && draft.excludedIds?.includes(track.id) ? (
+                                <em className="anchor-pill is-exclude">{t("builder.row.excludeBadge")}</em>
+                              ) : null}
+                            </span>
                             <span>
                               {artistLine(track.artists, t)}
                               {track.durationMs
                                 ? ` · ${formatDuration(track.durationMs)}`
                                 : ""}
+                              {rowCompact ? (
+                                <>
+                                  {" · "}
+                                  {trackDetailsSummary(track, t)}
+                                  <em
+                                    className={
+                                      "source-mark" +
+                                      (track.source === "rekordbox" ? " is-rekordbox" : "")
+                                    }
+                                  >
+                                    {sourceLabel(track.source)}
+                                  </em>
+                                </>
+                              ) : null}
                             </span>
                           </span>
                         </button>
@@ -4369,14 +4521,14 @@ export function SetBuilder() {
                       </div>
                       <div className="manual-controls">
                         <div className="manual-meta">
-                          <Tip text={t("builder.row.sourceTip")}>
+                          <Tip text={t("builder.row.sourceTip")} className="compact-omit">
                             <em
                               className={`source-pill source-${track.source || "manual"}`}
                             >
                               {sourceLabel(track.source)}
                             </em>
                           </Tip>
-                          <Tip text={t("builder.row.phaseHint")}>
+                          <Tip text={t("builder.row.phaseHint")} className="compact-omit">
                             <select
                               value={track.phase}
                               onChange={(e) =>
@@ -4395,7 +4547,7 @@ export function SetBuilder() {
                               ))}
                             </select>
                           </Tip>
-                          <Tip text={t("builder.row.roleHint")}>
+                          <Tip text={t("builder.row.roleHint")} className="compact-omit">
                             <select
                               value={track.role}
                               onChange={(e) => {
@@ -4465,7 +4617,7 @@ export function SetBuilder() {
                             </button>
                           </Tip>
                           {track.role !== "safety" ? (
-                            <Tip text={t("builder.row.rehearseTip")}>
+                            <Tip text={t("builder.row.rehearseTip")} className="compact-omit">
                               <button
                                 type="button"
                                 className={
@@ -4481,7 +4633,7 @@ export function SetBuilder() {
                               </button>
                             </Tip>
                           ) : null}
-                          <Tip text={t("builder.row.moveUpTip")}>
+                          <Tip text={t("builder.row.moveUpTip")} className="compact-omit">
                             <button
                               type="button"
                               className="icon-action"
@@ -4491,7 +4643,7 @@ export function SetBuilder() {
                               <ActionIcon name="up" />
                             </button>
                           </Tip>
-                          <Tip text={t("builder.row.moveDownTip")}>
+                          <Tip text={t("builder.row.moveDownTip")} className="compact-omit">
                             <button
                               type="button"
                               className="icon-action"
@@ -4502,6 +4654,7 @@ export function SetBuilder() {
                             </button>
                           </Tip>
                           {track.filePath?.trim() ? (
+                            <span className="compact-omit">
                             <TrackEnergyMenu
                               name={track.name}
                               busy={energyPendingIds.has(track.id)}
@@ -4514,6 +4667,7 @@ export function SetBuilder() {
                                 })
                               }
                             />
+                            </span>
                           ) : null}
                           {track.role === "safety" ? (
                             <Tip text={t("builder.row.placeInSetTip")}>
@@ -4580,6 +4734,7 @@ export function SetBuilder() {
                           )}
                           {track.role !== "safety" ? (
                             <Tip
+                              className="compact-omit"
                               text={
                                 draft.openerId === track.id
                                   ? t("builder.row.clearOpenerTip")
@@ -4613,6 +4768,7 @@ export function SetBuilder() {
                           ) : null}
                           {track.role !== "safety" ? (
                             <Tip
+                              className="compact-omit"
                               text={
                                 draft.closerId === track.id
                                   ? t("builder.row.clearCloserTip")
@@ -4680,6 +4836,7 @@ export function SetBuilder() {
                             </button>
                           </Tip>
                           <Tip
+                            className="compact-omit"
                             text={
                               draft.excludedIds?.includes(track.id)
                                 ? t("builder.row.clearExcludeTip")
@@ -4721,6 +4878,49 @@ export function SetBuilder() {
                               <ActionIcon name="exclude" />
                             </button>
                           </Tip>
+                          {listDensity === "compact" ? (
+                            <>
+                              <Tip
+                                className="compact-details-tip"
+                                text={t("builder.list.detailsTitle")}
+                              >
+                                <button
+                                  type="button"
+                                  className={
+                                    detailsOpen
+                                      ? "compact-details-btn is-open"
+                                      : "compact-details-btn"
+                                  }
+                                  aria-expanded={detailsOpen}
+                                  aria-label={
+                                    detailsOpen
+                                      ? t("builder.list.detailsClose")
+                                      : t("builder.list.detailsOpen")
+                                  }
+                                  onClick={() => toggleTrackDetails(track.id)}
+                                >
+                                  <span>{t("builder.list.details")}</span>
+                                  <span className="compact-details-chevron" aria-hidden="true" />
+                                </button>
+                              </Tip>
+                              {rowExpanded ? (
+                                <Tip
+                                  className="compact-details-tip"
+                                  text={t("builder.list.collapseRowTip")}
+                                  end
+                                >
+                                  <button
+                                    type="button"
+                                    className="compact-details-btn is-collapse"
+                                    aria-label={t("builder.list.collapseRow")}
+                                    onClick={() => collapseTrackRow(track.id)}
+                                  >
+                                    <span>{t("builder.list.collapseRow")}</span>
+                                  </button>
+                                </Tip>
+                              ) : null}
+                            </>
+                          ) : null}
                           <Tip text={t("builder.row.removeTip")} end>
                             <button
                               type="button"
@@ -4904,7 +5104,8 @@ export function SetBuilder() {
                     </details>
                   </div>
                 </li>
-              ))}
+                );
+              })}
             </ol>
               )}
             </div>

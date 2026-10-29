@@ -3726,8 +3726,9 @@ label.btn:hover {
 }
 
 .timeline-tools button.is-anchor {
-  background: color-mix(in oklab, var(--mint) 70%, #fff) !important;
-  color: var(--espresso) !important;
+  background: color-mix(in oklab, var(--spotify) 18%, #242424) !important;
+  color: #fff !important;
+  border-color: rgba(30, 215, 96, 0.55) !important;
   font-weight: 700;
 }
 
@@ -4172,6 +4173,7 @@ label.btn {
   padding: 0;
   display: grid;
   gap: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .manual-row {
@@ -4184,8 +4186,8 @@ label.btn {
   display: grid;
   grid-template-columns: 4.6rem minmax(0, 1fr);
   column-gap: 1.35rem;
-  row-gap: 0;
-  align-items: center;
+  row-gap: 0.55rem;
+  align-items: start;
 }
 
 .manual-row.focused {
@@ -4194,13 +4196,110 @@ label.btn {
   box-shadow: none;
 }
 
+.manual-row.is-compact {
+  padding: 0.4rem 0.2rem 0.4rem 0.75rem;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: 0.55rem;
+}
+
+.manual-row.is-compact .manual-index {
+  height: 32px;
+  gap: 0.35rem;
+}
+
+.manual-row.is-compact .manual-index em {
+  font-size: 1.28rem;
+  min-width: 0;
+  line-height: 1;
+}
+
+.manual-row.is-compact .compact-omit,
+.manual-row.is-compact .manual-subline {
+  display: none !important;
+}
+
+.manual-row.is-compact .manual-select {
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 0.1rem 0.75rem;
+  align-items: start;
+  padding: 0;
+}
+
+.manual-row.is-compact .manual-select img,
+.manual-row.is-compact .manual-select .art-fallback {
+  width: 32px;
+  height: 32px;
+}
+
+.manual-row.is-compact .manual-select-wrap .anchor-pills {
+  margin-left: calc(32px + 0.75rem);
+  gap: 0.25rem;
+}
+
+.manual-row.is-compact .manual-title-line {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.manual-row.is-compact .manual-title-line strong,
+.manual-row.is-compact .manual-copy > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.manual-row.is-compact .manual-title-line strong {
+  font-size: 0.92rem;
+  min-width: 0;
+}
+
+.manual-row.is-compact .manual-title-line .anchor-pill {
+  flex: none;
+  margin: 0;
+}
+
+.manual-row.is-compact .manual-select-wrap > .anchor-pills {
+  display: none;
+}
+
+.manual-row.is-compact .source-mark {
+  margin-left: 0.45rem;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  color: #8d8d8d;
+  font-style: normal;
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.manual-row.is-compact .source-mark.is-rekordbox {
+  color: #c8143c;
+  font-weight: 750;
+}
+
+.manual-row.is-compact .manual-body {
+  gap: 0.15rem;
+}
+
+.manual-row.is-compact .manual-controls,
+.manual-row.is-compact .timeline-tools,
+.manual-row.is-compact-open .timeline-tools {
+  flex-wrap: nowrap;
+}
+
 .manual-index {
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: flex-end;
-  gap: 0.45rem;
-  height: 40px;
+  justify-content: flex-start;
+  gap: 0.4rem;
+  height: auto;
+  min-height: 0;
   margin: 0;
   padding: 0;
   line-height: 1;
@@ -4210,13 +4309,14 @@ label.btn {
 .manual-index em {
   font-style: normal;
   font-family: var(--font-display), "Space Grotesk", sans-serif;
-  font-size: 1.35rem;
-  font-weight: 650;
+  font-size: 1.55rem;
+  font-weight: 700;
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
   color: #fff;
-  min-width: 1.7rem;
-  text-align: right;
+  min-width: 0;
+  width: auto;
+  text-align: left;
   line-height: 1;
 }
 
@@ -4299,7 +4399,7 @@ button.drag-handle:active i {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.35rem 0.75rem;
-  align-items: center;
+  align-items: start;
   min-width: 0;
 }
 
@@ -4307,7 +4407,7 @@ button.drag-handle:active i {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: start;
   justify-content: flex-end;
   gap: 0.45rem 0.55rem;
   min-width: 0;
@@ -4350,6 +4450,11 @@ button.drag-handle:active i {
 }
 
 .manual-copy {
+  min-width: 0;
+}
+
+.manual-title-line {
+  display: block;
   min-width: 0;
 }
 
@@ -4600,6 +4705,10 @@ button.drag-handle:active i {
 
   .manual-row-main {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .manual-row.is-compact .manual-row-main {
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
   .manual-subline {
@@ -5694,9 +5803,21 @@ html[lang="en"] .energy-bars li.jump::before {
 }
 
 .crate-list-head > .list-setting,
-.crate-list-head > .tip {
+.crate-list-head > .tip,
+.crate-list-head > .list-head-tools {
   flex: 0 0 auto;
   margin-left: auto;
+}
+
+.list-head-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.list-head-tools .list-density {
+  flex: 0 0 auto;
 }
 
 .crate-view .role-crates,
@@ -6166,7 +6287,7 @@ html[data-frame="mac"] .set-shell label.btn {
   max-width: 100%;
   min-width: 0;
   min-height: 0;
-  margin: 0;
+  margin: 0.15rem 0 0;
   padding: 0;
 }
 

@@ -4,7 +4,7 @@
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
 
-**Version 4.6.8** · Raus aus der Playlist.
+**Version 4.7.0** · Raus aus der Playlist.
 
 Der Stick ist das Material. Du ziehst den Bogen, setzt den Anschluss und hörst, ob er trägt.
 
@@ -23,6 +23,7 @@ Vor dem Gig ist es still. SETBUILDER ist dieser Raum. Du kommst mit einem rekord
 - 🎲 **Eine andere Nacht aus derselben Kiste.** Andere Songs. Oder die Playlist, die Collection, die History, sobald sie da ist. Nach dem Laden einer Stick-Playlist bleibt **Aus der Playlist** am Set verfügbar.
 - 🛟 **Plan B in der Tasche.** Rollen und Alternativen für den Moment, in dem der Floor es sich anders überlegt. Setz eine davor oder dahinter, oder pinne sie in die Nacht.
 - 🎧 **Den Übergang vorher hören.** Eine Karte zum Ziehen und größer machen. Vorher, dieser Track, der nächste. Dieselbe Länge wie in der Setliste.
+- 📋 **Kompakt oder Comfortabel.** In der Setliste wählst du die Zeilendichte. Kompakt hält Play, Pin, Tauschen und Entfernen in einer Zeile. **Details** öffnet nur Notiz, Key, BPM, Energie und Blend; **Zuklappen** oder erneut **Kompakt** macht die Zeile wieder klein.
 - 🔍 **Nur noch, was passt.** Key, BPM und Energie holen die Bibliothek heran. Passt zu reiht, was hinter einem gewählten Track tragen kann, und der Song, den du hinzufügst, landet direkt dahinter.
 - 📝 **Ein Satz für die Phase.** Auf dem Bogen, wenn du ihn brauchst. Treibend, 128. Er geht mit auf den Zettel für die Kabine.
 - 🎒 **Fertig, wenn es sitzt.** Erst die Checkliste. Wenn die Dateien nicht in dieser Sitzung sind, wähl den Stick-Ordner direkt dort noch einmal. Dann der Stick für den Player, der Zettel für die Kabine, die Datei für den Rechner. Oder das Set bleibt in SETBUILDER.

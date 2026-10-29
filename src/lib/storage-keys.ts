@@ -18,6 +18,9 @@ export const SETUPS_EVENT = "setbuilder-setups";
 export const CRATE_PREFS_KEY = "setbuilder-crate-prefs-v1";
 export const CRATE_PREFS_KEY_LEGACY = "setform-crate-prefs-v1";
 
+export const LIST_DENSITY_KEY = "setbuilder-list-density-v1";
+export const LIST_DENSITY_KEY_LEGACY = "setform-list-density-v1";
+
 export const STICK_IDB_NAME = "setbuilder-stick";
 export const STICK_IDB_NAME_LEGACY = "setform-stick";
 
