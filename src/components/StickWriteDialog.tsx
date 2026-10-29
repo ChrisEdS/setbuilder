@@ -547,7 +547,7 @@ export function StickWriteDialog({
                   type="button"
                   className="btn"
                   onClick={() => void ejectStick()}
-                  disabled={ejecting || !root.current}
+                  disabled={ejecting}
                 >
                   {ejecting
                     ? t("library.stickWrite.ejecting")
