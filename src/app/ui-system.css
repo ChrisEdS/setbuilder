@@ -991,7 +991,8 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 .set-shell .stick-import-head.has-live .stick-actions {
-  flex: 0 0 auto !important;
+  flex: 1 1 100% !important;
+  justify-content: flex-end !important;
   margin-left: 0 !important;
 }
 
@@ -2274,6 +2275,14 @@ dialog.stick-dialog .stick-write-copy .stick-hint {
   font-size: var(--ui-font-sm);
   line-height: 1.45;
   color: var(--ui-muted);
+}
+
+dialog.stick-dialog .stick-write-copy .stick-write-next {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ui-text, #f8fafc);
 }
 
 dialog.stick-dialog .stick-strip {

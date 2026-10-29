@@ -7949,20 +7949,34 @@ body {
 
 .library-panel .stick-import-head .stick-actions {
   flex: 1 1 auto;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 0.45rem;
   margin-left: auto;
 }
 
-/* Live read/pick status shares the stick header row. Title and hint stay
-   inline, so they do not open a second card under the explanation. */
+/* Live pick/read status may wrap; title must stay fully readable ("Rekordbox stick"). */
 .library-panel .stick-import-head.has-live {
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.library-panel .stick-import-head.has-live > .library-browser-title {
+  flex: 0 0 auto;
+  min-width: max-content;
+  max-width: 100%;
+}
+
+.library-panel .stick-import-head.has-live > .library-browser-title .library-browser-heading {
+  overflow: visible;
+  text-overflow: unset;
+  white-space: nowrap;
 }
 
 .library-panel .stick-import-head.has-live .stick-actions,
 .library-panel .stick-import-head.has-live .stick-head-cluster > .stick-actions {
-  flex: 0 0 auto;
+  flex: 1 1 100%;
+  justify-content: flex-end;
   margin-left: 0;
 }
 
@@ -7996,6 +8010,13 @@ body {
 .library-panel .stick-import-head.has-status.has-live > .stick-head-live {
   grid-column: 2;
   grid-row: 1;
+  min-width: 0;
+}
+
+.library-panel .stick-import-head.has-status.has-live .stick-head-cluster > .stick-actions {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  justify-content: flex-end;
 }
 
 .library-panel .stick-import-head.has-live .stick-head-verdict {
@@ -8011,6 +8032,10 @@ body {
   gap: 0.55rem 0.85rem;
 }
 
+.library-panel .stick-import-head.has-status.has-live {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
 .stick-head-cluster {
   display: contents;
 }
@@ -8019,6 +8044,13 @@ body {
   grid-column: 1;
   grid-row: 1;
   margin-right: 0;
+  min-width: max-content;
+}
+
+.library-panel .stick-import-head.has-status > .library-browser-title .library-browser-heading {
+  overflow: visible;
+  text-overflow: unset;
+  white-space: nowrap;
 }
 
 .library-source-pane p.stick-head-verdict,
@@ -8588,6 +8620,17 @@ body {
 .set-shell .library-browser-title {
   flex: 1 1 auto;
   min-width: 0;
+}
+
+.set-shell .stick-import-head > .library-browser-title {
+  flex: 0 0 auto;
+  min-width: max-content;
+}
+
+.set-shell .stick-import-head > .library-browser-title .library-browser-heading {
+  overflow: visible;
+  text-overflow: unset;
+  white-space: nowrap;
 }
 
 .set-shell .library-browser-heading,

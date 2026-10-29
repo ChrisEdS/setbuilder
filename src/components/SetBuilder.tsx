@@ -491,6 +491,7 @@ export function SetBuilder() {
   const resumePreviewAfterStick = useRef(false);
   const stickGoneStreak = useRef(0);
   const chooseStickRef = useRef<(() => void) | null>(null);
+  const reconnectStickRef = useRef<(() => Promise<boolean>) | null>(null);
   // Long work (stick read, tag scan, sort) keeps the status line up until it finishes.
   const statusHold = useRef(0);
   const [statusHeld, setStatusHeld] = useState(false);
@@ -1916,6 +1917,12 @@ export function SetBuilder() {
     key: string,
   ): Promise<boolean> {
     if (!handle) return false;
+    // Prefer soft re-apply into RekordboxStick (label/sets/health + covers).
+    const viaPane = await reconnectStickRef.current?.().catch(() => false);
+    if (viaPane) {
+      afterStickRestored();
+      return true;
+    }
     await enqueueWork(
       async () => {
         const stick = await readStickFromHandle(handle);
@@ -1924,6 +1931,10 @@ export function SetBuilder() {
           mediaPathsForDraft(readStoredDraft(), stick.library),
         );
         setLibraryRows(stickLibraryRows(stick.library, stick.sets));
+        setStickSets(stick.sets);
+        const base = readStoredDraft();
+        const covered = rehydrateStickCovers(base, stick.library);
+        if (covered !== base) setDraft(covered);
         afterStickRestored();
       },
       {
@@ -1941,10 +1952,20 @@ export function SetBuilder() {
     if (!existing) return false;
     if (!(await stickPermission(existing, "read", true))) return false;
     if ((await probeStickAlive()) !== "alive") return false;
+    const pane = await reconnectStickRef.current?.().catch(() => false);
+    if (pane) {
+      afterStickRestored();
+      return true;
+    }
     return restoreStickFromHandle(existing, `stick-lost-auto:${draft.title}`);
   }
 
   async function reconnectLostStick(): Promise<boolean> {
+    const pane = await reconnectStickRef.current?.().catch(() => false);
+    if (pane) {
+      afterStickRestored();
+      return true;
+    }
     const existing = await loadPersistedStickHandle().catch(() => null);
     const handle =
       existing && (await stickPermission(existing, "read", true))
@@ -1961,6 +1982,7 @@ export function SetBuilder() {
         const stick = await readRekordboxStick(files);
         rememberStickFiles(files);
         setLibraryRows(stickLibraryRows(stick.library, stick.sets));
+        setStickSets(stick.sets);
         afterStickRestored();
       },
       {
@@ -3475,6 +3497,7 @@ export function SetBuilder() {
           onStickSets={setStickSets}
           onStickStatus={onStickStatus}
           chooseStick={chooseStickRef}
+          reconnectStick={reconnectStickRef}
         />
       </details>
 

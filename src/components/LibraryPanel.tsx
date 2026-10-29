@@ -51,6 +51,8 @@ type Props = {
   onStickSets?: (sets: RekordboxStickSet[]) => void;
   /** Parent asks this panel to run the existing stick picker. */
   chooseStick?: RefObject<(() => void) | null>;
+  /** Soft restore into the Rekordbox stick pane (no directory picker). */
+  reconnectStick?: RefObject<(() => Promise<boolean>) | null>;
   onStickStatus?: (status: StickStatusSlice | null) => void;
 };
 
@@ -496,6 +498,7 @@ export function LibraryPanel({
   onRows: setLibraryRows,
   onStickSets,
   chooseStick: chooseStickRef,
+  reconnectStick: reconnectStickRef,
   onStickStatus,
 }: Props) {
   const { t } = useI18n();
@@ -506,7 +509,10 @@ export function LibraryPanel({
   const [tidalConfigured, setTidalConfigured] = useState<boolean | null>(null);
   const [source, setSource] = useState<SourceTab>("rekordbox");
   const stickChoose = useRef<(() => void) | null>(null);
+  const stickReconnect = useRef<(() => Promise<boolean>) | null>(null);
   const pendingChoose = useRef(false);
+  const pendingReconnect = useRef(false);
+  const pendingReconnectResolve = useRef<((ok: boolean) => void) | null>(null);
 
   useEffect(() => {
     if (!chooseStickRef) return;
@@ -525,11 +531,39 @@ export function LibraryPanel({
   }, [chooseStickRef]);
 
   useEffect(() => {
+    if (!reconnectStickRef) return;
+    reconnectStickRef.current = () => {
+      if (stickReconnect.current) {
+        setSource("rekordbox");
+        return stickReconnect.current();
+      }
+      pendingReconnect.current = true;
+      setSource("rekordbox");
+      return new Promise<boolean>((resolve) => {
+        pendingReconnectResolve.current = resolve;
+      });
+    };
+    return () => {
+      reconnectStickRef.current = null;
+    };
+  }, [reconnectStickRef]);
+
+  useEffect(() => {
     if (source !== "rekordbox" || !pendingChoose.current) return;
     const run = stickChoose.current;
     if (!run) return;
     pendingChoose.current = false;
     run();
+  }, [source]);
+
+  useEffect(() => {
+    if (source !== "rekordbox" || !pendingReconnect.current) return;
+    const run = stickReconnect.current;
+    if (!run) return;
+    pendingReconnect.current = false;
+    const resolve = pendingReconnectResolve.current;
+    pendingReconnectResolve.current = null;
+    void run().then((ok) => resolve?.(ok));
   }, [source]);
 
   const keyStats = useMemo(() => {
@@ -774,6 +808,7 @@ export function LibraryPanel({
           onSets={onStickSets}
           onStickStatus={onStickStatus}
           chooseStick={stickChoose}
+          reconnectStick={stickReconnect}
         />
       ) : (
         <div className="library-source-pane builder-card" role="tabpanel">

@@ -56,6 +56,11 @@ type Props = {
   onSets?: (sets: RekordboxStickSet[]) => void;
   /** Filled with the existing folder picker. Null when this pane is unmounted. */
   chooseStick?: RefObject<(() => void) | null>;
+  /**
+   * Soft restore: remembered handle + permission prompt, no directory picker.
+   * True when label/sets/health are live again. Null when this pane is unmounted.
+   */
+  reconnectStick?: RefObject<(() => Promise<boolean>) | null>;
 };
 
 /** Fills `{name}` placeholders of a translated text with elements (code, strong …). */
@@ -202,6 +207,7 @@ export function RekordboxStick({
   onStickStatus,
   onSets,
   chooseStick: chooseStickRef,
+  reconnectStick: reconnectStickRef,
 }: Props) {
   const { t } = useI18n();
   const [phase, setPhase] = useState<LoadPhase>("idle");
@@ -212,13 +218,22 @@ export function RekordboxStick({
   const [checkingHealth, setCheckingHealth] = useState(false);
   const [healthRoot, setHealthRoot] = useState<DirLike | null>(null);
   const [healthFiles, setHealthFiles] = useState<File[] | null>(null);
+  /** Remembered IDB handle exists — offer soft reconnect after eject / remount. */
+  const [rememberedStick, setRememberedStick] = useState(false);
   const dirInput = useRef<HTMLInputElement>(null);
   const chooseImpl = useRef<() => void>(() => {});
+  const softReconnectImpl = useRef<() => Promise<boolean>>(async () => false);
 
   function publishSets(next: RekordboxStickSet[]) {
     onSets?.(next);
   }
   const loadGen = useRef(0);
+
+  function refreshRememberedFlag() {
+    void loadPersistedStickHandle()
+      .then((handle) => setRememberedStick(Boolean(handle)))
+      .catch(() => setRememberedStick(false));
+  }
 
   async function refreshHealth(source: { handle?: DirLike | null; files?: File[] | null } = {}) {
     const handle = source.handle !== undefined ? source.handle : healthRoot;
@@ -244,6 +259,9 @@ export function RekordboxStick({
   useEffect(() => {
     void (async () => {
       const handle = await loadPersistedStickHandle();
+      setRememberedStick(Boolean(handle));
+      // Mount restore: no permission prompt (needs a gesture). Soft reconnect
+      // later re-requests with prompt=true after eject / remount.
       if (!handle || !(await stickPermission(handle, "read", false))) return;
       try {
         await applyHandle(handle);
@@ -274,6 +292,7 @@ export function RekordboxStick({
     await enqueueWork(async () => {
       setHealthRoot(handle);
       setHealthFiles(null);
+      setRememberedStick(true);
       const read = await readStickFromHandle(handle);
       setLabel(read.label);
       publishSets(read.sets);
@@ -290,6 +309,33 @@ export function RekordboxStick({
       label: t("builder.work.stickReconnect"),
       target: handle.name,
     });
+  }
+
+  /**
+   * Re-grant FS Access on the remembered handle and rehydrate the pane.
+   * Does not clear or rewrite IndexedDB — eject only drops live UI state.
+   */
+  async function trySoftReconnect(): Promise<boolean> {
+    const handle = await loadPersistedStickHandle().catch(() => null);
+    if (!handle) {
+      setRememberedStick(false);
+      return false;
+    }
+    setRememberedStick(true);
+    if (!(await stickPermission(handle, "read", true))) return false;
+    const token = beginLoad();
+    setPhase("reading");
+    setError(null);
+    try {
+      await applyHandle(handle);
+      return stillCurrent(token);
+    } catch (caught) {
+      if (!stillCurrent(token)) return false;
+      setError(isPickerBlocked(caught) ? { kind: "blocked" } : { kind: "read", error: caught });
+      return false;
+    } finally {
+      if (stillCurrent(token)) setPhase("idle");
+    }
   }
 
   async function load(list: FileList | null) {
@@ -341,6 +387,11 @@ export function RekordboxStick({
 
   async function chooseFolder() {
     setError(null);
+    // Soft path first: remembered handle + permission prompt, no OS picker.
+    if (await trySoftReconnect()) {
+      setFolded(false);
+      return;
+    }
     if (!stickPicker()) {
       dirInput.current?.click();
       return;
@@ -371,6 +422,8 @@ export function RekordboxStick({
     void chooseFolder();
   };
 
+  softReconnectImpl.current = () => trySoftReconnect();
+
   useEffect(() => {
     if (!chooseStickRef) return;
     chooseStickRef.current = () => chooseImpl.current();
@@ -378,6 +431,14 @@ export function RekordboxStick({
       chooseStickRef.current = null;
     };
   }, [chooseStickRef]);
+
+  useEffect(() => {
+    if (!reconnectStickRef) return;
+    reconnectStickRef.current = () => softReconnectImpl.current();
+    return () => {
+      reconnectStickRef.current = null;
+    };
+  }, [reconnectStickRef]);
 
   const locking = busy || phase === "listing" || phase === "reading";
   const pending = locking || phase === "picking";
@@ -438,8 +499,10 @@ export function RekordboxStick({
       onEject: healthRoot
         ? async () => {
             const name = healthRoot.name;
+            // Drop live FS only — keep IndexedDB handle for soft reconnect.
             setHealthRoot(null);
             setHealth(null);
+            refreshRememberedFlag();
             await pauseBeforeStickEject();
             await requestStickEject(name);
           }
@@ -450,6 +513,7 @@ export function RekordboxStick({
 
   const loaded = Boolean(label);
   const showBody = !loaded || !folded;
+  const offerReconnect = rememberedStick && !healthRoot;
   const foldButton = loaded ? (
     <button
       type="button"
@@ -468,7 +532,11 @@ export function RekordboxStick({
         disabled={pending}
         onClick={() => void chooseFolder()}
       >
-        {locking ? t("library.stick.reading") : t("library.stick.choose")}
+        {locking
+          ? t("library.stick.reading")
+          : offerReconnect
+            ? t("library.stick.reconnect")
+            : t("library.stick.choose")}
       </button>
       <input
         ref={dirInput}
@@ -483,35 +551,44 @@ export function RekordboxStick({
           event.currentTarget.value = "";
         }}
       />
-      {phase === "picking" || error?.kind === "blocked" ? (
-        <button
-          type="button"
-          className={"btn ghost library-file" + (locking ? " is-busy" : "")}
-          disabled={locking}
-          onClick={() => dirInput.current?.click()}
-        >
-          {t("library.stick.chooseFolder")}
-        </button>
-      ) : null}
-      <label className={"btn ghost library-file" + (locking ? " is-busy" : "")}>
-        {t("library.stick.choosePdb")}
-        <input
-          type="file"
-          hidden
-          accept=".pdb,.xml,application/xml"
-          disabled={locking}
-          onChange={(event) => {
-            void load(event.target.files);
-            event.currentTarget.value = "";
-          }}
-        />
-      </label>
-      {phase !== "idle" ? (
+      {/* During picking: Cancel only — Folder/export.pdb crush the title into "Rekordbo…". */}
+      {phase === "picking" ? (
         <button type="button" className="btn ghost" onClick={cancelLoad}>
           {t("library.stick.cancel")}
         </button>
-      ) : null}
-      {foldButton}
+      ) : (
+        <>
+          {error?.kind === "blocked" ? (
+            <button
+              type="button"
+              className={"btn ghost library-file" + (locking ? " is-busy" : "")}
+              disabled={locking}
+              onClick={() => dirInput.current?.click()}
+            >
+              {t("library.stick.chooseFolder")}
+            </button>
+          ) : null}
+          <label className={"btn ghost library-file" + (locking ? " is-busy" : "")}>
+            {t("library.stick.choosePdb")}
+            <input
+              type="file"
+              hidden
+              accept=".pdb,.xml,application/xml"
+              disabled={locking}
+              onChange={(event) => {
+                void load(event.target.files);
+                event.currentTarget.value = "";
+              }}
+            />
+          </label>
+          {phase !== "idle" ? (
+            <button type="button" className="btn ghost" onClick={cancelLoad}>
+              {t("library.stick.cancel")}
+            </button>
+          ) : null}
+          {foldButton}
+        </>
+      )}
     </>
   );
 
@@ -587,6 +664,7 @@ export function RekordboxStick({
                       const name = healthRoot.name;
                       setHealthRoot(null);
                       setHealth(null);
+                      refreshRememberedFlag();
                       await pauseBeforeStickEject();
                       await requestStickEject(name);
                     }

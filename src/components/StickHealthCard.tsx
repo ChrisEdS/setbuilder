@@ -191,6 +191,11 @@ export function StickHealthCard({
   deprioritizeEject,
   /** After a successful stick write: lead with eject, not the generic ready line. */
   afterWrite = false,
+  /**
+   * Parent dialog owns the primary CTA (e.g. write-dialog footer Eject).
+   * Strip keeps status, repair, and details — no competing primary / “Next:” line.
+   */
+  deferPrimaryAction = false,
   placement = "card",
   trailing,
 }: {
@@ -207,6 +212,7 @@ export function StickHealthCard({
   /** Stick-Status after import: eject stays available but not as the main action. */
   deprioritizeEject?: boolean;
   afterWrite?: boolean;
+  deferPrimaryAction?: boolean;
   /** `header` sits in the Rekordbox-stick bar: verdict in the middle, actions on the right. */
   placement?: "card" | "header";
   trailing?: ReactNode;
@@ -256,15 +262,19 @@ export function StickHealthCard({
   const actionOpts = deprioritizeEject && !afterWrite
     ? { deprioritizeEject: true as const }
     : undefined;
+  // Eject-failed always keeps repair as the strip primary, even when the parent
+  // normally owns the CTA — the DJ must not unplug until repair/retry.
+  const ejectFailed = note === "library.stickHealth.fix.ejectFailed";
   const primary = ejected
     ? null
-    : afterWrite && caps.canEject && health.verdict === "ready"
-      ? ("eject" as const)
-      : primaryStickAction(health, caps, actionOpts);
+    : deferPrimaryAction && !ejectFailed
+      ? null
+      : afterWrite && caps.canEject && health.verdict === "ready"
+        ? ("eject" as const)
+        : primaryStickAction(health, caps, actionOpts);
   const secondary = ejected
     ? ([] as ReturnType<typeof secondaryStickActions>)
     : secondaryStickActions(health, caps, actionOpts).filter((kind) => kind !== primary);
-  const ejectFailed = note === "library.stickHealth.fix.ejectFailed";
   const tone = ejected
     ? "mute"
     : ejectFailed
@@ -364,11 +374,11 @@ export function StickHealthCard({
     <p className="stick-strip-note is-ejected">{t("library.stickHealth.meaning.ejected")}</p>
   ) : ejectFailed ? (
     <p className="stick-strip-note is-bad">{t("library.stickHealth.meaning.ejectFailed")}</p>
-  ) : afterWrite && health.verdict === "ready" ? (
+  ) : afterWrite && health.verdict === "ready" && !deferPrimaryAction ? (
     <p className="stick-strip-note is-write-done">{t("library.stickHealth.meaning.writeDone")}</p>
   ) : note ? (
     <p className={"stick-strip-note" + (noteOk ? " is-ok" : " is-bad")}>{t(note)}</p>
-  ) : primary ? (
+  ) : primary && !deferPrimaryAction ? (
     <p className="stick-strip-next">{t(nextKey(primary))}</p>
   ) : null;
   const details = open ? (

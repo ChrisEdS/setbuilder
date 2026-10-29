@@ -58,6 +58,9 @@ export function StickWriteDialog({
   const [hints, setHints] = useState<Record<string, number>>({});
   const [health, setHealth] = useState<StickHealth | null>(null);
   const [checkingHealth, setCheckingHealth] = useState(false);
+  const [ejecting, setEjecting] = useState(false);
+  const [ejected, setEjected] = useState(false);
+  const [ejectFailed, setEjectFailed] = useState(false);
 
   async function refreshHealth(handle = root.current) {
     if (!handle) return;
@@ -68,6 +71,25 @@ export function StickWriteDialog({
       setHealth(null);
     } finally {
       setCheckingHealth(false);
+    }
+  }
+
+  async function ejectStick() {
+    const name = root.current?.name;
+    if (!name || ejecting) return;
+    setEjecting(true);
+    setEjectFailed(false);
+    try {
+      // Drop FSA handle so diskutil is not Resource busy / dirty FAT.
+      root.current = null;
+      setHealth(null);
+      await pauseBeforeStickEject();
+      await requestStickEject(name);
+      setEjected(true);
+    } catch {
+      setEjectFailed(true);
+    } finally {
+      setEjecting(false);
     }
   }
 
@@ -82,6 +104,9 @@ export function StickWriteDialog({
       setStep({ kind: "idle" });
       setHints({});
       setHealth(null);
+      setEjecting(false);
+      setEjected(false);
+      setEjectFailed(false);
       root.current = null;
       setCanPick(stickPicker() !== null);
       node.showModal();
@@ -182,6 +207,28 @@ export function StickWriteDialog({
           item.track.artists.join() === track.artists.join(),
       ),
   );
+  /** Playlist already on stick + green health → leave to player; Update is optional. */
+  const readyToLeave = Boolean(plan?.alreadyOnStick && health?.verdict === "ready");
+  const healthHandlers = {
+    onRecheck: () => void refreshHealth(),
+    onPrepare: async () => {
+      if (!root.current) throw new Error("folder");
+      await prepareStickForPlayers(root.current);
+      await refreshHealth(root.current);
+    },
+    onRestoreLibrary: async () => {
+      if (!root.current) throw new Error("folder");
+      await restorePlayerLibrary(root.current);
+      await refreshHealth(root.current);
+    },
+    onRepair: async () => {
+      const name = root.current?.name;
+      if (!name) throw new Error("folder");
+      await requestStickRepair(name);
+      await refreshHealth();
+    },
+    onEject: ejectStick,
+  };
 
   return (
     <dialog
@@ -190,7 +237,7 @@ export function StickWriteDialog({
       aria-labelledby="stick-dialog-title"
       onClose={onClose}
       onCancel={(event) => {
-        if (busy) event.preventDefault();
+        if (busy || ejecting) event.preventDefault();
       }}
     >
       <h2 id="stick-dialog-title">{t("library.stickWrite.title")}</h2>
@@ -307,7 +354,11 @@ export function StickWriteDialog({
             ) : plan.alreadyOnStick ? (
               <>
                 <p>{t("library.stickWrite.alreadyThere", { name: plan.playlistName })}</p>
-                <p className="stick-hint">{t("library.stickWrite.rewriteHint")}</p>
+                {readyToLeave ? (
+                  <p className="stick-write-next">{t("library.stickWrite.nextReady")}</p>
+                ) : (
+                  <p className="stick-hint">{t("library.stickWrite.rewriteHint")}</p>
+                )}
               </>
             ) : plan.skippedPerformance && plan.alternativesName ? (
               <p>
@@ -337,59 +388,91 @@ export function StickWriteDialog({
               health={health}
               checking={checkingHealth}
               canFix
-              onRecheck={() => void refreshHealth()}
-              onPrepare={async () => {
-                if (!root.current) throw new Error("folder");
-                await prepareStickForPlayers(root.current);
-                await refreshHealth(root.current);
-              }}
-              onRestoreLibrary={async () => {
-                if (!root.current) throw new Error("folder");
-                await restorePlayerLibrary(root.current);
-                await refreshHealth(root.current);
-              }}
-              onRepair={async () => {
-                const name = root.current?.name;
-                if (!name) throw new Error("folder");
-                await requestStickRepair(name);
-                await refreshHealth();
-              }}
-              onEject={async () => {
-                const name = root.current?.name;
-                if (!name) throw new Error("folder");
-                // Drop FSA handle so diskutil is not Resource busy / dirty FAT.
-                root.current = null;
-                setHealth(null);
-                await pauseBeforeStickEject();
-                await requestStickEject(name);
-              }}
+              deferPrimaryAction={readyToLeave}
+              {...healthHandlers}
             />
           ) : plan.hasLibraryDb ? (
             <p className="stick-hint">{t("library.stickWrite.oneLibrary")}</p>
           ) : null}
-          <p className="stick-hint stick-write-note">{t("library.stickWrite.safety")}</p>
+          {ejectFailed ? (
+            <p className="stick-warn" role="alert">
+              {t("library.stickWrite.ejectFailed")}
+            </p>
+          ) : null}
+          {ejected ? (
+            <p role="status">{t("library.stickWrite.ejected")}</p>
+          ) : (
+            <details className="stick-safety-fold">
+              <summary>{t("library.stickWrite.safetyMore")}</summary>
+              <p className="stick-safety">{t("library.stickWrite.safetyDetails")}</p>
+              {plan.alreadyOnStick ? (
+                <p className="stick-hint">{t("library.stickWrite.rewriteHint")}</p>
+              ) : null}
+            </details>
+          )}
           <div className="stick-actions">
-            <button type="button" className="btn ghost" onClick={onClose}>
-              {t("library.stickWrite.cancel")}
-            </button>
-            <button type="button" className="btn ghost" onClick={() => void restore()}>
-              {t("library.stickWrite.restore")}
-            </button>
-            {plan.alreadyOnStick ? (
-              <button type="button" className="btn" onClick={() => void rewrite()}>
-                {t("library.stickWrite.rewrite")}
+            {ejected ? (
+              <button type="button" className="btn" onClick={onClose}>
+                {t("library.stickWrite.close")}
               </button>
             ) : (
-              <button
-                type="button"
-                className="btn"
-                onClick={() => void finishWrite(writeSetToStick)}
-                disabled={
-                  Boolean(plan.refusal) || (!plan.performanceCount && !plan.alternativesCount)
-                }
-              >
-                {t("library.stickWrite.write")}
-              </button>
+              <>
+                <button type="button" className="btn ghost" onClick={onClose} disabled={ejecting}>
+                  {t("library.stickWrite.cancel")}
+                </button>
+                <button
+                  type="button"
+                  className="btn ghost"
+                  onClick={() => void restore()}
+                  disabled={ejecting}
+                >
+                  {t("library.stickWrite.restore")}
+                </button>
+                {readyToLeave ? (
+                  <>
+                    <button
+                      type="button"
+                      className="btn ghost"
+                      onClick={() => void rewrite()}
+                      disabled={ejecting}
+                    >
+                      {t("library.stickWrite.rewrite")}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => void ejectStick()}
+                      disabled={ejecting}
+                    >
+                      {ejecting
+                        ? t("library.stickWrite.ejecting")
+                        : t("library.stickWrite.eject")}
+                    </button>
+                  </>
+                ) : plan.alreadyOnStick ? (
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => void rewrite()}
+                    disabled={ejecting}
+                  >
+                    {t("library.stickWrite.rewrite")}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => void finishWrite(writeSetToStick)}
+                    disabled={
+                      ejecting ||
+                      Boolean(plan.refusal) ||
+                      (!plan.performanceCount && !plan.alternativesCount)
+                    }
+                  >
+                    {t("library.stickWrite.write")}
+                  </button>
+                )}
+              </>
             )}
           </div>
         </>
@@ -408,7 +491,11 @@ export function StickWriteDialog({
                 ? ` ${t("library.stickWrite.doneAlts", { name: step.result.alternativesName })}`
                 : ""}
             </p>
-            <p className="stick-write-done-next">{t("library.stickWrite.doneNext")}</p>
+            {!ejected ? (
+              <p className="stick-write-done-next">{t("library.stickWrite.doneNext")}</p>
+            ) : (
+              <p className="stick-write-done-next">{t("library.stickWrite.ejected")}</p>
+            )}
             <p className="stick-hint">
               {t("library.stickWrite.doneBackup", { backup: step.result.backupName })}
             </p>
@@ -418,46 +505,56 @@ export function StickWriteDialog({
               </p>
             ) : null}
           </div>
-          {health ? (
+          {health && !ejected ? (
             <StickHealthCard
               health={health}
               checking={checkingHealth}
               canFix
               afterWrite
-              onRecheck={() => void refreshHealth()}
-              onPrepare={async () => {
-                if (!root.current) throw new Error("folder");
-                await prepareStickForPlayers(root.current);
-                await refreshHealth(root.current);
-              }}
-              onRestoreLibrary={async () => {
-                if (!root.current) throw new Error("folder");
-                await restorePlayerLibrary(root.current);
-                await refreshHealth(root.current);
-              }}
-              onRepair={async () => {
-                const name = root.current?.name;
-                if (!name) throw new Error("folder");
-                await requestStickRepair(name);
-                await refreshHealth();
-              }}
-              onEject={async () => {
-                const name = root.current?.name;
-                if (!name) throw new Error("folder");
-                root.current = null;
-                setHealth(null);
-                await pauseBeforeStickEject();
-                await requestStickEject(name);
-              }}
+              deferPrimaryAction
+              {...healthHandlers}
             />
           ) : null}
+          {ejectFailed ? (
+            <p className="stick-warn" role="alert">
+              {t("library.stickWrite.ejectFailed")}
+            </p>
+          ) : null}
           <div className="stick-actions">
-            <button type="button" className="btn ghost" onClick={() => void restore()}>
-              {t("library.stickWrite.restore")}
-            </button>
-            <button type="button" className="btn" onClick={onClose}>
-              {t("library.stickWrite.close")}
-            </button>
+            {ejected ? (
+              <button type="button" className="btn" onClick={onClose}>
+                {t("library.stickWrite.close")}
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="btn ghost"
+                  onClick={() => void restore()}
+                  disabled={ejecting}
+                >
+                  {t("library.stickWrite.restore")}
+                </button>
+                <button
+                  type="button"
+                  className="btn ghost"
+                  onClick={onClose}
+                  disabled={ejecting}
+                >
+                  {t("library.stickWrite.close")}
+                </button>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => void ejectStick()}
+                  disabled={ejecting || !root.current}
+                >
+                  {ejecting
+                    ? t("library.stickWrite.ejecting")
+                    : t("library.stickWrite.eject")}
+                </button>
+              </>
+            )}
           </div>
         </>
       ) : null}
