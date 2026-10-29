@@ -3890,162 +3890,166 @@ export function SetBuilder() {
             </div>
           </details>
 
-          <div className="set-bar">
-            <div className="seg crate-view-tabs" role="tablist" aria-label={t("builder.view.aria")}>
-              {(["list", "roles", "keys"] as const).map((id, index, all) => (
+          <div className="set-chrome">
+            <div className="set-bar">
+              <div className="seg crate-view-tabs" role="tablist" aria-label={t("builder.view.aria")}>
+                {(["list", "roles", "keys"] as const).map((id, index, all) => (
+                  <Tip
+                    key={id}
+                    text={t(`builder.view.${id}.hint`)}
+                    end={index === all.length - 1}
+                  >
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={crateView === id}
+                      aria-controls={`set-view-${id}`}
+                      className={crateView === id ? "seg-item active" : "seg-item"}
+                      onClick={() => setCrateView(id)}
+                    >
+                      {t(`builder.view.${id}.label`)}
+                    </button>
+                  </Tip>
+                ))}
+              </div>
+              <div className="set-bar-end">
+                <SetMenus
+                  canExport={draft.tracks.length > 0}
+                  onSaveSet={openSaveSetup}
+                  onExportPdf={() => setPendingTake("pdf")}
+                  onExportM3u={() => setPendingTake("m3u")}
+                  onExportRekordbox={() => setPendingTake("xml")}
+                  onWriteStick={() => setPendingTake("stick")}
+                  onCopyText={() => setPendingTake("copy")}
+                />
+                {draft.tracks.length > 0 ? (
+                  <Tip text={t("library.menu.resetHint")} end>
+                    <button
+                      type="button"
+                      className="btn ghost danger"
+                      onClick={resetSet}
+                    >
+                      {t("library.menu.reset")}
+                    </button>
+                  </Tip>
+                ) : null}
+              </div>
+              <GigReadyDialog
+                open={pendingTake !== null}
+                checks={pendingChecks}
+                onClose={() => setPendingTake(null)}
+                onContinue={confirmTake}
+                onReselectStick={reselectStickForGigReady}
+                onReselectStickFiles={reselectStickFilesForGigReady}
+              />
+              <StickWriteDialog
+                open={stickOpen}
+                onClose={() => setStickOpen(false)}
+                draft={draft}
+              />
+              <ResetSetDialog
+                open={resetOpen}
+                onClose={() => setResetOpen(false)}
+                onConfirm={confirmReset}
+              />
+              <StickDisconnectDialog
+                open={stickLostOpen}
+                onClose={() => {
+                  resumePreviewAfterStick.current = false;
+                  stickLostQuietUntil.current = Date.now() + 20_000;
+                  setStickLostOpen(false);
+                }}
+                onAutoReconnect={autoReconnectLostStick}
+                onReconnect={reconnectLostStick}
+                onReconnectFiles={reconnectLostStickFiles}
+              />
+            </div>
+            {draft.tracks.length > 0 ? (
+              <SetTools
+                canMatch={draft.tracks.length > 0}
+                matchingLinks={matchingLinks}
+                onMatchLinks={() => void matchStreamingLinks()}
+              >
+                <SetSortMenu
+                  disabled={mainTracks.length < 2}
+                  onSort={sortSet}
+                  pinnedCount={midPinnedCount}
+                />
+                <SetReshuffleMenu
+                  different={reshuffleOffers.different}
+                  playlist={reshuffleOffers.playlist}
+                  collection={reshuffleOffers.collection}
+                  history={reshuffleOffers.history}
+                  onPick={reshuffleFrom}
+                />
+                <SetEnergyMenu
+                  busy={energyBusy}
+                  stickReady={stickReady}
+                  onChooseStick={openStickPicker}
+                  fileCount={draft.tracks.filter((track) => track.filePath?.trim()).length}
+                  missingCount={
+                    draft.tracks.filter(
+                      (track) => track.filePath?.trim() && !hasKnownEnergy(track),
+                    ).length
+                  }
+                  knownCount={
+                    draft.tracks.filter(
+                      (track) => track.filePath?.trim() && hasKnownEnergy(track),
+                    ).length
+                  }
+                  onReadTags={() => void readEnergyTags()}
+                  onMeasureMissing={() => void measureEnergy("missing")}
+                  onMeasureAll={() => void measureEnergy("all")}
+                  onWrite={() => void writeEnergyToFiles()}
+                />
                 <Tip
-                  key={id}
-                  text={t(`builder.view.${id}.hint`)}
-                  end={index === all.length - 1}
+                  text={t(
+                    filledMs < targetMs
+                      ? "builder.tool.fitTipUnder"
+                      : plannedJoins
+                        ? "builder.tool.fitTipPlan"
+                        : "builder.tool.fitTip",
+                    { mix: formatDuration(blendMs) },
+                  )}
                 >
                   <button
                     type="button"
-                    role="tab"
-                    aria-selected={crateView === id}
-                    aria-controls={`set-view-${id}`}
-                    className={crateView === id ? "seg-item active" : "seg-item"}
-                    onClick={() => setCrateView(id)}
+                    className="btn ghost"
+                    onClick={fitSlot}
+                    disabled={
+                      draft.tracks.length === 0 ||
+                      (filledMs <= targetMs * 1.05 && filledMs >= targetMs)
+                    }
                   >
-                    {t(`builder.view.${id}.label`)}
+                    {t("builder.tool.fit")}
                   </button>
                 </Tip>
-              ))}
-            </div>
-            <div className="set-bar-end">
-              <SetMenus
-                canExport={draft.tracks.length > 0}
-                onSaveSet={openSaveSetup}
-                onExportPdf={() => setPendingTake("pdf")}
-                onExportM3u={() => setPendingTake("m3u")}
-                onExportRekordbox={() => setPendingTake("xml")}
-                onWriteStick={() => setPendingTake("stick")}
-                onCopyText={() => setPendingTake("copy")}
-              />
-              {draft.tracks.length > 0 ? (
-                <Tip text={t("library.menu.resetHint")} end>
+                <Tip text={t("builder.tool.fillMatchesTip")}>
                   <button
                     type="button"
-                    className="btn ghost danger"
-                    onClick={resetSet}
+                    className="btn ghost"
+                    onClick={fillBestMatches}
+                    disabled={draft.tracks.length === 0 || filledMs >= targetMs}
                   >
-                    {t("library.menu.reset")}
+                    {t("builder.tool.fillMatches")}
                   </button>
                 </Tip>
-              ) : null}
-            </div>
-            <GigReadyDialog
-              open={pendingTake !== null}
-              checks={pendingChecks}
-              onClose={() => setPendingTake(null)}
-              onContinue={confirmTake}
-              onReselectStick={reselectStickForGigReady}
-              onReselectStickFiles={reselectStickFilesForGigReady}
-            />
-            <StickWriteDialog
-              open={stickOpen}
-              onClose={() => setStickOpen(false)}
-              draft={draft}
-            />
-            <ResetSetDialog
-              open={resetOpen}
-              onClose={() => setResetOpen(false)}
-              onConfirm={confirmReset}
-            />
-            <StickDisconnectDialog
-              open={stickLostOpen}
-              onClose={() => {
-                resumePreviewAfterStick.current = false;
-                stickLostQuietUntil.current = Date.now() + 20_000;
-                setStickLostOpen(false);
-              }}
-              onAutoReconnect={autoReconnectLostStick}
-              onReconnect={reconnectLostStick}
-              onReconnectFiles={reconnectLostStickFiles}
-            />
+                <Tip
+                  text={t("builder.tool.assignTip")}
+                  disabled={mainTracks.length < 2}
+                >
+                  <button
+                    type="button"
+                    className="btn ghost"
+                    onClick={assignRoles}
+                    disabled={mainTracks.length < 2}
+                  >
+                    {t("builder.tool.assign")}
+                  </button>
+                </Tip>
+              </SetTools>
+            ) : null}
           </div>
-          {draft.tracks.length > 0 ? (
-          <SetTools
-            canMatch={draft.tracks.length > 0}
-            matchingLinks={matchingLinks}
-            onMatchLinks={() => void matchStreamingLinks()}
-          >
-            <SetSortMenu
-              disabled={mainTracks.length < 2}
-              onSort={sortSet}
-              pinnedCount={midPinnedCount}
-            />
-            <SetReshuffleMenu
-              different={reshuffleOffers.different}
-              playlist={reshuffleOffers.playlist}
-              collection={reshuffleOffers.collection}
-              history={reshuffleOffers.history}
-              onPick={reshuffleFrom}
-            />
-            <SetEnergyMenu
-              busy={energyBusy}
-              stickReady={stickReady}
-              onChooseStick={openStickPicker}
-              fileCount={draft.tracks.filter((track) => track.filePath?.trim()).length}
-              missingCount={
-                draft.tracks.filter((track) => track.filePath?.trim() && !hasKnownEnergy(track))
-                  .length
-              }
-              knownCount={
-                draft.tracks.filter((track) => track.filePath?.trim() && hasKnownEnergy(track))
-                  .length
-              }
-              onReadTags={() => void readEnergyTags()}
-              onMeasureMissing={() => void measureEnergy("missing")}
-              onMeasureAll={() => void measureEnergy("all")}
-              onWrite={() => void writeEnergyToFiles()}
-            />
-            <Tip
-              text={t(
-                filledMs < targetMs
-                  ? "builder.tool.fitTipUnder"
-                  : plannedJoins
-                    ? "builder.tool.fitTipPlan"
-                    : "builder.tool.fitTip",
-                { mix: formatDuration(blendMs) },
-              )}
-            >
-              <button
-                type="button"
-                className="btn ghost"
-                onClick={fitSlot}
-                disabled={
-                  draft.tracks.length === 0 ||
-                  (filledMs <= targetMs * 1.05 && filledMs >= targetMs)
-                }
-              >
-                {t("builder.tool.fit")}
-              </button>
-            </Tip>
-            <Tip text={t("builder.tool.fillMatchesTip")}>
-              <button
-                type="button"
-                className="btn ghost"
-                onClick={fillBestMatches}
-                disabled={draft.tracks.length === 0 || filledMs >= targetMs}
-              >
-                {t("builder.tool.fillMatches")}
-              </button>
-            </Tip>
-            <Tip
-              text={t("builder.tool.assignTip")}
-              disabled={mainTracks.length < 2}
-            >
-              <button
-                type="button"
-                className="btn ghost"
-                onClick={assignRoles}
-                disabled={mainTracks.length < 2}
-              >
-                {t("builder.tool.assign")}
-              </button>
-            </Tip>
-          </SetTools>
-          ) : null}
           <FieldNoticeView notice={localNotice("library")} />
           <FieldNoticeView notice={localNotice("export")} />
 

@@ -31,14 +31,31 @@ export function StickDisconnectDialog({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [wasOpen, setWasOpen] = useState(open);
+  const autoReconnectRef = useRef(onAutoReconnect);
+  const onCloseRef = useRef(onClose);
+  const tRef = useRef(t);
+
+  // Adjust local UI when the dialog closes — React's recommended "adjust state
+  // while rendering" path (not an effect, so refs stay out of this block).
   if (open !== wasOpen) {
     setWasOpen(open);
     if (!open) {
       setBusy(false);
       setError(null);
-      autoTried.current = false;
     }
   }
+
+  useEffect(() => {
+    autoReconnectRef.current = onAutoReconnect;
+  }, [onAutoReconnect]);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    tRef.current = t;
+  }, [t]);
 
   useEffect(() => {
     const node = dialog.current;
@@ -47,25 +64,35 @@ export function StickDisconnectDialog({
     if (!open && node.open) node.close();
   }, [open]);
 
-  const autoReconnectRef = useRef(onAutoReconnect);
-  autoReconnectRef.current = onAutoReconnect;
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
-  const tRef = useRef(t);
-  tRef.current = t;
-
   useEffect(() => {
-    if (!open || !autoReconnectRef.current || autoTried.current) return;
+    if (!open) {
+      autoTried.current = false;
+      return;
+    }
+    if (!autoReconnectRef.current || autoTried.current) return;
     autoTried.current = true;
-    setBusy(true);
-    setError(null);
-    void autoReconnectRef
-      .current()
-      .then((ok) => {
-        if (ok) onCloseRef.current();
-      })
-      .catch((caught) => setError(errorText(caught, tRef.current)))
-      .finally(() => setBusy(false));
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      if (cancelled) return;
+      setBusy(true);
+      setError(null);
+      void autoReconnectRef
+        .current?.()
+        .then((ok) => {
+          if (cancelled) return;
+          if (ok) onCloseRef.current();
+        })
+        .catch((caught) => {
+          if (!cancelled) setError(errorText(caught, tRef.current));
+        })
+        .finally(() => {
+          if (!cancelled) setBusy(false);
+        });
+    }, 0);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, [open]);
 
   async function run(job: () => Promise<boolean>) {

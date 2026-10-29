@@ -170,7 +170,6 @@ function PreviewDock({
   const [playing, setPlaying] = useState(false);
   const hadStickSrc = useRef(Boolean(seed.src && filePath));
   const stickLostRef = useRef(onStickMediaLost);
-  stickLostRef.current = onStickMediaLost;
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const transport = useSyncExternalStore(
@@ -180,6 +179,10 @@ function PreviewDock({
   );
   const seenPauseToken = useRef(transport.pauseToken);
   const seenPlayToken = useRef(transport.playToken);
+
+  useEffect(() => {
+    stickLostRef.current = onStickMediaLost;
+  }, [onStickMediaLost]);
 
   useEffect(() => {
     reportPreviewPlayback(track.id, playing);

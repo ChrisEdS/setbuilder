@@ -6442,13 +6442,30 @@ body {
 }
 
 /* Set bar: view tabs and menus on top, set-wide edit actions below. */
+/* View tabs + edit tools share one chrome so they read as one control strip. */
+.set-chrome {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  overflow: visible;
+}
+
 .set-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
   flex-wrap: wrap;
-  margin-top: 0.25rem;
+  margin: 0;
+  padding: 0.65rem 0.8rem;
+}
+
+.set-chrome:has(.set-tools) .set-bar {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .set-menus {
@@ -6461,18 +6478,18 @@ body {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
-  margin: 0.75rem 0 0;
-  padding: 0.625rem 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.025);
+  gap: 0.45rem 0.5rem;
+  margin: 0;
+  padding: 0.55rem 0.8rem 0.7rem;
+  border: none;
+  border-radius: 0;
+  background: transparent;
 }
 
 .set-tools-label {
-  margin-right: 0.25rem;
-  color: #b9b9b9;
-  font-size: 0.72rem;
+  margin-right: 0.15rem;
+  color: #9a9a9a;
+  font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -8653,15 +8670,18 @@ body {
     overflow-x: clip;
   }
 
-  .set-bar {
+  .set-chrome {
     position: sticky;
     top: 0;
     z-index: 55;
     margin-inline: -0.35rem;
-    padding: 0.45rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
     background: rgba(18, 18, 18, 0.96);
     backdrop-filter: blur(10px);
+  }
+
+  .set-bar {
+    padding: 0.45rem 0.65rem;
   }
 
   .set-menus {

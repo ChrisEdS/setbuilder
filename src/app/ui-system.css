@@ -573,8 +573,16 @@ html[data-frame="mac"] .set-shell .hero-copy {
   min-width: 10.5rem;
 }
 
+.set-shell .set-chrome {
+  margin-top: var(--ui-space-3, 0.65rem);
+}
+
 .set-shell .set-bar {
   min-height: 3.25rem;
+}
+
+.set-shell .set-tools {
+  min-height: 2.75rem;
 }
 
 /* Export sits with reset on the right of the view tabs. */
@@ -890,7 +898,7 @@ html[data-frame="mac"] .set-shell .hero-copy {
   z-index: var(--ui-sticky-status-z);
 }
 
-.set-shell .set-bar {
+.set-shell .set-chrome {
   z-index: var(--ui-sticky-toolbar-z);
 }
 
