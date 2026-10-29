@@ -968,7 +968,13 @@ export type TrimRestore = {
   id: string;
   role: TrackRole;
   phase: SetPhaseId;
+  /** Index in the full tracks array (performance + Alternatives) for undo splice. */
   index: number;
+  /**
+   * 0-based place in the performance only, when demoted from a playing slot.
+   * Missing for fill snapshots (those undo back to Alternatives, not a set place).
+   */
+  place?: number;
   why?: string;
 };
 
@@ -1175,13 +1181,16 @@ export function fitToSlot(draft: SetDraft, t: Translate = tDe): SlotFitResult {
   }
 
   // Snapshot demotions against the original draft for undo.
+  const performanceBefore = draft.tracks.filter((track) => track.role !== "safety");
   draft.tracks.forEach((track, index) => {
     if (!moveIds.has(track.id)) return;
+    const place = performanceBefore.findIndex((row) => row.id === track.id);
     restore.push({
       id: track.id,
       role: track.role,
       phase: track.phase,
       index,
+      ...(place >= 0 ? { place } : {}),
       why: track.why,
     });
   });

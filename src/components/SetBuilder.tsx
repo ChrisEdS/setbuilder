@@ -495,6 +495,8 @@ export function SetBuilder() {
   );
   const [replaceUndo, setReplaceUndo] = useState<SetDraft | null>(null);
   const [trimUndo, setTrimUndo] = useState<TrimRestore[] | null>(null);
+  /** Full draft before the last Sortieren that actually changed order. */
+  const [sortUndo, setSortUndo] = useState<SetDraft | null>(null);
   const [replaceFor, setReplaceFor] = useState<string | null>(null);
   const [exchangeFor, setExchangeFor] = useState<string | null>(null);
   const [placeFor, setPlaceFor] = useState<string | null>(null);
@@ -2234,6 +2236,9 @@ export function SetBuilder() {
   function confirmReset() {
     setResetOpen(false);
     setDraft(DEFAULT_SET);
+    setSortUndo(null);
+    setTrimUndo(null);
+    setReplaceUndo(null);
     setFocusTrackId(null);
     setSelectedSetup("");
     setStatus(t("builder.status.reset"));
@@ -2266,6 +2271,9 @@ export function SetBuilder() {
           (track, index) => track.id !== current.tracks[index]?.id,
         );
         const pulled = alternativesPulledIntoPerformance(current, next);
+        if (changed || pulled > 0) {
+          setSortUndo(current);
+        }
         setDraft(next);
         const sorted = t(`builder.status.sorted.${technique}`);
         endWork(
@@ -2279,6 +2287,14 @@ export function SetBuilder() {
         endWork(null);
       }
     }, 0);
+  }
+
+  function undoSort() {
+    const snapshot = sortUndo;
+    if (!snapshot) return;
+    setDraft(snapshot);
+    setSortUndo(null);
+    setStatus(t("builder.sort.undoDone"));
   }
 
   function reshuffleFrom(source: ReshuffleSource) {
@@ -2339,6 +2355,7 @@ export function SetBuilder() {
             ? next
             : { ...next, sourcePool: current.sourcePool },
         );
+        setSortUndo(null);
         setFocusTrackId(null);
         endWork(
           t("builder.status.reshuffle.done", {
@@ -3008,8 +3025,23 @@ export function SetBuilder() {
     return body;
   }
 
+  // Demotions: still Alternatives, restore remembers a performance role + place.
+  // Fills: currently in the performance, restore would park them as Alternatives.
+  // Never show a fill's alt-array index as "Platz 74".
   const trimUndoLive =
-    trimUndo?.filter((item) => draft.tracks.some((track) => track.id === item.id)) ?? [];
+    trimUndo?.filter((item) => {
+      if (item.role === "safety") return false;
+      const track = draft.tracks.find((row) => row.id === item.id);
+      return track?.role === "safety";
+    }) ?? [];
+  const fillUndoLive =
+    trimUndoLive.length > 0
+      ? []
+      : (trimUndo?.filter((item) => {
+          if (item.role !== "safety") return false;
+          const track = draft.tracks.find((row) => row.id === item.id);
+          return Boolean(track && track.role !== "safety");
+        }) ?? []);
 
   return (
     <div className="set-shell">
@@ -3876,7 +3908,28 @@ export function SetBuilder() {
           <FieldNoticeView notice={localNotice("library")} />
           <FieldNoticeView notice={localNotice("export")} />
 
-          {trimUndoLive.length > 0 ? (
+          {sortUndo ? (
+            <div className="stick-reload" role="status">
+              <div>
+                <strong>{t("builder.sort.undoTitle")}</strong>
+                <p>{t("builder.sort.undoBody")}</p>
+              </div>
+              <div className="stick-reload-actions">
+                <button type="button" className="btn" onClick={undoSort}>
+                  {t("builder.sort.undo")}
+                </button>
+                <button
+                  type="button"
+                  className="btn ghost"
+                  onClick={() => setSortUndo(null)}
+                >
+                  {t("builder.sort.dismiss")}
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          {trimUndoLive.length > 0 || fillUndoLive.length > 0 ? (
             <div className="stick-reload" role="status">
               <p>
                 {trimUndoLive.length === 1
@@ -3884,20 +3937,25 @@ export function SetBuilder() {
                       name:
                         draft.tracks.find((track) => track.id === trimUndoLive[0].id)
                           ?.name ?? trimUndoLive[0].id,
-                      position: trimUndoLive[0].index + 1,
+                      position:
+                        (trimUndoLive[0].place ?? trimUndoLive[0].index) + 1,
                     })
-                  : t("builder.trim.undoBodyMany", {
-                      details: trimUndoLive
-                        .map((item) =>
-                          t("builder.trim.undoDetail", {
-                            name:
-                              draft.tracks.find((track) => track.id === item.id)?.name ??
-                              item.id,
-                            position: item.index + 1,
-                          }),
-                        )
-                        .join(", "),
-                    })}
+                  : trimUndoLive.length > 1
+                    ? t("builder.trim.undoBodyMany", {
+                        details: trimUndoLive
+                          .map((item) =>
+                            t("builder.trim.undoDetail", {
+                              name:
+                                draft.tracks.find((track) => track.id === item.id)
+                                  ?.name ?? item.id,
+                              position: (item.place ?? item.index) + 1,
+                            }),
+                          )
+                          .join(", "),
+                      })
+                    : t("builder.trim.fillUndoBody", {
+                        count: fillUndoLive.length,
+                      })}
               </p>
               <div className="stick-reload-actions">
                 <button type="button" className="btn" onClick={undoTrim}>

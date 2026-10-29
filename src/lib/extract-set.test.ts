@@ -89,6 +89,12 @@ test("undo trim restores moved tracks and keeps later notes and reorders", () =>
     assert.equal(move.role, before.role);
     assert.equal(move.phase, before.phase);
     assert.equal(move.index, tracks.findIndex((track) => track.id === move.id));
+    assert.equal(
+      move.place,
+      tracks.findIndex((track) => track.id === move.id),
+      "place is the performance slot, not an Alternatives index",
+    );
+    assert.ok((move.place ?? -1) < tracks.length);
     assert.equal(fitted.draft.tracks.find((track) => track.id === move.id)?.role, "safety");
   }
 

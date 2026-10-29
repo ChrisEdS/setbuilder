@@ -54,12 +54,13 @@ export function ActionIcon({ name }: { name: ActionIconName }) {
         <path d="m7.5 13.5-3 3 3 3" />
       </>
     ),
+    // Circular cycle — must not look like `replace` (opposing straight arrows).
     exchange: (
       <>
-        <path d="M7 8h11" />
-        <path d="m15 5 3 3-3 3" />
-        <path d="M17 16H6" />
-        <path d="m9 13-3 3 3 3" />
+        <path d="M7.5 9.2a5.2 5.2 0 0 1 8.6-2.8" />
+        <path d="m14.8 4.2 1.4 2.9-3 .3" />
+        <path d="M16.5 14.8a5.2 5.2 0 0 1-8.6 2.8" />
+        <path d="m9.2 19.8-1.4-2.9 3-.3" />
       </>
     ),
     opener: (

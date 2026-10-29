@@ -620,6 +620,12 @@ const de = {
     "Reihenfolge unverändert: innerhalb jeder Phase passt die Lage schon (Opener/Closer bleiben sowieso), oder Key, Energie und BPM fehlen. Tracks zwischen Phasen ziehen oder die Werte in der Setliste setzen.",
   "builder.status.sorted.pulled":
     "{count} Alternativen zurück in die Performance.",
+  "builder.sort.undoTitle": "Sortierung geändert",
+  "builder.sort.undoBody":
+    "Die vorherige Reihenfolge (inkl. Alternativen) kann einmal zurückgeholt werden.",
+  "builder.sort.undo": "Rückgängig",
+  "builder.sort.dismiss": "Lassen",
+  "builder.sort.undoDone": "Vorherige Reihenfolge wiederhergestellt.",
   "builder.status.reshuffle.done":
     "Neue Auswahl aus dem Pool ({pool}): {tracks} Performance-Tracks. Bogen und Alternativen prüfen.",
   "builder.status.reshuffle.unavailable":
@@ -641,6 +647,8 @@ const de = {
     "{name} liegt bei den Alternativen (zurück auf Platz {position}).",
   "builder.trim.undoBodyMany": "{details} liegen bei den Alternativen.",
   "builder.trim.undoDetail": "{name} (Platz {position})",
+  "builder.trim.fillUndoBody":
+    "{count} Tracks kamen aus Alternativen oder der Playlist in die Performance.",
   "builder.trim.undo": "Zurückholen",
   "builder.trim.dismiss": "Lassen",
   "builder.trim.undoDone": "Wieder im Slot.",
@@ -1330,6 +1338,12 @@ const en: Record<keyof typeof de, string> = {
     "Order unchanged: within each phase it already fits (opener/closer stay anyway), or key, energy and BPM are missing. Drag tracks across phases or set the values in the setlist.",
   "builder.status.sorted.pulled":
     "{count} alternatives back in the performance.",
+  "builder.sort.undoTitle": "Sort changed",
+  "builder.sort.undoBody":
+    "The previous order (including alternatives) can be restored once.",
+  "builder.sort.undo": "Undo",
+  "builder.sort.dismiss": "Keep it",
+  "builder.sort.undoDone": "Previous order restored.",
   "builder.status.reshuffle.done":
     "New pick from the pool ({pool}): {tracks} performance tracks. Check the arc and Alternatives.",
   "builder.status.reshuffle.unavailable":
@@ -1351,6 +1365,8 @@ const en: Record<keyof typeof de, string> = {
     "{name} is with the alternatives (back at position {position}).",
   "builder.trim.undoBodyMany": "{details} are with the alternatives.",
   "builder.trim.undoDetail": "{name} (position {position})",
+  "builder.trim.fillUndoBody":
+    "{count} tracks came into the performance from Alternatives or the playlist.",
   "builder.trim.undo": "Bring back",
   "builder.trim.dismiss": "Leave them",
   "builder.trim.undoDone": "Back in the slot.",

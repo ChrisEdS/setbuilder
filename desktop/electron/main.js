@@ -359,6 +359,8 @@ function startServer() {
   });
   child.on("exit", (code) => {
     exitCode = typeof code === "number" ? code : 1;
+    // Quit/Dock kill uses SIGTERM (often code 143). Do not surface that as an error.
+    if (killed) return;
     if (exitCode && exitCode !== 0 && mainWindow && !mainWindow.isDestroyed()) {
       dialog.showErrorBox(
         "SETBUILDER",
