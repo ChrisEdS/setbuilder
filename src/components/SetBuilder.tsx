@@ -3343,10 +3343,14 @@ export function SetBuilder() {
         {spotifyConnected && tidalConnected ? null : (
           <p className="builder-note">{t("builder.conn.hint")}</p>
         )}
+        {addTab === "link" ? (
+          <p className="builder-note crate-add-aside">{t("builder.link.hint")}</p>
+        ) : null}
       </div>
     );
-    // Nothing connected: keep the buttons out of the way until someone wants them.
-    if (spotifyConnected === false && tidalConnected === false) {
+    // Keep connect out of the way until something is actually linked.
+    // null = still checking — treat like disconnected so the card does not flash open.
+    if (spotifyConnected !== true && tidalConnected !== true) {
       return (
         <details className="explain-fold nested optional-connect">
           <summary>
@@ -3761,63 +3765,64 @@ export function SetBuilder() {
                   <span>{t("builder.add.backup")}</span>
                   <em className="fold-toggle" />
                 </summary>
-                <div className="explain-body">
+                <div className="explain-body crate-add-backup-body">
                   <p className="builder-note">{t("builder.add.backupNote")}</p>
-              {addTab === "auto" ? null : (
-                <div className="add-target">
-                  <span className="add-target-label">{t("builder.add.target")}</span>
-                  <select
-                    value={activePhase}
-                    onChange={(event) =>
-                      setActivePhase(event.target.value as SetPhaseId)
-                    }
-                    aria-label={t("builder.add.phaseAria")}
-                  >
-                    {PHASES.map((phase) => (
-                      <option key={phase.id} value={phase.id}>
-                        {phaseLabel(t, phase.id)}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={activeRole}
-                    onChange={(event) =>
-                      setActiveRole(event.target.value as TrackRole)
-                    }
-                    aria-label={t("builder.add.roleAria")}
-                  >
-                    {TRACK_ROLES.map((role) => (
-                      <option key={role.id} value={role.id}>
-                        {roleLabel(t, role.id)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
+                  {addTab === "auto" ? null : (
+                    <div className="add-target">
+                      <span className="add-target-label">{t("builder.add.target")}</span>
+                      <select
+                        value={activePhase}
+                        onChange={(event) =>
+                          setActivePhase(event.target.value as SetPhaseId)
+                        }
+                        aria-label={t("builder.add.phaseAria")}
+                      >
+                        {PHASES.map((phase) => (
+                          <option key={phase.id} value={phase.id}>
+                            {phaseLabel(t, phase.id)}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={activeRole}
+                        onChange={(event) =>
+                          setActiveRole(event.target.value as TrackRole)
+                        }
+                        aria-label={t("builder.add.roleAria")}
+                      >
+                        {TRACK_ROLES.map((role) => (
+                          <option key={role.id} value={role.id}>
+                            {roleLabel(t, role.id)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
-              <div className="seg crate-add-tabs" role="tablist" aria-label={t("builder.add.tabsAria")}>
-                {(["link", "search", "manual", "auto"] as const).map((id, index, all) => (
-                  <Tip
-                    key={id}
-                    text={t(`builder.add.tab.${id}.hint`)}
-                    end={index === all.length - 1}
-                  >
-                    <button
-                      type="button"
-                      role="tab"
-                      aria-selected={addTab === id}
-                      className={addTab === id ? "seg-item active" : "seg-item"}
-                      onClick={() => {
-                        setAddTab(id);
-                        clearNotice();
-                      }}
-                    >
-                      {t(`builder.add.tab.${id}.label`)}
-                    </button>
-                  </Tip>
-                ))}
-              </div>
+                  <div className="seg crate-add-tabs" role="tablist" aria-label={t("builder.add.tabsAria")}>
+                    {(["link", "search", "manual", "auto"] as const).map((id, index, all) => (
+                      <Tip
+                        key={id}
+                        text={t(`builder.add.tab.${id}.hint`)}
+                        end={index === all.length - 1}
+                      >
+                        <button
+                          type="button"
+                          role="tab"
+                          aria-selected={addTab === id}
+                          className={addTab === id ? "seg-item active" : "seg-item"}
+                          onClick={() => {
+                            setAddTab(id);
+                            clearNotice();
+                          }}
+                        >
+                          {t(`builder.add.tab.${id}.label`)}
+                        </button>
+                      </Tip>
+                    ))}
+                  </div>
 
+                  <div className="crate-add-panel">
               {addTab === "search" ? (
                 <>
                   <form
@@ -3837,7 +3842,11 @@ export function SetBuilder() {
                       {isPending ? t("builder.search.busy") : t("builder.search.submit")}
                     </button>
                   </form>
-                  <p className="builder-note">{t("builder.search.hint")}</p>
+                  {!hasSearched ? (
+                    <p className="builder-note">{t("builder.crate.emptySearch")}</p>
+                  ) : (
+                    <p className="builder-note crate-add-aside">{t("builder.search.hint")}</p>
+                  )}
                 </>
               ) : null}
 
@@ -3910,8 +3919,9 @@ export function SetBuilder() {
                       </label>
                     </div>
                   ) : null}
-                  {renderConnection()}
-                  <p className="builder-note">{t("builder.link.hint")}</p>
+                  {!hasSearched ? (
+                    <p className="builder-note">{t("builder.crate.emptyLink")}</p>
+                  ) : null}
                 </>
               ) : null}
 
@@ -3932,22 +3942,10 @@ export function SetBuilder() {
                       ) : null}
                     </div>
                   ) : null}
-                  {!hasSearched ? (
-                    // The notice above already says what to do next: no second box under it.
-                    localNotice("crate") ? null : (
-                      <div className="empty">
-                        <p>
-                          {addTab === "search"
-                            ? t("builder.crate.emptySearch")
-                            : t("builder.crate.emptyLink")}
-                        </p>
-                      </div>
-                    )
-                  ) : results.length === 0 ? (
-                    <div className="empty">
-                      <p>{t("builder.crate.none")}</p>
-                    </div>
-                  ) : (
+                  {hasSearched && results.length === 0 ? (
+                    <p className="builder-note">{t("builder.crate.none")}</p>
+                  ) : null}
+                  {hasSearched && results.length > 0 ? (
                     <ul className="result-list">
                       {results.map((track) => (
                         <li key={track.id}>
@@ -3974,7 +3972,8 @@ export function SetBuilder() {
                         </li>
                       ))}
                     </ul>
-                  )}
+                  ) : null}
+                  {addTab === "link" ? renderConnection() : null}
                 </>
               ) : null}
 
@@ -4093,6 +4092,7 @@ export function SetBuilder() {
                   </details>
                 </>
               ) : null}
+                  </div>
                 </div>
               </details>
             </div>
