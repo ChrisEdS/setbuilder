@@ -1658,7 +1658,8 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 /* Replace opens as a drawer so the setlist underneath does not reflow.
-   Sit above the floating player (z=110) so Close stays clickable. */
+   Stay under the floating player (z=130) so Exchange/Replace can preview
+   without the dimmed backdrop swallowing player clicks (and closing the drawer). */
 .replace-layer {
   position: fixed;
   inset: 0;
@@ -1671,7 +1672,7 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 /* Compact floating preview. Position comes from --player-* so a drag can move it
-   without fighting the older full-width dock rules. */
+   without fighting the older full-width dock rules. Above replace/guide layers. */
 .preview-player {
   position: fixed !important;
   left: var(--player-x, 1rem) !important;
@@ -1681,7 +1682,7 @@ html[data-frame="mac"] .set-shell .hero-copy {
   width: var(--player-w, min(32rem, calc(100vw - 1.5rem))) !important;
   max-width: calc(100vw - 1.5rem) !important;
   height: auto !important;
-  z-index: 110 !important;
+  z-index: 130 !important;
   transform: none !important;
   margin: 0 !important;
   padding: 0 !important;
@@ -2400,7 +2401,8 @@ dialog.stick-dialog.gig-ready-dialog .gig-ready-actions .btn {
   color: #fff;
 }
 
-/* Same slide-over as replace: a panel from the right, over the set. */
+/* Same slide-over as replace: a panel from the right, over the set.
+   Under the floating player so preview stays usable. */
 .guide-layer {
   position: fixed;
   inset: 0;

@@ -32,6 +32,8 @@ type Props = {
   /** Loaded playlist pool — Exchange mode lists only these fits. */
   playlistPool?: SourcePoolTrack[];
   onReplaceFromPool?: (targetId: string, track: SourcePoolTrack) => void;
+  /** Preview a pool track that is not already in the set. */
+  onPlayPool?: (track: SourcePoolTrack) => void;
   /** Hide alternatives/library; show playlist-pool fits only. */
   playlistOnly?: boolean;
 };
@@ -90,6 +92,7 @@ export function ReplaceMenu({
   playingId = null,
   playlistPool = [],
   onReplaceFromPool,
+  onPlayPool,
   playlistOnly = false,
 }: Props) {
   const { t } = useI18n();
@@ -262,6 +265,9 @@ export function ReplaceMenu({
                   ) : null}
                   {visiblePool.map(({ track, detail }) => {
                     const inSet = byId.get(track.id);
+                    const canPlayPool = Boolean(
+                      track.filePath?.trim() || track.uri?.trim() || track.externalUrl?.trim(),
+                    );
                     return (
                       <li key={track.id} title={detail}>
                         <div className="replace-copy">
@@ -270,6 +276,13 @@ export function ReplaceMenu({
                               playing={playingId === inSet.id}
                               playAria={t("crates.replace.playAria", { title: track.name })}
                               onPlay={() => onPlayTrack(inSet)}
+                            />
+                          ) : onPlayPool ? (
+                            <ReplacePlayButton
+                              playing={playingId === track.id}
+                              disabled={!canPlayPool}
+                              playAria={t("crates.replace.playAria", { title: track.name })}
+                              onPlay={() => onPlayPool(track)}
                             />
                           ) : (
                             <span className="replace-play" />

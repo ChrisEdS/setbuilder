@@ -5164,13 +5164,13 @@ button.drag-handle:active i {
   visibility: hidden;
 }
 
-/* Portaled tips: fixed + JS-clamped; sit above the preview dock. */
+/* Portaled tips: fixed + JS-clamped; sit above replace/guide and the player. */
 .tip-bubble.tip-bubble-portal {
   position: fixed;
   top: 0;
   left: 0;
   right: auto;
-  z-index: 120;
+  z-index: 140;
   opacity: 1;
   visibility: visible;
   display: block;
@@ -8204,7 +8204,8 @@ details:not([open]) > .menu-panel {
 }
 
 .tip-bubble.tip-bubble-portal {
-  z-index: 120 !important;
+  /* Above replace/guide (120) and the floating player (130). */
+  z-index: 140 !important;
   opacity: 1 !important;
   visibility: visible !important;
   display: block !important;

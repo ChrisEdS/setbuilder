@@ -2297,6 +2297,34 @@ export function SetBuilder() {
     playLibraryTrack(libraryTrackToSetTrack(row, "open", "groove", t));
   }
 
+  /** Exchange drawer: preview a playlist-pool track that is not yet in the set. */
+  function playPoolTrack(poolTrack: SourcePoolTrack) {
+    playLibraryTrack({
+      id: poolTrack.id,
+      name: poolTrack.name,
+      artists: poolTrack.artists,
+      album: poolTrack.album,
+      durationMs: poolTrack.durationMs,
+      uri: poolTrack.uri,
+      externalUrl: poolTrack.externalUrl,
+      imageUrl: poolTrack.imageUrl,
+      phase: "open",
+      role: "groove",
+      transition: "unset",
+      bpm: poolTrack.bpm || poolTrack.catalogBpm || "",
+      keyCamelot: poolTrack.keyCamelot || poolTrack.catalogKey || "",
+      energy: poolTrack.energy,
+      energyLevel: poolTrack.energyLevel,
+      energySource: poolTrack.energySource,
+      filePath: poolTrack.filePath,
+      source: poolTrack.source,
+      note: "",
+      comment: "",
+      why: "",
+      safetyAlt: "",
+    });
+  }
+
   async function matchStreamingLinks() {
     const pending = draft.tracks.filter(
       (track) => !track.externalUrl && track.name.trim(),
@@ -5147,6 +5175,7 @@ export function SetBuilder() {
                         playlistOnly
                         playlistPool={resolvedPlaylistPool}
                         onReplaceFromPool={replaceFromPool}
+                        onPlayPool={playPoolTrack}
                         onPlayTrack={toggleTrackPreview}
                         playingId={
                           previewTransport.playing ? previewTransport.trackId : null
