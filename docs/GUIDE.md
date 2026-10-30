@@ -87,7 +87,7 @@ Preview plays in a compact floating card. Drag the title strip; pull the right e
 
 ![Setlist roles and alternatives](screenshots/en/03-setlist-roles-v450.png)
 
-Every track has a phase (Open → Lift → Rise → Peak → Release) and a role. Sticky next to **Roles at a glance** sit **Assign roles**, **Expand all**, **Collapse all**, and **Wide alternatives**. The short line under each column stays brief:
+Every track has a phase (Open → Lift → Rise → Peak → Release) and a role. Next to **Roles at a glance** sit **Assign roles**, **Expand all**, **Collapse all**, and **Wide alternatives**. The short line under each column stays brief:
 
 | Role | Job |
 |---|---|

@@ -21,7 +21,7 @@ Vor dem Gig ist es still. SETBUILDER ist dieser Raum. Du kommst mit einem rekord
 - 🔁 **Tauschen aus derselben Playlist.** Songs aus dem Playlist-Pool, die an dieser Stelle zu Key, BPM und Energie passen — getrennt vom allgemeinen Ersatz.
 - 🎛️ **Jeder Anschluss mit eigener Länge.** Cut, Blend, Echo-out. Die Uhr des Slots folgt dem, was du an den Übergang schreibst. „—“ nimmt die Blend-Zeit aus dem Brief.
 - 🎲 **Eine andere Nacht aus derselben Kiste.** Andere Songs. Oder die Playlist, die Collection, die History, sobald sie da ist. Nach dem Laden einer Stick-Playlist bleibt **Aus der Playlist** am Set verfügbar.
-- 🛟 **Plan B in der Tasche.** Rollen und Alternativen, wenn der Floor dreht. **Rollen verteilen**, Alle auf/zu und **Alternativen groß** sitzen sticky neben **Rollen kurz erklärt**. Alternativen groß gibt der Spalte den Raum; Ersatz und Plan B liegen neben der Karte.
+- 🛟 **Plan B in der Tasche.** Rollen und Alternativen, wenn der Floor dreht. **Rollen verteilen**, Alle auf/zu und **Alternativen groß** sitzen neben **Rollen kurz erklärt**. Alternativen groß gibt der Spalte den Raum; Ersatz und Plan B liegen neben der Karte.
 - 🎧 **Den Übergang vorher hören.** Vorhören aus Setliste, Tauschen und Key-Verlauf. Vorher, dieser Track, der nächste — dieselbe Länge wie im Set.
 - 📋 **Kompakt oder Comfortabel.** In der Setliste wählst du die Zeilendichte. Kompakt hält Play, Pin, Tauschen und Entfernen in einer Zeile. **Details** öffnet nur Notiz, Key, BPM, Energie und Blend; **Zuklappen** oder erneut **Kompakt** macht die Zeile wieder klein.
 - 🔍 **Nur noch, was passt.** Key, BPM und Energie holen die Bibliothek heran. Passt zu reiht, was hinter einem gewählten Track tragen kann, und der Song, den du hinzufügst, landet direkt dahinter.

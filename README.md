@@ -21,7 +21,7 @@ Before the gig, the room is quiet. SETBUILDER is that room. You arrive with a re
 - 🔁 **Exchange from the same playlist.** Songs from the playlist pool that fit key, BPM and energy at this position — separate from general Replace.
 - 🎛️ **Every join with its own length.** Cut, blend, echo-out. The slot clock follows what you write on the handoff. “—” takes the blend time from the brief.
 - 🎲 **Another night from the same crate.** Different songs. Or the playlist, the collection, the history, once they are in the room. After loading a stick playlist, **From the playlist** stays available on the set.
-- 🛟 **Plan B in your pocket.** Roles and alternatives for when the floor turns. **Assign roles**, Expand/Collapse all and **Wide alternatives** sit sticky next to **Roles at a glance**. Wide alternatives gives that column the stage; Ersatz and Plan B sit beside the card.
+- 🛟 **Plan B in your pocket.** Roles and alternatives for when the floor turns. **Assign roles**, Expand/Collapse all and **Wide alternatives** sit next to **Roles at a glance**. Wide alternatives gives that column the stage; Ersatz and Plan B sit beside the card.
 - 🎧 **Hear the handoff first.** Preview from the setlist, Exchange, and the Key path. Previous, this track, next — same lengths as the set.
 - 📋 **Compact or Comfortable.** On the setlist you pick the row density. Compact keeps play, pin, exchange and remove on one line. **Details** opens only note, key, BPM, energy and blend; **Collapse** or choosing **Compact** again makes the row small.
 - 🔍 **Only what fits.** Key, BPM, and energy pull the library in close. Fits after ranks what can follow a chosen track, and the song you add lands right after it.

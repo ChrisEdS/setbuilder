@@ -87,7 +87,7 @@ Der Vorhör-Player ist eine kompakte schwebende Karte. Am Titelstreifen ziehen; 
 
 ![Setlisten-Rollen und Alternativen](screenshots/de/03-setlist-roles-v450.png)
 
-Jeder Track hat eine Phase (Open → Lift → Rise → Peak → Release) und eine Rolle. Sticky neben **Rollen kurz erklärt** sitzen **Rollen verteilen**, **Alle auf**, **Alle zu** und **Alternativen groß**. Die Kurzzeile unter jeder Spalte bleibt knapp:
+Jeder Track hat eine Phase (Open → Lift → Rise → Peak → Release) und eine Rolle. Neben **Rollen kurz erklärt** sitzen **Rollen verteilen**, **Alle auf**, **Alle zu** und **Alternativen groß**. Die Kurzzeile unter jeder Spalte bleibt knapp:
 
 | Rolle | Aufgabe |
 |---|---|
