@@ -981,18 +981,11 @@ a.button-link.tidal-login {
   justify-content: space-between;
   gap: 0.55rem 0.85rem;
   min-width: 0;
-}
-
-.crate-roles-panel-head-sticky {
-  position: sticky;
-  top: 0.65rem;
-  z-index: 12;
+  position: relative;
+  z-index: auto;
   margin: 0;
-  padding: 0.35rem 0;
+  padding: 0;
   background: transparent;
-  backdrop-filter: none;
-  box-shadow: none;
-  border: 0;
 }
 
 .crate-roles-panel-head > .crate-roles-explain {
@@ -1015,6 +1008,13 @@ a.button-link.tidal-login {
   justify-content: flex-end;
   /* Line up with the explain summary — never center against an open body. */
   padding-top: 0.85rem;
+}
+
+.crate-roles-panel-head > .crate-toolbar .btn {
+  min-height: 34px !important;
+  height: 34px;
+  padding: 0 0.8rem !important;
+  font-size: 0.82rem !important;
 }
 
 .role-crates .crate-roles-explain.explain-fold.nested,
@@ -1046,13 +1046,6 @@ a.button-link.tidal-login {
   flex: 0 0 auto;
 }
 
-.crate-roles-panel-head-sticky .crate-toolbar .btn {
-  min-height: 34px !important;
-  height: 34px;
-  padding: 0 0.8rem !important;
-  font-size: 0.82rem !important;
-}
-
 .crate-columns {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1073,8 +1066,12 @@ a.button-link.tidal-login {
 }
 
 .crate-columns.wide-safety {
-  /* Alternativen gets the stage — others stay as compact side rails. */
-  grid-template-columns: minmax(0, 0.75fr) minmax(0, 0.75fr) minmax(0, 0.75fr) minmax(18rem, 3.1fr);
+  /* Alternativen gets the stage — side rails keep room for title + count. */
+  grid-template-columns:
+    minmax(10.5rem, 0.9fr)
+    minmax(10.5rem, 0.9fr)
+    minmax(10.5rem, 0.9fr)
+    minmax(18rem, 2.8fr);
 }
 
 .crate-col {
@@ -1104,14 +1101,15 @@ a.button-link.tidal-login {
 
 .crate-col-head-row {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0.15rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.35rem 0.45rem;
   align-items: start;
   border-bottom: 1px solid var(--line);
   flex: 0 0 auto;
-  position: sticky;
-  top: 0;
-  z-index: 3;
+  /* Stay in flow above .crate-col-body — sticky here overlaps cards in the
+     Electron mac frame (titlebar offset + page scroll). Body already scrolls. */
+  position: relative;
+  z-index: 1;
   background: #fff;
 }
 
@@ -1132,12 +1130,17 @@ a.button-link.tidal-login {
 .crate-col-head {
   position: relative;
   width: 100%;
+  min-width: 0;
   text-align: left;
   border: 0;
   background: transparent;
   color: var(--ink);
-  padding: 0.75rem 0.7rem 0.65rem;
+  padding: 0.85rem 0.55rem 0.8rem 0.85rem;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 0.3rem;
 }
 
 .crate-col-head:hover,
@@ -1149,8 +1152,8 @@ a.button-link.tidal-login {
 .crate-col-tools {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
-  padding: 0.45rem 0.4rem 0.4rem 0;
+  gap: 0.3rem;
+  padding: 0.75rem 0.65rem 0.65rem 0;
 }
 
 .crate-icon-btn {
@@ -1178,30 +1181,44 @@ a.button-link.tidal-login {
   display: block;
   width: 1.5rem;
   height: 2px;
-  margin-bottom: 0.4rem;
+  margin: 0 0 0.15rem;
+  flex: 0 0 auto;
   background: var(--crate-bar, var(--accent));
 }
 
 .crate-col-head strong {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: baseline;
-  gap: 0.4rem;
+  gap: 0.35rem;
+  min-width: 0;
   font-family: var(--font-display), "Space Grotesk", sans-serif;
   font-size: 1.05rem;
   letter-spacing: -0.02em;
   font-weight: 600;
 }
 
-.crate-col-head span {
-  display: block;
-  margin-top: 0.2rem;
+.crate-col-head .crate-col-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crate-col-head .crate-col-hint {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin: 0;
   color: var(--muted);
   font-style: normal;
   font-size: 0.78rem;
+  line-height: 1.35;
 }
 
 .crate-col-head .crate-col-count {
+  flex: 0 0 auto;
   margin: 0;
   font-style: normal;
   font-weight: 600;
@@ -3046,10 +3063,7 @@ label.btn:hover {
 }
 
 .crate-col-head {
-  min-height: 6.4rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
+  min-height: 0;
 }
 
 .crate-col-head .crate-col-count {
@@ -3061,7 +3075,7 @@ label.btn:hover {
 }
 
 .crate-col-tools {
-  padding-top: 0.65rem !important;
+  padding-top: 0.75rem !important;
 }
 
 .crate-icon-btn {
@@ -6365,10 +6379,6 @@ html[data-frame="mac"] .set-shell {
 
 html[data-frame="mac"] .banner.status {
   top: 3.25rem;
-}
-
-html[data-frame="mac"] .crate-col-head-row {
-  top: 46px;
 }
 
 html[data-frame="mac"] .set-shell,

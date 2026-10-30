@@ -2,7 +2,7 @@
 
 [Deutsch](GUIDE.de.md) · **English** · [README](../README.md)
 
-How to prepare a set with rekordbox: connect → build → export. Screenshots are from 4.5; the words describe **4.7.14** — grouped set tools, sticky role controls, **Fill with matches**, Plan B help, and **Wide alternatives** beside the card.
+How to prepare a set with rekordbox: connect → build → export. Screenshots are from 4.5; the words describe **4.7.15** — grouped set tools, **Fill with matches**, Plan B help, and **Wide alternatives** beside the card.
 
 The shipping client is the desktop app (port **4317**). Browser development uses port **4327**. Stick write, players, and streaming accounts are still unverified.
 

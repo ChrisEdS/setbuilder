@@ -2,7 +2,7 @@
 
 **Deutsch** · [English](GUIDE.md) · [README](../README.de.md)
 
-So bereitest du ein Set mit rekordbox vor: verbinden → bauen → exportieren. Screenshots von 4.5; der Text beschreibt **4.7.14** — Set-Werkzeuge in Gruppen, sticky Rollen-Steuerung, **Mit Matches füllen**, Plan-B-Hilfe und **Alternativen groß** neben der Karte.
+So bereitest du ein Set mit rekordbox vor: verbinden → bauen → exportieren. Screenshots von 4.5; der Text beschreibt **4.7.15** — Set-Werkzeuge in Gruppen, **Mit Matches füllen**, Plan-B-Hilfe und **Alternativen groß** neben der Karte.
 
 Die ausgelieferte App ist die Desktop-App (Port **4317**). Browser-Entwicklung: Port **4327**. Stick-Schreiben, Player und Streaming-Konten sind weiter ungeprüft.
 

@@ -334,7 +334,7 @@ export function RoleCrates({
 
       <div className="crate-roles-panel">
         <div className="crate-roles-block">
-          <div className="crate-roles-panel-head crate-roles-panel-head-sticky">
+          <div className="crate-roles-panel-head">
             <details className="explain-fold nested crate-roles-explain">
               <summary>
                 <span>{t("crates.explain")}</span>
@@ -481,10 +481,10 @@ export function RoleCrates({
                 >
                   <span className="crate-bar" aria-hidden />
                   <strong aria-hidden="true">
-                    {roleName}{" "}
+                    <span className="crate-col-title">{roleName}</span>
                     <em className="crate-col-count">({roleTracks.length})</em>
                   </strong>
-                  <span>{roleHint(t, role.id)}</span>
+                  <span className="crate-col-hint">{roleHint(t, role.id)}</span>
                 </button>
                 <div className="crate-col-tools">
                   <button
