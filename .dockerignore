@@ -1,6 +1,0 @@
-node_modules
-.next
-.data
-.git
-.env*
-*.md
