@@ -262,6 +262,10 @@ export function SetEnergyMenu({
   const gate = energyMenuGate({ stickReady, fileCount });
   const locked = Boolean(busy);
   return (
+    <Tip
+      text={locked ? t("builder.tool.energyBusy") : t("builder.tool.energyTip")}
+      disabled={locked}
+    >
     <Menu
       label={
         <>
@@ -270,7 +274,6 @@ export function SetEnergyMenu({
         </>
       }
       ariaLabel={t("builder.tool.energy")}
-      title={locked ? t("builder.tool.energyBusy") : undefined}
       disabled={locked}
     >
       {gate === "stick" ? (
@@ -322,6 +325,7 @@ export function SetEnergyMenu({
         </>
       )}
     </Menu>
+    </Tip>
   );
 }
 
@@ -390,33 +394,35 @@ export function SetSortMenu({
 }) {
   const { t } = useI18n();
   return (
-    <Menu
-      className="sort-menu"
-      label={
-        <>
-          {t("builder.tool.sort")} <span aria-hidden="true">▾</span>
-        </>
-      }
-      disabled={disabled}
-    >
-      {SET_SORTS.map((id) => {
-        const pinsOnly = id === "perfectPins";
-        const needsPins = pinsOnly && pinnedCount < 2;
-        return (
-          <MenuItem
-            key={id}
-            title={t(`builder.sort.${id}`)}
-            hint={
-              needsPins
-                ? t("builder.sort.perfectPinsNeed")
-                : t(`builder.sort.${id}Hint`)
-            }
-            disabled={disabled || needsPins}
-            onClick={() => onSort(id)}
-          />
-        );
-      })}
-    </Menu>
+    <Tip text={t("builder.tool.sortTip")} disabled={disabled}>
+      <Menu
+        className="sort-menu"
+        label={
+          <>
+            {t("builder.tool.sort")} <span aria-hidden="true">▾</span>
+          </>
+        }
+        disabled={disabled}
+      >
+        {SET_SORTS.map((id) => {
+          const pinsOnly = id === "perfectPins";
+          const needsPins = pinsOnly && pinnedCount < 2;
+          return (
+            <MenuItem
+              key={id}
+              title={t(`builder.sort.${id}`)}
+              hint={
+                needsPins
+                  ? t("builder.sort.perfectPinsNeed")
+                  : t(`builder.sort.${id}Hint`)
+              }
+              disabled={disabled || needsPins}
+              onClick={() => onSort(id)}
+            />
+          );
+        })}
+      </Menu>
+    </Tip>
   );
 }
 
@@ -512,64 +518,87 @@ export function SetReshuffleMenu({
     },
   ];
 
+  const anyReady = rows.some((row) => row.offer.ready);
+
   return (
-    <Menu
-      className="reshuffle-menu"
-      label={
-        <>
-          {t("builder.tool.reshuffle")} <span aria-hidden="true">▾</span>
-        </>
+    <Tip
+      text={
+        anyReady
+          ? t("builder.tool.reshuffleMenuTip")
+          : t("builder.tool.reshuffleDisabledTip")
       }
-      ariaLabel={t("builder.tool.reshuffle")}
+      disabled={!anyReady}
     >
-      {rows.map((row) => (
-        <MenuItem
-          key={row.id}
-          title={row.title}
-          hint={row.hint}
-          disabled={!row.offer.ready}
-          onClick={row.offer.ready ? () => onPick(row.id) : undefined}
-        />
-      ))}
-    </Menu>
+      <Menu
+        className="reshuffle-menu"
+        label={
+          <>
+            {t("builder.tool.reshuffle")} <span aria-hidden="true">▾</span>
+          </>
+        }
+        ariaLabel={t("builder.tool.reshuffle")}
+      >
+        {rows.map((row) => (
+          <MenuItem
+            key={row.id}
+            title={row.title}
+            hint={row.hint}
+            disabled={!row.offer.ready}
+            onClick={row.offer.ready ? () => onPick(row.id) : undefined}
+          />
+        ))}
+      </Menu>
+    </Tip>
   );
 }
 
 type ToolsProps = {
-  canMatch: boolean;
-  matchingLinks?: boolean;
-  onMatchLinks?: () => void;
-  /** The set-wide edit actions that come before the link search. */
+  /** Rows of set-wide edit actions (order / length / enrich). */
   children?: ReactNode;
   /** Far-right actions (e.g. reset). */
   trailing?: ReactNode;
 };
 
-/** "Set bearbeiten": the actions that change the whole set, in the order you use them. */
-export function SetTools({
-  canMatch,
-  matchingLinks,
-  onMatchLinks,
-  children,
-  trailing,
-}: ToolsProps) {
+/** "Set bearbeiten": labeled rows for order, length, and enrich actions. */
+export function SetTools({ children, trailing }: ToolsProps) {
   const { t } = useI18n();
   return (
     <div className="set-tools" role="group" aria-label={t("library.tools.label")}>
       <span className="set-tools-label">{t("library.tools.label")}</span>
-      {children}
-      <Tip disabled={!canMatch} text={t("library.tools.matchTip")}>
-        <button
-          type="button"
-          className="btn ghost"
-          onClick={onMatchLinks}
-          disabled={!canMatch || matchingLinks}
-        >
-          {matchingLinks ? t("library.tools.searching") : t("library.tools.matchLinks")}
-        </button>
-      </Tip>
-      {trailing}
+      <div className="set-tools-body">
+        {children}
+        {trailing}
+      </div>
     </div>
+  );
+}
+
+type MatchLinksProps = {
+  canMatch: boolean;
+  matchingLinks?: boolean;
+  onMatchLinks?: () => void;
+};
+
+/** Spotify match — lives in the Anreichern row. */
+export function SetMatchLinksButton({
+  canMatch,
+  matchingLinks,
+  onMatchLinks,
+}: MatchLinksProps) {
+  const { t } = useI18n();
+  return (
+    <Tip disabled={!canMatch} text={t("library.tools.matchTip")}>
+      <button
+        type="button"
+        className="btn ghost"
+        onClick={onMatchLinks}
+        disabled={!canMatch || matchingLinks}
+      >
+        {matchingLinks
+          ? t("library.tools.searching")
+          : t("library.tools.matchLinks")}
+      </button>
+    </Tip>
   );
 }
 

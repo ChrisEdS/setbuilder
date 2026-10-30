@@ -81,6 +81,32 @@ export function HarmonicPath({
         {embedded ? null : <div className="actions">{sortMenu}</div>}
       </div>
 
+      <details className="explain-fold nested">
+        <summary>
+          <span>{t("analysis.harmonic.foldTitle")}</span>
+          <em className="fold-toggle" />
+        </summary>
+        <div className="explain-body">
+          <p>{rich(t("analysis.harmonic.explain1"))}</p>
+          <p>{t("analysis.harmonic.explain2")}</p>
+          <p>{rich(t("analysis.harmonic.explain3"))}</p>
+          <div className="camelot-legend" aria-label={t("analysis.harmonic.legendLabel")}>
+            {Array.from({ length: 12 }, (_, i) => {
+              const n = i + 1;
+              const a = camelotColor(`${n}A`)!;
+              const b = camelotColor(`${n}B`)!;
+              return (
+                <span key={n} className="legend-pair">
+                  <i style={{ background: a.solid }} title={`${n}A`} />
+                  <i style={{ background: b.solid }} title={`${n}B`} />
+                  <em>{n}</em>
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      </details>
+
       <div className="harm-stats">
         <div>
           <strong>{stats.total === 0 ? "—" : `${coverage}%`}</strong>
@@ -331,32 +357,6 @@ export function HarmonicPath({
           })}
         </ol>
       )}
-
-      <details className="explain-fold nested">
-        <summary>
-          <span>{t("analysis.harmonic.foldTitle")}</span>
-          <em className="fold-toggle" />
-        </summary>
-        <div className="explain-body">
-          <p>{rich(t("analysis.harmonic.explain1"))}</p>
-          <p>{t("analysis.harmonic.explain2")}</p>
-          <p>{rich(t("analysis.harmonic.explain3"))}</p>
-          <div className="camelot-legend" aria-label={t("analysis.harmonic.legendLabel")}>
-            {Array.from({ length: 12 }, (_, i) => {
-              const n = i + 1;
-              const a = camelotColor(`${n}A`)!;
-              const b = camelotColor(`${n}B`)!;
-              return (
-                <span key={n} className="legend-pair">
-                  <i style={{ background: a.solid }} title={`${n}A`} />
-                  <i style={{ background: b.solid }} title={`${n}B`} />
-                  <em>{n}</em>
-                </span>
-              );
-            })}
-          </div>
-        </div>
-      </details>
     </section>
   );
 }

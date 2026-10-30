@@ -46,6 +46,23 @@ export function EnergyPath({ tracks }: Props) {
         </div>
       </div>
 
+      <details className="explain-fold nested">
+        <summary>
+          <span>{t("analysis.energyPath.foldTitle")}</span>
+          <em className="fold-toggle" />
+        </summary>
+        <div className="explain-body">
+          <ul className="explain-steps">
+            {([1, 2, 3, 4] as const).map((step) => (
+              <li key={step}>
+                <strong>{t(`analysis.energyPath.step${step}.title`)}</strong>
+                <span>{t(`analysis.energyPath.step${step}.body`)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </details>
+
       <div className="harm-stats">
         <div>
           <strong>
@@ -180,23 +197,6 @@ export function EnergyPath({ tracks }: Props) {
           })}
         </div>
       ) : null}
-
-      <details className="explain-fold nested">
-        <summary>
-          <span>{t("analysis.energyPath.foldTitle")}</span>
-          <em className="fold-toggle" />
-        </summary>
-        <div className="explain-body">
-          <ul className="explain-steps">
-            {([1, 2, 3, 4] as const).map((step) => (
-              <li key={step}>
-                <strong>{t(`analysis.energyPath.step${step}.title`)}</strong>
-                <span>{t(`analysis.energyPath.step${step}.body`)}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </details>
     </section>
   );
 }

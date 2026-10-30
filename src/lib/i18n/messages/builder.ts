@@ -236,7 +236,11 @@ const de = {
   "builder.view.keys.hint":
     "Phasen im Slot, Energie pro Track und Camelot-Keys entlang der Reihenfolge, mit Mix-Score und Clashes.",
   "builder.tool.sort": "Sortieren",
+  "builder.tool.sortTip":
+    "Ordnet die Performance neu — Harmonie, Energie oder Phasen. Opener, Closer und Pins bleiben.",
   "builder.tool.reshuffle": "Andere Songs",
+  "builder.tool.reshuffleMenuTip":
+    "Baut die Setliste aus einem Pool neu: Playlist, Stick, Collection oder History. Opener, Closer und Pins bleiben.",
   "builder.tool.reshuffleTip":
     "Würfelt aus dem Playlist-Pool ({pool} Tracks) eine neue Performance für denselben Brief. Alternativen werden neu gefüllt. Opener, Closer und gepinnte Tracks bleiben; Notizen gehen verloren.",
   "builder.tool.reshuffleTipStick":
@@ -275,6 +279,8 @@ const de = {
   "builder.pool.historyConfirm":
     "Setliste aus den {pool} gespielten Tracks neu setzen? Brief, Opener, Closer und gepinnte Tracks bleiben. Der Rest kommt neu aus der History.",
   "builder.tool.energy": "Energie aus Dateien",
+  "builder.tool.energyTip":
+    "Liest oder misst Energie aus den Dateien auf dem Stick und schreibt sie zurück.",
   "builder.tool.energyBusy": "Energie…",
   "builder.energy.noStick":
     "Kein Stick verbunden. Unter „Stick laden & vorbereiten“ den Stick wählen (Chrome / Edge / Desktop).",
@@ -358,7 +364,7 @@ const de = {
     "Passt die Spielzeit an den Slot (kürzen und auffüllen). Ein gesetzter Übergang zählt mit seiner Zeit, sonst der Blend {mix}. Ausgeschlossene Tracks bleiben draußen.",
   "builder.tool.fitTipUnder":
     "Slot ist unterfüllt — füllt aus Alternativen, dann Playlist-Pool bis zur Slot-Dauer. Ohne Pool/Alternativen erscheint ein Hinweis.",
-  "builder.tool.fillMatches": "Mit besten Matches füllen",
+  "builder.tool.fillMatches": "Mit Matches füllen",
   "builder.tool.fillMatchesTip":
     "Füllt die restliche Slot-Zeit mit Tracks, die zu Key, BPM und Energie passen. Pins bleiben. Ausgeschlossene Tracks bleiben draußen. Zuerst Alternativen, dann die geladene Playlist.",
   "builder.tool.assign": "Rollen verteilen",
@@ -996,7 +1002,11 @@ const en: Record<keyof typeof de, string> = {
   "builder.view.keys.hint":
     "Phases in the slot, energy per track and Camelot keys along the order, with mix score and clashes.",
   "builder.tool.sort": "Sort",
+  "builder.tool.sortTip":
+    "Reorders the performance — harmony, energy or phases. Opener, closer and pins stay.",
   "builder.tool.reshuffle": "Different songs",
+  "builder.tool.reshuffleMenuTip":
+    "Rebuilds the setlist from a pool: playlist, stick, collection or history. Opener, closer and pins stay.",
   "builder.tool.reshuffleTip":
     "Picks a new performance from the playlist pool ({pool} tracks) for the same brief. Alternatives are refilled. Opener, closer and pinned tracks stay; notes are lost.",
   "builder.tool.reshuffleTipStick":
@@ -1035,6 +1045,8 @@ const en: Record<keyof typeof de, string> = {
   "builder.pool.historyConfirm":
     "Rebuild the setlist from the {pool} played tracks? Brief, opener, closer and pinned tracks stay. The rest is drawn again from history.",
   "builder.tool.energy": "Energy from files",
+  "builder.tool.energyTip":
+    "Reads or measures energy from the files on the stick and writes it back.",
   "builder.tool.energyBusy": "Energy…",
   "builder.energy.noStick":
     "No stick connected. Choose the stick under “Load stick & prepare” (Chrome / Edge / desktop).",
@@ -1118,7 +1130,7 @@ const en: Record<keyof typeof de, string> = {
     "Fits playing time to the slot (trim and fill). A chosen transition counts with its own time, otherwise the {mix} blend. Excluded tracks stay out.",
   "builder.tool.fitTipUnder":
     "Slot is underfilled — fills from Alternatives, then the playlist pool up to the slot duration. Without a pool or Alternatives you get a status hint.",
-  "builder.tool.fillMatches": "Fill with best matches",
+  "builder.tool.fillMatches": "Fill with matches",
   "builder.tool.fillMatchesTip":
     "Fills the remaining slot time with tracks that fit key, BPM and energy. Pins stay. Excluded tracks stay out. Alternatives first, then the loaded playlist.",
   "builder.tool.assign": "Assign roles",

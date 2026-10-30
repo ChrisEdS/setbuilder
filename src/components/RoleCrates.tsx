@@ -76,6 +76,10 @@ type Props = {
   onFillPlanB?: (picks: PlanBSuggestion<LibraryRow>[]) => void;
   /** Open the library section so suggestions have something to draw from. */
   onOpenLibrary?: () => void;
+  /** Auto-assign Anchor / Bridge / Groove / Alternativen from the set. */
+  onAssignRoles?: () => void;
+  /** False while the set is too short to score roles. */
+  canAssignRoles?: boolean;
 };
 
 type CratePrefs = {
@@ -191,6 +195,8 @@ export function RoleCrates({
   onSetPhase,
   onFillPlanB,
   onOpenLibrary,
+  onAssignRoles,
+  canAssignRoles = false,
 }: Props) {
   const { t } = useI18n();
   const prefs = useSyncExternalStore(subscribePrefs, readPrefs, () => DEFAULT_PREFS);
@@ -326,69 +332,76 @@ export function RoleCrates({
         </div>
       )}
 
-      <details className="explain-fold nested">
-        <summary>
-          <span>{t("crates.explain")}</span>
-          <em className="fold-toggle" />
-        </summary>
-        <div className="explain-body">
-          <ul className="role-explain">
-            {TRACK_ROLES.map((role) => (
-              <li key={role.id}>
-                <strong>{roleLabel(t, role.id)}</strong>
-                <span>{roleExplain(t, role.id)}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </details>
-
-      <PlanBStrip
-        tracks={tracks}
-        library={library}
-        onAdd={onAddAlternative}
-        onFill={onFillPlanB}
-        onOpenLibrary={onOpenLibrary}
-        onShow={() => revealRole("safety")}
-      />
-
-      <div className="crate-board">
-        <div className="crate-tile-bar">
-          <p className="section-note">{t("crates.intro")}</p>
-          <div className="crate-toolbar">
-            <Tip text={t("crates.expandAllTip")}>
-              <button type="button" className="btn ghost" onClick={expandAll}>
-                {t("crates.expandAll")}
-              </button>
-            </Tip>
-            <Tip text={t("crates.collapseAllTip")}>
-              <button type="button" className="btn ghost" onClick={collapseAll}>
-                {t("crates.collapseAll")}
-              </button>
-            </Tip>
-            <Tip text={t("crates.wideAlternativesTip")} end>
-              <button
-                type="button"
-                className={prefs.wide === "safety" ? "btn" : "btn ghost"}
-                onClick={() => {
-                  setWide("safety");
-                  setOpen("safety", true);
-                }}
-              >
-                {t("crates.wideAlternatives")}
-              </button>
-            </Tip>
+      <div className="crate-roles-panel">
+        <div className="crate-roles-block">
+          <div className="crate-roles-panel-head crate-roles-panel-head-sticky">
+            <details className="explain-fold nested crate-roles-explain">
+              <summary>
+                <span>{t("crates.explain")}</span>
+                <em className="fold-toggle" />
+              </summary>
+              <div className="explain-body">
+                <p className="section-note">{t("crates.intro")}</p>
+                <ul className="role-explain">
+                  {TRACK_ROLES.map((role) => (
+                    <li key={role.id}>
+                      <strong>{roleLabel(t, role.id)}</strong>
+                      <span>{roleExplain(t, role.id)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </details>
+            <div
+              className="crate-toolbar"
+              role="toolbar"
+              aria-label={t("crates.title")}
+            >
+              {onAssignRoles ? (
+                <Tip text={t("builder.tool.assignTip")} disabled={!canAssignRoles}>
+                  <button
+                    type="button"
+                    className="btn ghost"
+                    onClick={onAssignRoles}
+                    disabled={!canAssignRoles}
+                  >
+                    {t("builder.tool.assign")}
+                  </button>
+                </Tip>
+              ) : null}
+              <Tip text={t("crates.expandAllTip")}>
+                <button type="button" className="btn ghost" onClick={expandAll}>
+                  {t("crates.expandAll")}
+                </button>
+              </Tip>
+              <Tip text={t("crates.collapseAllTip")}>
+                <button type="button" className="btn ghost" onClick={collapseAll}>
+                  {t("crates.collapseAll")}
+                </button>
+              </Tip>
+              <Tip text={t("crates.wideAlternativesTip")} end>
+                <button
+                  type="button"
+                  className={prefs.wide === "safety" ? "btn" : "btn ghost"}
+                  onClick={() => {
+                    setWide("safety");
+                    setOpen("safety", true);
+                  }}
+                >
+                  {t("crates.wideAlternatives")}
+                </button>
+              </Tip>
+            </div>
           </div>
-        </div>
 
-      <div
-        className={
-          prefs.wide
-            ? `crate-columns wide-${prefs.wide}`
-            : "crate-columns"
-        }
-        data-open-count={openCount}
-      >
+          <div
+            className={
+              prefs.wide
+                ? `crate-columns wide-${prefs.wide}`
+                : "crate-columns"
+            }
+            data-open-count={openCount}
+          >
         {TRACK_ROLES.map((role) => {
           const roleTracks =
             role.id === "safety" && swapRank
@@ -770,7 +783,46 @@ export function RoleCrates({
             </div>
           );
         })}
-      </div>
+          </div>
+        </div>
+
+        <div className="crate-planb-panel">
+          <details className="explain-fold nested crate-planb-explain">
+            <summary>
+              <span>{t("crates.planB.explain")}</span>
+              <em className="fold-toggle" />
+            </summary>
+            <div className="explain-body">
+              <p className="section-note">{t("crates.planB.intro")}</p>
+              <ul className="role-explain">
+                <li>
+                  <strong>{t("crates.planB.point.coverage.title")}</strong>
+                  <span>{t("crates.planB.point.coverage.body")}</span>
+                </li>
+                <li>
+                  <strong>{t("crates.planB.point.replaces.title")}</strong>
+                  <span>{t("crates.planB.point.replaces.body")}</span>
+                </li>
+                <li>
+                  <strong>{t("crates.planB.point.fill.title")}</strong>
+                  <span>{t("crates.planB.point.fill.body")}</span>
+                </li>
+                <li>
+                  <strong>{t("crates.planB.point.play.title")}</strong>
+                  <span>{t("crates.planB.point.play.body")}</span>
+                </li>
+              </ul>
+            </div>
+          </details>
+          <PlanBStrip
+            tracks={tracks}
+            library={library}
+            onAdd={onAddAlternative}
+            onFill={onFillPlanB}
+            onOpenLibrary={onOpenLibrary}
+            onShow={() => revealRole("safety")}
+          />
+        </div>
       </div>
     </section>
   );

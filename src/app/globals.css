@@ -962,12 +962,95 @@ a.button-link.tidal-login {
   line-height: 1.35;
 }
 
+.crate-roles-panel {
+  display: grid;
+  gap: 1rem;
+  margin-top: 0.875rem;
+}
+
+.crate-roles-block {
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.crate-roles-panel-head {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.55rem 0.85rem;
+  min-width: 0;
+}
+
+.crate-roles-panel-head-sticky {
+  position: sticky;
+  top: 0.65rem;
+  z-index: 12;
+  margin: 0;
+  padding: 0.35rem 0;
+  background: transparent;
+  backdrop-filter: none;
+  box-shadow: none;
+  border: 0;
+}
+
+.crate-roles-panel-head > .crate-roles-explain {
+  flex: 1 1 0;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  margin: 0 !important;
+  align-self: stretch;
+}
+
+.crate-roles-panel-head > .crate-roles-explain > summary {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.crate-roles-panel-head > .crate-toolbar {
+  flex: 0 0 auto;
+  margin-left: 0;
+  justify-content: flex-end;
+  /* Line up with the explain summary — never center against an open body. */
+  padding-top: 0.85rem;
+}
+
+.role-crates .crate-roles-explain.explain-fold.nested,
+.role-crates .crate-planb-explain.explain-fold.nested {
+  margin: 0 !important;
+}
+
+.crate-roles-explain .explain-body > .section-note,
+.crate-planb-explain .explain-body > .section-note {
+  margin: 0 0 0.65rem;
+}
+
+.crate-planb-panel {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.crate-planb-explain {
+  margin: 0 !important;
+}
+
 .crate-toolbar {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
+  align-items: center;
   justify-content: flex-end;
   flex: 0 0 auto;
+}
+
+.crate-roles-panel-head-sticky .crate-toolbar .btn {
+  min-height: 34px !important;
+  height: 34px;
+  padding: 0 0.8rem !important;
+  font-size: 0.82rem !important;
 }
 
 .crate-columns {
@@ -5832,8 +5915,7 @@ button.drag-handle:active i {
 }
 
 .role-crates .explain-fold.nested,
-.curve .explain-fold.nested,
-.harmonic-path .explain-fold.nested {
+.curve .explain-fold.nested {
   margin: 0.875rem 0 0.875rem !important;
 }
 
@@ -5881,9 +5963,40 @@ button.drag-handle:active i {
 
 .role-crates > .panel-head + *,
 .library-panel > .panel-head + *,
-.curve > .curve-head + *,
-.harmonic-path > .panel-head + * {
+.curve > .curve-head + * {
   margin-top: 0.875rem !important;
+}
+
+/* Key-/Energie-Verlauf: one even gap stack (fold sits under the title). */
+.crate-view .harmonic-path.harmonic-path,
+.energy-path {
+  display: grid !important;
+  gap: 0.75rem !important;
+}
+
+.harmonic-path > .panel-head,
+.energy-path > .panel-head,
+.harmonic-path > .panel-head + *,
+.energy-path > .panel-head + *,
+.harmonic-path > .explain-fold.nested,
+.energy-path > .explain-fold.nested,
+.harmonic-path > .harm-stats,
+.energy-path > .harm-stats,
+.harmonic-path > .harm-advice,
+.harmonic-path > .empty,
+.energy-path > .energy-hint,
+.energy-path > .energy-phases {
+  margin: 0 !important;
+}
+
+.harmonic-path > .harm-steps {
+  margin: 0;
+  padding-bottom: 0;
+}
+
+.harmonic-path .panel-head .section-note,
+.energy-path .panel-head .section-note {
+  margin: 0.25rem 0 0;
 }
 
 .crate-columns {
@@ -6995,29 +7108,98 @@ body {
 }
 
 .set-tools {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.45rem 0.5rem;
+  display: grid;
+  gap: 0.45rem;
   margin: 0;
-  padding: 0.55rem 0.8rem 0.7rem;
+  padding: 0.6rem 0.9rem 0.75rem;
   border: none;
   border-radius: 0;
   background: transparent;
 }
 
 .set-tools-label {
-  margin-right: 0.15rem;
+  margin: 0;
   color: #9a9a9a;
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
+.set-tools-body {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 0.55rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.set-tools-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 0.4rem;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.set-tools-group + .set-tools-group {
+  padding-left: 0.7rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.set-tools-group > .tip,
+.set-tools-group > .menu {
+  display: grid !important;
+  min-width: 0;
+  width: 100%;
+}
+
+.set-tools-group > .tip > .menu {
+  display: grid !important;
+  min-width: 0;
+  width: 100%;
+}
+
+.set-tools-group > .tip > .btn,
+.set-tools-group > .tip > .menu > summary.btn,
+.set-tools-group > .menu > summary.btn,
 .set-tools .btn,
+.set-tools .menu > summary.btn,
 .set-menus .btn {
+  box-sizing: border-box;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  justify-content: center;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: 34px !important;
+  height: 34px !important;
+  padding: 0 0.55rem !important;
+  font-size: 0.78rem !important;
+  font-weight: 650 !important;
+  line-height: 1;
+}
+
+@media (max-width: 720px) {
+  .set-tools-body {
+    flex-wrap: wrap;
+  }
+
+  .set-tools-group {
+    flex: 1 1 100%;
+  }
+
+  .set-tools-group + .set-tools-group {
+    padding-left: 0;
+    border-left: 0;
+    padding-top: 0.35rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+  }
 }
 
 .set-tools-reset {
@@ -7282,8 +7464,14 @@ details:not([open]) > .menu-panel {
     width: min(380px, calc(100vw - 48px));
   }
 
-  .set-tools-label {
-    flex-basis: 100%;
+  .crate-roles-panel-head {
+    flex-wrap: wrap;
+  }
+
+  .crate-roles-panel-head > .crate-toolbar {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-start;
   }
 }
 
@@ -7292,9 +7480,9 @@ details:not([open]) > .menu-panel {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem 0.875rem;
-  margin: 0 0 0.875rem;
-  padding: 0.625rem 0.75rem;
+  gap: 0.5rem 0.75rem;
+  margin: 0;
+  padding: 0.65rem 0.8rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.025);
@@ -7601,8 +7789,9 @@ details:not([open]) > .menu-panel {
 }
 
 /*
- * Alternativen: always stack card → swap → tools so nothing paints over the next block.
- * Wide mode only gives the tools column more horizontal room, not an overlapping side panel.
+ * Alternativen: card → optional swap → tools.
+ * align-content:start — empty swap must not eat free height.
+ * Wide: tools beside card only (do NOT span rows — that stretched the card).
  */
 .crate-col.is-safety .crate-item {
   display: grid;
@@ -7612,21 +7801,28 @@ details:not([open]) > .menu-panel {
     "swap"
     "tools";
   align-items: start;
-  gap: 0.35rem;
-  padding: 0.2rem 0 0.45rem;
+  align-content: start;
+  justify-items: stretch;
+  gap: 0.25rem;
+  height: auto;
+  padding: 0.1rem 0 0.35rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .crate-col.is-safety .crate-item > .crate-card {
   grid-area: card;
+  align-self: start;
   min-width: 0;
+  height: auto;
   border-bottom: 0;
-  padding-bottom: 0.15rem;
+  padding: 0.45rem 0.4rem 0.4rem;
 }
 
 .crate-col.is-safety .crate-item > .safety-swap {
   grid-area: swap;
   min-width: 0;
+  margin: 0;
+  padding: 0.1rem 0.15rem 0.2rem;
 }
 
 .crate-col.is-safety .crate-item > .crate-item-tools {
@@ -7636,49 +7832,77 @@ details:not([open]) > .menu-panel {
 
 .crate-col.is-safety .crate-item > .tip:has(.crate-remove) {
   position: absolute;
-  top: 0.25rem;
-  right: 0.25rem;
+  top: 0.2rem;
+  right: 0.2rem;
   z-index: 2;
 }
 
-/* Wide = more column width, not a side panel that crushes the title. */
+.crate-col.is-safety .crate-track-list {
+  align-content: start;
+}
+
+.crate-col.is-safety .crate-card-body {
+  gap: 0.25rem;
+}
+
+.crate-col.is-safety .crate-foot {
+  gap: 0.1rem;
+}
+
+.crate-col.is-safety .crate-art-stack {
+  gap: 0.2rem;
+}
+
+.crate-col.is-wide.is-safety .crate-col-body {
+  height: auto !important;
+  min-height: var(--crate-h, 320px) !important;
+  overflow: visible !important;
+}
+
 .crate-col.is-wide.is-safety .crate-item {
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.25fr) minmax(10.5rem, 0.75fr);
   grid-template-areas:
-    "card"
-    "swap"
-    "tools";
-  gap: 0.4rem;
+    "card tools"
+    "swap swap";
+  gap: 0.25rem 0.65rem;
+  align-items: start;
+  align-content: start;
 }
 
 .crate-col.is-wide.is-safety .crate-item > .crate-item-tools.is-safety {
-  display: grid;
-  grid-template-columns: minmax(9rem, 12rem) minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.45rem 0.75rem;
-  padding: 0.55rem 0.35rem 0.2rem;
-  border-left: 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  align-self: start;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0.15rem 0 0.1rem 0.65rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 0;
 }
 
 .crate-col.is-wide.is-safety .crate-item-tools.is-safety label.safety-phase {
   margin: 0;
+  gap: 0.15rem;
 }
 
 .crate-col.is-wide.is-safety .crate-item-tools.is-safety .crate-planb-note {
   margin: 0;
   white-space: normal;
   overflow-wrap: anywhere;
+  font-size: 0.72rem;
+  line-height: 1.3;
 }
 
 .crate-col.is-wide.is-safety .crate-item-tools.is-safety .btn {
-  justify-self: end;
+  align-self: start;
   white-space: nowrap;
 }
 
 .crate-col.is-wide.is-safety .crate-track-list {
   grid-template-columns: 1fr;
   gap: 0;
+  align-content: start;
 }
 
 @media (max-width: 1100px) {
@@ -7690,13 +7914,30 @@ details:not([open]) > .menu-panel {
     grid-column: 1 / -1;
   }
 
-  .crate-col.is-wide.is-safety .crate-item > .crate-item-tools.is-safety {
+  .crate-col.is-wide.is-safety .crate-item {
     grid-template-columns: minmax(0, 1fr);
-    justify-items: stretch;
+    grid-template-areas:
+      "card"
+      "swap"
+      "tools";
   }
 
-  .crate-col.is-wide.is-safety .crate-item-tools.is-safety .btn {
-    justify-self: start;
+  .crate-col.is-wide.is-safety .crate-item > .crate-item-tools.is-safety {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.65rem;
+    padding: 0.25rem 0 0.05rem;
+    border-left: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .crate-col.is-wide.is-safety .crate-item-tools.is-safety label.safety-phase {
+    flex: 0 1 11rem;
+  }
+
+  .crate-col.is-wide.is-safety .crate-item-tools.is-safety .crate-planb-note {
+    flex: 1 1 12rem;
   }
 }
 

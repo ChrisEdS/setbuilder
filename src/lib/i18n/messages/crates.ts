@@ -58,6 +58,21 @@ const de = {
 
   // RoleCrates: Plan B strip
   "crates.planB.ariaLabel": "Plan B pro Phase",
+  "crates.planB.explain": "Plan B kurz erklärt",
+  "crates.planB.intro":
+    "Pro Phase mindestens zwei Alternativen, die energetisch passen — sonst stockt der Floor.",
+  "crates.planB.point.coverage.title": "Abdeckung",
+  "crates.planB.point.coverage.body":
+    "Die Chips zeigen x/2 je Phase. Grün ist gedeckt, Gelb eine Lücke — antippen öffnet Vorschläge.",
+  "crates.planB.point.replaces.title": "Ersatz für",
+  "crates.planB.point.replaces.body":
+    "An der Alternative wählst du die Phase. Sie zählt nur, wenn die Energie ins Band dieser Phase passt.",
+  "crates.planB.point.fill.title": "Lücken füllen",
+  "crates.planB.point.fill.body":
+    "Zieht passende Titel aus der Bibliothek nach Key, BPM und Energie. Ohne Bibliothek setzt du Alternativen selbst.",
+  "crates.planB.point.play.title": "Einsetzen",
+  "crates.planB.point.play.body":
+    "„+ Alternative“ legt Plan B neben die Performance. Ins Set oder Pin holt den Track in die Nacht.",
   "crates.planB.chipCovered": "Gedeckt. Antippen für weitere Vorschläge.",
   "crates.planB.chipGap": "Lücke. Antippen für Vorschläge.",
   "crates.planB.fill": "Lücken füllen",
@@ -199,6 +214,21 @@ const en: Record<keyof typeof de, string> = {
   "crates.safety.setPhase": "Set to {phase}",
 
   "crates.planB.ariaLabel": "Plan B per phase",
+  "crates.planB.explain": "Plan B at a glance",
+  "crates.planB.intro":
+    "At least two alternatives per phase that fit the energy band — otherwise the floor stalls.",
+  "crates.planB.point.coverage.title": "Coverage",
+  "crates.planB.point.coverage.body":
+    "Chips show x/2 per phase. Green is covered, yellow a gap — tap for suggestions.",
+  "crates.planB.point.replaces.title": "Replaces",
+  "crates.planB.point.replaces.body":
+    "On the alternative you pick the phase. It only counts when energy sits in that phase’s band.",
+  "crates.planB.point.fill.title": "Fill gaps",
+  "crates.planB.point.fill.body":
+    "Pulls matching titles from the library by key, BPM and energy. Without a library, set alternatives yourself.",
+  "crates.planB.point.play.title": "Insert",
+  "crates.planB.point.play.body":
+    "“+ Alternative” keeps Plan B beside the performance. Into set or Pin brings the track into the night.",
   "crates.planB.chipCovered": "Covered. Tap for more suggestions.",
   "crates.planB.chipGap": "Gap. Tap for suggestions.",
   "crates.planB.fill": "Fill gaps",

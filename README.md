@@ -4,7 +4,7 @@
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
 
-**Version 4.7.13** · Out of the playlist.
+**Version 4.7.14** · Out of the playlist.
 
 The stick is the material. You draw the arc, set the join, and hear if it holds.
 
@@ -13,7 +13,7 @@ Before the gig, the room is quiet. SETBUILDER is that room. You arrive with a re
 ## What you take with you
 
 - 🎚️ **A night with a shape.** Open, lift, peak, release. You see where there is still air and where it is already full.
-- ⏱️ **The night fitted to the slot.** Too long, it cuts. Too short, **Fill with best matches** adds tracks that fit key, BPM, and energy — alternatives first, then the playlist you loaded. Changing slot duration in the brief runs the same path as **Fit to slot**. Sorting brings the other alternatives back into the night. A song you marked out stays out. The undo banner names the track and the return position.
+- ⏱️ **The night fitted to the slot.** Too long, it cuts. Too short, **Fill with matches** adds tracks that fit key, BPM, and energy — alternatives first, then the playlist you loaded. Changing slot duration in the brief runs the same path as **Fit to slot**. Sorting brings the other alternatives back into the night. A song you marked out stays out. The undo banner names the track and the return position.
 - 🔑 **Keys that talk to each other.** Camelot along the set. A clash shows up while you still have time. **Perfect · pins only** sorts mid-pins among themselves; everything else stays in the gaps.
 - ⚡ **Energy that belongs to the song.** Read from the file, measured, or set by you. It sits on the track once it is real, and on the sheet and the copied text when you know it.
 - 📌 **Pins that stay in the set.** Opener and closer hold the ends. Mid pins survive fit to slot and Different songs, and still move when you sort — except under Perfect · pins only.
@@ -21,7 +21,7 @@ Before the gig, the room is quiet. SETBUILDER is that room. You arrive with a re
 - 🔁 **Exchange from the same playlist.** Songs from the playlist pool that fit key, BPM and energy at this position — separate from general Replace.
 - 🎛️ **Every join with its own length.** Cut, blend, echo-out. The slot clock follows what you write on the handoff. “—” takes the blend time from the brief.
 - 🎲 **Another night from the same crate.** Different songs. Or the playlist, the collection, the history, once they are in the room. After loading a stick playlist, **From the playlist** stays available on the set.
-- 🛟 **Plan B in your pocket.** Roles and alternatives for when the floor turns. **Wide alternatives** gives that column the stage; each column height is its own.
+- 🛟 **Plan B in your pocket.** Roles and alternatives for when the floor turns. **Assign roles**, Expand/Collapse all and **Wide alternatives** sit sticky next to **Roles at a glance**. Wide alternatives gives that column the stage; Ersatz and Plan B sit beside the card.
 - 🎧 **Hear the handoff first.** Preview from the setlist, Exchange, and the Key path. Previous, this track, next — same lengths as the set.
 - 📋 **Compact or Comfortable.** On the setlist you pick the row density. Compact keeps play, pin, exchange and remove on one line. **Details** opens only note, key, BPM, energy and blend; **Collapse** or choosing **Compact** again makes the row small.
 - 🔍 **Only what fits.** Key, BPM, and energy pull the library in close. Fits after ranks what can follow a chosen track, and the song you add lands right after it.

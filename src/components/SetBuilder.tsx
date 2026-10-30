@@ -118,6 +118,7 @@ import { TrackArt } from "@/components/TrackArt";
 import { bestPhaseFor } from "@/lib/plan-b";
 import {
   SetEnergyMenu,
+  SetMatchLinksButton,
   SetMenus,
   SetReshuffleMenu,
   SetSortMenu,
@@ -4172,88 +4173,89 @@ export function SetBuilder() {
               />
             </div>
             {draft.tracks.length > 0 ? (
-              <SetTools
-                canMatch={draft.tracks.length > 0}
-                matchingLinks={matchingLinks}
-                onMatchLinks={() => void matchStreamingLinks()}
-              >
-                <SetSortMenu
-                  disabled={mainTracks.length < 2}
-                  onSort={sortSet}
-                  pinnedCount={midPinnedCount}
-                />
-                <SetReshuffleMenu
-                  different={reshuffleOffers.different}
-                  playlist={reshuffleOffers.playlist}
-                  collection={reshuffleOffers.collection}
-                  history={reshuffleOffers.history}
-                  onPick={reshuffleFrom}
-                />
-                <SetEnergyMenu
-                  busy={energyBusy}
-                  stickReady={stickReady}
-                  onChooseStick={openStickPicker}
-                  fileCount={draft.tracks.filter((track) => track.filePath?.trim()).length}
-                  missingCount={
-                    draft.tracks.filter(
-                      (track) => track.filePath?.trim() && !hasKnownEnergy(track),
-                    ).length
-                  }
-                  knownCount={
-                    draft.tracks.filter(
-                      (track) => track.filePath?.trim() && hasKnownEnergy(track),
-                    ).length
-                  }
-                  onReadTags={() => void readEnergyTags()}
-                  onMeasureMissing={() => void measureEnergy("missing")}
-                  onMeasureAll={() => void measureEnergy("all")}
-                  onWrite={() => void writeEnergyToFiles()}
-                />
-                <Tip
-                  text={t(
-                    filledMs < targetMs
-                      ? "builder.tool.fitTipUnder"
-                      : plannedJoins
-                        ? "builder.tool.fitTipPlan"
-                        : "builder.tool.fitTip",
-                    { mix: formatDuration(blendMs) },
-                  )}
-                >
-                  <button
-                    type="button"
-                    className="btn ghost"
-                    onClick={fitSlot}
-                    disabled={
-                      draft.tracks.length === 0 ||
-                      (filledMs <= targetMs * 1.05 && filledMs >= targetMs)
-                    }
-                  >
-                    {t("builder.tool.fit")}
-                  </button>
-                </Tip>
-                <Tip text={t("builder.tool.fillMatchesTip")}>
-                  <button
-                    type="button"
-                    className="btn ghost"
-                    onClick={fillBestMatches}
-                    disabled={draft.tracks.length === 0 || filledMs >= targetMs}
-                  >
-                    {t("builder.tool.fillMatches")}
-                  </button>
-                </Tip>
-                <Tip
-                  text={t("builder.tool.assignTip")}
-                  disabled={mainTracks.length < 2}
-                >
-                  <button
-                    type="button"
-                    className="btn ghost"
-                    onClick={assignRoles}
+              <SetTools>
+                <div className="set-tools-group">
+                  <SetSortMenu
                     disabled={mainTracks.length < 2}
+                    onSort={sortSet}
+                    pinnedCount={midPinnedCount}
+                  />
+                  <SetReshuffleMenu
+                    different={reshuffleOffers.different}
+                    playlist={reshuffleOffers.playlist}
+                    collection={reshuffleOffers.collection}
+                    history={reshuffleOffers.history}
+                    onPick={reshuffleFrom}
+                  />
+                </div>
+                <div className="set-tools-group">
+                  <Tip
+                    text={t(
+                      filledMs < targetMs
+                        ? "builder.tool.fitTipUnder"
+                        : plannedJoins
+                          ? "builder.tool.fitTipPlan"
+                          : "builder.tool.fitTip",
+                      { mix: formatDuration(blendMs) },
+                    )}
                   >
-                    {t("builder.tool.assign")}
-                  </button>
-                </Tip>
+                    <button
+                      type="button"
+                      className="btn ghost"
+                      onClick={fitSlot}
+                      disabled={
+                        draft.tracks.length === 0 ||
+                        (filledMs <= targetMs * 1.05 && filledMs >= targetMs)
+                      }
+                    >
+                      {t("builder.tool.fit")}
+                    </button>
+                  </Tip>
+                  <Tip text={t("builder.tool.fillMatchesTip")}>
+                    <button
+                      type="button"
+                      className="btn ghost"
+                      onClick={fillBestMatches}
+                      disabled={
+                        draft.tracks.length === 0 || filledMs >= targetMs
+                      }
+                    >
+                      {t("builder.tool.fillMatches")}
+                    </button>
+                  </Tip>
+                </div>
+                <div className="set-tools-group">
+                  <SetEnergyMenu
+                    busy={energyBusy}
+                    stickReady={stickReady}
+                    onChooseStick={openStickPicker}
+                    fileCount={
+                      draft.tracks.filter((track) => track.filePath?.trim())
+                        .length
+                    }
+                    missingCount={
+                      draft.tracks.filter(
+                        (track) =>
+                          track.filePath?.trim() && !hasKnownEnergy(track),
+                      ).length
+                    }
+                    knownCount={
+                      draft.tracks.filter(
+                        (track) =>
+                          track.filePath?.trim() && hasKnownEnergy(track),
+                      ).length
+                    }
+                    onReadTags={() => void readEnergyTags()}
+                    onMeasureMissing={() => void measureEnergy("missing")}
+                    onMeasureAll={() => void measureEnergy("all")}
+                    onWrite={() => void writeEnergyToFiles()}
+                  />
+                  <SetMatchLinksButton
+                    canMatch={draft.tracks.length > 0}
+                    matchingLinks={matchingLinks}
+                    onMatchLinks={() => void matchStreamingLinks()}
+                  />
+                </div>
               </SetTools>
             ) : null}
           </div>
@@ -5346,6 +5348,8 @@ export function SetBuilder() {
             onReplace={replaceTrack}
             onRemove={removeTrack}
             library={libraryRows}
+            onAssignRoles={assignRoles}
+            canAssignRoles={mainTracks.length >= 2}
             onSetPhase={(id, phase) =>
               patchTrack(id, { phase, why: t("analysis.why.manual") })
             }

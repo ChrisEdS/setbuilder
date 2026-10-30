@@ -4,7 +4,7 @@
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
 
-**Version 4.7.13** · Raus aus der Playlist.
+**Version 4.7.14** · Raus aus der Playlist.
 
 Der Stick ist das Material. Du ziehst den Bogen, setzt den Anschluss und hörst, ob er trägt.
 
@@ -13,7 +13,7 @@ Vor dem Gig ist es still. SETBUILDER ist dieser Raum. Du kommst mit einem rekord
 ## Was du mitnimmst
 
 - 🎚️ **Eine Nacht mit Form.** Open, Lift, Peak, Release. Du siehst, wo noch Luft ist und wo es schon voll ist.
-- ⏱️ **Die Nacht auf den Slot.** Zu lang, sie wird kürzer. Zu kurz legt **Mit besten Matches füllen** Tracks nach, die zu Key, BPM und Energie passen — zuerst Alternativen, dann die geladene Playlist. Die Slot-Dauer im Brief stößt denselben Lauf an wie **Auf Slot setzen**. Sortieren holt die übrigen Alternativen zurück in die Nacht. Ein Song, den du rausmarkiert hast, bleibt draußen. Das Rückgängig-Banner nennt Track und Rückplatz.
+- ⏱️ **Die Nacht auf den Slot.** Zu lang, sie wird kürzer. Zu kurz legt **Mit Matches füllen** Tracks nach, die zu Key, BPM und Energie passen — zuerst Alternativen, dann die geladene Playlist. Die Slot-Dauer im Brief stößt denselben Lauf an wie **Auf Slot setzen**. Sortieren holt die übrigen Alternativen zurück in die Nacht. Ein Song, den du rausmarkiert hast, bleibt draußen. Das Rückgängig-Banner nennt Track und Rückplatz.
 - 🔑 **Keys, die miteinander reden.** Camelot entlang des Sets. Ein Clash fällt auf, solange du noch Zeit hast. **Perfekt · nur Pins** sortiert nur die Mittel-Pins untereinander; der Rest bleibt in den Lücken.
 - ⚡ **Energie, die zum Song gehört.** Aus der Datei gelesen, gemessen oder von dir gesetzt. Sie steht am Track, sobald sie fest ist, und auf dem Zettel und im kopierten Text, wenn du sie kennst.
 - 📌 **Pins, die im Set bleiben.** Opener und Closer halten die Enden. Mittel-Pins überstehen Auf Slot setzen und Andere Songs und wandern beim Sortieren mit — außer bei Perfekt · nur Pins.
@@ -21,7 +21,7 @@ Vor dem Gig ist es still. SETBUILDER ist dieser Raum. Du kommst mit einem rekord
 - 🔁 **Tauschen aus derselben Playlist.** Songs aus dem Playlist-Pool, die an dieser Stelle zu Key, BPM und Energie passen — getrennt vom allgemeinen Ersatz.
 - 🎛️ **Jeder Anschluss mit eigener Länge.** Cut, Blend, Echo-out. Die Uhr des Slots folgt dem, was du an den Übergang schreibst. „—“ nimmt die Blend-Zeit aus dem Brief.
 - 🎲 **Eine andere Nacht aus derselben Kiste.** Andere Songs. Oder die Playlist, die Collection, die History, sobald sie da ist. Nach dem Laden einer Stick-Playlist bleibt **Aus der Playlist** am Set verfügbar.
-- 🛟 **Plan B in der Tasche.** Rollen und Alternativen, wenn der Floor dreht. **Alternativen groß** gibt der Spalte den Raum; jede Spaltenhöhe ist für sich.
+- 🛟 **Plan B in der Tasche.** Rollen und Alternativen, wenn der Floor dreht. **Rollen verteilen**, Alle auf/zu und **Alternativen groß** sitzen sticky neben **Rollen kurz erklärt**. Alternativen groß gibt der Spalte den Raum; Ersatz und Plan B liegen neben der Karte.
 - 🎧 **Den Übergang vorher hören.** Vorhören aus Setliste, Tauschen und Key-Verlauf. Vorher, dieser Track, der nächste — dieselbe Länge wie im Set.
 - 📋 **Kompakt oder Comfortabel.** In der Setliste wählst du die Zeilendichte. Kompakt hält Play, Pin, Tauschen und Entfernen in einer Zeile. **Details** öffnet nur Notiz, Key, BPM, Energie und Blend; **Zuklappen** oder erneut **Kompakt** macht die Zeile wieder klein.
 - 🔍 **Nur noch, was passt.** Key, BPM und Energie holen die Bibliothek heran. Passt zu reiht, was hinter einem gewählten Track tragen kann, und der Song, den du hinzufügst, landet direkt dahinter.
