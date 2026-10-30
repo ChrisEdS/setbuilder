@@ -45,7 +45,16 @@ class MemFile implements FileLike {
     let pending: Uint8Array | null = null;
     return {
       write: async (data: ArrayBuffer | Uint8Array) => {
-        pending = new Uint8Array(data instanceof Uint8Array ? data : new Uint8Array(data)).slice();
+        const chunk = new Uint8Array(data instanceof Uint8Array ? data : new Uint8Array(data)).slice();
+        // Browser writable streams append; keep that so chunked copies work in tests.
+        if (!pending) {
+          pending = chunk;
+          return;
+        }
+        const merged = new Uint8Array(pending.length + chunk.length);
+        merged.set(pending, 0);
+        merged.set(chunk, pending.length);
+        pending = merged;
       },
       // Like the browser: the file only changes when close() succeeds.
       close: async () => {
@@ -399,12 +408,19 @@ test("prepareStickForPlayers moves exportLibrary.db aside and can put it back", 
   const lib = new MemFile("exportLibrary.db", {});
   lib.data = new Uint8Array([9, 8, 7, 6]);
   rekordbox.files.set("exportLibrary.db", lib);
-  const done = await prepareStickForPlayers(root, new Date(2026, 9, 14, 3, 0, 0));
+  const stages: string[] = [];
+  const done = await prepareStickForPlayers(root, new Date(2026, 9, 14, 3, 0, 0), (progress) => {
+    stages.push(progress.stage);
+  });
   assert.equal(done.aside, true);
   assert.equal(done.backupName, "exportLibrary-aside-20261014-030000.db");
   assert.equal(rekordbox.files.has("exportLibrary.db"), false);
   const stored = root.dirs.get(BACKUP_DIR)?.files.get(done.backupName ?? "");
   assert.deepEqual(stored && [...stored.data], [9, 8, 7, 6]);
+  assert.deepEqual(
+    [...new Set(stages)],
+    ["locate", "copy", "verify", "remove", "done"],
+  );
   await restorePlayerLibrary(root);
   assert.deepEqual([...(rekordbox.files.get("exportLibrary.db")?.data ?? [])], [9, 8, 7, 6]);
 });

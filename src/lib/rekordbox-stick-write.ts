@@ -46,11 +46,76 @@ type Writable = {
   abort?(): Promise<void>;
 };
 
+export type FileBlobLike = {
+  arrayBuffer(): Promise<ArrayBuffer>;
+  size: number;
+  lastModified?: number;
+  stream?: () => ReadableStream<Uint8Array>;
+  slice?: (start: number, end?: number) => { arrayBuffer(): Promise<ArrayBuffer> };
+};
+
 export type FileLike = {
   name: string;
-  getFile(): Promise<{ arrayBuffer(): Promise<ArrayBuffer>; size: number; lastModified?: number }>;
+  getFile(): Promise<FileBlobLike>;
   createWritable(): Promise<Writable>;
 };
+
+/** Progress while setting OneLibrary aside (old sticks can be hundreds of MB). */
+export type StickPrepareProgress = {
+  stage: "locate" | "copy" | "verify" | "remove" | "done";
+  bytesDone?: number;
+  bytesTotal?: number;
+};
+
+export type StickPrepareReporter = (progress: StickPrepareProgress) => void;
+
+const COPY_CHUNK = 4 * 1024 * 1024;
+
+function yieldToUi(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+/** Stream-copy a file without loading the whole thing into RAM (old OneLibrary can be huge). */
+async function copyFileStreaming(
+  source: FileLike,
+  dest: FileLike,
+  onBytes?: (done: number, total: number) => void,
+): Promise<number> {
+  const blob = await source.getFile();
+  const total = blob.size;
+  const writable = await dest.createWritable();
+  try {
+    if (typeof blob.stream === "function") {
+      const reader = blob.stream().getReader();
+      let done = 0;
+      for (;;) {
+        const chunk = await reader.read();
+        if (chunk.done) break;
+        await writable.write(chunk.value);
+        done += chunk.value.byteLength;
+        onBytes?.(done, total);
+        await yieldToUi();
+      }
+    } else if (typeof blob.slice === "function" && total > COPY_CHUNK) {
+      for (let offset = 0; offset < total; offset += COPY_CHUNK) {
+        const end = Math.min(offset + COPY_CHUNK, total);
+        const part = await blob.slice(offset, end).arrayBuffer();
+        await writable.write(new Uint8Array(part));
+        onBytes?.(end, total);
+        await yieldToUi();
+      }
+    } else {
+      const data = await blob.arrayBuffer();
+      await writable.write(new Uint8Array(data));
+      onBytes?.(total, total);
+    }
+    await writable.close();
+  } catch (error) {
+    await writable.abort?.().catch(() => undefined);
+    throw error;
+  }
+  return total;
+}
 
 export type DirLike = {
   name: string;
@@ -667,10 +732,15 @@ export async function listLibraryAsides(root: DirLike): Promise<string[]> {
  * Device Library players — CDJ-3000, XDJ-XZ and older — read export.pdb instead.
  * CDJ-3000X, XDJ-AZ and OPUS-QUAD still need rekordbox.
  */
-export async function prepareStickForPlayers(root: DirLike, now = new Date()): Promise<{
+export async function prepareStickForPlayers(
+  root: DirLike,
+  now = new Date(),
+  report?: StickPrepareReporter,
+): Promise<{
   aside: boolean;
   backupName: string | null;
 }> {
+  report?.({ stage: "locate" });
   const location = await findStickDatabase(root);
   const lib = await file(location.dir, "exportLibrary.db");
   if (!lib) return { aside: false, backupName: null };
@@ -680,17 +750,23 @@ export async function prepareStickForPlayers(root: DirLike, now = new Date()): P
       "Dieser Stick darf die Player-Library nicht beiseitelegen. Chrome, Edge oder die Desktop-App verwenden.",
     );
   }
-  const original = await readBytes(lib);
+  const sourceMeta = await lib.getFile();
   const backupDir = await root.getDirectoryHandle(BACKUP_DIR, { create: true });
   const backupName = `exportLibrary-aside-${stamp(now)}.db`;
   const backup = await backupDir.getFileHandle(backupName, { create: true });
-  await replaceFile(backup, original);
-  if (!sameBytes(await readBytes(backup), original)) {
+  report?.({ stage: "copy", bytesDone: 0, bytesTotal: sourceMeta.size });
+  const copied = await copyFileStreaming(lib, backup, (bytesDone, bytesTotal) => {
+    report?.({ stage: "copy", bytesDone, bytesTotal });
+  });
+  report?.({ stage: "verify", bytesDone: copied, bytesTotal: copied });
+  const backupMeta = await backup.getFile();
+  if (backupMeta.size !== copied || backupMeta.size !== sourceMeta.size) {
     throw stickError(
       "exports.stickWrite.backupFailed",
       "Die Sicherung konnte nicht geschrieben werden. Es wurde nichts verändert.",
     );
   }
+  report?.({ stage: "remove" });
   await location.dir.removeEntry("exportLibrary.db");
   if (await file(location.dir, "exportLibrary.db")) {
     throw stickError(
@@ -698,11 +774,16 @@ export async function prepareStickForPlayers(root: DirLike, now = new Date()): P
       "exportLibrary.db konnte nicht beiseitegelegt werden. Die Sicherung liegt in SETBUILDER-Backup.",
     );
   }
+  report?.({ stage: "done" });
   return { aside: true, backupName };
 }
 
 /** Puts the newest set-aside OneLibrary back as exportLibrary.db. */
-export async function restorePlayerLibrary(root: DirLike): Promise<string> {
+export async function restorePlayerLibrary(
+  root: DirLike,
+  report?: StickPrepareReporter,
+): Promise<string> {
+  report?.({ stage: "locate" });
   const location = await findStickDatabase(root);
   const names = await listLibraryAsides(root);
   const dir = await resolveBackupDir(root);
@@ -713,14 +794,21 @@ export async function restorePlayerLibrary(root: DirLike): Promise<string> {
       "Auf diesem Stick liegt keine beiseitegelegte Player-Library.",
     );
   }
-  const backup = await readBytes(await dir.getFileHandle(name));
+  const source = await dir.getFileHandle(name);
+  const sourceMeta = await source.getFile();
   const handle = await location.dir.getFileHandle("exportLibrary.db", { create: true });
-  await replaceFile(handle, backup);
-  if (!sameBytes(await readBytes(handle), backup)) {
+  report?.({ stage: "copy", bytesDone: 0, bytesTotal: sourceMeta.size });
+  const copied = await copyFileStreaming(source, handle, (bytesDone, bytesTotal) => {
+    report?.({ stage: "copy", bytesDone, bytesTotal });
+  });
+  report?.({ stage: "verify", bytesDone: copied, bytesTotal: copied });
+  const written = await handle.getFile();
+  if (written.size !== copied || written.size !== sourceMeta.size) {
     throw stickError(
       "exports.stickWrite.restoreFailed",
       "Die Stick-Datenbank konnte nicht zurückgesetzt werden. Bitte den Stick in rekordbox neu exportieren oder die Datei aus SETBUILDER-Backup zurückkopieren.",
     );
   }
+  report?.({ stage: "done" });
   return name;
 }

@@ -10,6 +10,7 @@ import {
   type StickAction,
   type StickHealth,
 } from "@/lib/stick-health";
+import type { StickPrepareProgress, StickPrepareReporter } from "@/lib/rekordbox-stick-write";
 
 type Tone = "ok" | "warn" | "bad" | "mute";
 
@@ -202,8 +203,8 @@ export function StickHealthCard({
   health: StickHealth;
   onRecheck?: () => void | Promise<void>;
   checking?: boolean;
-  onPrepare?: () => void | Promise<void>;
-  onRestoreLibrary?: () => void | Promise<void>;
+  onPrepare?: (report?: StickPrepareReporter) => void | Promise<void>;
+  onRestoreLibrary?: (report?: StickPrepareReporter) => void | Promise<void>;
   onEject?: () => void | Promise<void>;
   /** Clears dirty FAT (CDJ read-only) while the stick is still on the Mac. */
   onRepair?: () => void | Promise<void>;
@@ -221,12 +222,12 @@ export function StickHealthCard({
   const detailsId = useId();
   const [rekordbox, setRekordbox] = useState(false);
   const [busy, setBusy] = useState<Busy>(null);
+  const [busyDetail, setBusyDetail] = useState<string | null>(null);
   const [note, setNote] = useState<MessageKey | null>(null);
   const [noteOk, setNoteOk] = useState(false);
   /** After a successful eject — override the green “ready” strip so unplug is obvious. */
   const [ejected, setEjected] = useState(false);
-  // null = follow verdict (warn/bad open); after the DJ toggles, keep their choice
-  // until the verdict changes.
+  // null = follow default; after the DJ toggles, keep their choice until the verdict changes.
   const [userOpen, setUserOpen] = useState<boolean | null>(null);
   const [seenVerdict, setSeenVerdict] = useState(health.verdict);
   if (health.verdict !== seenVerdict) {
@@ -234,10 +235,6 @@ export function StickHealthCard({
     setUserOpen(null);
     setEjected(false);
   }
-  const open =
-    userOpen ??
-    ((!ejected && health.verdict !== "ready" && health.verdict !== "empty") || ejected);
-
   useEffect(() => {
     let ignore = false;
     void fetch("/api/desktop/rekordbox")
@@ -265,6 +262,14 @@ export function StickHealthCard({
   // Eject-failed always keeps repair as the strip primary, even when the parent
   // normally owns the CTA — the DJ must not unplug until repair/retry.
   const ejectFailed = note === "library.stickHealth.fix.ejectFailed";
+  // Keep the header calm: long essays stay behind Details. Auto-open only
+  // when the stick is unusable or eject failed.
+  const open =
+    userOpen ??
+    (ejected ||
+      ejectFailed ||
+      health.verdict === "broken" ||
+      health.verdict === "incomplete");
   // After write or repair the copy says “eject now” — that CTA must be visible.
   const repairedOk = noteOk && note === "library.stickHealth.fix.repaired";
   const leadWithEject =
@@ -302,15 +307,40 @@ export function StickHealthCard({
     if (!response.ok || !body.opened) throw new Error("rekordbox");
   }
 
+  function formatPrepareProgress(progress: StickPrepareProgress): string {
+    switch (progress.stage) {
+      case "locate":
+        return t("library.stickHealth.fix.preparingLocate");
+      case "copy": {
+        const total = progress.bytesTotal ?? 0;
+        const done = progress.bytesDone ?? 0;
+        const percent = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
+        return t("library.stickHealth.fix.preparingCopy", { percent });
+      }
+      case "verify":
+        return t("library.stickHealth.fix.preparingVerify");
+      case "remove":
+        return t("library.stickHealth.fix.preparingRemove");
+      case "done":
+        return t("library.stickHealth.fix.preparingRefresh");
+    }
+  }
+
   async function run(kind: Exclude<Busy, null>) {
     if (busy) return;
     if (kind === "prepare" && !window.confirm(t("library.stickHealth.fix.confirm"))) return;
     setBusy(kind);
+    setBusyDetail(null);
     setNote(null);
     setNoteOk(false);
+    // Collapse the essay while work runs — progress is the only line that matters.
+    if (kind === "prepare" || kind === "restore") setUserOpen(false);
+    const report: StickPrepareReporter = (progress) => {
+      setBusyDetail(formatPrepareProgress(progress));
+    };
     try {
-      if (kind === "prepare") await onPrepare?.();
-      else if (kind === "restore") await onRestoreLibrary?.();
+      if (kind === "prepare") await onPrepare?.(report);
+      else if (kind === "restore") await onRestoreLibrary?.(report);
       else if (kind === "repair") await onRepair?.();
       else if (kind === "eject") {
         await onEject?.();
@@ -342,6 +372,7 @@ export function StickHealthCard({
       );
     } finally {
       setBusy(null);
+      setBusyDetail(null);
     }
   }
 
@@ -383,18 +414,23 @@ export function StickHealthCard({
       : afterWrite && health.verdict === "ready"
         ? t("library.stickHealth.verdict.writeDone")
         : t(verdictKey(health, caps.canPrepare));
-  const followUp = ejected ? (
-    <p className="stick-strip-note is-ejected">{t("library.stickHealth.meaning.ejected")}</p>
-  ) : ejectFailed ? (
-    <p className="stick-strip-note is-bad">{t("library.stickHealth.meaning.ejectFailed")}</p>
-  ) : afterWrite && health.verdict === "ready" && !deferPrimaryAction ? (
-    <p className="stick-strip-note is-write-done">{t("library.stickHealth.meaning.writeDone")}</p>
-  ) : note ? (
-    <p className={"stick-strip-note" + (noteOk ? " is-ok" : " is-bad")}>{t(note)}</p>
-  ) : primary && !deferPrimaryAction ? (
-    <p className="stick-strip-next">{t(nextKey(primary))}</p>
-  ) : null;
-  const details = open ? (
+  const followUp =
+    busy && busyDetail ? (
+      <p className="stick-strip-note is-busy" role="status">
+        {busyDetail}
+      </p>
+    ) : ejected ? (
+      <p className="stick-strip-note is-ejected">{t("library.stickHealth.meaning.ejected")}</p>
+    ) : ejectFailed ? (
+      <p className="stick-strip-note is-bad">{t("library.stickHealth.meaning.ejectFailed")}</p>
+    ) : afterWrite && health.verdict === "ready" && !deferPrimaryAction ? (
+      <p className="stick-strip-note is-write-done">{t("library.stickHealth.meaning.writeDone")}</p>
+    ) : note ? (
+      <p className={"stick-strip-note" + (noteOk ? " is-ok" : " is-bad")}>{t(note)}</p>
+    ) : primary && !deferPrimaryAction && !open ? (
+      <p className="stick-strip-next">{t(nextKey(primary))}</p>
+    ) : null;
+  const details = open && !busy ? (
     <div className="stick-strip-details" id={detailsId}>
           <p className="stick-strip-meaning">{t(meaningKey(health, caps.canPrepare))}</p>
           <dl className="stick-strip-facts">
@@ -439,90 +475,96 @@ export function StickHealthCard({
       ) : null;
 
   const showRepair = Boolean(onRepair) && !ejected && (ejectFailed || afterWrite || health.verdict === "ready");
+  const showTrail = Boolean(trailing) && busy === null;
   const actions = (
-    <div className={placement === "header" ? "stick-strip-actions stick-actions" : "stick-strip-actions"}>
-      {ejected && onRecheck ? (
-        <Tip text={t("library.stickHealth.recheckTip")} disabled={checking || busy !== null}>
-          <button
-            type="button"
-            className="btn"
-            disabled={checking || busy !== null}
-            onClick={() => {
-              setEjected(false);
-              void onRecheck();
-            }}
+    <div
+      className={
+        (placement === "header" ? "stick-strip-actions stick-actions" : "stick-strip-actions") +
+        (showTrail ? " has-trail" : "")
+      }
+    >
+      <div className="stick-strip-actions-main">
+        {ejected && onRecheck ? (
+          <Tip text={t("library.stickHealth.recheckTip")} disabled={checking || busy !== null}>
+            <button
+              type="button"
+              className="btn"
+              disabled={checking || busy !== null}
+              onClick={() => {
+                setEjected(false);
+                void onRecheck();
+              }}
+            >
+              {checking ? t("library.loading") : t("library.stickHealth.recheck")}
+            </button>
+          </Tip>
+        ) : null}
+        {ejectFailed && onRepair ? (
+          <Tip text={tip("repair")} disabled={busy !== null}>
+            <button
+              type="button"
+              className={"btn" + (busy === "repair" ? " is-busy" : "")}
+              disabled={busy !== null}
+              onClick={() => void run("repair")}
+            >
+              {label("repair")}
+            </button>
+          </Tip>
+        ) : null}
+        {primary ? (
+          <Tip text={tip(primary)} disabled={busy !== null}>
+            <button
+              type="button"
+              className={"btn" + (busy === primary ? " is-busy" : "")}
+              disabled={busy !== null}
+              onClick={() => void run(primary)}
+            >
+              {label(primary)}
+            </button>
+          </Tip>
+        ) : null}
+        {rowEject ? (
+          <Tip text={tip("eject")} disabled={busy !== null}>
+            <button
+              type="button"
+              className={"btn ghost" + (busy === "eject" ? " is-busy" : "")}
+              disabled={busy !== null}
+              onClick={() => void run("eject")}
+            >
+              {label("eject")}
+            </button>
+          </Tip>
+        ) : null}
+        {showRepair && !ejectFailed ? (
+          <Tip text={tip("repair")} disabled={busy !== null} end={!showTrail && !primary && !rowEject}>
+            <button
+              type="button"
+              className={"btn ghost" + (busy === "repair" ? " is-busy" : "")}
+              disabled={busy !== null}
+              onClick={() => void run("repair")}
+            >
+              {label("repair")}
+            </button>
+          </Tip>
+        ) : null}
+        {!busy ? (
+          <Tip
+            text={t(open ? "library.stickHealth.lessTip" : "library.stickHealth.detailsTip")}
+            end={!showTrail}
           >
-            {checking ? t("library.loading") : t("library.stickHealth.recheck")}
-          </button>
-        </Tip>
-      ) : null}
-      {ejectFailed && onRepair ? (
-        <Tip text={tip("repair")} disabled={busy !== null}>
-          <button
-            type="button"
-            className={"btn" + (busy === "repair" ? " is-busy" : "")}
-            disabled={busy !== null}
-            onClick={() => void run("repair")}
-          >
-            {label("repair")}
-          </button>
-        </Tip>
-      ) : null}
-      {primary ? (
-        <Tip text={tip(primary)} disabled={busy !== null}>
-          <button
-            type="button"
-            className={"btn" + (busy === primary ? " is-busy" : "")}
-            disabled={busy !== null}
-            onClick={() => void run(primary)}
-          >
-            {label(primary)}
-          </button>
-        </Tip>
-      ) : null}
-      {rowEject ? (
-        <Tip text={tip("eject")} disabled={busy !== null}>
-          <button
-            type="button"
-            className={"btn ghost" + (busy === "eject" ? " is-busy" : "")}
-            disabled={busy !== null}
-            onClick={() => void run("eject")}
-          >
-            {label("eject")}
-          </button>
-        </Tip>
-      ) : null}
-      {showRepair && !ejectFailed ? (
-        <Tip
-          text={tip("repair")}
-          disabled={busy !== null}
-          end={!trailing && !primary && !rowEject}
-        >
-          <button
-            type="button"
-            className={"btn ghost" + (busy === "repair" ? " is-busy" : "")}
-            disabled={busy !== null}
-            onClick={() => void run("repair")}
-          >
-            {label("repair")}
-          </button>
-        </Tip>
-      ) : null}
-      <Tip
-        text={t(open ? "library.stickHealth.lessTip" : "library.stickHealth.detailsTip")}
-        end={!trailing}
-      >
-        <button
-          type="button"
-          className="btn ghost stick-strip-toggle"
-          aria-expanded={open}
-          aria-controls={detailsId}
-          onClick={() => setUserOpen(!open)}
-        >
-          {t(open ? "library.stickHealth.less" : "library.stickHealth.details")}
-        </button>
-      </Tip>
-      {trailing}
+            <button
+              type="button"
+              className="btn ghost stick-strip-toggle"
+              aria-expanded={open}
+              aria-controls={detailsId}
+              onClick={() => setUserOpen(!open)}
+            >
+              {t(open ? "library.stickHealth.less" : "library.stickHealth.details")}
+            </button>
+          </Tip>
+        ) : null}
+      </div>
+      {showTrail ? <div className="stick-strip-actions-trail">{trailing}</div> : null}
     </div>
   );
 

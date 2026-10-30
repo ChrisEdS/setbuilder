@@ -7969,14 +7969,31 @@ body {
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 0.5rem;
+  gap: 0.5rem 0.75rem;
   padding-top: 0.05rem;
+}
+.stick-strip-actions-main,
+.stick-strip-actions-trail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+.stick-strip-actions.has-trail .stick-strip-actions-trail {
+  padding-left: 0.65rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
 }
 .stick-strip-actions .btn {
   font-size: 0.82rem;
 }
-.stick-strip-actions > .tip {
+.stick-strip-actions > .tip,
+.stick-strip-actions-main > .tip,
+.stick-strip-actions-trail > .tip {
   display: inline-flex;
+}
+.stick-head-more .stick-strip-note.is-busy {
+  color: #e2e8f0;
+  font-weight: 550;
 }
 .stick-strip-toggle {
   padding-inline: 0.75rem;

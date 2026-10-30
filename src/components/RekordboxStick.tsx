@@ -27,15 +27,20 @@ import {
 import { StickHealthCard } from "@/components/StickHealthCard";
 import { inspectStick, inspectStickFiles, pdbSummaryOf, type StickHealth } from "@/lib/stick-health";
 import { enqueueWork } from "@/lib/work-queue";
-import { prepareStickForPlayers, restorePlayerLibrary, type DirLike } from "@/lib/rekordbox-stick-write";
+import {
+  prepareStickForPlayers,
+  restorePlayerLibrary,
+  type DirLike,
+  type StickPrepareReporter,
+} from "@/lib/rekordbox-stick-write";
 
 export type StickStatusSlice = {
   health: StickHealth;
   checkingHealth: boolean;
   healthRoot: DirLike | null;
   refreshHealth: () => void | Promise<void>;
-  onPrepare?: () => void | Promise<void>;
-  onRestoreLibrary?: () => void | Promise<void>;
+  onPrepare?: (report?: StickPrepareReporter) => void | Promise<void>;
+  onRestoreLibrary?: (report?: StickPrepareReporter) => void | Promise<void>;
   onEject?: () => void | Promise<void>;
   onRepair?: () => void | Promise<void>;
 };
@@ -219,8 +224,10 @@ export function RekordboxStick({
   const [checkingHealth, setCheckingHealth] = useState(false);
   const [healthRoot, setHealthRoot] = useState<DirLike | null>(null);
   const [healthFiles, setHealthFiles] = useState<File[] | null>(null);
-  /** Remembered IDB handle exists — offer soft reconnect after eject / remount. */
+  /** Remembered IDB handle exists — used after mid-session eject / remount. */
   const [rememberedStick, setRememberedStick] = useState(false);
+  /** True once this session actually held a stick — cold start must not say “Reconnect”. */
+  const [hadStickThisSession, setHadStickThisSession] = useState(false);
   const dirInput = useRef<HTMLInputElement>(null);
   const chooseImpl = useRef<() => void>(() => {});
   const softReconnectImpl = useRef<() => Promise<boolean>>(async () => false);
@@ -292,6 +299,7 @@ export function RekordboxStick({
   async function applyHandle(handle: DirLike) {
     await enqueueWork(async () => {
       setHealthRoot(handle);
+      setHadStickThisSession(true);
       setHealthFiles(null);
       setRememberedStick(true);
       const read = await readStickFromHandle(handle);
@@ -358,6 +366,7 @@ export function RekordboxStick({
         if (!stillCurrent(token)) return;
         rememberStickFiles(files);
         setLabel(read.label);
+        setHadStickThisSession(true);
         publishSets(read.sets);
         onIndexed(stickLibraryRows(read.library, read.sets));
         if (!read.sets.length) setError({ kind: "noSets" });
@@ -478,16 +487,18 @@ export function RekordboxStick({
       healthRoot,
       refreshHealth: () => refreshHealth(),
       onPrepare: healthRoot
-        ? async () => {
+        ? async (report?: StickPrepareReporter) => {
             if (!(await stickPermission(healthRoot, "readwrite", true))) throw new Error("perm");
-            await prepareStickForPlayers(healthRoot);
+            await prepareStickForPlayers(healthRoot, new Date(), report);
+            report?.({ stage: "done" });
             await refreshHealth({ handle: healthRoot });
           }
         : undefined,
       onRestoreLibrary: healthRoot
-        ? async () => {
+        ? async (report?: StickPrepareReporter) => {
             if (!(await stickPermission(healthRoot, "readwrite", true))) throw new Error("perm");
-            await restorePlayerLibrary(healthRoot);
+            await restorePlayerLibrary(healthRoot, report);
+            report?.({ stage: "done" });
             await refreshHealth({ handle: healthRoot });
           }
         : undefined,
@@ -515,7 +526,7 @@ export function RekordboxStick({
 
   const loaded = Boolean(label);
   const showBody = !loaded || !folded;
-  const offerReconnect = rememberedStick && !healthRoot;
+  const offerReconnect = rememberedStick && !healthRoot && hadStickThisSession;
   const foldButton = loaded ? (
     <button
       type="button"
@@ -526,11 +537,14 @@ export function RekordboxStick({
       {t(showBody ? "library.stick.fold" : "library.stick.unfold")}
     </button>
   ) : null;
+  // When health already sits in the header, keep pick/fold quiet (ghost) so
+  // Prepare / Eject stays the only solid CTA.
+  const choosePrimary = !health;
   const chooseActions = (
     <>
       <button
         type="button"
-        className={"btn" + (pending ? " is-busy" : "")}
+        className={(choosePrimary ? "btn" : "btn ghost") + (pending ? " is-busy" : "")}
         disabled={pending}
         onClick={() => void chooseFolder()}
       >
@@ -538,7 +552,9 @@ export function RekordboxStick({
           ? t("library.stick.reading")
           : offerReconnect
             ? t("library.stick.reconnect")
-            : t("library.stick.choose")}
+            : health
+              ? t("library.stick.change")
+              : t("library.stick.choose")}
       </button>
       <input
         ref={dirInput}
@@ -632,22 +648,24 @@ export function RekordboxStick({
               onRecheck={() => void refreshHealth()}
               onPrepare={
                 healthRoot
-                  ? async () => {
+                  ? async (report) => {
                       if (!(await stickPermission(healthRoot, "readwrite", true))) {
                         throw new Error("perm");
                       }
-                      await prepareStickForPlayers(healthRoot);
+                      await prepareStickForPlayers(healthRoot, new Date(), report);
+                      report?.({ stage: "done" });
                       await refreshHealth({ handle: healthRoot });
                     }
                   : undefined
               }
               onRestoreLibrary={
                 healthRoot
-                  ? async () => {
+                  ? async (report) => {
                       if (!(await stickPermission(healthRoot, "readwrite", true))) {
                         throw new Error("perm");
                       }
-                      await restorePlayerLibrary(healthRoot);
+                      await restorePlayerLibrary(healthRoot, report);
+                      report?.({ stage: "done" });
                       await refreshHealth({ handle: healthRoot });
                     }
                   : undefined

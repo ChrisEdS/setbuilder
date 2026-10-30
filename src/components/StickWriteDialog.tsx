@@ -213,14 +213,16 @@ export function StickWriteDialog({
   const readyToLeave = Boolean(plan?.alreadyOnStick && health?.verdict === "ready");
   const healthHandlers = {
     onRecheck: () => void refreshHealth(),
-    onPrepare: async () => {
+    onPrepare: async (report) => {
       if (!root.current) throw new Error("folder");
-      await prepareStickForPlayers(root.current);
+      await prepareStickForPlayers(root.current, new Date(), report);
+      report?.({ stage: "done" });
       await refreshHealth(root.current);
     },
-    onRestoreLibrary: async () => {
+    onRestoreLibrary: async (report) => {
       if (!root.current) throw new Error("folder");
-      await restorePlayerLibrary(root.current);
+      await restorePlayerLibrary(root.current, report);
+      report?.({ stage: "done" });
       await refreshHealth(root.current);
     },
     onRepair: async () => {
