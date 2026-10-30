@@ -15,6 +15,7 @@ import {
   writeStickSidecars,
   type DirLike,
   type StickPlan,
+  type StickPrepareReporter,
   type StickWriteDone,
 } from "@/lib/rekordbox-stick-write";
 import type { SetDraft, SetTrack } from "@/lib/set";
@@ -213,13 +214,13 @@ export function StickWriteDialog({
   const readyToLeave = Boolean(plan?.alreadyOnStick && health?.verdict === "ready");
   const healthHandlers = {
     onRecheck: () => void refreshHealth(),
-    onPrepare: async (report) => {
+    onPrepare: async (report?: StickPrepareReporter) => {
       if (!root.current) throw new Error("folder");
       await prepareStickForPlayers(root.current, new Date(), report);
       report?.({ stage: "done" });
       await refreshHealth(root.current);
     },
-    onRestoreLibrary: async (report) => {
+    onRestoreLibrary: async (report?: StickPrepareReporter) => {
       if (!root.current) throw new Error("folder");
       await restorePlayerLibrary(root.current, report);
       report?.({ stage: "done" });

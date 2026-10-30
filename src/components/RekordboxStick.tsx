@@ -648,7 +648,7 @@ export function RekordboxStick({
               onRecheck={() => void refreshHealth()}
               onPrepare={
                 healthRoot
-                  ? async (report) => {
+                  ? async (report?: StickPrepareReporter) => {
                       if (!(await stickPermission(healthRoot, "readwrite", true))) {
                         throw new Error("perm");
                       }
@@ -660,7 +660,7 @@ export function RekordboxStick({
               }
               onRestoreLibrary={
                 healthRoot
-                  ? async (report) => {
+                  ? async (report?: StickPrepareReporter) => {
                       if (!(await stickPermission(healthRoot, "readwrite", true))) {
                         throw new Error("perm");
                       }
