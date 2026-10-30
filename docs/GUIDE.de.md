@@ -2,9 +2,9 @@
 
 **Deutsch** · [English](GUIDE.md) · [README](../README.de.md)
 
-So bereitest du ein Set mit rekordbox vor: Bibliothek verbinden und verstehen → bauen → exportieren. Die Screenshots zeigen ein in der App geöffnetes Set. Die Bilder sind von 4.5. Der Text beschreibt **4.7.12**, einschließlich Bibliotheksfilter, Phasenzeile, Pins und Ausschluss, Auf Slot setzen (auch beim Ändern der Slot-Dauer), Tauschen aus der Playlist, Perfekt · nur Pins, Sortieren rückgängig, Alternativen-Banner mit echtem Performance-Platz, Energie in der Details-Zeile und auf dem Kabinenzettel, sowie **Kompakt / Comfortabel** in der Setliste.
+So bereitest du ein Set mit rekordbox vor: verbinden → bauen → exportieren. Screenshots von 4.5; der Text beschreibt **4.7.13** — Vorhören beim Tauschen, Play/Ziehen im Key-Verlauf, klarere Crate-Rollen, eigene Spaltenhöhen und **Alternativen groß**.
 
-Die ausgelieferte App ist die Desktop-App (Port **4317**). Die Browser-Entwicklung nutzt Port **4327**. Dieses Dokument beschreibt **4.7.12**. Stick-Schreiben, Player und Streaming-Konten sind weiter ungeprüft.
+Die ausgelieferte App ist die Desktop-App (Port **4317**). Browser-Entwicklung: Port **4327**. Stick-Schreiben, Player und Streaming-Konten sind weiter ungeprüft.
 
 > **Vor dem Gig:** Stick immer am echten Player testen (Playlist sichtbar, Tracks spielbar). Backup behalten — SETBUILDER schreibt in `export.pdb` und legt Kopien unter `SETBUILDER-Backup/` ab, für deine Medien bist du selbst verantwortlich. Keine Garantie. Works on my machine. :)
 
@@ -50,9 +50,9 @@ Jeder Track zeigt die Quelle (rekordbox), Phase und Rolle. Die Zahl und der Zieh
 
 Ein Übergang markiert, wie du in den nächsten Track gehst: Cut, Short blend, Long blend, EQ swap, Echo-out und die übrigen. Er wird nicht in die Audiodatei geschrieben. „—“ heißt keine Marke, und dieser Anschluss behält die Blend-Zeit aus dem Brief. **Länge** ist die Überlappung: diese Zeit geht von der Spielzeit ab, Slot-Zeile und Überlänge folgen ihr. Der letzte Track verliert seine Überlappung weiter. Du wählst eine Länge oder tippst sie. Eine gesetzte Länge, auch 0, schlägt die Zeit, die der Übergang vorschlägt. Lässt du sie leer, schlägt der Übergang eine Zeit vor. **Zurücksetzen**, neben Exportieren, fragt zuerst und leert dann das Set.
 
-**Ersatz** öffnet eine Schublade über der Setliste, die Tracks darunter rutschen nicht. Die Kopfzeile behält den Tracknamen („Für „Name““). Der Fokus geht in die Schublade; Schließen, Klick auf die Fläche daneben oder Escape bringt ihn zum Ersatz-Button zurück. Play in dieser Liste ist derselbe runde Play-Button wie in der Setlisten-Zeile. Einsetzen tauscht den Titel. Die Schublade liegt über dem schwebenden Player, damit Schließen erreichbar bleibt; der Body scrollt in der Schublade, während die Seite darunter gesperrt ist. Mehrere Schubladen (Ersatz, Tauschen, Ins Set, So ist es gedacht) teilen dieselbe Scroll-Sperre und geben sie erst frei, wenn die letzte zu ist.
+**Ersatz** öffnet eine Schublade über der Setliste. Play ist derselbe runde Knopf wie in der Setliste; ohne Stick-Pfad (oder Spotify/http) bleibt er deaktiviert, mit Tip. Der Body scrollt, der Fuß bleibt stehen. Die Schublade liegt über dem schwebenden Player.
 
-**Tauschen** (eigenes Icon vor Ersatz) öffnet dieselbe Schubladenform, aber nur mit Tracks aus dem geladenen Playlist-Pool, die an dieser Stelle zu Key, BPM und Energie passen. Ohne Pool (weniger als zwei Playlist-Tracks) ist der Knopf deaktiviert und sagt, dass zuerst eine Stick-Playlist als Set geladen oder eine Playlist extrahiert werden muss. Leer heißt: kein anderer Playlist-Track passt hier.
+**Tauschen** (Icon vor Ersatz) nutzt dieselbe Schublade, aber nur Playlist-Pool-Tracks, die hier zu Key, BPM und Energie passen. Pool-Zeilen holen den Stick-Pfad bei Bedarf aus der Bibliothek. Ohne Pool ist der Knopf aus. Leer heißt: nichts anderes aus der Playlist passt.
 
 ![Tauschen aus der Playlist](screenshots/de/02-exchange-drawer-v450.png)
 
@@ -88,16 +88,18 @@ Der Vorhör-Player ist eine kompakte schwebende Karte. Am Titelstreifen ziehen; 
 
 ![Setlisten-Rollen und Alternativen](screenshots/de/03-setlist-roles-v450.png)
 
-Jeder Track hat eine Phase (Open → Lift → Rise → Peak → Release) und eine Rolle:
+Jeder Track hat eine Phase (Open → Lift → Rise → Peak → Release) und eine Rolle. **Rollen kurz erklärt** führt aus; die Kurzzeile unter jeder Spalte bleibt knapp:
 
 | Rolle | Aufgabe |
 |---|---|
-| **Anchor** | Crowd-Connector, Signature-Track |
-| **Bridge** | Pivot zwischen Phasen: Key, BPM, Energie |
-| **Groove** | Atem zwischen den Peaks |
-| **Alternativen** | Plan B, wenn der Floor dreht |
+| **Anchor** | Signature-Tracks, die der Floor kennt — im Peak mit Abstand |
+| **Bridge** | Geplante Pivots: Key-Clash, BPM-Sprung, Energy Boost, Phasenwechsel |
+| **Groove** | Weiche Anschlüsse zwischen den Peaks (gleicher Key, ±1, A↔B) |
+| **Alternativen** | Plan B neben der Performance — zählt erst mit, wenn du einsetzt |
 
-Titel lassen sich zwischen den Spalten ziehen. Bei einer Alternative setzt **Ins Set** sie vor oder hinter einen Song der Playlist, und **Pin** holt sie in die Performance und hält sie durch Auf Slot setzen und Andere Songs. **Plan B** verlangt pro Phase mindestens zwei passende Alternativen. Eine Alternative zählt für die Phase, die du bei „Ersatz für“ wählst, solange ihre Energie ins Band der Phase passt. Sonst steht der Grund auf der Karte. „Lücken füllen“ nimmt Vorschläge aus deiner rekordbox-Bibliothek, die nach Energie, Key und BPM zu den Tracks der Phase passen.
+Karten zwischen den Spalten ziehen. Jede Spalte unten einzeln in der Höhe ziehen. Die Steuerung (**Alle auf**, **Alle zu**, **Alternativen groß**) sitzt bei den Kacheln. **Alternativen groß** gibt der Spalte den Großteil der Zeile und stapelt Ersatz/Plan B unter die Karte, damit Titel lesbar bleiben.
+
+Bei einer Alternative setzt **Ins Set** sie vor oder hinter einen Song; **Pin** holt sie in die Performance durch Auf Slot setzen und Andere Songs. **Plan B** will mindestens zwei passende Alternativen pro Phase (Phase unter „Ersatz für“, Energie im Band). „Lücken füllen“ zieht Bibliotheksvorschläge nach Energie, Key und BPM.
 
 ## 4. Bogen
 
@@ -105,7 +107,7 @@ Titel lassen sich zwischen den Spalten ziehen. Bei einer Alternative setzt **Ins
 
 Der Bogen zeigt, wie die Phasen den Slot füllen (aktive Phase hervorgehoben; gelb heißt über dem Fenster) und wie die Energie jedes Tracks zum Zielband der Phase steht. Sprünge ab drei Stufen werden markiert. Unter jeder Phase sagt eine optionale Zeile, wofür dieser Teil da ist — der Platzhalter lautet „z. B. treibend, 128“. Eine leere Zeile wird nicht gespeichert. Die Set-Datei bleibt Version 1. Das Kabinen-PDF setzt die Zeile auf das Banner dieser Phase. Die Spielzeit folgt der durchschnittlichen Blend-Zeit im Brief: 30 Sekunden, eine Minute, zwei Minuten oder vier Minuten weniger pro Track, und nie unter 30 Sekunden einer kurzen Datei. Ein gesetzter Übergang und seine Länge ersetzen diesen Durchschnitt an diesem Track. Cue-Punkte und was du live tust, bleiben bei dir.
 
-**Key-Verlauf** zeigt Camelot entlang der gespielten Reihenfolge. Jede Karte hat ein kurzes Relationen-Badge (Gleich, ±1, Clash, …), den Key, Energie wenn bekannt und BPM. Karten ziehen zum Umsortieren; **Sortieren** für die Techniken oben (einschließlich Perfekt · nur Pins). Drei Kacheln mit **?** erklären die Zahlen:
+**Key-Verlauf** zeigt Camelot entlang der gespielten Reihenfolge. Jede Karte hat Relationen-Badge, Key, Energie wenn bekannt, BPM, rundes Play (Pause beim Abspielen) und Ziehgriff oben rechts. Ziehen zum Umsortieren; **Sortieren** für die Techniken oben. Drei Kacheln mit **?** erklären die Zahlen:
 - **Keys gesetzt** — Anteil der Performance-Tracks mit Camelot-Key
 - **Mix-Score** — Mittel aller Übergänge (Key und Energie zu gleichen Teilen, kleine BPM-Korrektur). Über ~75 % ist weich, unter ~50 % knallt es oft
 - **Clashes** — Übergänge, deren Keys auf dem Camelot-Wheel weit auseinanderliegen

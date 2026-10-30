@@ -4,14 +4,14 @@ const de = {
   "crates.ariaLabel": "Crate-Rollen Übersicht",
   "crates.title": "Crate-Rollen",
   "crates.intro":
-    "Titel in eine andere Rolle ziehen. Die Höhe aller Spalten lässt sich am unteren Rand ändern, „Alternativen groß“ zeigt Plan B zweispaltig.",
+    "Karten ziehen · Höhe unten an jeder Kachel · Alternativen groß für Plan B",
   "crates.expandAll": "Alle auf",
   "crates.expandAllTip": "Alle Rollen-Spalten aufklappen.",
   "crates.collapseAll": "Alle zu",
   "crates.collapseAllTip": "Alle Rollen-Spalten zuklappen — mehr Übersicht.",
   "crates.wideAlternatives": "Alternativen groß",
   "crates.wideAlternativesTip":
-    "Alternativen öffnen und zweispaltig zeigen — Plan B im Blick.",
+    "Alternativen breit aufklappen — Titel lesbar, Plan B darunter.",
   "crates.explain": "Rollen kurz erklärt",
 
   // RoleCrates: columns
@@ -149,14 +149,14 @@ const en: Record<keyof typeof de, string> = {
   "crates.ariaLabel": "Crate roles overview",
   "crates.title": "Crate roles",
   "crates.intro":
-    "Drag a track into another role. Change the height of all columns at the bottom edge, “Wide alternatives” shows Plan B in two columns.",
+    "Drag cards · resize each tile at the bottom · Wide alternatives for Plan B",
   "crates.expandAll": "Expand all",
   "crates.expandAllTip": "Expand all role columns.",
   "crates.collapseAll": "Collapse all",
   "crates.collapseAllTip": "Collapse all role columns — more overview.",
   "crates.wideAlternatives": "Wide alternatives",
   "crates.wideAlternativesTip":
-    "Open Alternatives and show them in two columns — Plan B in view.",
+    "Open Alternatives wide — titles readable, Plan B underneath.",
   "crates.explain": "Roles at a glance",
 
   "crates.col.collapse": "Collapse {role}",

@@ -2,9 +2,9 @@
 
 [Deutsch](GUIDE.de.md) · **English** · [README](../README.md)
 
-How to prepare a set with rekordbox: connect and understand the library → build → export. Screenshots show a set open in the app. The pictures are from 4.5. The words describe **4.7.12**, including the library filters, the phase line, pins and exclude, fit to slot (also when you change the slot minutes), Exchange from the playlist, Perfect · pins only, undo for Sort, the alternatives banner with the real performance place, energy on the details line and the booth sheet, and **Compact / Comfortable** on the setlist.
+How to prepare a set with rekordbox: connect → build → export. Screenshots are from 4.5; the words describe **4.7.13** — Exchange prelisten, Key-path play/drag, clearer crate roles, independent column heights, and **Wide alternatives**.
 
-The shipping client is the desktop app (port **4317**). Browser development uses port **4327**. This document describes **4.7.12**. Stick write, players, and streaming accounts are still unverified.
+The shipping client is the desktop app (port **4317**). Browser development uses port **4327**. Stick write, players, and streaming accounts are still unverified.
 
 > **Before the gig:** Always test the stick on the actual player (playlist visible, tracks playable). Keep a backup — SETBUILDER writes to `export.pdb` and keeps copies under `SETBUILDER-Backup/`, but you are responsible for your media. No warranty. Works on my machine. :)
 
@@ -50,9 +50,9 @@ Each track shows its source (rekordbox), phase and role. The number and the drag
 
 A transition marks how you go into the next track — cut, short blend, long blend, EQ swap, echo-out, and the others. It is not written into the audio file. “—” means no mark, and that join keeps the average blend from the brief. **Length** is the overlap: that time comes off the playing time, so the slot line and the overrun follow it. The last track still loses its overlap. Pick a length or type one. A length you set, including 0, wins over the time the transition suggests. If you leave it, the chosen transition suggests a time. **Reset**, beside Export, asks first and then clears the set.
 
-**Replace** opens a drawer over the setlist, so the tracks below do not move. The header keeps the track name (“For «name»”). Focus moves into the drawer; Close, a click on the dimmed area, or Escape returns it to the replace button. Play in that list is the same round play button as on the setlist row. Insert swaps the title. The drawer sits above the floating player so Close stays clickable; the body scrolls inside the drawer while the page underneath is locked. Several drawers (Replace, Exchange, Into set, How this works) share the same scroll lock and only release it when the last one closes.
+**Replace** opens a drawer over the setlist. Play uses the same round control as the setlist; without a stick file path (or Spotify/http link) it stays disabled with a tip. The body scrolls; the footer stays pinned. The drawer sits above the floating player.
 
-**Exchange** (its own icon before Replace) opens the same drawer shape, but only with tracks from the loaded playlist pool that fit key, BPM and energy at this position. Without a pool (fewer than two playlist tracks) the button is disabled and says to load a stick playlist as a set or extract a playlist first. Empty means no other playlist track fits here.
+**Exchange** (icon before Replace) uses the same drawer, but only playlist-pool tracks that fit key, BPM and energy here. Pool rows hydrate a stick path from the library when needed. Without a pool the button is disabled. Empty means nothing else from the playlist fits.
 
 ![Exchange from the playlist](screenshots/en/02-exchange-drawer-v450.png)
 
@@ -88,16 +88,18 @@ Preview plays in a compact floating card. Drag the title strip; pull the right e
 
 ![Setlist roles and alternatives](screenshots/en/03-setlist-roles-v450.png)
 
-Every track has a phase (Open → Lift → Rise → Peak → Release) and a role:
+Every track has a phase (Open → Lift → Rise → Peak → Release) and a role. **Roles at a glance** spells them out; the short line under each column stays brief:
 
 | Role | Job |
 |---|---|
-| **Anchor** | Crowd connector, signature track |
-| **Bridge** | Pivot between phases: key, BPM, energy |
-| **Groove** | Room to breathe between peaks |
-| **Alternatives** | Plan B when the floor turns |
+| **Anchor** | Signature tracks the floor knows — space them in the peak |
+| **Bridge** | Planned pivots: key clash, BPM jump, energy boost, phase change |
+| **Groove** | Soft joins between peaks (same key, ±1, A↔B) |
+| **Alternatives** | Plan B beside the performance — not in playtime until you insert |
 
-Drag titles between the columns. On an alternative, **Into set** places it before or after a song in the playlist, and **Pin** brings it into the performance and keeps it through fit to slot and Different songs. **Plan B** asks for at least two fitting alternatives per phase. An alternative counts for the phase you pick under “Replaces”, as long as its energy fits the phase's band. Otherwise the reason is shown on the card. “Fill gaps” takes suggestions from your rekordbox library that fit the phase's tracks by energy, key and BPM.
+Drag cards between columns. Resize each column on its own bottom edge. Controls (**Expand all**, **Collapse all**, **Wide alternatives**) sit with the tiles. **Wide alternatives** gives that column most of the row and stacks Ersatz/Plan B under each card so titles stay readable.
+
+On an alternative, **Into set** places it before or after a song; **Pin** brings it into the performance through fit to slot and Different songs. **Plan B** wants at least two fitting alternatives per phase (phase under “Replaces”, energy in band). “Fill gaps” pulls library suggestions by energy, key and BPM.
 
 ## 4. Arc
 
@@ -105,7 +107,7 @@ Drag titles between the columns. On an alternative, **Into set** places it befor
 
 The arc shows how the phases fill the slot (active phase is highlighted; yellow means over the window) and how each track's energy sits against the phase's target band. Jumps of three levels or more are marked. Under each phase, one optional line says what that part is for — the placeholder reads “e.g. driving, 128”. An empty line is not stored. The set file stays version 1. The booth PDF prints the line on that phase's banner. Playing time follows the average blend time in the brief: 30 seconds, one minute, two minutes or four minutes off each track, and never less than 30 seconds of a short file. A marked join and its length replace that average on that track. Cue points and what you do live stay yours.
 
-**Key path** shows Camelot along the played order. Each card has a short relation badge (Same, ±1, Clash, …), the key, energy when known, and BPM. Drag cards to reorder; use **Sort** for the techniques above (including Perfect · pins only). Three stats with a **?** explain the numbers:
+**Key path** shows Camelot along the played order. Each card has a relation badge, the key, energy when known, BPM, round play (pause while playing), and a drag grip top-right. Drag to reorder; **Sort** for the techniques above. Three stats with a **?** explain the numbers:
 - **Keys set** — share of performance tracks with a Camelot key
 - **Mix score** — average of every transition (key and energy in equal parts, small BPM correction). Above ~75 % is smooth; below ~50 % often clashes
 - **Clashes** — transitions whose keys sit far apart on the Camelot wheel

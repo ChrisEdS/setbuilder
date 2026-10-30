@@ -4,7 +4,7 @@
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
 
-**Version 4.7.12** · Out of the playlist.
+**Version 4.7.13** · Out of the playlist.
 
 The stick is the material. You draw the arc, set the join, and hear if it holds.
 
@@ -21,8 +21,8 @@ Before the gig, the room is quiet. SETBUILDER is that room. You arrive with a re
 - 🔁 **Exchange from the same playlist.** Songs from the playlist pool that fit key, BPM and energy at this position — separate from general Replace.
 - 🎛️ **Every join with its own length.** Cut, blend, echo-out. The slot clock follows what you write on the handoff. “—” takes the blend time from the brief.
 - 🎲 **Another night from the same crate.** Different songs. Or the playlist, the collection, the history, once they are in the room. After loading a stick playlist, **From the playlist** stays available on the set.
-- 🛟 **Plan B in your pocket.** Roles and alternatives for the moment the floor changes its mind. Place one before or after a song, or pin it into the night.
-- 🎧 **Hear the handoff first.** A card you can drag and open up. Previous, this track, next. The same length as the setlist.
+- 🛟 **Plan B in your pocket.** Roles and alternatives for when the floor turns. **Wide alternatives** gives that column the stage; each column height is its own.
+- 🎧 **Hear the handoff first.** Preview from the setlist, Exchange, and the Key path. Previous, this track, next — same lengths as the set.
 - 📋 **Compact or Comfortable.** On the setlist you pick the row density. Compact keeps play, pin, exchange and remove on one line. **Details** opens only note, key, BPM, energy and blend; **Collapse** or choosing **Compact** again makes the row small.
 - 🔍 **Only what fits.** Key, BPM, and energy pull the library in close. Fits after ranks what can follow a chosen track, and the song you add lands right after it.
 - 📝 **A line for the phase.** On the arc, when you want it. Driving, 128. It travels onto the sheet for the booth.

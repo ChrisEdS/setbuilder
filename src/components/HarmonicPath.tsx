@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, type CSSProperties } from "react";
+import { ActionIcon } from "@/components/ActionIcon";
 import { Hint, Tip } from "@/components/Hint";
 import { SetSortMenu } from "@/components/SetTakeaway";
 import {
@@ -23,6 +24,11 @@ type Props = {
   pinnedCount?: number;
   /** Rendered inside the set workspace: no own heading. */
   embedded?: boolean;
+  onPlayTrack?: (track: SetTrack) => void;
+  /** Track currently focused for preview (green ring). */
+  activeId?: string | null;
+  /** Track with audio actually playing (pause icon). */
+  playingId?: string | null;
 };
 
 /** Renders `**bold**` markers of a message as <strong>. */
@@ -38,6 +44,9 @@ export function HarmonicPath({
   onReorder,
   pinnedCount = 0,
   embedded,
+  onPlayTrack,
+  activeId = null,
+  playingId = null,
 }: Props) {
   const { t } = useI18n();
   const performance = performanceTracks(tracks);
@@ -207,46 +216,87 @@ export function HarmonicPath({
                       : undefined
                   }
                 >
-                  <span
-                    className={
-                      index === 0
-                        ? "harm-badge start"
-                        : `harm-badge harm-${relation}`
-                    }
-                    title={
-                      index === 0
-                        ? t("analysis.harmonic.start")
-                        : `${relationLabel(relation, t)} — ${relationHint(relation, t)}`
-                    }
-                  >
-                    {index === 0
-                      ? t("analysis.harmonic.start.short")
-                      : relationShortLabel(relation, t)}
-                  </span>
-                  <Tip text={t("builder.row.dragTitle")}>
-                    <button
-                      type="button"
-                      className="drag-handle"
-                      draggable
-                      aria-label={t("builder.row.dragAria", { name: track.name })}
-                      onDragStart={(event) => {
-                        event.dataTransfer.setData("text/plain", track.id);
-                        event.dataTransfer.effectAllowed = "move";
-                        dragIdRef.current = track.id;
-                        const id = track.id;
-                        requestAnimationFrame(() => setDragId(id));
-                      }}
-                      onDragEnd={() => {
-                        dragIdRef.current = null;
-                        setDragId(null);
-                        setOverId(null);
-                      }}
+                  <div className="harm-node-top">
+                    <span
+                      className={
+                        index === 0
+                          ? "harm-badge start"
+                          : `harm-badge harm-${relation}`
+                      }
+                      title={
+                        index === 0
+                          ? t("analysis.harmonic.start")
+                          : `${relationLabel(relation, t)} — ${relationHint(relation, t)}`
+                      }
                     >
-                      <i />
-                      <i />
-                      <i />
-                    </button>
-                  </Tip>
+                      {index === 0
+                        ? t("analysis.harmonic.start.short")
+                        : relationShortLabel(relation, t)}
+                    </span>
+                    <div className="harm-node-tools">
+                      {onPlayTrack ? (
+                        <Tip
+                          text={
+                            playingId === track.id
+                              ? t("builder.row.pauseTip")
+                              : t("builder.row.playTip")
+                          }
+                        >
+                          <button
+                            type="button"
+                            className={
+                              activeId === track.id || playingId === track.id
+                                ? "icon-action is-playing"
+                                : "icon-action"
+                            }
+                            aria-label={
+                              playingId === track.id
+                                ? t("builder.row.pauseAria", {
+                                    name: track.name,
+                                  })
+                                : t("builder.row.playAria", {
+                                    name: track.name,
+                                  })
+                            }
+                            onClick={() => onPlayTrack(track)}
+                          >
+                            <ActionIcon
+                              name={playingId === track.id ? "pause" : "play"}
+                            />
+                          </button>
+                        </Tip>
+                      ) : null}
+                      <Tip text={t("builder.row.dragTitle")}>
+                        <button
+                          type="button"
+                          className="drag-handle"
+                          draggable
+                          aria-label={t("builder.row.dragAria", {
+                            name: track.name,
+                          })}
+                          onDragStart={(event) => {
+                            event.dataTransfer.setData("text/plain", track.id);
+                            event.dataTransfer.effectAllowed = "move";
+                            dragIdRef.current = track.id;
+                            const id = track.id;
+                            requestAnimationFrame(() => setDragId(id));
+                          }}
+                          onDragEnd={() => {
+                            dragIdRef.current = null;
+                            setDragId(null);
+                            setOverId(null);
+                          }}
+                        >
+                          <i />
+                          <i />
+                          <i />
+                          <i />
+                          <i />
+                          <i />
+                        </button>
+                      </Tip>
+                    </div>
+                  </div>
                   <div className="harm-node-head">
                     <strong
                       title={

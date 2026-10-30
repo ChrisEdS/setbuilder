@@ -122,7 +122,7 @@ const de = {
   // EnergyPath component
   "analysis.energyPath.title": "Energie-Verlauf",
   "analysis.energyPath.note":
-    "Energy Level 1–10 pro Track gegen das Zielband der Phase. Energie entscheidet, wie der Raum sich anfühlt. Der Key sorgt nur dafür, dass es nicht schief klingt.",
+    "Energy Level 1–10 pro Track gegen das Zielband der Phase.",
   "analysis.energyPath.statKnown": "Tracks mit Energie",
   "analysis.energyPath.statKnownHint":
     "Wie viele Performance-Tracks ein Energy Level 1–10 haben (Mixed In Key). Ohne Wert bleibt der Balken leer. In der Setliste setzen oder Tags neu laden.",
@@ -163,7 +163,7 @@ const de = {
   "analysis.harmonic.title": "Key-Verlauf",
   "analysis.harmonic.titleEmbedded": "Key-Verlauf",
   "analysis.harmonic.note":
-    "Camelot entlang der gespielten Reihenfolge. Karten ziehen zum Umsortieren; unter Sortieren: Perfekt, Harmonisch, Ein-Schritt, Energie, Doppel-Peak, Tempo, BPM-Kette, Camelot-Reise oder Wellen. Opener und Closer bleiben (Pin oder aktuelle Enden). Ein Clash vor dem Peak bleibt erlaubt.",
+    "Camelot entlang der gespielten Reihenfolge. Karten ziehen zum Umsortieren.",
   "analysis.harmonic.statKeys": "Keys gesetzt",
   "analysis.harmonic.statKeysHint":
     "Anteil der Performance-Tracks mit Camelot-Key. Ohne Key zählt der Übergang nicht im Mix-Score. In der Setliste setzen.",
@@ -316,7 +316,7 @@ const en: Record<keyof typeof de, string> = {
 
   "analysis.energyPath.title": "Energy path",
   "analysis.energyPath.note":
-    "Energy Level 1–10 per track against the target band of the phase. Energy decides how the room feels. The key only makes sure it doesn't sound off.",
+    "Energy Level 1–10 per track against the target band of the phase.",
   "analysis.energyPath.statKnown": "Tracks with energy",
   "analysis.energyPath.statKnownHint":
     "How many performance tracks have an Energy Level 1–10 (Mixed In Key). Without a value the bar stays empty. Set it in the setlist or reload tags.",
@@ -356,7 +356,7 @@ const en: Record<keyof typeof de, string> = {
   "analysis.harmonic.title": "Harmonic Path",
   "analysis.harmonic.titleEmbedded": "Key path",
   "analysis.harmonic.note":
-    "Camelot along the played order. Drag cards to reorder; under Sort: Perfect, Harmonic, One-step, Energy, Twin peak, Tempo, BPM chain, Camelot journey or Waves. Opener and closer stay (pin or current ends). A clash before the peak stays allowed.",
+    "Camelot along the played order. Drag cards to reorder.",
   "analysis.harmonic.statKeys": "Keys set",
   "analysis.harmonic.statKeysHint":
     "Share of performance tracks that have a Camelot key. Without a key the transition does not count in the mix score. Set it in the setlist.",

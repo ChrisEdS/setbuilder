@@ -5518,6 +5518,11 @@ export function SetBuilder() {
                 onReorder={reorderTrack}
                 pinnedCount={midPinnedCount}
                 embedded
+                onPlayTrack={toggleTrackPreview}
+                activeId={focusTrackId}
+                playingId={
+                  previewTransport.playing ? previewTransport.trackId : null
+                }
               />
             </div>
           ) : null}

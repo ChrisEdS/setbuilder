@@ -15,6 +15,8 @@ export const roleLabel = (t: Translate, id: TrackRole) =>
   t(`domain.role.${id}.label`);
 export const roleHint = (t: Translate, id: TrackRole) =>
   t(`domain.role.${id}.hint`);
+export const roleExplain = (t: Translate, id: TrackRole) =>
+  t(`domain.role.${id}.explain`);
 export const slotLabel = (t: Translate, id: SetSlotKind) =>
   t(`domain.slot.${id}.label`);
 export const slotHint = (t: Translate, id: SetSlotKind) =>

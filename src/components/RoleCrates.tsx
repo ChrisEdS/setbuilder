@@ -10,7 +10,6 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import {
-  camelotColor,
   mixJoin,
   phaseAccent,
   relationHint,
@@ -20,6 +19,7 @@ import {
   localizeNote,
   localizeWhy,
   phaseLabel,
+  roleExplain,
   roleHint,
   roleLabel,
   transitionHint,
@@ -219,14 +219,25 @@ export function RoleCrates({
   }, []);
 
   const setWide = useCallback((role: TrackRole | null) => {
-    updatePrefs((current) => ({
-      ...current,
-      wide: current.wide === role ? null : role,
-      open:
-        role == null
-          ? current.open
-          : { ...current.open, [role]: true },
-    }));
+    updatePrefs((current) => {
+      const nextWide = current.wide === role ? null : role;
+      const nextOpen =
+        role == null ? current.open : { ...current.open, [role]: true };
+      // Alternativen groß: give the column real width *and* a taller body.
+      const nextHeights =
+        nextWide === "safety"
+          ? {
+              ...current.heights,
+              safety: Math.max(current.heights.safety ?? MIN_HEIGHT, 320),
+            }
+          : current.heights;
+      return {
+        ...current,
+        wide: nextWide,
+        open: nextOpen,
+        heights: nextHeights,
+      };
+    });
   }, []);
 
   /** Open a column, bring it into view and flash it briefly so the jump is visible. */
@@ -267,12 +278,7 @@ export function RoleCrates({
     dragRef.current = {
       role,
       startY: event.clientY,
-      startH: Math.max(
-        MIN_HEIGHT,
-        ...TRACK_ROLES.filter((item) => prefs.open[item.id]).map(
-          (item) => prefs.heights[item.id],
-        ),
-      ),
+      startH: Math.max(MIN_HEIGHT, prefs.heights[role] ?? MIN_HEIGHT),
     };
     setOpen(role, true);
   }
@@ -285,11 +291,10 @@ export function RoleCrates({
       MAX_HEIGHT,
       Math.max(MIN_HEIGHT, drag.startH + delta),
     );
+    const role = drag.role;
     updatePrefs((current) => ({
       ...current,
-      heights: Object.fromEntries(
-        TRACK_ROLES.map((role) => [role.id, next]),
-      ) as Record<TrackRole, number>,
+      heights: { ...current.heights, [role]: next },
     }));
   }
 
@@ -312,46 +317,14 @@ export function RoleCrates({
   }, [tracks, focusedTrackId, t]);
 
   const openCount = TRACK_ROLES.filter((role) => prefs.open[role.id]).length;
-  // All columns share one row height so their bottoms always line up.
-  const rowHeight = Math.max(
-    MIN_HEIGHT,
-    ...TRACK_ROLES.filter((role) => prefs.open[role.id]).map(
-      (role) => prefs.heights[role.id],
-    ),
-  );
 
   return (
     <section className="role-crates" aria-label={t("crates.ariaLabel")}>
-      <div className="panel-head crate-toolbar-head">
-        <div>
-          {embedded ? null : <h2>{t("crates.title")}</h2>}
-          <p className="section-note">{t("crates.intro")}</p>
+      {embedded ? null : (
+        <div className="panel-head">
+          <h2>{t("crates.title")}</h2>
         </div>
-        <div className="crate-toolbar">
-          <Tip text={t("crates.expandAllTip")}>
-            <button type="button" className="btn ghost" onClick={expandAll}>
-              {t("crates.expandAll")}
-            </button>
-          </Tip>
-          <Tip text={t("crates.collapseAllTip")}>
-            <button type="button" className="btn ghost" onClick={collapseAll}>
-              {t("crates.collapseAll")}
-            </button>
-          </Tip>
-          <Tip text={t("crates.wideAlternativesTip")} end>
-            <button
-              type="button"
-              className={prefs.wide === "safety" ? "btn" : "btn ghost"}
-              onClick={() => {
-                setWide("safety");
-                setOpen("safety", true);
-              }}
-            >
-              {t("crates.wideAlternatives")}
-            </button>
-          </Tip>
-        </div>
-      </div>
+      )}
 
       <details className="explain-fold nested">
         <summary>
@@ -363,7 +336,7 @@ export function RoleCrates({
             {TRACK_ROLES.map((role) => (
               <li key={role.id}>
                 <strong>{roleLabel(t, role.id)}</strong>
-                <span>{roleHint(t, role.id)}</span>
+                <span>{roleExplain(t, role.id)}</span>
               </li>
             ))}
           </ul>
@@ -378,6 +351,35 @@ export function RoleCrates({
         onOpenLibrary={onOpenLibrary}
         onShow={() => revealRole("safety")}
       />
+
+      <div className="crate-board">
+        <div className="crate-tile-bar">
+          <p className="section-note">{t("crates.intro")}</p>
+          <div className="crate-toolbar">
+            <Tip text={t("crates.expandAllTip")}>
+              <button type="button" className="btn ghost" onClick={expandAll}>
+                {t("crates.expandAll")}
+              </button>
+            </Tip>
+            <Tip text={t("crates.collapseAllTip")}>
+              <button type="button" className="btn ghost" onClick={collapseAll}>
+                {t("crates.collapseAll")}
+              </button>
+            </Tip>
+            <Tip text={t("crates.wideAlternativesTip")} end>
+              <button
+                type="button"
+                className={prefs.wide === "safety" ? "btn" : "btn ghost"}
+                onClick={() => {
+                  setWide("safety");
+                  setOpen("safety", true);
+                }}
+              >
+                {t("crates.wideAlternatives")}
+              </button>
+            </Tip>
+          </div>
+        </div>
 
       <div
         className={
@@ -444,7 +446,10 @@ export function RoleCrates({
                 {
                   ["--crate-tint" as string]: accent.tint,
                   ["--crate-bar" as string]: accent.bar,
-                  ["--crate-h" as string]: `${rowHeight}px`,
+                  ["--crate-h" as string]: `${Math.max(
+                    MIN_HEIGHT,
+                    prefs.heights[role.id] ?? MIN_HEIGHT,
+                  )}px`,
                 } as CSSProperties
               }
             >
@@ -462,9 +467,11 @@ export function RoleCrates({
                   }}
                 >
                   <span className="crate-bar" aria-hidden />
-                  <strong aria-hidden="true">{roleName}</strong>
+                  <strong aria-hidden="true">
+                    {roleName}{" "}
+                    <em className="crate-col-count">({roleTracks.length})</em>
+                  </strong>
                   <span>{roleHint(t, role.id)}</span>
-                  <em>{roleTracks.length}</em>
                 </button>
                 <div className="crate-col-tools">
                   <button
@@ -513,7 +520,6 @@ export function RoleCrates({
                   ) : (
                     <ul className="crate-track-list">
                       {roleTracks.map((track) => {
-                        const keyColor = camelotColor(track.keyCamelot);
                         const phaseColor = phaseAccent(track.phase);
                         const focused = focusedTrackId === track.id;
                         return (
@@ -554,22 +560,24 @@ export function RoleCrates({
                                 onFocusTrack?.(track.id);
                               }}
                             >
-                              <TrackArt url={track.imageUrl} size={44} />
+                              <div className="crate-art-stack">
+                                <TrackArt url={track.imageUrl} size={40} />
+                                <em className="crate-set-num">
+                                  {positions.get(track.id) ?? "—"}
+                                </em>
+                              </div>
                               <div className="crate-card-body">
-                                <div className="crate-title-row">
-                                  <em className="crate-set-num">
-                                    {positions.get(track.id) ?? "—"}
-                                  </em>
+                                <div className="crate-copy">
                                   <strong title={track.name}>
                                     {track.name}
                                   </strong>
+                                  <span
+                                    className="artists"
+                                    title={artistLine(track.artists, t)}
+                                  >
+                                    {artistLine(track.artists, t)}
+                                  </span>
                                 </div>
-                                <span
-                                  className="artists"
-                                  title={artistLine(track.artists, t)}
-                                >
-                                  {artistLine(track.artists, t)}
-                                </span>
                                 <div className="crate-meta">
                                   <span
                                     className="pill phase-pill"
@@ -581,88 +589,83 @@ export function RoleCrates({
                                   >
                                     {phaseLabel(t, track.phase)}
                                   </span>
-                                  {track.durationMs > 0 ? (
-                                    <span className="pill">
-                                      {formatDuration(track.durationMs)}
-                                    </span>
-                                  ) : null}
-                                  {keyColor ? (
-                                    <span
-                                      className="pill key"
-                                      style={{
-                                        background: keyColor.bg,
-                                        color: keyColor.fg,
-                                        borderColor: keyColor.border,
-                                      }}
-                                      title={t("crates.card.camelotHint", {
-                                        key: track.keyCamelot,
-                                      })}
-                                    >
-                                      <i
-                                        className="key-dot"
-                                        style={{
-                                          background: keyColor.solid,
-                                        }}
-                                      />
-                                      {track.keyCamelot}
-                                    </span>
-                                  ) : (
-                                    <span
-                                      className="pill muted"
-                                      title={t("crates.card.keyUnsetTitle")}
-                                    >
-                                      {t("crates.card.keyUnset")}
-                                    </span>
-                                  )}
-                                  {track.bpm ? (
-                                    <span className="pill">{track.bpm}</span>
-                                  ) : null}
-                                  {track.energyLevel != null ? (
-                                    <span
-                                      className="pill"
-                                      title={t("crates.card.energyTitle", {
-                                        level: track.energyLevel,
-                                      })}
-                                    >
-                                      E{track.energyLevel}
-                                    </span>
-                                  ) : null}
+                                  <span
+                                    className="crate-meta-line"
+                                    title={
+                                      track.keyCamelot
+                                        ? t("crates.card.camelotHint", {
+                                            key: track.keyCamelot,
+                                          })
+                                        : t("crates.card.keyUnsetTitle")
+                                    }
+                                  >
+                                    {[
+                                      track.durationMs > 0
+                                        ? formatDuration(track.durationMs)
+                                        : "",
+                                      track.keyCamelot ||
+                                        t("crates.card.keyUnset"),
+                                      track.bpm || "",
+                                      track.energyLevel != null
+                                        ? `E${track.energyLevel}`
+                                        : "",
+                                    ]
+                                      .filter(Boolean)
+                                      .join(" · ")}
+                                  </span>
                                 </div>
-                                {track.why ? (
-                                  <p className="why" title={localizeWhy(track.why, t)}>
-                                    {localizeWhy(track.why, t)}
-                                  </p>
-                                ) : null}
-                                {track.role !== "safety" ? (
-                                  <SetJoin tracks={tracks} track={track} />
-                                ) : null}
-                                {track.safetyAlt ? (
-                                  <p
-                                    className="safety-line"
-                                    title={track.safetyAlt}
-                                  >
-                                    {t("crates.card.altFor", {
-                                      name: track.safetyAlt,
-                                    })}
-                                  </p>
-                                ) : null}
-                                {isSafety && localizeNote(track.note, t) ? (
-                                  <p
-                                    className="safety-line"
-                                    title={localizeNote(track.note, t)}
-                                  >
-                                    Cue: {localizeNote(track.note, t)}
-                                  </p>
-                                ) : null}
-                                {track.transition !== "unset" ? (
-                                  <p
-                                    className="transition-line"
-                                    title={transitionHint(t, track.transition)}
-                                  >
-                                    {t("analysis.note.transition", {
-                                      transition: transitionLabel(t, track.transition),
-                                    })}
-                                  </p>
+                                {track.why ||
+                                track.role !== "safety" ||
+                                track.safetyAlt ||
+                                (isSafety && localizeNote(track.note, t)) ||
+                                track.transition !== "unset" ? (
+                                  <div className="crate-foot">
+                                    {track.why ? (
+                                      <p
+                                        className="why"
+                                        title={localizeWhy(track.why, t)}
+                                      >
+                                        {localizeWhy(track.why, t)}
+                                      </p>
+                                    ) : null}
+                                    {track.role !== "safety" ? (
+                                      <SetJoin tracks={tracks} track={track} />
+                                    ) : null}
+                                    {track.safetyAlt ? (
+                                      <p
+                                        className="safety-line"
+                                        title={track.safetyAlt}
+                                      >
+                                        {t("crates.card.altFor", {
+                                          name: track.safetyAlt,
+                                        })}
+                                      </p>
+                                    ) : null}
+                                    {isSafety && localizeNote(track.note, t) ? (
+                                      <p
+                                        className="safety-line"
+                                        title={localizeNote(track.note, t)}
+                                      >
+                                        Cue: {localizeNote(track.note, t)}
+                                      </p>
+                                    ) : null}
+                                    {track.transition !== "unset" ? (
+                                      <p
+                                        className="transition-line"
+                                        title={transitionHint(
+                                          t,
+                                          track.transition,
+                                        )}
+                                      >
+                                        {t("analysis.note.transition", {
+                                          transition: transitionLabel(
+                                            t,
+                                            track.transition,
+                                          ),
+                                        })}
+                                      </p>
+                                    ) : null}
+                                  </div>
                                 ) : null}
                               </div>
                             </button>
@@ -767,6 +770,7 @@ export function RoleCrates({
             </div>
           );
         })}
+      </div>
       </div>
     </section>
   );

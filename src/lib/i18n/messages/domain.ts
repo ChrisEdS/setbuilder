@@ -23,12 +23,20 @@ const de = {
 
   "domain.role.anchor.label": "Anchor",
   "domain.role.anchor.hint": "Signature-Moment, Crowd-Connector",
+  "domain.role.anchor.explain":
+    "Die großen Signature-Tracks, die der Floor kennt. Im Peak mit Abstand setzen — hintereinander verbrennen sie, einzeln tragen sie den Slot.",
   "domain.role.bridge.label": "Bridge",
   "domain.role.bridge.hint": "Sorgfalt: Key-Clash, BPM- oder Energie-Sprung",
+  "domain.role.bridge.explain":
+    "Übergänge, die du bewusst planst: Key-Clash, BPM-Sprung, Energy Boost oder Phasenwechsel. Hier entscheidest du Cut, EQ oder Break — nicht Autopilot.",
   "domain.role.groove.label": "Groove",
   "domain.role.groove.hint": "Atem zwischen Peaks, weicher Mix",
+  "domain.role.groove.explain":
+    "Weiche Anschlüsse zwischen den Peaks. Gleicher Key, ±1 oder A↔B — der Atem, der den Floor hält, ohne zu pushen.",
   "domain.role.safety.label": "Alternativen",
   "domain.role.safety.hint": "Plan B, wenn der Floor dreht",
+  "domain.role.safety.explain":
+    "Ersatz neben der Performance. Zählt nicht in der Spieldauer, bis du ihn einsetzt — wenn der Floor dreht oder ein Anchor nicht trägt.",
 
   "domain.transition.unset": "—",
   "domain.transition.unset.hint": "Kein Übergang. Der Mix bleibt unmarkiert.",
@@ -90,12 +98,20 @@ const en: Record<keyof typeof de, string> = {
 
   "domain.role.anchor.label": "Anchor",
   "domain.role.anchor.hint": "Signature moment, crowd connector",
+  "domain.role.anchor.explain":
+    "The big signature tracks the floor knows. Space them in the peak — back to back they burn out, one by one they carry the slot.",
   "domain.role.bridge.label": "Bridge",
   "domain.role.bridge.hint": "Needs care: key clash, BPM or energy jump",
+  "domain.role.bridge.explain":
+    "Transitions you plan on purpose: key clash, BPM jump, energy boost or phase change. Here you choose cut, EQ or break — not autopilot.",
   "domain.role.groove.label": "Groove",
   "domain.role.groove.hint": "Breath between peaks, a smooth mix",
+  "domain.role.groove.explain":
+    "Soft joins between the peaks. Same key, ±1 or A↔B — the breath that holds the floor without pushing.",
   "domain.role.safety.label": "Alternatives",
   "domain.role.safety.hint": "Plan B when the floor turns",
+  "domain.role.safety.explain":
+    "Backups beside the performance. They don't count in playtime until you insert them — when the floor turns or an anchor doesn't land.",
 
   "domain.transition.unset": "—",
   "domain.transition.unset.hint": "No transition. The mix stays unmarked.",
