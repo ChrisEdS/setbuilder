@@ -2299,25 +2299,42 @@ export function SetBuilder() {
 
   /** Exchange drawer: preview a playlist-pool track that is not yet in the set. */
   function playPoolTrack(poolTrack: SourcePoolTrack) {
+    const wantPath = poolTrack.filePath?.trim() || "";
+    const wantTitle = poolTrack.name.trim().toLowerCase();
+    const wantArtist = (poolTrack.artists[0] || "").trim().toLowerCase();
+    // Pool rows sometimes lack a usable path; borrow the stick file from the library.
+    const fromLibrary = libraryRows.find((row) => {
+      const path = row.stick?.filePath?.trim();
+      if (!path) return false;
+      if (wantPath && path === wantPath) return true;
+      return (
+        row.title.trim().toLowerCase() === wantTitle &&
+        (row.artist || "").trim().toLowerCase() === wantArtist
+      );
+    });
+    const filePath = fromLibrary?.stick?.filePath?.trim() || wantPath;
+    const imageUrl =
+      poolTrack.imageUrl ||
+      (fromLibrary ? libraryTrackToSetTrack(fromLibrary, "open", "groove", t).imageUrl : null);
     playLibraryTrack({
       id: poolTrack.id,
       name: poolTrack.name,
       artists: poolTrack.artists,
-      album: poolTrack.album,
-      durationMs: poolTrack.durationMs,
-      uri: poolTrack.uri,
+      album: poolTrack.album || fromLibrary?.stick?.album || "",
+      durationMs: poolTrack.durationMs || fromLibrary?.stick?.durationMs || 0,
+      uri: filePath || poolTrack.uri,
       externalUrl: poolTrack.externalUrl,
-      imageUrl: poolTrack.imageUrl,
+      imageUrl,
       phase: "open",
       role: "groove",
       transition: "unset",
-      bpm: poolTrack.bpm || poolTrack.catalogBpm || "",
-      keyCamelot: poolTrack.keyCamelot || poolTrack.catalogKey || "",
-      energy: poolTrack.energy,
+      bpm: poolTrack.bpm || poolTrack.catalogBpm || fromLibrary?.bpm || "",
+      keyCamelot: poolTrack.keyCamelot || poolTrack.catalogKey || fromLibrary?.key || "",
+      energy: poolTrack.energy ?? fromLibrary?.energy,
       energyLevel: poolTrack.energyLevel,
       energySource: poolTrack.energySource,
-      filePath: poolTrack.filePath,
-      source: poolTrack.source,
+      filePath,
+      source: poolTrack.source ?? "rekordbox",
       note: "",
       comment: "",
       why: "",

@@ -5022,13 +5022,14 @@ button.drag-handle:active i {
   scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
 }
 
+/* 2-col row: play + title/meta | action(s). Meta lives under the title. */
 .replace-list li {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.85rem 1rem;
   align-items: center;
   min-width: 0;
-  padding: 0.45rem 0.15rem;
+  padding: 0.7rem 0.2rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
@@ -5038,7 +5039,7 @@ button.drag-handle:active i {
 
 .replace-list li.replace-kicker {
   display: block;
-  padding: 0.7rem 0.15rem 0.15rem;
+  padding: 0.85rem 0.2rem 0.25rem;
   border-bottom: 0;
   color: #8f8f8f;
   font-size: 0.75rem;
@@ -5052,7 +5053,7 @@ button.drag-handle:active i {
 .replace-copy {
   display: grid;
   grid-template-columns: var(--ui-control-height, 2.625rem) minmax(0, 1fr);
-  gap: 0.65rem;
+  gap: 0.75rem;
   align-items: center;
   min-width: 0;
 }
@@ -5063,6 +5064,13 @@ button.drag-handle:active i {
   justify-content: center;
   width: var(--ui-control-height, 2.625rem);
   height: var(--ui-control-height, 2.625rem);
+  flex: 0 0 auto;
+}
+
+.replace-copy > div {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
 }
 
 .replace-copy strong,
@@ -5074,25 +5082,39 @@ button.drag-handle:active i {
   white-space: nowrap;
 }
 
+.replace-copy strong {
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #fff;
+}
+
 .replace-copy span,
 .replace-origin {
   color: #8f8f8f;
   font-size: 0.75rem;
   font-style: normal;
+  line-height: 1.35;
 }
 
 .replace-meta {
+  display: block;
+  margin: 0.1rem 0 0;
   font-style: normal;
-  color: #d0d0d0;
-  font-size: 0.78rem;
+  color: #b8b8b8;
+  font-size: 0.72rem;
   font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  line-height: 1.35;
   white-space: nowrap;
-  justify-self: end;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .replace-list li .lib-add {
   width: auto;
   justify-self: end;
+  align-self: center;
 }
 
 .place-actions {
@@ -5111,7 +5133,11 @@ button.drag-handle:active i {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.65rem 1rem;
-  padding-top: 0.15rem;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0.75rem 0.85rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: #181818;
 }
 
 .replace-foot .replace-count {
@@ -9193,12 +9219,14 @@ details:not([open]) > .menu-panel {
 
   .replace-list li {
     grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 0.65rem 0.75rem;
   }
 
-  .replace-meta {
-    grid-column: 1;
-    justify-self: start;
-    padding-left: 44px;
+  .replace-list li .lib-add,
+  .place-actions {
+    justify-self: end;
+    align-self: start;
   }
 
   .replace-list .icon-action,

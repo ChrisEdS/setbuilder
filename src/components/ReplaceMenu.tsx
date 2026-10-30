@@ -45,6 +45,17 @@ function rowMeta(key: string, bpm: string, energy?: number): string {
   return [key || "—", bpm, energy != null ? `E${energy}` : ""].filter(Boolean).join(" · ");
 }
 
+/** True when the player can actually open audio (stick file or streaming link). */
+function poolTrackPlayable(track: SourcePoolTrack): boolean {
+  if (track.filePath?.trim()) return true;
+  const external = track.externalUrl?.trim() || "";
+  if (/^https?:\/\//i.test(external)) return true;
+  const uri = track.uri?.trim() || "";
+  if (/^https?:\/\//i.test(uri) || uri.startsWith("spotify:")) return true;
+  // `rekordbox:…` placeholders are not playable without a file path.
+  return false;
+}
+
 /** Same round play control as a setlist row. */
 function ReplacePlayButton({
   playing,
@@ -65,7 +76,8 @@ function ReplacePlayButton({
       : t("builder.row.playTip");
   return (
     <span className="replace-play">
-      <Tip text={tip} disabled={Boolean(disabled)}>
+      {/* Do not pass disabled to Tip — tip must stay hoverable with playNeedsStick. */}
+      <Tip text={tip}>
         <button
           type="button"
           className={playing ? "icon-action is-playing" : "icon-action"}
@@ -239,11 +251,11 @@ export function ReplaceMenu({
                       <div>
                         <strong>{option.title}</strong>
                         <span>{option.artist}</span>
+                        <em className="replace-meta">
+                          {rowMeta(track?.keyCamelot ?? "", track?.bpm ?? "", track?.energyLevel)}
+                        </em>
                       </div>
                     </div>
-                    <em className="replace-meta">
-                      {rowMeta(track?.keyCamelot ?? "", track?.bpm ?? "", track?.energyLevel)}
-                    </em>
                     <button
                       type="button"
                       className="btn ghost lib-add"
@@ -265,15 +277,14 @@ export function ReplaceMenu({
                   ) : null}
                   {visiblePool.map(({ track, detail }) => {
                     const inSet = byId.get(track.id);
-                    const canPlayPool = Boolean(
-                      track.filePath?.trim() || track.uri?.trim() || track.externalUrl?.trim(),
-                    );
+                    const canPlayPool = Boolean(inSet?.filePath?.trim()) || poolTrackPlayable(track);
                     return (
                       <li key={track.id} title={detail}>
                         <div className="replace-copy">
                           {onPlayTrack && inSet ? (
                             <ReplacePlayButton
                               playing={playingId === inSet.id}
+                              disabled={!inSet.filePath?.trim() && !poolTrackPlayable(track)}
                               playAria={t("crates.replace.playAria", { title: track.name })}
                               onPlay={() => onPlayTrack(inSet)}
                             />
@@ -292,15 +303,15 @@ export function ReplaceMenu({
                             <span>
                               {track.artists[0] || t("crates.replace.unknownArtist")}
                             </span>
+                            <em className="replace-meta">
+                              {rowMeta(
+                                track.keyCamelot || track.catalogKey || "",
+                                track.bpm || track.catalogBpm || "",
+                                track.energyLevel,
+                              )}
+                            </em>
                           </div>
                         </div>
-                        <em className="replace-meta">
-                          {rowMeta(
-                            track.keyCamelot || track.catalogKey || "",
-                            track.bpm || track.catalogBpm || "",
-                            track.energyLevel,
-                          )}
-                        </em>
                         <button
                           type="button"
                           className="btn ghost lib-add"
@@ -345,11 +356,11 @@ export function ReplaceMenu({
                             <strong>{row.title}</strong>
                             <span>{row.artist || t("crates.replace.unknownArtist")}</span>
                             {origin ? <span className="replace-origin">{origin}</span> : null}
+                            <em className="replace-meta">
+                              {rowMeta(row.key, row.bpm, row.energy)}
+                            </em>
                           </div>
                         </div>
-                        <em className="replace-meta">
-                          {rowMeta(row.key, row.bpm, row.energy)}
-                        </em>
                         <button
                           type="button"
                           className="btn ghost lib-add"
@@ -368,32 +379,32 @@ export function ReplaceMenu({
               )}
             </ul>
           )}
-          {pages > 1 ? (
-            <div className="replace-foot">
-              <Tip text={t("crates.replace.moreTip")}>
-                <button
-                  type="button"
-                  className="btn ghost library-more-btn"
-                  aria-label={t("crates.replace.moreAria", { page: page + 1, pages })}
-                  onClick={() => setPageIndex((current) => (current + 1) % pages)}
-                >
-                  <span className="library-more-icon" aria-hidden="true">
-                    ↻
-                  </span>
-                  {t("crates.replace.more")}
-                </button>
-              </Tip>
-              <span className="replace-count">
-                {t("crates.replace.count", {
-                  shown:
-                    page * PAGE +
-                    (playlistOnly ? visiblePool.length : visibleLibrary.length),
-                  total: playlistOnly ? fromPool.length : fromLibrary.length,
-                })}
-              </span>
-            </div>
-          ) : null}
         </div>
+        {pages > 1 ? (
+          <div className="replace-foot">
+            <Tip text={t("crates.replace.moreTip")}>
+              <button
+                type="button"
+                className="btn ghost library-more-btn"
+                aria-label={t("crates.replace.moreAria", { page: page + 1, pages })}
+                onClick={() => setPageIndex((current) => (current + 1) % pages)}
+              >
+                <span className="library-more-icon" aria-hidden="true">
+                  ↻
+                </span>
+                {t("crates.replace.more")}
+              </button>
+            </Tip>
+            <span className="replace-count">
+              {t("crates.replace.count", {
+                shown:
+                  page * PAGE +
+                  (playlistOnly ? visiblePool.length : visibleLibrary.length),
+                total: playlistOnly ? fromPool.length : fromLibrary.length,
+              })}
+            </span>
+          </div>
+        ) : null}
       </div>
     </div>,
     document.body,

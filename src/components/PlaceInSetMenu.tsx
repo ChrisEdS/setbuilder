@@ -107,9 +107,9 @@ export function PlaceInSetMenu({ tracks, altId, onPlace, onClose }: Props) {
                         {index + 1}. {track.name}
                       </strong>
                       <span>{track.artists.join(", ") || t("common.unknown")}</span>
+                      <em className="replace-meta">{trackMeta(track)}</em>
                     </div>
                   </div>
-                  <em className="replace-meta">{trackMeta(track)}</em>
                   <div className="place-actions">
                     <Tip text={t("builder.place.beforeTip")}>
                       <button
