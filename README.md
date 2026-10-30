@@ -4,7 +4,7 @@
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
 
-**Version 4.7.9** · Out of the playlist.
+**Version 4.7.10** · Out of the playlist.
 
 The stick is the material. You draw the arc, set the join, and hear if it holds.
 
@@ -31,7 +31,7 @@ Before the gig, the room is quiet. SETBUILDER is that room. You arrive with a re
 ## Four steps
 
 1. 📝 **Brief** — title, the minutes of the slot, how close the joins should sit. The examples under Set info are placeholders. Lengthen or shorten the slot — once the minutes settle, the same fit as **Fit to slot** runs.
-2. 🔌 **Load** — connect the stick. A collection can fill in the keys.
+2. 🔌 **Load** — connect the stick (a remembered stick brings library and playlists back when access is still granted). A collection can fill in the keys.
 3. 🎛️ **Build** — a playlist, your own songs, or both. Draw the crate in close, use Fits after when the next song should land right behind one you chose, and set the phase, the role, and every join. Exchange reaches into the same playlist pool.
 4. 🎒 **Export** — the stick for the player, the sheet for the booth, a file for home. Known energy goes on the sheet and into the copied text.
 

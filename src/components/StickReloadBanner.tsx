@@ -8,6 +8,7 @@ import {
   mediaPathsForDraft,
   readRekordboxStick,
   stickLibraryRows,
+  type RekordboxStickSet,
 } from "@/lib/rekordbox-stick";
 import { rememberStickFiles, stickFileCount } from "@/lib/stick-audio";
 import { enqueueWork } from "@/lib/work-queue";
@@ -30,7 +31,7 @@ export function StickReloadBanner({
   onLoaded,
 }: {
   draft: SetDraft;
-  onLoaded: (rows: LibraryRow[]) => void;
+  onLoaded: (rows: LibraryRow[], sets: RekordboxStickSet[]) => void;
 }) {
   const { t } = useI18n();
   const needed = draftNeedsStickFiles(draft);
@@ -66,10 +67,10 @@ export function StickReloadBanner({
 
   if (!needed || stickFileCount() > 0 || dismissed) return null;
 
-  async function finish(rows: LibraryRow[]) {
+  async function finish(rows: LibraryRow[], sets: RekordboxStickSet[]) {
     window.localStorage.removeItem(DISMISSED_KEY);
     setDismissed(false);
-    onLoaded(rows);
+    onLoaded(rows, sets);
   }
 
   async function reconnect() {
@@ -85,7 +86,7 @@ export function StickReloadBanner({
       await enqueueWork(async () => {
         const stick = await readStickFromHandle(handle);
         await hydrateStickMedia(handle, mediaPathsForDraft(draft, stick.library));
-        await finish(stickLibraryRows(stick.library, stick.sets));
+        await finish(stickLibraryRows(stick.library, stick.sets), stick.sets);
       }, {
         operation: "stick-reconnect",
         key: signature,
@@ -140,7 +141,7 @@ export function StickReloadBanner({
                 )
                   .then((stick) => {
                     rememberStickFiles(files);
-                    return finish(stickLibraryRows(stick.library, stick.sets));
+                    return finish(stickLibraryRows(stick.library, stick.sets), stick.sets);
                   })
                   .catch((caught) => setError(errorText(caught, t)))
                   .finally(() => setBusy(false));

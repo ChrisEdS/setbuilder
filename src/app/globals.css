@@ -4607,9 +4607,39 @@ button.drag-handle:active i {
   height: 0.78rem;
 }
 
-.source-badge.source-rekordbox {
+/* Logo marks are always transparent + brand glyph color.
+   .source-* alone paints colored pills (#121212 text) — that must never win on badges. */
+.source-badge.source-spotify,
+.source-badge.source-tidal,
+.source-badge.source-soundcloud,
+.source-badge.source-beatport,
+.source-badge.source-rekordbox,
+.source-badge.source-manual {
   background: transparent !important;
+}
+
+.source-badge.source-spotify {
+  color: #1ed760 !important;
+}
+
+.source-badge.source-tidal {
+  color: #00ffff !important;
+}
+
+.source-badge.source-soundcloud {
+  color: #ff5500 !important;
+}
+
+.source-badge.source-beatport {
+  color: #94d500 !important;
+}
+
+.source-badge.source-rekordbox {
   color: #c8143c !important;
+}
+
+.source-badge.source-manual {
+  color: #9a9a9a !important;
 }
 
 .manual-meta .tip:has(> .source-badge),
@@ -4641,18 +4671,6 @@ button.drag-handle:active i {
   width: 1.2rem;
   height: 1.2rem;
 }
-
-.manual-title-line .source-badge.source-rekordbox,
-.manual-row.is-compact .source-badge.source-rekordbox,
-.anchor-pills .source-badge.source-rekordbox {
-  color: #c8143c !important;
-}
-
-.manual-row.is-compact .source-badge.source-spotify { color: #1ed760 !important; }
-.manual-row.is-compact .source-badge.source-tidal { color: #00ffff !important; }
-.manual-row.is-compact .source-badge.source-soundcloud { color: #ff5500 !important; }
-.manual-row.is-compact .source-badge.source-beatport { color: #94d500 !important; }
-.manual-row.is-compact .source-badge.source-manual { color: #9a9a9a !important; }
 
 .manual-row.is-compact .source-mark {
   display: none;
@@ -6850,6 +6868,12 @@ body {
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
 }
 
+/* `display: grid` above overrides the UA rule that hides closed <details>
+   children, so panels stay hit-testable over Assign roles / Sort / etc. */
+details:not([open]) > .menu-panel {
+  display: none;
+}
+
 .menu-group {
   margin: 0.45rem 0.55rem 0.15rem;
   padding: 0;
@@ -7904,7 +7928,11 @@ body {
   color: var(--muted);
   font-size: 0.9rem;
   line-height: 1.35;
-  white-space: nowrap;
+  white-space: normal;
+}
+.stick-reload .set-undo-track {
+  color: #fff;
+  font-weight: 650;
 }
 .stick-reload .stick-warn {
   margin-top: 0.5rem;

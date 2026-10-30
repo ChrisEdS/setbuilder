@@ -760,7 +760,10 @@ export function LibraryPanel({
       {libraryRows.length === 0 ? (
         <StickReloadBanner
           draft={draft}
-          onLoaded={(rows) => setLibraryRows(rows)}
+          onLoaded={(rows, sets) => {
+            setLibraryRows(rows);
+            onStickSets?.(sets);
+          }}
         />
       ) : null}
 

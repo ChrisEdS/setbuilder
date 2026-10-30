@@ -49,10 +49,12 @@ export function PlaylistLoadDialog({
       <h2 id="playlist-load-title">
         {t("builder.playlist.confirmTitle", { name: shownName })}
       </h2>
-      <p id="playlist-load-body" className="modal-info">
-        {t("builder.playlist.confirmBody")}
-      </p>
-      <p className="modal-next">{t("builder.playlist.confirmNext")}</p>
+      <div className="stick-write-copy">
+        <p id="playlist-load-body" className="modal-status">
+          {t("builder.playlist.confirmBody")}
+        </p>
+        <p className="modal-next">{t("builder.playlist.confirmNext")}</p>
+      </div>
       <div className="stick-actions">
         <button type="button" className="btn danger" onClick={onReplace}>
           {t("builder.playlist.replace")}

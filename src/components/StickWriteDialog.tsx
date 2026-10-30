@@ -251,19 +251,21 @@ export function StickWriteDialog({
 
       {step.kind === "idle" || step.kind === "error" ? (
         <>
-          <p className="modal-status">{t("library.stickWrite.intro")}</p>
-          <p className="modal-next">{t("library.stickWrite.introNext")}</p>
-          <p className="modal-info">{t("library.stickWrite.introInfo")}</p>
-          <details className="stick-safety-fold">
-            <summary>{t("library.stickWrite.safetyMore")}</summary>
-            <p className="stick-safety modal-info">{t("library.stickWrite.safetyDetails")}</p>
-          </details>
-          {step.kind === "error" ? (
-            <p className="stick-warn" role="alert">
-              {step.text}
-            </p>
-          ) : null}
-          <p className="modal-info stick-hint">{t("library.stickWrite.chooseHint")}</p>
+          <div className="stick-write-copy">
+            <p className="modal-status">{t("library.stickWrite.intro")}</p>
+            <p className="modal-next">{t("library.stickWrite.introNext")}</p>
+            <p className="modal-info">{t("library.stickWrite.introInfo")}</p>
+            <details className="stick-safety-fold">
+              <summary>{t("library.stickWrite.safetyMore")}</summary>
+              <p className="stick-safety modal-info">{t("library.stickWrite.safetyDetails")}</p>
+            </details>
+            {step.kind === "error" ? (
+              <p className="stick-warn" role="alert">
+                {step.text}
+              </p>
+            ) : null}
+            <p className="modal-info stick-hint">{t("library.stickWrite.chooseHint")}</p>
+          </div>
           <div className="stick-actions">
             <button type="button" className="btn ghost" onClick={onClose}>
               {t("library.stickWrite.close")}
@@ -576,10 +578,12 @@ export function StickWriteDialog({
 
       {step.kind === "restored" ? (
         <>
-          <p className="modal-status" role="status">
-            {t("library.stickWrite.restoreDone", { backup: step.backup })}
-          </p>
-          <p className="modal-next">{t("library.stickWrite.restoreNext")}</p>
+          <div className="stick-write-copy">
+            <p className="modal-status" role="status">
+              {t("library.stickWrite.restoreDone", { backup: step.backup })}
+            </p>
+            <p className="modal-next">{t("library.stickWrite.restoreNext")}</p>
+          </div>
           <div className="stick-actions">
             <button type="button" className="btn" onClick={onClose}>
               {t("library.stickWrite.close")}

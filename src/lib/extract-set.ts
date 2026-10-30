@@ -971,8 +971,8 @@ export type TrimRestore = {
   /** Index in the full tracks array (performance + Alternatives) for undo splice. */
   index: number;
   /**
-   * 0-based place in the performance only, when demoted from a playing slot.
-   * Missing for fill snapshots (those undo back to Alternatives, not a set place).
+   * 0-based place in the performance only.
+   * Trim: where it stood before demotion. Fill: where it landed after the fill.
    */
   place?: number;
   why?: string;
@@ -1585,6 +1585,11 @@ export function fillWithBestMatches(
 
   if (!added) return idleResult("empty");
   const finished = applySetAnchors(distributeRoles(next, t));
+  const performancePlaces = new Map(
+    finished.tracks
+      .filter((track) => track.role !== "safety")
+      .map((track, place) => [track.id, place] as const),
+  );
   return {
     draft: finished,
     kept: finished.tracks.filter((track) => track.role !== "safety").length,
@@ -1592,7 +1597,10 @@ export function fillWithBestMatches(
     added,
     beforeMs,
     afterMs: playingMs(finished),
-    restore,
+    restore: restore.map((item) => {
+      const place = performancePlaces.get(item.id);
+      return place === undefined ? item : { ...item, place };
+    }),
     idle: null,
   };
 }

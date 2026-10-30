@@ -441,6 +441,11 @@ test("fill with best matches prefers a closer key, BPM and energy fit", () => {
   assert.equal(perf[0].id, "t0");
   assert.equal(perf[perf.length - 1].id, "t2");
   assert.ok(perf.some((track: SetTrack) => track.id === "t1" && track.role !== "safety"));
+  const bestPlace = perf.findIndex((track: SetTrack) => track.id === "poolBest");
+  assert.ok(bestPlace >= 0);
+  assert.equal(filled.restore.length, 1);
+  assert.equal(filled.restore[0]?.id, "poolBest");
+  assert.equal(filled.restore[0]?.place, bestPlace);
   assert.equal(
     filled.draft.tracks.find((track: SetTrack) => track.id === "t9")?.role,
     "safety",

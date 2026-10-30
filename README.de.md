@@ -4,7 +4,7 @@
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
 
-**Version 4.7.9** · Raus aus der Playlist.
+**Version 4.7.10** · Raus aus der Playlist.
 
 Der Stick ist das Material. Du ziehst den Bogen, setzt den Anschluss und hörst, ob er trägt.
 
@@ -31,7 +31,7 @@ Vor dem Gig ist es still. SETBUILDER ist dieser Raum. Du kommst mit einem rekord
 ## Vier Schritte
 
 1. 📝 **Brief** — Titel, die Minuten des Slots, wie dicht die Übergänge sein sollen. Die Beispiele unter Set-Info sind Platzhalter. Den Slot länger oder kürzer machen — sobald die Minuten stehen, läuft derselbe Fit wie **Auf Slot setzen**.
-2. 🔌 **Laden** — Stick verbinden. Eine Collection darf die Keys nachreichen.
+2. 🔌 **Laden** — Stick verbinden (ein erinnerter Stick bringt Bibliothek und Playlists zurück, solange der Zugriff gilt). Eine Collection darf die Keys nachreichen.
 3. 🎛️ **Bauen** — Playlist, eigene Songs oder beides. Eng die Kiste ein, nutz Passt zu, wenn der nächste Song direkt hinter einem gewählten landen soll, und setz Phase, Rolle und jeden Anschluss. Tauschen greift in denselben Playlist-Pool.
 4. 🎒 **Exportieren** — Stick für den Player, Zettel für die Kabine, Datei für zu Hause. Bekannte Energie steht auf dem Zettel und im kopierten Text.
 

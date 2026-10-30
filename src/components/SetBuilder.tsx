@@ -826,7 +826,9 @@ export function SetBuilder() {
           finish(null);
           return;
         }
+        // Library + playlists together — otherwise Build stays empty until Choose.
         setLibraryRows(stickLibraryRows(stick.library, stick.sets));
+        setStickSets(stick.sets);
         await mergeStickFilesIntoDraft(stick.library, (done, total) => {
           if (!cancelled && stickJob.current === job && total > 0) {
             setStatus(t("builder.stick.tags", { done, total }));
@@ -1966,6 +1968,7 @@ export function SetBuilder() {
         const stick = await readStickFromHandle(handle);
         await hydrateStickMedia(handle, mediaPathsForDraft(draft, stick.library));
         setLibraryRows(stickLibraryRows(stick.library, stick.sets));
+        setStickSets(stick.sets);
         stickSeenAliveThisSession.current = true;
         stickGoneStreak.current = 0;
         setStickReady(true);
@@ -1986,6 +1989,7 @@ export function SetBuilder() {
         const stick = await readRekordboxStick(files);
         rememberStickFiles(files);
         setLibraryRows(stickLibraryRows(stick.library, stick.sets));
+        setStickSets(stick.sets);
         stickSeenAliveThisSession.current = true;
         stickGoneStreak.current = 0;
         setStickReady(true);
@@ -3573,10 +3577,10 @@ export function SetBuilder() {
       />
 
       {replaceUndo ? (
-        <div className="stick-reload" role="status">
-          <div>
-            <strong>{t("builder.playlist.replacedTitle")}</strong>
-            <p>{t("builder.playlist.replacedBody")}</p>
+        <div className="set-undo stick-reload" role="status">
+          <div className="stick-reload-copy">
+            <strong className="set-undo-title">{t("builder.playlist.replacedTitle")}</strong>
+            <p className="set-undo-meta">{t("builder.playlist.replacedBody")}</p>
           </div>
           <div className="stick-reload-actions">
             <button
@@ -4212,10 +4216,10 @@ export function SetBuilder() {
           <FieldNoticeView notice={localNotice("export")} />
 
           {sortUndo ? (
-            <div className="stick-reload" role="status">
-              <div>
-                <strong>{t("builder.sort.undoTitle")}</strong>
-                <p>{t("builder.sort.undoBody")}</p>
+            <div className="set-undo stick-reload" role="status">
+              <div className="stick-reload-copy">
+                <strong className="set-undo-title">{t("builder.sort.undoTitle")}</strong>
+                <p className="set-undo-meta">{t("builder.sort.undoBody")}</p>
               </div>
               <div className="stick-reload-actions">
                 <button type="button" className="btn" onClick={undoSort}>
@@ -4233,36 +4237,66 @@ export function SetBuilder() {
           ) : null}
 
           {trimUndoLive.length > 0 || fillUndoLive.length > 0 ? (
-            <div className="stick-reload" role="status">
-              <p>
-                {trimUndoLive.length === 1
-                  ? t("builder.trim.undoBody", {
-                      name:
-                        draft.tracks.find((track) => track.id === trimUndoLive[0].id)
-                          ?.name ?? trimUndoLive[0].id,
-                      position:
-                        (trimUndoLive[0].place ?? trimUndoLive[0].index) + 1,
-                    })
-                  : trimUndoLive.length > 1
-                    ? t("builder.trim.undoBodyMany", {
-                        details: trimUndoLive
-                          .map((item) =>
-                            t("builder.trim.undoDetail", {
-                              name:
-                                draft.tracks.find((track) => track.id === item.id)
-                                  ?.name ?? item.id,
-                              position: (item.place ?? item.index) + 1,
-                            }),
-                          )
-                          .join(", "),
-                      })
-                    : t("builder.trim.fillUndoBody", {
-                        count: fillUndoLive.length,
-                      })}
-              </p>
+            <div className="set-undo stick-reload" role="status">
+              <div className="stick-reload-copy">
+                {(() => {
+                  const items = trimUndoLive.length ? trimUndoLive : fillUndoLive;
+                  const isFill = !trimUndoLive.length;
+                  const trackName = (id: string) =>
+                    draft.tracks.find((track) => track.id === id)?.name ?? id;
+                  const placeOf = (item: (typeof items)[number]) => {
+                    if (typeof item.place === "number" && item.place >= 0) return item.place + 1;
+                    if (!isFill) return item.index + 1;
+                    const idx = draft.tracks
+                      .filter((track) => track.role !== "safety")
+                      .findIndex((track) => track.id === item.id);
+                    return idx >= 0 ? idx + 1 : 0;
+                  };
+                  if (items.length === 1) {
+                    const item = items[0];
+                    return (
+                      <>
+                        <strong className="set-undo-title">
+                          {t(isFill ? "builder.trim.fillUndoTitle" : "builder.trim.undoTitle")}
+                        </strong>
+                        <p className="set-undo-line">
+                          <span className="set-undo-track">{trackName(item.id)}</span>
+                          <span className="set-undo-place">
+                            {t(isFill ? "builder.trim.fillUndoPlace" : "builder.trim.undoPlace", {
+                              position: placeOf(item),
+                            })}
+                          </span>
+                        </p>
+                      </>
+                    );
+                  }
+                  return (
+                    <>
+                      <strong className="set-undo-title">
+                        {t(isFill ? "builder.trim.fillUndoBodyMany" : "builder.trim.undoBodyMany", {
+                          count: items.length,
+                        })}
+                      </strong>
+                      <ul className="set-undo-list">
+                        {items.map((item) => (
+                          <li key={item.id}>
+                            <span className="set-undo-track">{trackName(item.id)}</span>
+                            <span className="set-undo-place">
+                              {t(
+                                isFill ? "builder.trim.fillUndoPlace" : "builder.trim.undoPlace",
+                                { position: placeOf(item) },
+                              )}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  );
+                })()}
+              </div>
               <div className="stick-reload-actions">
                 <button type="button" className="btn" onClick={undoTrim}>
-                  {t("builder.trim.undo")}
+                  {t(trimUndoLive.length ? "builder.trim.undo" : "builder.trim.fillUndo")}
                 </button>
                 <button
                   type="button"

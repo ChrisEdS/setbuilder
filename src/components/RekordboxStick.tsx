@@ -231,9 +231,13 @@ export function RekordboxStick({
   const dirInput = useRef<HTMLInputElement>(null);
   const chooseImpl = useRef<() => void>(() => {});
   const softReconnectImpl = useRef<() => Promise<boolean>>(async () => false);
+  const onSetsRef = useRef(onSets);
+  const onIndexedRef = useRef(onIndexed);
+  onSetsRef.current = onSets;
+  onIndexedRef.current = onIndexed;
 
   function publishSets(next: RekordboxStickSet[]) {
-    onSets?.(next);
+    onSetsRef.current?.(next);
   }
   const loadGen = useRef(0);
 
@@ -273,9 +277,11 @@ export function RekordboxStick({
       if (!handle || !(await stickPermission(handle, "read", false))) return;
       try {
         await applyHandle(handle);
-      } catch {
-        setHealthRoot(handle);
-        await refreshHealth({ handle, files: null });
+      } catch (caught) {
+        // Do not paint READY from a health-only inspect — that makes the stick
+        // look connected while playlists stay empty until Choose.
+        setRememberedStick(true);
+        setError(isPickerBlocked(caught) ? { kind: "blocked" } : { kind: "read", error: caught });
       }
     })();
     // Once: remembered stick, no prompt.
@@ -297,27 +303,28 @@ export function RekordboxStick({
   }
 
   async function applyHandle(handle: DirLike) {
-    await enqueueWork(async () => {
-      setHealthRoot(handle);
-      setHadStickThisSession(true);
-      setHealthFiles(null);
-      setRememberedStick(true);
-      const read = await readStickFromHandle(handle);
-      setLabel(read.label);
-      publishSets(read.sets);
-      onIndexed(stickLibraryRows(read.library, read.sets));
-      if (!read.sets.length) setError({ kind: "noSets" });
-        try {
-          setHealth(await inspectStick(handle, pdbSummaryOf(read.library.length, read.sets)));
-        } catch {
-          setHealth(null);
-        }
-    }, {
+    // Read inside the queue (deduped). Apply UI after await so every caller
+    // — mount restore, soft reconnect, remount — hydrates its own state.
+    // (Updates inside the worker only ran for the first enqueuer's closure.)
+    const read = await enqueueWork(() => readStickFromHandle(handle), {
       operation: "stick-read",
       key: handle.name || "persisted-stick",
       label: t("builder.work.stickReconnect"),
       target: handle.name,
     });
+    setHealthRoot(handle);
+    setHadStickThisSession(true);
+    setHealthFiles(null);
+    setRememberedStick(true);
+    setLabel(read.label);
+    publishSets(read.sets);
+    onIndexedRef.current?.(stickLibraryRows(read.library, read.sets));
+    if (!read.sets.length) setError({ kind: "noSets" });
+    try {
+      setHealth(await inspectStick(handle, pdbSummaryOf(read.library.length, read.sets)));
+    } catch {
+      setHealth(null);
+    }
   }
 
   /**
