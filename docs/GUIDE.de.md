@@ -32,13 +32,13 @@ Oben der Brief. **Titel**, **Slot-Dauer (Min)** und **Blend-Zeit (Durchschnitt)*
 - **Zusammenführen** behält die Setliste und hängt nur Tracks an, die noch fehlen.
 - **Abbrechen** ändert nichts.
 
-Die Setliste zeigt Phase, Rolle und den Anschluss zum Vorgänger. **Setliste**, **Rollen** und **Bogen** wechseln die Ansicht. **Comfortabel** zeigt die Icon-Zeile, **Kompakt** hält sie schmal. Die Reihenfolge änderst du am Griff oder mit den Pfeilen. Play öffnet den Player. **Auf Slot setzen** kürzt, wenn das Set über dem Slot liegt. **Mit Matches füllen** legt passende Tracks nach, wenn es zu kurz ist.
+Die Setliste zeigt Phase, Rolle und den Anschluss zum Vorgänger. **Setliste**, **Rollen** und **Bogen** wechseln die Ansicht. **Comfortabel** zeigt die Icon-Zeile, **Kompakt** hält sie schmal. Die Reihenfolge änderst du am Griff oder mit den Pfeilen. **Behalten** lässt den Track im Set, Sortieren darf ihn verschieben. **Genau hier** hält den Slot. Play öffnet den Player, und die spielende Zeile bleibt daneben sichtbar. **Auf Slot setzen** kürzt, wenn das Set über dem Slot liegt. **Mit Matches füllen** legt passende Tracks nach, wenn es zu kurz ist.
 
 ## 3. Im Deck hören
 
 ![Player mit Wellenform, Zoom 2×, Q und Cues A–H](screenshots/de/03-deck.png)
 
-Der Player ist die Karte über der Setliste. An der rechten Kante breiter ziehen, an der unteren höher. Die Wellenform geht über die Breite der Karte. Oben die Übersicht, darunter die große Welle. **+** zoomt (im Bild **2×**), die Übersicht markiert das Fenster, der Playhead bleibt.
+Der Player ist die Karte über der Setliste. An der rechten Kante breiter ziehen, an der unteren höher. Die Wellenform geht über die Breite der Karte. Oben die Übersicht, darunter die große Welle. **+** zoomt (im Bild **2×**), die Übersicht markiert das Fenster, der Playhead bleibt. Die Setliste hält die spielende Zeile neben dem Player im Blick, auch wenn der Player sich danach verschiebt oder wächst. Das Beatgrid der Playlist wird im Hintergrund gelesen, bevor der Player aufgeht, und die erste Lesung zeigt, wie weit sie ist.
 
 **Q** quantisiert. Ein Hot Cue **A–H** landet dann auf dem nächsten Downbeat des Rekordbox-Beatgrids. Aus macht **Q** die Zeit, die du gesetzt hast. **−5** und **+5** schieben das Grid um 5 ms. **1** legt den nächsten Downbeat auf den Playhead. Phrasenbänder kommen aus der rekordbox-Analyse und wandern mit, wenn du das Grid schiebst. Cues und die Verschiebung bleiben im Player. Der CDJ sieht sie erst, wenn sie in der Analyse-Datei auf dem Stick stehen.
 

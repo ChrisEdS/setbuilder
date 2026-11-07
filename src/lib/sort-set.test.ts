@@ -451,8 +451,8 @@ test("reorderDraft perfectPins keeps non-pins, ends, alts and pin ids", () => {
   const performance = next.tracks
     .filter((item) => item.role !== "safety")
     .map((item) => item.id);
-  // Pin slots stay at indexes 1 and 3; mid stays between them.
-  assert.deepEqual(performance, ["open", "pin8", "mid", "pin9", "close"]);
+  // A pin is this exact slot. This sort must not swap pin9 and pin8.
+  assert.deepEqual(performance, ["open", "pin9", "mid", "pin8", "close"]);
   assert.equal(next.tracks.find((item) => item.id === "alt")?.role, "safety");
   assert.equal(next.tracks.find((item) => item.id === "ban")?.role, "safety");
   assert.equal(alternativesPulledIntoPerformance(draft, next), 0);
@@ -460,6 +460,129 @@ test("reorderDraft perfectPins keeps non-pins, ends, alts and pin ids", () => {
   assert.equal(next.closerId, "close");
   assert.deepEqual(next.pinnedIds, ["pin9", "pin8"]);
   assert.deepEqual(next.excludedIds, ["ban"]);
+});
+
+test("a kept track may leave its slot and a pin stays in place", () => {
+  const row = (id: string, energyLevel: number) =>
+    ({
+      id,
+      name: id,
+      artists: ["X"],
+      album: "",
+      durationMs: 180_000,
+      uri: "",
+      externalUrl: "",
+      imageUrl: null,
+      phase: "peak" as const,
+      role: "groove" as const,
+      transition: "unset" as const,
+      bpm: "124",
+      keyCamelot: "8A",
+      energyLevel,
+      note: "",
+      why: "",
+      safetyAlt: "",
+    });
+  const draft = {
+    ...DEFAULT_SET,
+    openerId: "a",
+    closerId: "e",
+    keptIds: ["b"],
+    pinnedIds: ["c"],
+    tracks: [row("a", 3), row("b", 9), row("c", 4), row("d", 6), row("e", 2)],
+  };
+  const next = reorderDraft(draft, "energy");
+  const ids = next.tracks.filter((item) => item.role !== "safety").map((item) => item.id);
+  assert.equal(ids[0], "a");
+  assert.equal(ids.at(-1), "e");
+  assert.equal(ids.indexOf("c"), 2);
+  assert.notEqual(ids.indexOf("b"), 1);
+  assert.ok(ids.includes("b"));
+  assert.equal(next.tracks.find((item) => item.id === "b")?.role, "groove");
+  assert.deepEqual(next.keptIds, ["b"]);
+  assert.deepEqual(next.pinnedIds, ["c"]);
+
+  const pinned = reorderDraft(
+    { ...draft, keptIds: undefined, pinnedIds: ["b", "c"] },
+    "perfectPins",
+  );
+  assert.deepEqual(
+    pinned.tracks.filter((item) => item.role !== "safety").map((item) => item.id),
+    ["a", "b", "c", "d", "e"],
+  );
+});
+
+test("a pin stays in its slot when a kept or unsorted track sits beside it", () => {
+  const row = (id: string, energyLevel: number) =>
+    ({
+      id,
+      name: id,
+      artists: ["X"],
+      album: "",
+      durationMs: 180_000,
+      uri: "",
+      externalUrl: "",
+      imageUrl: null,
+      phase: "peak" as const,
+      role: "groove" as const,
+      transition: "unset" as const,
+      bpm: "124",
+      keyCamelot: "8A",
+      energyLevel,
+      note: "",
+      why: "",
+      safetyAlt: "",
+    });
+  const orderOf = (draft: Parameters<typeof reorderDraft>[0], technique: Parameters<typeof reorderDraft>[1]) =>
+    reorderDraft(draft, technique)
+      .tracks.filter((item) => item.role !== "safety")
+      .map((item) => item.id);
+
+  const keptInFront = {
+    ...DEFAULT_SET,
+    openerId: null,
+    closerId: "e",
+    keptIds: ["b"],
+    pinnedIds: ["c"],
+    tracks: [row("b", 9), row("c", 4), row("a", 3), row("d", 6), row("e", 2)],
+  };
+  for (const technique of ["energy", "perfect", "harmonic", "tempo"] as const) {
+    const order = orderOf(keptInFront, technique);
+    assert.equal(order.indexOf("c"), 1, technique);
+    assert.equal(order.at(-1), "e", technique);
+    assert.ok(order.includes("b"), technique);
+  }
+  assert.notEqual(orderOf(keptInFront, "energy").indexOf("b"), 0);
+  const resorted = orderOf(
+    { ...keptInFront, keptIds: undefined, unsortedIds: ["b"] },
+    "energy",
+  );
+  assert.equal(resorted.indexOf("c"), 1);
+  assert.notEqual(resorted.indexOf("b"), 0);
+
+  const pinAtEnd = {
+    ...DEFAULT_SET,
+    openerId: null,
+    closerId: null,
+    keptIds: ["b"],
+    pinnedIds: ["c"],
+    tracks: [row("a", 3), row("d", 6), row("c", 4), row("b", 1)],
+  };
+  const endOrder = orderOf(pinAtEnd, "energy");
+  assert.equal(endOrder.indexOf("c"), 2);
+  assert.notEqual(endOrder.indexOf("b"), 3);
+
+  const pinAtStart = {
+    ...DEFAULT_SET,
+    openerId: null,
+    closerId: null,
+    keptIds: ["b"],
+    pinnedIds: ["a"],
+    tracks: [row("a", 9), row("b", 8), row("c", 2), row("d", 4)],
+  };
+  const startOrder = orderOf(pinAtStart, "energy");
+  assert.equal(startOrder[0], "a");
+  assert.notEqual(startOrder.indexOf("b"), 1);
 });
 
 test("reorderDraft perfect pulls an alternative in without taking the closer", () => {

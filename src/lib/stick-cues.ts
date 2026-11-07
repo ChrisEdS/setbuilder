@@ -227,6 +227,27 @@ export function formatGridReadingNote(
 }
 
 type IndexFile = { dir: DirLike; folder: string; datName: string; file: FileLike };
+type TrackRef = { group: DirLike; name: string };
+type IndexedPath = { located: Located; stored: string | null };
+
+async function analysisFilesIn(ref: TrackRef): Promise<IndexFile[]> {
+  let track: DirLike;
+  try {
+    track = await ref.group.getDirectoryHandle(ref.name);
+  } catch {
+    return [];
+  }
+  if (!track.keys) return [];
+  const found: IndexFile[] = [];
+  const folder = ref.name.toUpperCase();
+  for await (const entry of track.keys()) {
+    if (!ANALYSIS_DAT.test(entry)) continue;
+    const dat = await maybeFile(track, entry);
+    if (!dat) continue;
+    found.push({ dir: track, folder, datName: entry, file: dat });
+  }
+  return found;
+}
 
 async function buildAnalysisIndex(root: DirLike): Promise<Map<string, Located>> {
   reportIndex(root, { finished: 0, total: 0 });
@@ -234,7 +255,9 @@ async function buildAnalysisIndex(root: DirLike): Promise<Map<string, Located>> 
     const map = new Map<string, Located>();
     const library = await analysisLibrary(root);
     if (!library?.keys) return map;
-    const files: IndexFile[] = [];
+    // Names only. Opening each track folder is the slow part and must not
+    // happen while the file count is still unknown.
+    const tracks: TrackRef[] = [];
     for await (const parent of library.keys()) {
       let group: DirLike;
       try {
@@ -243,52 +266,58 @@ async function buildAnalysisIndex(root: DirLike): Promise<Map<string, Located>> 
         continue;
       }
       if (!group.keys) continue;
-      for await (const name of group.keys()) {
-        let track: DirLike;
-        try {
-          track = await group.getDirectoryHandle(name);
-        } catch {
-          continue;
-        }
-        if (!track.keys) continue;
-        for await (const entry of track.keys()) {
-          if (!ANALYSIS_DAT.test(entry)) continue;
-          const dat = await maybeFile(track, entry);
-          if (!dat) continue;
-          files.push({ dir: track, folder: name.toUpperCase(), datName: entry, file: dat });
-        }
-      }
+      for await (const name of group.keys()) tracks.push({ group, name });
     }
-    const paths = new Array<string | null>(files.length);
+    const perTrack: Array<IndexedPath[] | null> = new Array(tracks.length);
     let cursor = 0;
     let finished = 0;
+    let total = tracks.length;
     let shown: number | null = null;
     const publish = () => {
-      const percent = indexWalkPercent(finished, files.length);
+      const percent = indexWalkPercent(finished, total);
       if (percent == null || percent === shown) return;
       shown = percent;
-      reportIndex(root, { finished, total: files.length });
+      reportIndex(root, { finished, total });
     };
-    if (files.length > 0) publish();
+    if (total > 0) publish();
     async function readNext(): Promise<void> {
       for (;;) {
         const index = cursor;
         cursor += 1;
-        if (index >= files.length) return;
-        try {
-          paths[index] = readAnlzContentPath(await readHead(files[index].file));
-        } catch {
-          paths[index] = null;
+        if (index >= tracks.length) return;
+        const ref = tracks[index];
+        if (!ref) return;
+        const files = await analysisFilesIn(ref);
+        if (files.length !== 1) total += files.length - 1;
+        const indexed: IndexedPath[] = [];
+        perTrack[index] = indexed;
+        if (files.length === 0) {
+          publish();
+          continue;
         }
-        finished += 1;
-        publish();
+        for (const file of files) {
+          let stored: string | null = null;
+          try {
+            stored = readAnlzContentPath(await readHead(file.file));
+          } catch {
+            stored = null;
+          }
+          indexed.push({
+            located: { dir: file.dir, folder: file.folder, datName: file.datName },
+            stored,
+          });
+          finished += 1;
+          publish();
+        }
       }
     }
-    await Promise.all(Array.from({ length: Math.min(8, files.length) }, () => readNext()));
-    files.forEach((file, index) => {
-      const stored = paths[index];
-      if (stored) map.set(stored, { dir: file.dir, folder: file.folder, datName: file.datName });
-    });
+    await Promise.all(Array.from({ length: Math.min(8, tracks.length) }, () => readNext()));
+    for (const indexed of perTrack) {
+      if (!indexed) continue;
+      for (const entry of indexed) {
+        if (entry.stored) map.set(entry.stored, entry.located);
+      }
+    }
     return map;
   } finally {
     reportIndex(root, null);
@@ -305,6 +334,17 @@ function analysisIndex(root: DirLike): Promise<Map<string, Located>> {
     analysisIndexes.set(root, pending);
   }
   return pending;
+}
+
+/**
+ * Start the folder walk the player caches on this directory handle.
+ * A second call shares that promise and does not walk again. Reads only.
+ */
+export function preloadStickAnalysisIndex(root: DirLike): Promise<void> {
+  return analysisIndex(root).then(
+    () => undefined,
+    () => undefined,
+  );
 }
 
 function matchLocated(map: Map<string, Located>, filePath: string): Located | null {

@@ -203,19 +203,25 @@ export type SetDraft = {
   /** Performance track that must stay last (Release). */
   closerId?: string | null;
   /**
-   * Performance tracks that stay in the set through trim and playlist reshuffle,
-   * and keep their slot when the other tracks are sorted.
-   * Opener and closer are not listed here. “Perfekt · nur Pins” may still swap pin slots.
+   * Performance tracks that stay in this slot when the set is sorted,
+   * and stay in the set through trim and playlist reshuffle.
+   * Opener and closer are not listed here. No sort may move these slots.
    */
   pinnedIds?: string[];
   /**
+   * Performance tracks that stay in the set through trim and playlist reshuffle.
+   * Sorting may move them to another slot. Not a pin and not an exclude.
+   */
+  keptIds?: string[];
+  /**
    * Tracks that must stay out of the performance through trim, refill and reshuffle.
-   * Mutually exclusive with opener/closer/mid-pins. May sit in Alternatives.
+   * Mutually exclusive with opener/closer/mid-pins/keeps. May sit in Alternatives.
    */
   excludedIds?: string[];
   /**
-   * In the set, but the current slot is released. The next sort may place them
-   * elsewhere. Not a pin and not an exclude.
+   * The next sort should leave this slot, and will move the track if the sort
+   * would have left it there. Not a pin, not a keep, and not an exclude.
+   * Trim may still drop the track.
    */
   unsortedIds?: string[];
   durationMinutes: number;

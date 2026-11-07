@@ -254,6 +254,22 @@ test("reshuffleDraftFromPool keeps a mid pin in the performance", () => {
   assert.equal(next.tracks.find((track) => track.id === mid)?.role === "safety", false);
 });
 
+test("reshuffleDraftFromPool keeps a kept track in the performance", () => {
+  const crate = Array.from({ length: 40 }, (_, i) => spotifyTrack(i));
+  let draft = extractSetFromPlaylist(crate, "Kept Night", {
+    durationMinutes: 45,
+  });
+  const performance = draft.tracks.filter((track) => track.role !== "safety");
+  const mid = performance[Math.floor(performance.length / 2)]?.id;
+  assert.ok(mid);
+  draft = { ...draft, keptIds: [mid] };
+  const next = reshuffleDraftFromPool(draft, tEn, () => 0);
+  const nextPerf = next.tracks.filter((track) => track.role !== "safety");
+  assert.ok(nextPerf.some((track) => track.id === mid));
+  assert.ok(next.keptIds?.includes(mid));
+  assert.equal(next.tracks.find((track) => track.id === mid)?.role === "safety", false);
+});
+
 test("slot fit keeps opener, closer and a mid pin in the performance", () => {
   const energies = [3, 5, 4, 5, 6, 5, 6, 7, 8, 6, 7, 9, 5, 9, 8, 4, 5, 4, 6];
   const phases = ["open", "open", "open", "lift", "lift", "lift", "rise", "rise", "rise", "rise", "peak", "peak", "peak", "peak", "peak", "peak", "release", "release", "release"];
@@ -271,6 +287,30 @@ test("slot fit keeps opener, closer and a mid pin in the performance", () => {
   for (const id of ["t0", "t18", "t12"]) {
     assert.ok(kept.some((track: { id: string }) => track.id === id), id);
   }
+});
+
+test("slot fit keeps a kept track that trim would otherwise drop", () => {
+  const energies = [3, 5, 4, 5, 6, 5, 6, 7, 8, 6, 7, 9, 5, 9, 8, 4, 5, 4, 6];
+  const phases = ["open", "open", "open", "lift", "lift", "lift", "rise", "rise", "rise", "rise", "peak", "peak", "peak", "peak", "peak", "peak", "release", "release", "release"];
+  const tracks = energies.map((energy, index) => mk(index, phases[index], energy));
+  const draft: any = {
+    ...DEFAULT_SET,
+    durationMinutes: 60,
+    tracks,
+    openerId: "t0",
+    closerId: "t18",
+  };
+  const dropped = fitToSlot(draft);
+  const gone = dropped.draft.tracks.find(
+    (track: { id: string; role: string }) => track.role === "safety",
+  );
+  assert.ok(gone);
+  const held = fitToSlot({ ...draft, keptIds: [gone.id] });
+  assert.notEqual(
+    held.draft.tracks.find((track: { id: string }) => track.id === gone.id)?.role,
+    "safety",
+  );
+  assert.ok(held.draft.keptIds?.includes(gone.id));
 });
 
 

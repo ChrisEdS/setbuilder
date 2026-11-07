@@ -32,13 +32,13 @@ The brief is at the top. **Title**, **Slot duration (min)** and **Blend time (av
 - **Merge** keeps the setlist and appends only tracks that are missing.
 - **Cancel** changes nothing.
 
-The setlist shows phase, role and the join from the previous track. **Setlist**, **Roles** and **Arc** switch the view. **Comfortable** shows the icon row; **Compact** keeps it tight. Change the order with the grip or the arrows. Play opens the player. **Fit to slot** cuts when the set runs over the slot. **Fill with matches** adds tracks that fit when it is short.
+The setlist shows phase, role and the join from the previous track. **Setlist**, **Roles** and **Arc** switch the view. **Comfortable** shows the icon row; **Compact** keeps it tight. Change the order with the grip or the arrows. **Keep** leaves a track in the set while sorting may move it. **Pin here** holds the exact slot. Play opens the player, and the playing row stays visible beside it. **Fit to slot** cuts when the set runs over the slot. **Fill with matches** adds tracks that fit when it is short.
 
 ## 3. Hear it on the deck
 
 ![Player with waveform, 2× zoom, Q and cues A–H](screenshots/en/03-deck.png)
 
-The player is the card over the setlist. Drag the right edge wider and the bottom edge taller. The waveform runs the width of the card. The overview is on top, the large wave under it. **+** zooms (the picture is at **2×**). The overview marks the window. The playhead stays.
+The player is the card over the setlist. Drag the right edge wider and the bottom edge taller. The waveform runs the width of the card. The overview is on top, the large wave under it. **+** zooms (the picture is at **2×**). The overview marks the window. The playhead stays. The set list keeps the playing row in view beside the player, including after the player moves or grows. The playlist beatgrid is read in the background before the player opens, and the first read shows how far it has got.
 
 **Q** quantizes. A hot cue **A–H** then lands on the next downbeat of the Rekordbox beatgrid. With **Q** off, the cue keeps the time you set. **−5** and **+5** nudge the grid by 5 ms. **1** moves the nearest downbeat onto the playhead. Phrase color bands come from the rekordbox analysis and follow the grid when you nudge it. Cues and the nudge stay in the player. The CDJ sees them once they are in the analysis file on the stick.
 

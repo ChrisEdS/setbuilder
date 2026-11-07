@@ -14,11 +14,11 @@ Anleitung mit Screenshots: [docs/GUIDE.de.md](docs/GUIDE.de.md)
 - ⏱️ **Die Nacht auf den Slot.** Zu lang, sie wird kürzer. Zu kurz füllt sie aus Alternativen und der geladenen Playlist.
 - 🔑 **Keys, die miteinander reden.** Camelot entlang des Sets. Ein Clash fällt auf, solange du noch Zeit hast.
 - ⚡ **Energie, die zum Song gehört.** Aus der Datei gelesen, gemessen oder von dir gesetzt.
-- 📌 **Pins, die im Set bleiben.** Opener und Closer halten die Enden.
+- 📌 **Behalten, oder den Slot pinnen.** Ein behaltener Track bleibt im Set, Sortieren darf ihn verschieben. Ein Pin hält genau diesen Slot. Opener und Closer halten die Enden.
 - 🛟 **Plan B in der Tasche.** Rollen und Alternativen, wenn der Floor dreht.
-- 🎧 **Den Übergang vorher hören.** Vorher, dieser Track, der nächste — dieselbe Länge wie im Set. Die Liste folgt dem Track, der spielt.
+- 🎧 **Den Übergang vorher hören.** Vorher, dieser Track, der nächste — dieselbe Länge wie im Set. Die Liste folgt dem Track, der spielt, und hält diese Zeile neben dem Player sichtbar.
 - 🌊 **Eine Welle über die volle Breite.** Der Zoom folgt der Wiedergabe, das Mausrad zoomt. Ein Klick sucht, die Wiedergabe läuft weiter. Ein Ziehen pausiert zum Schieben. Die Leertaste setzt fort. Die Pfeiltasten springen einen Takt und landen auf einem Downbeat.
-- 🎼 **Das rekordbox-Beatgrid.** Es startet als das, das rekordbox schon angelegt hat. Analyse ersetzt es auf Wunsch aus der Audiodatei, und −5, +5 und 1 schieben es weiter. Fehlt ein Grid, sagt das Deck das.
+- 🎼 **Das rekordbox-Beatgrid.** Das Grid der Playlist wird im Hintergrund gelesen, bevor der Player aufgeht, und die erste Lesung zeigt den Fortschritt. Es startet als das, das rekordbox schon angelegt hat. Analyse ersetzt es auf Wunsch aus der Audiodatei, und −5, +5 und 1 schieben es weiter. Fehlt ein Grid, sagt das Deck das.
 - 🔖 **Hot Cues und Phrasenbänder.** Hot Cues A–H kommen mit dem Track. Ein neuer Cue rastet auf den nächsten Downbeat ein, wenn ein Grid da ist, und wird sofort auf den Stick geschrieben. Cues, die schon als Memory Cues liegen, bleiben. Die Phrasenbänder von rekordbox liegen auf der Welle. Liegt für den Track noch keine Analyse auf dem Stick, bleiben die Cues im Set. Der Player sieht sie dann noch nicht.
 - 💡 **Light.** Eine kleinere Wellenform. In der Leiste bleibt die laufende Zeit groß, und Ansicht, Cues und Grid bleiben getrennt.
 - 🎒 **Fertig, wenn es sitzt.** Der Stick für den Player, der Zettel für die Kabine, die Datei für den Rechner.

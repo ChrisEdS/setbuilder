@@ -1,6 +1,7 @@
 import { isGeneratedNote } from "@/lib/i18n";
 import {
   normalizeExcludedIds,
+  normalizeKeptIds,
   normalizeUnsortedIds,
   withoutEndPins,
   withoutKeepPins,
@@ -88,9 +89,21 @@ function storedPins(
   );
 }
 
+function storedKept(
+  value: unknown,
+  drop: Set<string>,
+): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  return normalizeKeptIds(
+    value
+      .filter((item): item is string => typeof item === "string")
+      .filter((item) => !drop.has(item.trim())),
+  );
+}
+
 function storedExcluded(
   value: unknown,
-  draft: Pick<SetDraft, "openerId" | "closerId" | "pinnedIds">,
+  draft: Pick<SetDraft, "openerId" | "closerId" | "pinnedIds" | "keptIds">,
 ): string[] | undefined {
   if (!Array.isArray(value)) return undefined;
   return withoutKeepPins(
@@ -268,11 +281,23 @@ export function normalizeStoredDraft(value: unknown): SetDraft | null {
   const openerId = storedId(raw.openerId);
   const closerId = storedId(raw.closerId);
   const pinnedIds = storedPins(raw.pinnedIds, openerId, closerId);
-  const excludedIds = storedExcluded(raw.excludedIds, { openerId, closerId, pinnedIds });
+  const keptDrop = new Set<string>([
+    ...(openerId ? [openerId] : []),
+    ...(closerId ? [closerId] : []),
+    ...(pinnedIds ?? []),
+  ]);
+  const keptIds = storedKept(raw.keptIds, keptDrop);
+  const excludedIds = storedExcluded(raw.excludedIds, {
+    openerId,
+    closerId,
+    pinnedIds,
+    keptIds,
+  });
   const taken = new Set<string>([
     ...(openerId ? [openerId] : []),
     ...(closerId ? [closerId] : []),
     ...(pinnedIds ?? []),
+    ...(keptIds ?? []),
     ...(excludedIds ?? []),
   ]);
   const draft: SetDraft = {
@@ -293,6 +318,7 @@ export function normalizeStoredDraft(value: unknown): SetDraft | null {
     openerId,
     closerId,
     pinnedIds,
+    keptIds,
     excludedIds,
     unsortedIds: storedUnsorted(raw.unsortedIds, taken),
     durationMinutes: finite(raw.durationMinutes, DEFAULT_SET.durationMinutes),

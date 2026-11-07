@@ -237,20 +237,20 @@ const de = {
     "Phasen im Slot, Energie pro Track und Camelot-Keys entlang der Reihenfolge, mit Mix-Score und Clashes.",
   "builder.tool.sort": "Sortieren",
   "builder.tool.sortTip":
-    "Ordnet die Performance neu — Harmonie, Energie oder Phasen. Opener, Closer und Pins bleiben.",
+    "Ordnet die Performance neu — Harmonie, Energie oder Phasen. Opener, Closer und Pins bleiben an ihrer Stelle. Behaltene Tracks dürfen verschoben werden.",
   "builder.tool.reshuffle": "Andere Songs",
   "builder.tool.reshuffleMenuTip":
-    "Baut die Setliste aus einem Pool neu: Playlist, Stick, Collection oder History. Opener, Closer und Pins bleiben.",
+    "Baut die Setliste aus einem Pool neu: Playlist, Stick, Collection oder History. Opener, Closer, Pins und behaltene Tracks bleiben im Set.",
   "builder.tool.reshuffleTip":
-    "Würfelt aus dem Playlist-Pool ({pool} Tracks) eine neue Performance für denselben Brief. Alternativen werden neu gefüllt. Opener, Closer und gepinnte Tracks bleiben; Notizen gehen verloren.",
+    "Würfelt aus dem Playlist-Pool ({pool} Tracks) eine neue Performance für denselben Brief. Alternativen werden neu gefüllt. Opener, Closer, gepinnte und behaltene Tracks bleiben im Set; Notizen gehen verloren.",
   "builder.tool.reshuffleTipStick":
-    "Würfelt aus der Stick-Bibliothek ({pool} Tracks, alle Playlists) eine neue Performance für denselben Brief. Alternativen werden neu gefüllt. Opener, Closer und gepinnte Tracks bleiben; Notizen gehen verloren.",
+    "Würfelt aus der Stick-Bibliothek ({pool} Tracks, alle Playlists) eine neue Performance für denselben Brief. Alternativen werden neu gefüllt. Opener, Closer, gepinnte und behaltene Tracks bleiben im Set; Notizen gehen verloren.",
   "builder.tool.reshuffleDisabledTip":
     "Braucht mehr Tracks als im Set. Stick laden — dann kommt die Auswahl aus den Playlists darauf — oder eine längere Playlist extrahieren.",
   "builder.tool.reshuffleConfirm":
-    "Setliste aus dem Playlist-Pool ({pool} Tracks) neu setzen? Brief, Opener, Closer und gepinnte Tracks bleiben. Der Rest kommt neu aus der Playlist.",
+    "Setliste aus dem Playlist-Pool ({pool} Tracks) neu setzen? Brief, Opener, Closer, gepinnte und behaltene Tracks bleiben. Der Rest kommt neu aus der Playlist.",
   "builder.tool.reshuffleConfirmStick":
-    "Setliste aus den {pool} Tracks auf dem Stick neu setzen? Brief, Opener, Closer und gepinnte Tracks bleiben. Der Rest kommt neu aus der Playlist.",
+    "Setliste aus den {pool} Tracks auf dem Stick neu setzen? Brief, Opener, Closer, gepinnte und behaltene Tracks bleiben. Der Rest kommt neu aus der Playlist.",
   "builder.pool.different": "Andere Tracks",
   "builder.pool.differentHint":
     "Neue Performance aus dem Playlist-Pool ({count} Tracks). Brief und Pins bleiben.",
@@ -270,14 +270,14 @@ const de = {
   "builder.pool.collectionMissing": "Collection ist nicht geladen.",
   "builder.pool.collectionSmall": "Die Collection hat nicht mehr Tracks als das Set.",
   "builder.pool.collectionConfirm":
-    "Setliste aus den {pool} Tracks der Collection neu setzen? Brief, Opener, Closer und gepinnte Tracks bleiben. Der Rest kommt neu aus der Collection.",
+    "Setliste aus den {pool} Tracks der Collection neu setzen? Brief, Opener, Closer, gepinnte und behaltene Tracks bleiben. Der Rest kommt neu aus der Collection.",
   "builder.pool.history": "Aus der History",
   "builder.pool.historyHint":
     "{count} gespielte Tracks. Brief und Pins bleiben.",
   "builder.pool.historyMissing": "Keine History geladen.",
   "builder.pool.historySmall": "Die History hat nicht mehr Tracks als das Set.",
   "builder.pool.historyConfirm":
-    "Setliste aus den {pool} gespielten Tracks neu setzen? Brief, Opener, Closer und gepinnte Tracks bleiben. Der Rest kommt neu aus der History.",
+    "Setliste aus den {pool} gespielten Tracks neu setzen? Brief, Opener, Closer, gepinnte und behaltene Tracks bleiben. Der Rest kommt neu aus der History.",
   "builder.tool.energy": "Energie aus Dateien",
   "builder.tool.energyTip":
     "Liest oder misst Energie aus den Dateien auf dem Stick und schreibt sie zurück.",
@@ -330,7 +330,7 @@ const de = {
     "Ganzes Set: exakter Camelot-TSP (Held-Karp ≤18, sonst NN+2-opt/Or-opt). Clashes zuerst killen, dann Mix-Score. Opener/Closer bleiben. Phasen danach neu.",
   "builder.sort.perfectPins": "Perfekt · nur Pins",
   "builder.sort.perfectPinsHint":
-    "Nur gepinnte Tracks untereinander (Camelot-TSP). Nicht-Pins bleiben in den Lücken zwischen den Pin-Slots. Opener/Closer bleiben. Alternativen bleiben draußen. Mindestens zwei Pins nötig.",
+    "Gepinnte Tracks bleiben genau an ihrer Stelle. Dieser Sortiervorgang verschiebt sie nicht. Opener/Closer bleiben. Alternativen bleiben draußen.",
   "builder.sort.perfectPinsNeed":
     "Mindestens zwei gepinnte Tracks nötig (Opener/Closer zählen hier nicht).",
   "builder.sort.harmonic": "Harmonisch",
@@ -445,25 +445,34 @@ const de = {
   "builder.row.clearCloser": "Closer lösen",
   "builder.row.clearCloserTip":
     "Pin lösen — der Track bleibt im Set. Sortieren hält weiter den aktuellen letzten Track, bis du einen anderen pinnst oder nach hinten ziehst.",
-  "builder.row.setPin": "Pin",
+  "builder.row.setKeep": "Behalten",
+  "builder.row.setKeepTitle":
+    "Im Set behalten. Sortieren darf den Track in einen anderen Slot schieben. Kürzen und Andere Songs lassen ihn im Set.",
+  "builder.row.setKeepFromAltTitle":
+    "Ins Set holen. Sortieren darf ihn verschieben. Kürzen und Andere Songs lassen ihn im Set.",
+  "builder.row.clearKeep": "Nicht mehr behalten",
+  "builder.row.clearKeepTip":
+    "Nicht mehr behalten. Sortieren darf den Track weiter verschieben, und Kürzen darf ihn zu den Alternativen schieben.",
+  "builder.row.setPin": "Genau hier",
   "builder.row.setPinTitle":
-    "An dieser Stelle halten, wenn der Rest sortiert wird. „Perfekt · nur Pins“ tauscht nur die Pins. Kürzen und Andere Songs lassen den Track im Set.",
+    "Genau an dieser Stelle. Sortieren verschiebt den Track nicht. Kürzen und Andere Songs lassen ihn im Set.",
   "builder.row.setPinFromAltTitle":
-    "Ins Set holen und an dieser Stelle halten. Kürzen und Andere Songs lassen ihn im Set.",
+    "Ins Set holen und genau an dieser Stelle lassen. Sortieren verschiebt ihn nicht. Kürzen und Andere Songs lassen ihn im Set.",
   "builder.row.clearPin": "Pin lösen",
   "builder.row.clearPinTip":
-    "Pin lösen. Der Track bleibt im Set, kann aber beim Kürzen zu den Alternativen wandern.",
-  "builder.row.unsort": "Im Set behalten, neu sortieren",
+    "Pin lösen. Sortieren darf den Track verschieben, und Kürzen darf ihn zu den Alternativen schieben.",
+  "builder.row.unsort": "Slot freigeben",
   "builder.row.unsortTip":
-    "Bleibt im Set, aber nicht an dieser Stelle. Pin, Ausschluss, erster und letzter Track an diesem Song werden gelöst. Der nächste Sortiervorgang sucht einen anderen Platz.",
-  "builder.row.unsortClear": "Diesen Platz behalten",
-  "builder.row.unsortClearTip": "Nicht mehr neu sortieren. Der Track bleibt, wo er jetzt steht.",
+    "Der nächste Sortiervorgang sucht einen anderen Platz und schiebt den Track weg, wenn er liegen bliebe. Kein Behalten: Kürzen darf ihn trotzdem zu den Alternativen schieben. Pin, Ausschluss, erster und letzter Track werden gelöst.",
+  "builder.row.unsortClear": "Nicht mehr wegschieben",
+  "builder.row.unsortClearTip":
+    "Nicht mehr wegschieben. Der Track bleibt, wo er jetzt steht, bis ein Sortiervorgang ihn von allein verschiebt.",
   "builder.row.unsortBadge": "Neu sortieren",
   "builder.row.unsortBadgeTip":
-    "Bleibt im Set, aber nicht an dieser Stelle. Der nächste Sortiervorgang sucht einen anderen Platz.",
+    "Nächster Sortiervorgang sucht einen anderen Platz. Kürzen darf den Track trotzdem rausnehmen.",
   "builder.row.setExclude": "Ausschließen",
   "builder.row.setExcludeTitle":
-    "Darf nicht in die Performance. Bleibt beim Kürzen, Auffüllen und bei Andere Songs draußen. Löst Pin/Opener/Closer.",
+    "Darf nicht in die Performance. Bleibt beim Kürzen, Auffüllen und bei Andere Songs draußen. Löst Pin, Behalten, Opener und Closer.",
   "builder.row.clearExclude": "Ausschluss lösen",
   "builder.row.clearExcludeTip":
     "Ausschluss lösen. Der Track kann wieder in die Performance, bleibt aber wo er ist.",
@@ -485,9 +494,13 @@ const de = {
   "builder.status.placedBefore": "+ {name} vor {relative} → Performance",
   "builder.status.placedAfter": "+ {name} hinter {relative} → Performance",
   "builder.status.pinnedFromAlt": "Pin: {name} ist wieder in der Performance.",
+  "builder.status.keptFromAlt": "Behalten: {name} ist wieder in der Performance.",
+  "builder.row.keepBadge": "Behalten",
+  "builder.row.keepBadgeTip":
+    "Im Set behalten. Sortieren darf den Track verschieben. Kürzen und Andere Songs lassen ihn im Set.",
   "builder.row.pinBadge": "Pin",
   "builder.row.pinBadgeTip":
-    "Gepinnt. Bleibt an dieser Stelle, wenn der Rest sortiert wird. Kürzen und Andere Songs lassen ihn im Set.",
+    "Genau hier. Sortieren verschiebt den Track nicht. Kürzen und Andere Songs lassen ihn im Set.",
   "builder.row.openerBadge": "Opener",
   "builder.row.openerBadgeTip": "Gepinnter Opener — erster Performance-Track, auch nach Sortieren.",
   "builder.row.closerBadge": "Closer",
@@ -608,6 +621,7 @@ const de = {
 
   // Status toasts
   "builder.status.added": "+ {name} → {phase} / {role}",
+  "builder.status.addedBefore": "+ {name} vor {after} → {phase} / {role}",
   "builder.status.addedAfter": "+ {name} hinter {after} → {phase} / {role}",
   "builder.status.addedMany": "+ {tracks} → {phase} / {role}",
   "builder.status.alreadyIn": "Track ist schon im Set.",
@@ -643,7 +657,7 @@ const de = {
   "builder.status.sorted.perfect":
     "Perfekt sortiert: minimale Clashes, maximaler Mix-Score. Bogen prüfen — Opener/Closer bleiben. 100 % nur wenn alle Keys verbunden sind.",
   "builder.status.sorted.perfectPins":
-    "Gepinnte Tracks perfekt sortiert. Nicht-Pins bleiben in den Lücken; Opener/Closer und Alternativen bleiben.",
+    "Gepinnte Tracks bleiben an ihrer Stelle. Opener/Closer und Alternativen bleiben.",
   "builder.status.sorted.perfectPinsNeed":
     "Mindestens zwei gepinnte Tracks nötig (Opener/Closer zählen hier nicht).",
   "builder.status.sorted.harmonic":
@@ -1016,20 +1030,20 @@ const en: Record<keyof typeof de, string> = {
     "Phases in the slot, energy per track and Camelot keys along the order, with mix score and clashes.",
   "builder.tool.sort": "Sort",
   "builder.tool.sortTip":
-    "Reorders the performance — harmony, energy or phases. Opener, closer and pins stay.",
+    "Reorders the performance — harmony, energy or phases. Opener, closer and pins stay in place. Kept tracks may move.",
   "builder.tool.reshuffle": "Different songs",
   "builder.tool.reshuffleMenuTip":
-    "Rebuilds the setlist from a pool: playlist, stick, collection or history. Opener, closer and pins stay.",
+    "Rebuilds the setlist from a pool: playlist, stick, collection or history. Opener, closer, pins and kept tracks stay in the set.",
   "builder.tool.reshuffleTip":
-    "Picks a new performance from the playlist pool ({pool} tracks) for the same brief. Alternatives are refilled. Opener, closer and pinned tracks stay; notes are lost.",
+    "Picks a new performance from the playlist pool ({pool} tracks) for the same brief. Alternatives are refilled. Opener, closer, pinned and kept tracks stay in the set; notes are lost.",
   "builder.tool.reshuffleTipStick":
-    "Picks a new performance from the stick library ({pool} tracks, every playlist) for the same brief. Alternatives are refilled. Opener, closer and pinned tracks stay; notes are lost.",
+    "Picks a new performance from the stick library ({pool} tracks, every playlist) for the same brief. Alternatives are refilled. Opener, closer, pinned and kept tracks stay in the set; notes are lost.",
   "builder.tool.reshuffleDisabledTip":
     "Needs more tracks than the set. Load the stick — then it draws from the playlists on it — or extract a longer playlist.",
   "builder.tool.reshuffleConfirm":
-    "Rebuild the setlist from the playlist pool ({pool} tracks)? Brief, opener, closer and pinned tracks stay. The rest is drawn again from the playlist.",
+    "Rebuild the setlist from the playlist pool ({pool} tracks)? Brief, opener, closer, pinned and kept tracks stay. The rest is drawn again from the playlist.",
   "builder.tool.reshuffleConfirmStick":
-    "Rebuild the setlist from the {pool} tracks on the stick? Brief, opener, closer and pinned tracks stay. The rest is drawn again from the playlist.",
+    "Rebuild the setlist from the {pool} tracks on the stick? Brief, opener, closer, pinned and kept tracks stay. The rest is drawn again from the playlist.",
   "builder.pool.different": "Different songs",
   "builder.pool.differentHint":
     "A new performance from the playlist pool ({count} tracks). Brief and pins stay.",
@@ -1049,14 +1063,14 @@ const en: Record<keyof typeof de, string> = {
   "builder.pool.collectionMissing": "Collection is not loaded.",
   "builder.pool.collectionSmall": "The collection has no more tracks than the set.",
   "builder.pool.collectionConfirm":
-    "Rebuild the setlist from the {pool} collection tracks? Brief, opener, closer and pinned tracks stay. The rest is drawn again from the collection.",
+    "Rebuild the setlist from the {pool} collection tracks? Brief, opener, closer, pinned and kept tracks stay. The rest is drawn again from the collection.",
   "builder.pool.history": "From history",
   "builder.pool.historyHint":
     "{count} played tracks. Brief and pins stay.",
   "builder.pool.historyMissing": "No history loaded.",
   "builder.pool.historySmall": "History has no more tracks than the set.",
   "builder.pool.historyConfirm":
-    "Rebuild the setlist from the {pool} played tracks? Brief, opener, closer and pinned tracks stay. The rest is drawn again from history.",
+    "Rebuild the setlist from the {pool} played tracks? Brief, opener, closer, pinned and kept tracks stay. The rest is drawn again from history.",
   "builder.tool.energy": "Energy from files",
   "builder.tool.energyTip":
     "Reads or measures energy from the files on the stick and writes it back.",
@@ -1109,7 +1123,7 @@ const en: Record<keyof typeof de, string> = {
     "Whole set: exact Camelot TSP (Held-Karp ≤18, else NN+2-opt/Or-opt). Kill clashes first, then max mix score. Opener/closer stay. Phases re-laid after.",
   "builder.sort.perfectPins": "Perfect · pins only",
   "builder.sort.perfectPinsHint":
-    "Only pinned tracks among themselves (Camelot TSP). Non-pins stay in the gaps between pin slots. Opener/closer stay. Alternatives stay out. Needs at least two pins.",
+    "Pinned tracks stay exactly where they are. This sort does not move them. Opener and closer stay. Alternatives stay out.",
   "builder.sort.perfectPinsNeed":
     "Needs at least two pinned tracks (opener/closer do not count here).",
   "builder.sort.harmonic": "Harmonic",
@@ -1223,25 +1237,34 @@ const en: Record<keyof typeof de, string> = {
   "builder.row.clearCloser": "Unpin closer",
   "builder.row.clearCloserTip":
     "Unpin — the track stays in the set. Sorting still keeps the current last track until you pin another or move one to the end.",
-  "builder.row.setPin": "Pin",
+  "builder.row.setKeep": "Keep",
+  "builder.row.setKeepTitle":
+    "Keep it in the set. Sorting may move it to another slot. Trim and Different songs leave it in.",
+  "builder.row.setKeepFromAltTitle":
+    "Bring it into the set. Sorting may move it. Trim and Different songs leave it in.",
+  "builder.row.clearKeep": "Stop keeping",
+  "builder.row.clearKeepTip":
+    "Stop keeping it. Sorting may still move the track, and trim may move it to Alternatives.",
+  "builder.row.setPin": "Pin here",
   "builder.row.setPinTitle":
-    "Hold this slot when the rest is sorted. “Perfect · pins only” swaps pins with each other. Trim and Different songs keep the track in the set.",
+    "Stay exactly in this slot. Sorting does not move the track. Trim and Different songs leave it in the set.",
   "builder.row.setPinFromAltTitle":
-    "Bring it into the set and hold this slot. Trim and Different songs keep it in the set.",
+    "Bring it into the set and leave it exactly in this slot. Sorting does not move it. Trim and Different songs leave it in the set.",
   "builder.row.clearPin": "Unpin",
   "builder.row.clearPinTip":
-    "Unpin. The track stays in the set, and trim may move it to Alternatives.",
-  "builder.row.unsort": "Keep in set, resort",
+    "Unpin. Sorting may move the track, and trim may move it to Alternatives.",
+  "builder.row.unsort": "Release slot",
   "builder.row.unsortTip":
-    "Stays in the set, but not in this slot. Pin, exclude, first and last on this track are cleared. The next sort may place it somewhere else.",
-  "builder.row.unsortClear": "Keep this position",
-  "builder.row.unsortClearTip": "Stop resorting. The track stays where it is now.",
+    "The next sort looks for another slot and moves the track if it would have stayed. This is not Keep: trim may still move it to Alternatives. Pin, exclude, first and last on this track are cleared.",
+  "builder.row.unsortClear": "Stop pushing",
+  "builder.row.unsortClearTip":
+    "Stop pushing it off this slot. It stays where it is until a sort moves it on its own.",
   "builder.row.unsortBadge": "Resort",
   "builder.row.unsortBadgeTip":
-    "Stays in the set, but not in this slot. The next sort may place it somewhere else.",
+    "The next sort looks for another slot. Trim may still drop the track.",
   "builder.row.setExclude": "Exclude",
   "builder.row.setExcludeTitle":
-    "Must not be in the performance. Stays out through trim, refill and Different songs. Clears pin/opener/closer.",
+    "Must not be in the performance. Stays out through trim, refill and Different songs. Clears pin, keep, opener and closer.",
   "builder.row.clearExclude": "Clear exclude",
   "builder.row.clearExcludeTip":
     "Clear exclude. The track may re-enter the performance; it stays where it is for now.",
@@ -1263,9 +1286,13 @@ const en: Record<keyof typeof de, string> = {
   "builder.status.placedBefore": "+ {name} before {relative} → performance",
   "builder.status.placedAfter": "+ {name} after {relative} → performance",
   "builder.status.pinnedFromAlt": "Pin: {name} is back in the performance.",
+  "builder.status.keptFromAlt": "Keep: {name} is back in the performance.",
+  "builder.row.keepBadge": "Keep",
+  "builder.row.keepBadgeTip":
+    "Kept in the set. Sorting may move it. Trim and Different songs leave it in.",
   "builder.row.pinBadge": "Pin",
   "builder.row.pinBadgeTip":
-    "Pinned. Stays in this slot when the rest is sorted. Trim and Different songs keep it in the set.",
+    "Pinned here. Sorting does not move it. Trim and Different songs leave it in the set.",
   "builder.row.openerBadge": "Opener",
   "builder.row.openerBadgeTip": "Pinned opener — first performance track, even after sorting.",
   "builder.row.closerBadge": "Closer",
@@ -1383,6 +1410,7 @@ const en: Record<keyof typeof de, string> = {
   "builder.app.bannerDismiss": "Later",
 
   "builder.status.added": "+ {name} → {phase} / {role}",
+  "builder.status.addedBefore": "+ {name} before {after} → {phase} / {role}",
   "builder.status.addedAfter": "+ {name} after {after} → {phase} / {role}",
   "builder.status.addedMany": "+ {tracks} → {phase} / {role}",
   "builder.status.alreadyIn": "Track is already in the set.",
@@ -1417,7 +1445,7 @@ const en: Record<keyof typeof de, string> = {
   "builder.status.sorted.perfect":
     "Sorted for max score: minimal clashes, maximal mix score. Check the Arc — opener/closer stay. 100% only when all keys connect.",
   "builder.status.sorted.perfectPins":
-    "Pinned tracks sorted for max score. Non-pins stay in the gaps; opener/closer and Alternatives stay.",
+    "Pinned tracks stay in place. Opener, closer and Alternatives stay.",
   "builder.status.sorted.perfectPinsNeed":
     "Needs at least two pinned tracks (opener/closer do not count here).",
   "builder.status.sorted.harmonic":

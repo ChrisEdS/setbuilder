@@ -232,16 +232,24 @@ const de = {
     "Nicht mehr vorschlagen oder als Nächstes einreihen. Der Track bleibt im Set und kann wieder rein.",
   "crates.player.include": "Wieder in die Playlist",
   "crates.player.includeTip": "Ausschluss lösen. Der Track darf wieder in der Playlist stehen.",
-  "crates.player.pin": "An dieser Stelle halten",
+  "crates.player.keep": "Im Set behalten",
+  "crates.player.keepTip":
+    "Bleibt im Set. Sortieren darf den Track in einen anderen Slot schieben. Kürzen und Andere Songs lassen ihn im Set.",
+  "crates.player.keepClear": "Nicht mehr behalten",
+  "crates.player.keepClearTip":
+    "Nicht mehr behalten. Sortieren darf den Track weiter verschieben, und Kürzen darf ihn zu den Alternativen schieben.",
+  "crates.player.pin": "Genau hier pinnen",
   "crates.player.pinTip":
-    "Bleibt an dieser Stelle, wenn der Rest sortiert wird. Kürzen nimmt ihn nicht raus.",
-  "crates.player.unpin": "Stelle freigeben",
-  "crates.player.unpinTip": "Pin lösen. Sortieren darf den Track wieder verschieben.",
-  "crates.player.unsort": "Im Set behalten, neu sortieren",
+    "Bleibt genau an dieser Stelle. Sortieren verschiebt den Track nicht. Kürzen und Andere Songs lassen ihn im Set.",
+  "crates.player.unpin": "Pin lösen",
+  "crates.player.unpinTip":
+    "Pin lösen. Sortieren darf den Track verschieben, und Kürzen darf ihn zu den Alternativen schieben.",
+  "crates.player.unsort": "Slot freigeben",
   "crates.player.unsortTip":
-    "Bleibt im Set, aber nicht an dieser Stelle. Der nächste Sortiervorgang sucht einen anderen Platz.",
-  "crates.player.unsortClear": "Diesen Platz behalten",
-  "crates.player.unsortClearTip": "Nicht mehr neu sortieren. Der Track bleibt, wo er jetzt steht.",
+    "Der nächste Sortiervorgang sucht einen anderen Platz und schiebt den Track weg, wenn er liegen bliebe. Kein Behalten: Kürzen darf ihn trotzdem zu den Alternativen schieben.",
+  "crates.player.unsortClear": "Nicht mehr wegschieben",
+  "crates.player.unsortClearTip":
+    "Nicht mehr wegschieben. Der Track bleibt, wo er jetzt steht, bis ein Sortiervorgang ihn von allein verschiebt.",
   "crates.player.delete": "Aus dem Set löschen",
   "crates.player.deleteTip":
     "Nimmt den Track ganz aus dem Set. Das ist kein Ausschluss und kein Umsortieren.",
@@ -253,7 +261,8 @@ const de = {
   "crates.player.closerTip": "Wird der letzte Track. Der bisherige letzte verliert die Rolle.",
   "crates.player.closerClear": "Letzten Track lösen",
   "crates.player.closerClearTip": "Nicht mehr der letzte Track. Sortieren darf ihn wie die anderen behandeln.",
-  "crates.player.markPin": "Hält die Stelle",
+  "crates.player.markKeep": "Behalten",
+  "crates.player.markPin": "Genau hier",
   "crates.player.markExcluded": "Ausgeschlossen",
   "crates.player.markUnsorted": "Neu sortieren",
   "crates.player.markOpener": "Erster",
@@ -485,16 +494,24 @@ const en: Record<keyof typeof de, string> = {
     "Do not suggest or queue this track again. It stays in the set and can come back.",
   "crates.player.include": "Back in the playlist",
   "crates.player.includeTip": "Lift the exclude. The track may stand in the playlist again.",
-  "crates.player.pin": "Keep this slot",
+  "crates.player.keep": "Keep in the set",
+  "crates.player.keepTip":
+    "Stays in the set. Sorting may move it to another slot. Trim and Different songs leave it in.",
+  "crates.player.keepClear": "Stop keeping it",
+  "crates.player.keepClearTip":
+    "Stop keeping it. Sorting may still move the track, and trim may move it to Alternatives.",
+  "crates.player.pin": "Pin here",
   "crates.player.pinTip":
-    "Stays in this slot when the rest is sorted. Trim does not drop it.",
-  "crates.player.unpin": "Release this slot",
-  "crates.player.unpinTip": "Unpin. Sorting may move the track again.",
-  "crates.player.unsort": "Keep in set, resort",
+    "Stays exactly in this slot. Sorting does not move it. Trim and Different songs leave it in the set.",
+  "crates.player.unpin": "Unpin",
+  "crates.player.unpinTip":
+    "Unpin. Sorting may move the track, and trim may move it to Alternatives.",
+  "crates.player.unsort": "Release this slot",
   "crates.player.unsortTip":
-    "Stays in the set, but not in this slot. The next sort may place it somewhere else.",
-  "crates.player.unsortClear": "Keep this position",
-  "crates.player.unsortClearTip": "Stop resorting. The track stays where it is now.",
+    "The next sort looks for another slot and moves the track if it would have stayed. This is not Keep: trim may still move it to Alternatives.",
+  "crates.player.unsortClear": "Stop pushing it",
+  "crates.player.unsortClearTip":
+    "Stop pushing it off this slot. It stays where it is until a sort moves it on its own.",
   "crates.player.delete": "Delete from set",
   "crates.player.deleteTip":
     "Removes the track from the set entirely. This is not exclude and not a resort.",
@@ -506,7 +523,8 @@ const en: Record<keyof typeof de, string> = {
   "crates.player.closerTip": "Becomes the last track. The previous last track loses that role.",
   "crates.player.closerClear": "Clear last track",
   "crates.player.closerClearTip": "No longer the last track. Sorting may treat it like the others.",
-  "crates.player.markPin": "Slot held",
+  "crates.player.markKeep": "Kept",
+  "crates.player.markPin": "Pinned here",
   "crates.player.markExcluded": "Excluded",
   "crates.player.markUnsorted": "Resort",
   "crates.player.markOpener": "First",

@@ -86,7 +86,12 @@ const de = {
   "library.add.role": "Rolle",
   "library.add.fits": "Passt zu",
   "library.add.fitsTip":
-    "Sortiert die Liste für den Anschluss. + Ins Set setzt den Track direkt hinter diesen Song.",
+    "Filtert die Liste auf Tracks, die hinter diesen Song passen.",
+  "library.add.place": "Hinzufügen",
+  "library.add.before": "Davor",
+  "library.add.after": "Danach",
+  "library.add.placeTip":
+    "Davor oder danach am gewählten Track, sonst am Track der spielt. Ohne beides ans Ende des Sets.",
   "library.add.allTracks": "Alle Tracks",
   "library.add.moreMatches": "5 andere",
   "library.add.moreMatchesTip":
@@ -294,7 +299,7 @@ const de = {
   "library.stickHealth.meaning.ejectFailed":
     "Der Stick ist noch gemountet. Nicht abziehen — sonst setzen CDJs ihn oft auf Nur-Lesen. Tippe „Stick reparieren“, dann erneut „Auswerfen“. Alternativ im Finder auswerfen und warten bis das Symbol verschwindet.",
   "library.stickHealth.next.eject": "Grün geschafft. Nächster Schritt: Auswerfen, dann Stick in den Player.",
-  "library.stickHealth.next.prepare": "Zum Grün: „Für Player vorbereiten“ tippen — danach wird der Punkt grün, dann auswerfen.",
+  "library.stickHealth.next.prepare": "„Für Player vorbereiten“ legt die alte Player-Bibliothek sicher beiseite — danach wird der Punkt grün, und der nächste Schritt ist Auswerfen.",
   "library.stickHealth.next.openRekordbox": "Zum Grün: In rekordbox öffnen, Stick dort auswerfen und die Device Library schreiben lassen.",
   "library.stickHealth.meaning.ready":
     "Die Stick-Datenbank ist lesbar. CDJ-3000, XDJ-XZ und ältere Player zeigen deine Playlists. Vor dem Abziehen immer auswerfen.",
@@ -476,7 +481,12 @@ const en: Record<keyof typeof de, string> = {
   "library.add.role": "Role",
   "library.add.fits": "Fits after",
   "library.add.fitsTip":
-    "Ranks the list for that handoff. + Add to set places the track right after this song.",
+    "Filters the list to tracks that fit after this song.",
+  "library.add.place": "Add",
+  "library.add.before": "Before",
+  "library.add.after": "After",
+  "library.add.placeTip":
+    "Before or after the selected track, or the one that is playing. With neither, at the end of the set.",
   "library.add.allTracks": "All tracks",
   "library.add.moreMatches": "5 others",
   "library.add.moreMatchesTip":
@@ -684,7 +694,7 @@ const en: Record<keyof typeof de, string> = {
   "library.stickHealth.meaning.ejectFailed":
     "The stick is still mounted. Do not unplug — CDJs often remount it read-only. Tap “Repair stick”, then “Eject” again. Or eject in Finder and wait until the icon disappears.",
   "library.stickHealth.next.eject": "You’re green. Next: eject, then put the stick in the player.",
-  "library.stickHealth.next.prepare": "To go green: tap “Prepare for player” — the dot turns green, then eject.",
+  "library.stickHealth.next.prepare": "“Prepare for player” sets the old player library safely aside — the dot turns green after that, and the next step is eject.",
   "library.stickHealth.next.openRekordbox": "To go green: open in rekordbox, eject the stick there, and let it write the device library.",
   "library.stickHealth.meaning.ready":
     "The stick database is readable. CDJ-3000, XDJ-XZ and older players will show your playlists. Always eject before you unplug.",

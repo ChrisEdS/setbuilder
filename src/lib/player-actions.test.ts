@@ -9,6 +9,7 @@ import {
   pinOpener,
   restoreExcludedTrack,
   toggleExclude,
+  toggleKeep,
   toggleKeepPin,
   toggleUnsort,
 } from "./set-anchors.ts";
@@ -71,6 +72,7 @@ test("delete removes the track from the set and leaves no flag behind", () => {
     openerId: "a",
     closerId: "c",
     pinnedIds: ["b"],
+    keptIds: ["b"],
     excludedIds: ["x"],
     unsortedIds: ["b"],
     tracks: [track("a", 3), track("b", 6), track("c", 2), track("x", 1, { role: "safety" })],
@@ -79,6 +81,7 @@ test("delete removes the track from the set and leaves no flag behind", () => {
   assert.equal(next.tracks.some((item) => item.id === "b"), false);
   assert.equal(next.tracks.length, draft.tracks.length - 1);
   assert.equal(next.pinnedIds, undefined);
+  assert.equal(next.keptIds, undefined);
   assert.deepEqual(next.unsortedIds, undefined);
   assert.deepEqual(next.excludedIds, ["x"]);
   assert.equal(next.openerId, "a");
@@ -152,6 +155,37 @@ test("an unsorted track stays in the set, leaves its old index, and is not pinne
   assert.ok(performanceIds(kept).includes("b"));
 });
 
+test("keep stays in the set without locking the slot, and pin takes the slot instead", () => {
+  const draft = {
+    ...DEFAULT_SET,
+    openerId: "b",
+    pinnedIds: ["b"],
+    excludedIds: ["b"],
+    unsortedIds: ["b"],
+    tracks: [track("a", 3), track("b", 5, { role: "safety" })],
+  };
+  const kept = toggleKeep(draft, "b");
+  assert.deepEqual(kept.keptIds, ["b"]);
+  assert.equal(kept.pinnedIds, undefined);
+  assert.equal(kept.excludedIds, undefined);
+  assert.equal(kept.unsortedIds, undefined);
+  assert.equal(kept.openerId, null);
+  assert.equal(kept.tracks.find((item) => item.id === "b")?.role, "groove");
+
+  const pinned = toggleKeepPin(kept, "b");
+  assert.deepEqual(pinned.pinnedIds, ["b"]);
+  assert.equal(pinned.keptIds, undefined);
+
+  const again = toggleKeep(pinned, "b");
+  assert.deepEqual(again.keptIds, ["b"]);
+  assert.equal(again.pinnedIds, undefined);
+
+  const ordinary = toggleKeep(again, "b");
+  assert.equal(ordinary.keptIds, undefined);
+  assert.equal(ordinary.pinnedIds, undefined);
+  assert.ok(performanceIds(ordinary).includes("b"));
+});
+
 test("pin, exclude and unsort cancel each other", () => {
   const draft = {
     ...DEFAULT_SET,
@@ -160,10 +194,12 @@ test("pin, exclude and unsort cancel each other", () => {
   const pinned = toggleKeepPin(toggleUnsort(draft, "b"), "b");
   assert.deepEqual(pinned.pinnedIds, ["b"]);
   assert.equal(pinned.unsortedIds, undefined);
+  assert.equal(pinned.keptIds, undefined);
 
   const unsorted = toggleUnsort(pinned, "b");
   assert.deepEqual(unsorted.unsortedIds, ["b"]);
   assert.equal(unsorted.pinnedIds, undefined);
+  assert.equal(unsorted.keptIds, undefined);
 
   const excluded = toggleExclude(unsorted, "b", "raus");
   assert.deepEqual(excluded.excludedIds, ["b"]);

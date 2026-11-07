@@ -124,11 +124,13 @@ type Rehearsal = {
 export type PlayerTrackActions = {
   trackIds: readonly string[];
   pinnedIds?: readonly string[];
+  keptIds?: readonly string[];
   excludedIds?: readonly string[];
   unsortedIds?: readonly string[];
   openerId?: string | null;
   closerId?: string | null;
   onPin: (id: string) => void;
+  onKeep: (id: string) => void;
   onExclude: (id: string) => void;
   onUnsort: (id: string) => void;
   onDelete: (id: string) => void;
@@ -164,6 +166,7 @@ function TrackMarks({
   const marks: { key: string; text: string; className?: string }[] = [];
   if (actions.openerId === id) marks.push({ key: "opener", text: t("crates.player.markOpener") });
   if (actions.closerId === id) marks.push({ key: "closer", text: t("crates.player.markCloser") });
+  if (listed(actions.keptIds, id)) marks.push({ key: "keep", text: t("crates.player.markKeep") });
   if (listed(actions.pinnedIds, id)) marks.push({ key: "pin", text: t("crates.player.markPin") });
   if (listed(actions.unsortedIds, id)) {
     marks.push({ key: "unsort", text: t("crates.player.markUnsorted"), className: "is-free" });
@@ -195,6 +198,7 @@ function TrackActions({
   const { t } = useI18n();
   if (!actions.trackIds.includes(id)) return null;
   const pinned = listed(actions.pinnedIds, id);
+  const kept = listed(actions.keptIds, id);
   const excluded = listed(actions.excludedIds, id);
   const unsorted = listed(actions.unsortedIds, id);
   const opener = actions.openerId === id;
@@ -207,6 +211,14 @@ function TrackActions({
       label: excluded ? t("crates.player.include") : t("crates.player.exclude"),
       tip: excluded ? t("crates.player.includeTip") : t("crates.player.excludeTip"),
       onClick: () => actions.onExclude(id),
+    },
+    {
+      key: "keep",
+      icon: "keep" as const,
+      pressed: kept,
+      label: kept ? t("crates.player.keepClear") : t("crates.player.keep"),
+      tip: kept ? t("crates.player.keepClearTip") : t("crates.player.keepTip"),
+      onClick: () => actions.onKeep(id),
     },
     {
       key: "pin",

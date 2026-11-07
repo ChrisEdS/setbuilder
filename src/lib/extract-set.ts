@@ -8,7 +8,6 @@ import {
 import {
   holdPinnedIndexes,
   orderPhase,
-  orderPinnedSlotsOnly,
   releaseUnsortedIndexes,
   type SetSortTechnique,
 } from "@/lib/sort-set";
@@ -142,7 +141,8 @@ function fillCandidateCount(draft: SetDraft): number {
 
 /**
  * Shuffle the stored playlist pool and rebuild the set for the same brief.
- * Keeps title/vibe/venue/… and opener, closer, and mid-pins (forced into the cast).
+ * Keeps title/vibe/venue/… and opener, closer, mid-pins, and kept tracks
+ * (forced into the cast). Pins are not put back on their old slots.
  */
 export function reshuffleDraftFromPool(
   draft: SetDraft,
@@ -157,8 +157,12 @@ export function reshuffleDraftFromPool(
   const pinnedIds = withoutEndPins(draft.pinnedIds, openerId, closerId);
   const excludedIds = normalizeExcludedIds(draft.excludedIds);
   const excluded = new Set(excludedIds ?? []);
+  const keptIds = (draft.keptIds ?? [])
+    .map((id) => id.trim())
+    .filter((id) => id && !excluded.has(id) && id !== openerId && id !== closerId)
+    .filter((id) => !(pinnedIds ?? []).includes(id));
   const pinIds = new Set(
-    [openerId, closerId, ...(pinnedIds ?? [])]
+    [openerId, closerId, ...(pinnedIds ?? []), ...keptIds]
       .filter((id): id is string => Boolean(id))
       .filter((id) => !excluded.has(id)),
   );
@@ -227,6 +231,7 @@ export function reshuffleDraftFromPool(
       openerId,
       closerId,
       pinnedIds,
+      keptIds,
       excludedIds,
     },
   );
@@ -299,6 +304,7 @@ function buildDraftFromPool(
     openerId?: string | null;
     closerId?: string | null;
     pinnedIds?: string[];
+    keptIds?: string[];
     excludedIds?: string[];
   } = {},
 ): SetDraft {
@@ -311,12 +317,17 @@ function buildDraftFromPool(
   const pinnedIds = withoutEndPins(pins.pinnedIds, openerId, closerId);
   const excludedIds = normalizeExcludedIds(pins.excludedIds);
   const excluded = new Set(excludedIds ?? []);
+  const keptIds = (pins.keptIds ?? [])
+    .map((id) => id.trim())
+    .filter((id) => id && !excluded.has(id) && id !== openerId && id !== closerId)
+    .filter((id, index, all) => all.indexOf(id) === index)
+    .filter((id) => !(pinnedIds ?? []).includes(id));
   const packPool = pool.filter((track) => !excluded.has(track.id));
 
   const selected = ensurePinsInPack(
     packTracks(packPool, targetMs, blendMs),
     packPool,
-    [openerId, closerId, ...(pinnedIds ?? [])]
+    [openerId, closerId, ...(pinnedIds ?? []), ...keptIds]
       .filter((id): id is string => Boolean(id))
       .filter((id) => !excluded.has(id)),
   );
@@ -371,6 +382,7 @@ function buildDraftFromPool(
     openerId,
     closerId,
     pinnedIds,
+    keptIds: keptIds.length ? keptIds : undefined,
     excludedIds,
   };
 
@@ -804,14 +816,40 @@ export function alternativesPulledIntoPerformance(before: SetDraft, after: SetDr
 }
 
 /**
+ * First track from this end that may hold it.
+ * Kept and unsorted tracks are skipped, so a sort can move them.
+ * A pin that is already on the end holds it. A pin further in stops the
+ * walk: the end stays unset instead of dragging another track across the pin.
+ * When every track is free to move, the current end track is the fallback.
+ */
+function positionalEndId(
+  performance: readonly SetTrack[],
+  fromStart: boolean,
+  slotFree: (id: string) => boolean,
+  pinned: ReadonlySet<string>,
+): string | null {
+  const last = performance.length - 1;
+  const step = fromStart ? 1 : -1;
+  for (let index = fromStart ? 0 : last; index >= 0 && index <= last; index += step) {
+    const id = performance[index]?.id;
+    if (!id) continue;
+    if (pinned.has(id)) {
+      const onThisEnd = fromStart ? index === 0 : index === last;
+      return onThisEnd ? id : null;
+    }
+    if (!slotFree(id)) return id;
+  }
+  return performance[fromStart ? 0 : last]?.id ?? null;
+}
+
+/**
  * Reorder the performance and every non-excluded Alternative.
- * Opener and closer stay at the ends. Mid-pins keep their slots.
- * Unsorted tracks are free to leave their old index.
+ * Opener and closer stay at the ends. Mid-pins stay in their slots.
+ * Kept tracks stay in the set and may move. Unsorted tracks are pushed off
+ * their old index when a sort would have left them there.
  * Excluded tracks stay Alternatives. Does not trim to the slot.
  *
- * `perfectPins` is different: only mid-pins swap among their current slots;
- * non-pins stay between those slots, Alternatives stay parked, phases stay.
- * Unsorted tracks may still leave their slot in that mode.
+ * `perfectPins` does not move a pinned slot. Unsorted tracks may still leave.
  */
 export function reorderDraft(draft: SetDraft, technique: SetSortTechnique): SetDraft {
   if (technique === "perfectPins") {
@@ -829,21 +867,24 @@ export function reorderDraft(draft: SetDraft, technique: SetSortTechnique): SetD
   const unsorted = new Set(
     (draft.unsortedIds ?? []).map((id) => id.trim()).filter(Boolean),
   );
-  // Explicit opener/closer win. Otherwise keep the current first/last song,
-  // unless that song was marked to be resorted — then the next track that
-  // still has a slot holds the end. Measured before Alternatives join.
+  const kept = new Set((draft.keptIds ?? []).map((id) => id.trim()).filter(Boolean));
+  // Explicit opener/closer win. Otherwise the current first/last song holds
+  // that end, unless it is only kept or marked to be resorted (those may move).
+  // A pin already sitting on the end stays there. A pin further in blocks the
+  // search: dragging a later track across it would move the pin.
+  // Measured before Alternatives join.
   const explicitOpener = draft.openerId?.trim() || null;
   const explicitCloser = draft.closerId?.trim() || null;
+  const slotFree = (id: string) => unsorted.has(id) || kept.has(id);
+  const pinned = new Set(
+    (withoutEndPins(draft.pinnedIds, explicitOpener, explicitCloser) ?? []).filter(
+      (id) => !unsorted.has(id),
+    ),
+  );
   const startId =
-    explicitOpener ||
-    performance.find((track) => !unsorted.has(track.id))?.id ||
-    performance[0]?.id ||
-    null;
+    explicitOpener || positionalEndId(performance, true, slotFree, pinned);
   const endId =
-    explicitCloser ||
-    [...performance].reverse().find((track) => !unsorted.has(track.id))?.id ||
-    performance[performance.length - 1]?.id ||
-    null;
+    explicitCloser || positionalEndId(performance, false, slotFree, pinned);
 
   const cast = [...performance, ...pulled.map(promoteAlternativeForSort)];
 
@@ -888,9 +929,8 @@ export function reorderDraft(draft: SetDraft, technique: SetSortTechnique): SetD
 }
 
 /**
- * Perfect-sort mid-pins into each other's slots. Non-pinned performance tracks
- * stay where they are; opener/closer stay ends (applySetAnchors); Alternatives
- * are not pulled in.
+ * Pinned slots stay put. Unsorted tracks may still leave their index.
+ * Alternatives are not pulled in. Opener/closer stay ends (applySetAnchors).
  */
 function reorderPinnedDraft(draft: SetDraft): SetDraft {
   const pinnedIds =
@@ -898,16 +938,13 @@ function reorderPinnedDraft(draft: SetDraft): SetDraft {
   const unsorted = new Set(
     (draft.unsortedIds ?? []).map((id) => id.trim()).filter(Boolean),
   );
-  if (!pinnedIds.length && !unsorted.size) return draft;
+  if (!unsorted.size) return draft;
 
   const performance = draft.tracks.filter((track) => track.role !== "safety");
   const safeties = draft.tracks.filter((track) => track.role === "safety");
-  const reordered = pinnedIds.length
-    ? orderPinnedSlotsOnly(performance, pinnedIds)
-    : performance;
   const released = releaseUnsortedIndexes(
     performance,
-    reordered,
+    performance,
     unsorted,
     new Set(
       [draft.openerId, draft.closerId, ...pinnedIds].filter(
@@ -949,8 +986,8 @@ function reorderPerformancePerfect(
 ): SetTrack[] {
   if (performance.length <= 1) return performance;
   const ordered = orderByPerfectHarmony(performance, {
-    fixedStartId: fixedStartId ?? performance[0]?.id ?? null,
-    fixedEndId: fixedEndId ?? performance[performance.length - 1]?.id ?? null,
+    fixedStartId,
+    fixedEndId,
   });
   return rephaseByTimeline(ordered);
 }

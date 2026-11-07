@@ -3938,6 +3938,13 @@ label.btn:hover {
   font-weight: 700;
 }
 
+.timeline-tools button.is-keep,
+.manual-controls .icon-action.is-keep {
+  background: color-mix(in oklab, #8eb4ff 22%, #242424) !important;
+  color: #f4f7ff !important;
+  border-color: rgba(142, 180, 255, 0.7) !important;
+}
+
 .timeline-tools button.is-unsort,
 .manual-controls .icon-action.is-unsort {
   background: color-mix(in oklab, #f0d48a 28%, #242424) !important;
@@ -3980,6 +3987,11 @@ label.btn:hover {
 .anchor-pill.is-opener {
   background: color-mix(in oklab, var(--mint) 55%, #1a1a1a);
   color: #e8fff0;
+}
+
+.anchor-pill.is-keep {
+  background: color-mix(in oklab, #8eb4ff 40%, #1a1a1a);
+  color: #f4f7ff;
 }
 
 .anchor-pill.is-pin {

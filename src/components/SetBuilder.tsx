@@ -49,7 +49,7 @@ import {
   requestPreviewResume,
   subscribePreviewTransport,
 } from "@/lib/preview-transport";
-import { scrollPlayingSetRow } from "@/lib/scroll-playing-row";
+import { scrollPlayingSetRow, watchPlayingRowClearance } from "@/lib/scroll-playing-row";
 import { PlaceInSetMenu } from "@/components/PlaceInSetMenu";
 import { ReplaceMenu } from "@/components/ReplaceMenu";
 import { SetGuideDrawer } from "@/components/SetGuideDrawer";
@@ -70,13 +70,17 @@ import {
   type RekordboxStickSet,
   type StickTrack,
 } from "@/lib/rekordbox-stick";
+import { preloadStickAnalysisIndex } from "@/lib/stick-cues";
 import {
+  getStickHandleEpoch,
   hydrateStickMedia,
   loadPersistedStickHandle,
   pickAndRememberStick,
   readStickFromHandle,
   stickPermission,
+  subscribeStickHandle,
 } from "@/lib/stick-session";
+import { savedVolumeHandle } from "@/lib/stick-volume-client";
 import { probeStickAlive } from "@/lib/stick-alive";
 import {
   getStickFilesEpoch,
@@ -159,10 +163,12 @@ import {
   pinCloser,
   pinOpener,
   normalizeExcludedIds,
+  normalizeKeptIds,
   normalizeUnsortedIds,
   placeInPerformance,
   restoreExcludedTrack,
   toggleExclude,
+  toggleKeep,
   toggleKeepPin,
   toggleUnsort,
   withoutEndPins,
@@ -526,6 +532,12 @@ export function SetBuilder() {
     });
     return () => cancelAnimationFrame(frame);
   }, [playingTrackId]);
+  const heardTrackId = previewTransport.trackId;
+  useEffect(() => {
+    // Player geometry only. Pause and resume of the same id do not scroll.
+    if (!heardTrackId) return;
+    return watchPlayingRowClearance(heardTrackId);
+  }, [heardTrackId]);
   const [libraryPreview, setLibraryPreview] = useState<SetTrack | null>(null);
   const [libraryRows, setLibraryRows] = useState<LibraryRow[]>([]);
   const [stickSets, setStickSets] = useState<RekordboxStickSet[]>([]);
@@ -819,6 +831,34 @@ export function SetBuilder() {
       cancelled = true;
     };
   }, [libraryRows.length, draft.tracks.length]);
+
+  const stickHandleEpoch = useSyncExternalStore(
+    subscribeStickHandle,
+    getStickHandleEpoch,
+    () => 0,
+  );
+
+  // Same path index the player caches on the directory handle. The yellow
+  // note stays inside the open player; this only starts the walk.
+  useEffect(() => {
+    if (draft.tracks.length === 0) return;
+    let cancelled = false;
+    const volume = savedVolumeHandle();
+    if (volume) {
+      void preloadStickAnalysisIndex(volume);
+      return;
+    }
+    void (async () => {
+      const persisted = await loadPersistedStickHandle().catch(() => null);
+      if (cancelled || !persisted) return;
+      if (!(await stickPermission(persisted, "read", false).catch(() => false))) return;
+      if (cancelled) return;
+      void preloadStickAnalysisIndex(persisted);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [draft.tracks.length, stickHandleEpoch, stickReady]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1673,7 +1713,7 @@ export function SetBuilder() {
     );
   }
 
-  function addLibraryTrack(incoming: SetTrack, afterId?: string) {
+  function addLibraryTrack(incoming: SetTrack, place?: { side: "before" | "after" }) {
     // An Alternative whose energy contradicts the chosen phase goes to the phase it fits.
     const track =
       incoming.role === "safety"
@@ -1689,25 +1729,33 @@ export function SetBuilder() {
       setStatus(t("builder.status.alreadyInNamed", { name: track.name }));
       return;
     }
+    // Same rule as before: after the chosen set row, or on the end when there is none.
+    // The row is the selected one, otherwise the one that is playing.
+    const anchorId = place
+      ? [focusTrackId, playingTrackId].find(
+          (id) => Boolean(id && draft.tracks.some((item) => item.id === id)),
+        ) ?? null
+      : null;
+    const side = place?.side === "before" ? "before" : "after";
     setDraft((current) => {
       const fresh = uniqueIncomingDraftTracks(
         current.tracks.map((item) => item.id),
         [track],
       );
       if (!fresh.length) return current;
-      if (!afterId) return { ...current, tracks: [...current.tracks, ...fresh] };
-      const at = current.tracks.findIndex((item) => item.id === afterId);
+      if (!anchorId) return { ...current, tracks: [...current.tracks, ...fresh] };
+      const at = current.tracks.findIndex((item) => item.id === anchorId);
       if (at < 0) return { ...current, tracks: [...current.tracks, ...fresh] };
       const tracks = current.tracks.slice();
-      tracks.splice(at + 1, 0, ...fresh);
+      tracks.splice(side === "before" ? at : at + 1, 0, ...fresh);
       return { ...current, tracks };
     });
-    const after = afterId ? draft.tracks.find((item) => item.id === afterId) : null;
+    const anchor = anchorId ? draft.tracks.find((item) => item.id === anchorId) : null;
     setStatus(
-      after
-        ? t("builder.status.addedAfter", {
+      anchor
+        ? t(side === "before" ? "builder.status.addedBefore" : "builder.status.addedAfter", {
             name: track.name,
-            after: after.name,
+            after: anchor.name,
             phase: phaseLabel(t, track.phase),
             role: roleLabel(t, track.role),
           })
@@ -1816,6 +1864,9 @@ export function SetBuilder() {
         pinnedIds: demoted
           ? withoutEndPins(current.pinnedIds?.filter((item) => item !== id), null, null)
           : current.pinnedIds,
+        keptIds: demoted
+          ? normalizeKeptIds(current.keptIds?.filter((item) => item !== id))
+          : current.keptIds,
         excludedIds: promoted
           ? normalizeExcludedIds(current.excludedIds?.filter((item) => item !== id))
           : current.excludedIds,
@@ -2205,6 +2256,9 @@ export function SetBuilder() {
           openerId,
           closerId,
         ),
+        keptIds: normalizeKeptIds(
+          current.keptIds?.map((item) => (item === targetId ? replacementId : item)),
+        ),
         // Replacement enters the performance — drop exclude on both ids.
         excludedIds: normalizeExcludedIds(
           current.excludedIds?.filter(
@@ -2240,6 +2294,9 @@ export function SetBuilder() {
           current.pinnedIds?.map((item) => (item === targetId ? incoming.id : item)),
           openerId,
           closerId,
+        ),
+        keptIds: normalizeKeptIds(
+          current.keptIds?.map((item) => (item === targetId ? incoming.id : item)),
         ),
         excludedIds: normalizeExcludedIds(
           current.excludedIds?.filter((item) => item !== targetId && item !== incoming.id),
@@ -2299,6 +2356,9 @@ export function SetBuilder() {
           current.pinnedIds?.map((item) => (item === targetId ? incoming.id : item)),
           openerId,
           closerId,
+        ),
+        keptIds: normalizeKeptIds(
+          current.keptIds?.map((item) => (item === targetId ? incoming.id : item)),
         ),
         excludedIds: normalizeExcludedIds(
           current.excludedIds?.filter((item) => item !== targetId && item !== incoming.id),
@@ -4646,6 +4706,9 @@ export function SetBuilder() {
                               {rowCompact && draft.closerId === track.id ? (
                                 <em className="anchor-pill is-closer">{t("builder.row.closerBadge")}</em>
                               ) : null}
+                              {rowCompact && draft.keptIds?.includes(track.id) ? (
+                                <em className="anchor-pill is-keep">{t("builder.row.keepBadge")}</em>
+                              ) : null}
                               {rowCompact && draft.pinnedIds?.includes(track.id) ? (
                                 <em className="anchor-pill is-pin">{t("builder.row.pinBadge")}</em>
                               ) : null}
@@ -4682,6 +4745,13 @@ export function SetBuilder() {
                               <Tip text={t("builder.row.closerBadgeTip")}>
                                 <em className="anchor-pill is-closer">
                                   {t("builder.row.closerBadge")}
+                                </em>
+                              </Tip>
+                            ) : null}
+                            {draft.keptIds?.includes(track.id) ? (
+                              <Tip text={t("builder.row.keepBadgeTip")}>
+                                <em className="anchor-pill is-keep">
+                                  {t("builder.row.keepBadge")}
                                 </em>
                               </Tip>
                             ) : null}
@@ -4992,6 +5062,41 @@ export function SetBuilder() {
                               </button>
                             </Tip>
                           ) : null}
+                          <Tip
+                            text={
+                              draft.keptIds?.includes(track.id)
+                                ? t("builder.row.clearKeepTip")
+                                : track.role === "safety"
+                                  ? t("builder.row.setKeepFromAltTitle")
+                                  : t("builder.row.setKeepTitle")
+                            }
+                          >
+                            <button
+                              type="button"
+                              className={
+                                draft.keptIds?.includes(track.id)
+                                  ? "icon-action is-keep"
+                                  : "icon-action"
+                              }
+                              aria-label={
+                                draft.keptIds?.includes(track.id)
+                                  ? t("builder.row.clearKeep")
+                                  : t("builder.row.setKeep")
+                              }
+                              aria-pressed={Boolean(draft.keptIds?.includes(track.id))}
+                              onClick={() => {
+                                const fromAlt = track.role === "safety";
+                                setDraft((current) => toggleKeep(current, track.id));
+                                if (fromAlt && !draft.keptIds?.includes(track.id)) {
+                                  setStatus(
+                                    t("builder.status.keptFromAlt", { name: track.name }),
+                                  );
+                                }
+                              }}
+                            >
+                              <ActionIcon name="keep" />
+                            </button>
+                          </Tip>
                           <Tip
                             text={
                               draft.pinnedIds?.includes(track.id)
@@ -5627,10 +5732,12 @@ export function SetBuilder() {
         actions={{
           trackIds: draft.tracks.map((item) => item.id),
           pinnedIds: draft.pinnedIds,
+          keptIds: draft.keptIds,
           excludedIds: draft.excludedIds,
           unsortedIds: draft.unsortedIds,
           openerId: draft.openerId,
           closerId: draft.closerId,
+          onKeep: (id) => setDraft((current) => toggleKeep(current, id)),
           onExclude: (id) =>
             setDraft((current) =>
               current.excludedIds?.includes(id)

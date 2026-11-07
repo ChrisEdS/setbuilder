@@ -405,24 +405,81 @@ html[data-frame="mac"] .set-shell .hero-copy {
   gap: var(--ui-space-2) !important;
 }
 
-.set-shell .library-browser-head:has(.library-add-bar) {
-  flex-wrap: wrap !important;
+/* Add-music head: one 5-column grid. Search is its own full-width row.
+   Playlist, Passt zu, key, BPM and energy share the filter tracks.
+   Beim Hinzufügen keeps phase and role. */
+.set-shell .library-browser-head:has(.library-refine) {
+  display: grid !important;
+  grid-template-columns: minmax(9.5rem, 1.4fr) repeat(4, minmax(0, 1fr));
   align-items: center;
-}
-
-.set-shell .library-browser-head:has(.library-add-bar) .library-browser-toolbar {
-  flex: 1 1 28rem;
-  min-width: min(100%, 22rem);
-  flex-wrap: wrap;
-}
-
-.set-shell .library-refine {
-  display: grid;
-  grid-template-columns: minmax(9.5rem, 1.4fr) repeat(4, minmax(6.5rem, 1fr));
-  flex: 1 1 100%;
+  column-gap: 0.75rem !important;
+  row-gap: 0.55rem !important;
   width: 100%;
-  gap: 0.55rem 0.75rem;
+}
+
+.set-shell .library-browser-head:has(.library-refine) .library-browser-title {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  align-self: center;
+  width: auto;
+  max-width: 100%;
+  margin: 0 !important;
+}
+
+.set-shell .library-browser-head:has(.library-refine) .library-browser-heading {
+  overflow: visible;
+  text-overflow: unset;
+}
+
+.set-shell .library-browser-head:has(.library-refine) .library-browser-toolbar {
+  display: contents;
+}
+
+.set-shell .library-browser-head:has(.library-refine) .library-browser-toolbar > datalist {
+  display: none;
+}
+
+.set-shell .library-browser-head:has(.library-refine) .library-search-field {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: flex;
+  width: 100%;
+  min-width: 0 !important;
+  max-width: none !important;
+  flex: none !important;
+}
+
+.set-shell .library-browser-head:has(.library-refine) .library-playlist-pick {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+
+.set-shell .library-browser-head:has(.library-refine) .library-playlist-pick select {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+}
+
+.set-shell .library-browser-head:has(.library-refine) .library-refine {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  display: grid;
+  grid-template-columns: subgrid;
+  width: 100%;
+  margin-top: 0.2rem;
+  column-gap: 0.75rem !important;
+  row-gap: 0.55rem;
   align-items: end;
+}
+
+.set-shell .library-browser-head:has(.library-refine):not(:has(.library-playlist-pick)):not(:has(.library-add-fit)) .library-refine {
+  grid-row: 2;
+}
+
+.set-shell .library-browser-head:has(.library-refine):not(:has(.library-playlist-pick)):not(:has(.library-add-fit)) .library-add-bar {
+  grid-row: 3;
 }
 
 .set-shell .library-refine label {
@@ -453,14 +510,37 @@ html[data-frame="mac"] .set-shell .hero-copy {
   text-overflow: ellipsis;
 }
 
-@media (max-width: 720px) {
-  .set-shell .library-refine {
+@media (max-width: 900px) {
+  .set-shell .library-browser-head:has(.library-refine) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .set-shell .library-browser-head:has(.library-refine) .library-browser-title,
+  .set-shell .library-browser-head:has(.library-refine) .library-search-field {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+
+  .set-shell .library-browser-head:has(.library-refine) .library-refine {
+    grid-template-columns: subgrid;
+    grid-row: auto;
   }
 
   .set-shell .library-refine label:first-child {
     grid-column: 1 / -1;
   }
+
+  .set-shell .library-browser-head:has(.library-refine) .library-add-bar,
+  .set-shell .library-browser-head:has(.library-refine) .library-add-group {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    grid-template-columns: subgrid;
+  }
+
+  .set-shell .library-browser-head:has(.library-refine) .library-add-group > span {
+    grid-column: 1 / -1;
+  }
+
 }
 
 .set-shell .phase-purpose {
@@ -500,60 +580,83 @@ html[data-frame="mac"] .set-shell .hero-copy {
   text-overflow: ellipsis;
 }
 
-.set-shell .library-browser-head:has(.library-add-bar) .library-playlist-pick {
-  flex: 0 0 auto;
-}
-
-.set-shell .library-browser-head .library-add-bar {
-  flex: 1 0 100% !important;
+.set-shell .library-browser-head:has(.library-refine) .library-add-bar {
+  grid-column: 1 / -1;
+  grid-row: 4;
+  display: grid !important;
+  grid-template-columns: subgrid;
+  align-items: end;
   width: 100%;
-  flex-wrap: wrap;
-  align-items: center;
-  margin: var(--ui-space-3) 0 0 !important;
-  padding-top: var(--ui-space-3);
-  justify-content: flex-start !important;
+  margin: 0.35rem 0 0 !important;
+  padding-top: 0.75rem;
+  justify-content: stretch !important;
   border-top: 1px solid var(--ui-border);
-  row-gap: var(--ui-space-2);
+  column-gap: 0.75rem !important;
+  row-gap: 0.55rem !important;
 }
 
-.set-shell .library-add-group {
-  display: flex;
-  flex: 0 1 auto;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--ui-space-2);
+.set-shell .library-browser-head:has(.library-refine) .library-add-group {
+  grid-column: 1 / 4;
+  display: grid;
+  grid-template-columns: subgrid;
+  align-items: end;
+  min-width: 0;
+  column-gap: 0.75rem !important;
 }
 
-.set-shell .library-add-bar label,
-.set-shell .library-add-fit {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--ui-space-2);
-  flex: 0 0 auto;
-  min-width: max-content;
-  max-width: 100%;
+.set-shell .library-browser-head:has(.library-refine) .library-add-group > span {
+  grid-column: 1;
+  align-self: start;
+  margin: 0;
+  color: var(--ui-muted, #b3b3b3);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: 0.02em;
 }
 
-.set-shell .library-add-fit {
-  flex: 1 1 16rem;
-  min-width: min(100%, 16rem);
+.set-shell .library-browser-head:has(.library-refine) .library-add-bar label,
+.set-shell .library-browser-head:has(.library-refine) .library-add-fit {
+  display: grid;
+  align-content: end;
+  align-items: stretch;
+  gap: 0.2rem;
+  flex: none;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  color: var(--ui-muted, #b3b3b3);
+  font-size: 0.72rem;
+  line-height: 1.25;
+  letter-spacing: 0.02em;
 }
 
-.set-shell .library-add-fit select {
-  flex: 1 1 auto;
-  min-width: 9rem !important;
-  max-width: 100%;
+.set-shell .library-browser-head:has(.library-refine) .library-refine > .tip {
+  min-width: 0;
+}
+
+.set-shell .library-browser-head:has(.library-refine) .library-add-fit {
+  align-self: end;
+  min-width: 0;
+}
+
+.set-shell .library-browser-head:has(.library-refine) .library-add-bar select,
+.set-shell .library-browser-head:has(.library-refine) .library-add-fit select {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
 }
 
 .set-shell .library-browser-head:has(.library-add-bar) :is(
   .library-playlist-pick select,
-  .library-add-bar select
+  .library-add-bar select,
+  .library-add-fit select
 ) {
   appearance: none !important;
   -webkit-appearance: none !important;
-  width: auto;
-  min-width: 7.5rem;
-  max-width: 100%;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
   height: var(--ui-control-height);
   padding-top: 0 !important;
   padding-bottom: 0 !important;
@@ -566,10 +669,6 @@ html[data-frame="mac"] .set-shell .hero-copy {
   background-position: right 0.65rem center !important;
   background-size: 1rem !important;
   text-overflow: ellipsis;
-}
-
-.set-shell .library-browser-head:has(.library-add-bar) .library-playlist-pick select {
-  min-width: 10.5rem;
 }
 
 .set-shell .set-chrome {
@@ -591,6 +690,107 @@ html[data-frame="mac"] .set-shell .hero-copy {
   align-items: center;
   gap: var(--ui-space-2);
   margin-left: auto;
+}
+
+/* Density matches Sortieren and the other tools in that bar: 34px, not the large control. */
+.set-shell .list-density.seg {
+  gap: 0.5rem !important;
+  padding: 0 !important;
+}
+
+.set-shell .list-density .seg-item {
+  box-sizing: border-box;
+  width: auto;
+  min-height: 34px !important;
+  height: 34px !important;
+  padding: 0 0.55rem !important;
+  font-size: 0.78rem !important;
+  font-weight: 650 !important;
+  line-height: 1 !important;
+}
+
+.set-shell .library-tools-toggle {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem 0.5rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.set-shell .library-tools-toggle::before {
+  content: "";
+  width: 0.55rem;
+  height: 0.55rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-135deg);
+  align-self: center;
+  flex: 0 0 auto;
+}
+
+.set-shell .library-browser-head.is-tools-collapsed .library-tools-toggle::before {
+  transform: rotate(45deg);
+}
+
+.set-shell .library-browser-head.is-tools-collapsed .library-browser-toolbar {
+  display: none !important;
+}
+
+.set-shell .library-browser-head.is-tools-collapsed .library-playlist-pick {
+  display: none !important;
+}
+
+@media (min-width: 901px) {
+  .set-shell .library-browser-head.is-tools-collapsed:has(.library-refine) .library-refine {
+    grid-row: 2;
+  }
+
+  .set-shell .library-browser-head.is-tools-collapsed:has(.library-refine) .library-add-bar {
+    grid-row: 3;
+  }
+}
+
+.set-shell .library-insert {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.set-shell .library-insert > span {
+  margin-right: auto;
+  color: var(--ui-muted, #b3b3b3);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.set-shell .library-insert button {
+  box-sizing: border-box;
+  min-height: 34px !important;
+  height: 34px;
+  padding: 0 0.7rem !important;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: transparent;
+  color: #fff;
+  font-size: 0.78rem !important;
+  font-weight: 650;
+  line-height: 1;
+}
+
+.set-shell .library-insert button[aria-pressed="true"] {
+  background: #fff;
+  border-color: #fff;
+  color: #121212;
 }
 
 .set-shell .set-menus > .menu > summary.btn.menu-trigger {
@@ -733,6 +933,12 @@ html[data-frame="mac"] .set-shell .hero-copy {
   background: color-mix(in oklab, var(--spotify) 18%, #242424) !important;
   color: #fff !important;
   border-color: rgba(30, 215, 96, 0.55) !important;
+}
+
+.set-shell .timeline-tools .icon-action.is-keep {
+  background: color-mix(in oklab, #8eb4ff 22%, #242424) !important;
+  color: #f4f7ff !important;
+  border-color: rgba(142, 180, 255, 0.7) !important;
 }
 
 .set-shell .timeline-tools .icon-action.is-unsort {
@@ -1565,27 +1771,90 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 .set-shell .stick-sets-fold .library-list li {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  display: flex !important;
   align-items: center;
+  justify-content: flex-start;
   gap: var(--ui-space-3);
-  min-height: calc(var(--ui-control-height) + var(--ui-space-4));
-  padding-block: var(--ui-space-3) !important;
+  min-height: 0;
+  padding-block: 0.3rem !important;
 }
 
 .set-shell .stick-sets-fold .library-list li:first-child,
 .set-shell .stick-sets-fold .library-list li:last-child {
-  padding-block: var(--ui-space-3) !important;
+  padding-block: 0.3rem !important;
 }
 
-.set-shell .stick-sets-fold .library-list li > div {
+.set-shell .stick-sets-fold .library-list li > .stick-set-copy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.6rem;
+  row-gap: 0;
   min-width: 0;
+  flex: 1 1 auto;
   align-self: center;
 }
 
-.set-shell .stick-sets-fold .library-list li > em {
+.set-shell .stick-sets-fold .library-list li > .stick-set-copy strong {
+  display: inline;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.set-shell .stick-sets-fold .library-list li > .stick-set-copy em {
+  flex: 0 0 auto;
   align-self: center;
   line-height: 1.2;
+}
+
+.set-shell .stick-sets-fold .library-list li > .stick-set-copy span {
+  flex: 1 0 100%;
+}
+
+/* Library tracks: key, BPM and energy sit with the title. The add button stays at the edge. */
+.set-shell .library-browser .library-list li {
+  display: flex !important;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 0;
+  padding-block: 0.22rem !important;
+}
+
+.set-shell .library-browser .library-list li:first-child,
+.set-shell .library-browser .library-list li:last-child {
+  padding-block: 0.22rem !important;
+}
+
+.set-shell .library-browser .library-list li > .library-row-copy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.55rem;
+  row-gap: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.set-shell .library-browser .library-list li > .library-row-copy strong {
+  display: inline;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.set-shell .library-browser .library-list li > .library-row-copy em {
+  flex: 0 0 auto;
+  align-self: center;
+}
+
+.set-shell .library-browser .library-list li > .library-row-copy span {
+  flex: 1 0 100%;
+}
+
+.set-shell .library-browser .library-list li > .lib-add {
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 
 .set-shell .stick-sets-fold .stick-set-load {
@@ -1741,24 +2010,7 @@ html[data-frame="mac"] .set-shell .hero-copy {
     max-height: min(60vh, 28rem);
   }
 
-  .set-shell .stick-sets-fold .library-list li {
-    grid-template:
-      "track action"
-      "meta action" / minmax(0, 1fr) auto;
-    row-gap: var(--ui-space-1);
-  }
-
-  .set-shell .stick-sets-fold .library-list li > div {
-    grid-area: track;
-  }
-
-  .set-shell .stick-sets-fold .library-list li > em {
-    grid-area: meta;
-    justify-self: start;
-  }
-
   .set-shell .stick-sets-fold .stick-set-load {
-    grid-area: action;
     align-self: center;
   }
 }
@@ -1948,10 +2200,11 @@ html[data-frame="mac"] .set-shell .hero-copy {
 
 .preview-player .player-skip,
 .preview-player .preview-close {
-  width: 2rem;
-  height: 2rem;
-  min-width: 2rem;
-  min-height: 2rem;
+  width: 2rem !important;
+  height: 2rem !important;
+  min-width: 2rem !important;
+  min-height: 2rem !important;
+  padding: 0 !important;
 }
 
 .preview-player .preview-close {

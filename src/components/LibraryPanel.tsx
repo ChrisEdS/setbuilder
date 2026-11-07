@@ -126,13 +126,22 @@ export function LibraryBrowser({
 }: {
   draft: SetDraft;
   rows: LibraryRow[];
-  /** Optional afterId: place the new track right after that set track (Fits after). */
-  onAddTrack?: (track: SetTrack, afterId?: string) => void;
+  /** side is before/after the selected or playing set row. Without one, the track goes on the end. */
+  onAddTrack?: (track: SetTrack, place?: { side: "before" | "after" }) => void;
   onPlayTrack?: (track: SetTrack) => void;
   playingId?: string | null;
 }) {
   const { t } = useI18n();
   const [fitTo, setFitTo] = useState("");
+  const [insertSide, setInsertSide] = useState<"before" | "after">("after");
+  useEffect(() => {
+    const stored = sessionStorage.getItem("setbuilder-add-place");
+    if (stored === "before" || stored === "after") setInsertSide(stored);
+  }, []);
+  function chooseInsertSide(side: "before" | "after") {
+    setInsertSide(side);
+    sessionStorage.setItem("setbuilder-add-place", side);
+  }
   const [fitPageState, setFitPageState] = useState<{
     page: number;
     fitTo: string;
@@ -143,6 +152,8 @@ export function LibraryBrowser({
   const [addPhase, setAddPhase] = useState<SetPhaseId>("open");
   const [addRole, setAddRole] = useState<TrackRole>("groove");
   const [query, setQuery] = useState("");
+  const [libraryToolsOpen, setLibraryToolsOpen] = useState(true);
+  const libraryToolsId = useId();
   const [keyFilter, setKeyFilter] = useState("");
   const [bpmMin, setBpmMin] = useState("");
   const [bpmMax, setBpmMax] = useState("");
@@ -244,12 +255,24 @@ export function LibraryBrowser({
   return (
     <div className="library-panel">
       <div className="library-browser builder-card">
-        <div className="library-browser-head">
+        <div
+          className={
+            "library-browser-head" + (libraryToolsOpen ? "" : " is-tools-collapsed")
+          }
+        >
           <h3 className="library-browser-title">
-            <span className="library-browser-heading">{t("library.browser.title")}</span>
-            <span className="library-browser-meta">{trackCount(rows.length, t)}</span>
+            <button
+              type="button"
+              className="library-tools-toggle"
+              aria-expanded={libraryToolsOpen}
+              aria-controls={libraryToolsId}
+              onClick={() => setLibraryToolsOpen((open) => !open)}
+            >
+              <span className="library-browser-heading">{t("library.browser.title")}</span>
+              <span className="library-browser-meta">{trackCount(rows.length, t)}</span>
+            </button>
           </h3>
-          <div className="library-browser-toolbar">
+          <div className="library-browser-toolbar" id={libraryToolsId}>
             <Tip text={t("library.browser.searchTip")} className="library-search-field">
               <input
                 value={query}
@@ -266,6 +289,8 @@ export function LibraryBrowser({
                 ))}
               </datalist>
             ) : null}
+          </div>
+          <div className="library-refine">
             {playlistOptions.length > 0 ? (
               <Tip text={t("library.browser.playlistPickTip")}>
                 <label className="library-playlist-pick">
@@ -285,8 +310,20 @@ export function LibraryBrowser({
                 </label>
               </Tip>
             ) : null}
-          </div>
-          <div className="library-refine">
+            {onAddTrack ? (
+              <label className="library-add-fit" title={t("library.add.fitsTip")}>
+                {t("library.add.fits")}
+                <select value={fitTo} onChange={(event) => setFitTo(event.target.value)}>
+                  <option value="">{t("library.add.allTracks")}</option>
+                  {performanceTracks(draft.tracks).map((track, index) => (
+                    <option key={track.id} value={track.id}>
+                      {index + 1}. {track.name} ({track.keyCamelot || "—"} · {track.bpm || "—"}
+                      {track.energyLevel != null ? ` · E${track.energyLevel}` : ""})
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
             <label>
               {t("library.filter.key")}
               <select
@@ -377,18 +414,6 @@ export function LibraryBrowser({
               </select>
             </label>
             </div>
-            <label className="library-add-fit" title={t("library.add.fitsTip")}>
-              {t("library.add.fits")}
-              <select value={fitTo} onChange={(event) => setFitTo(event.target.value)}>
-                <option value="">{t("library.add.allTracks")}</option>
-                {performanceTracks(draft.tracks).map((track, index) => (
-                  <option key={track.id} value={track.id}>
-                    {index + 1}. {track.name} ({track.keyCamelot || "—"} · {track.bpm || "—"}
-                    {track.energyLevel != null ? ` · E${track.energyLevel}` : ""})
-                  </option>
-                ))}
-              </select>
-            </label>
           </div>
           ) : null}
         </div>
@@ -422,25 +447,24 @@ export function LibraryBrowser({
                     {playing ? "❚❚" : "▶"}
                   </button>
                 ) : null}
-                <div>
+                <div className="library-row-copy">
                   <strong>{row.title}</strong>
+                  <em>
+                    {row.key || "—"}
+                    {row.bpm ? ` · ${row.bpm}` : ""}
+                    {row.energy != null ? ` · E${row.energy}` : ""}
+                  </em>
                   <span>{row.artist || t("common.unknown")}</span>
                 </div>
-                <em>
-                  {row.key || "—"}
-                  {row.bpm ? ` · ${row.bpm}` : ""}
-                  {row.energy != null ? ` · E${row.energy}` : ""}
-                </em>
                 {onAddTrack ? (
                   <button
                     type="button"
                     className="btn ghost lib-add"
                     disabled={already}
                     onClick={() =>
-                      onAddTrack(
-                        libraryTrackToSetTrack(row, addPhase, addRole, t),
-                        fitTo || undefined,
-                      )
+                      onAddTrack(libraryTrackToSetTrack(row, addPhase, addRole, t), {
+                        side: insertSide,
+                      })
                     }
                   >
                     {already ? t("library.row.inSet") : t("library.row.add")}
@@ -484,6 +508,29 @@ export function LibraryBrowser({
                 total: rankedLibrary.length,
               })}
             </span>
+          </div>
+        ) : null}
+        {onAddTrack ? (
+          <div className="library-insert" role="group" aria-label={t("library.add.place")}>
+            <span>{t("library.add.place")}</span>
+            <Tip text={t("library.add.placeTip")}>
+              <button
+                type="button"
+                aria-pressed={insertSide === "before"}
+                onClick={() => chooseInsertSide("before")}
+              >
+                {t("library.add.before")}
+              </button>
+            </Tip>
+            <Tip text={t("library.add.placeTip")} end>
+              <button
+                type="button"
+                aria-pressed={insertSide === "after"}
+                onClick={() => chooseInsertSide("after")}
+              >
+                {t("library.add.after")}
+              </button>
+            </Tip>
           </div>
         ) : null}
       </div>

@@ -184,14 +184,14 @@ export function StickSetList({
               const ms = set.tracks.reduce((sum, track) => sum + track.durationMs, 0);
               return (
                 <li key={set.id}>
-                  <div>
+                  <div className="stick-set-copy">
                     <strong>{set.name}</strong>
+                    <em>
+                      {trackCount(set.tracks.length, t)}
+                      {ms ? ` · ${formatDuration(ms)}` : ""}
+                    </em>
                     <span>{setSubtitle(set)}</span>
                   </div>
-                  <em>
-                    {trackCount(set.tracks.length, t)}
-                    {ms ? ` · ${formatDuration(ms)}` : ""}
-                  </em>
                   <button
                     type="button"
                     className="btn ghost stick-set-load"

@@ -7,6 +7,7 @@ import type { DirLike, FileLike } from "./rekordbox-stick-write.ts";
 import {
   formatGridReadingNote,
   indexWalkPercent,
+  preloadStickAnalysisIndex,
   readStickBeatGrid,
   readStickHotCues,
   rekordboxTrackId,
@@ -442,4 +443,132 @@ test("the first index walk reports files finished over files to read, and the ne
   stopLater();
   assert.equal(again?.[0]?.timeMs, 1517);
   assert.deepEqual(later, []);
+});
+
+test("the file count is known before analysis folders are opened", async () => {
+  const paths = ["/Contents/A/One.mp3", "/Contents/B/Two.mp3", "/Contents/C/Three.mp3"];
+  const root = new MemoryDir("LE_BACKUP");
+  const pioneer = new MemoryDir("PIONEER");
+  const library = new MemoryDir("USBANLZ");
+  const group = new MemoryDir("P009");
+  paths.forEach((path, index) => {
+    const track = new MemoryDir(`0000000${index}`);
+    const dat = new MemoryFile("ANLZ0000.DAT", fileWith([pathTag(path), beatTag()]));
+    track.files.set(dat.name, dat);
+    group.dirs.set(track.name, track);
+  });
+  library.dirs.set(group.name, group);
+  pioneer.dirs.set(library.name, library);
+  root.dirs.set(pioneer.name, pioneer);
+  const seen: Array<StickIndexWalk | null> = [];
+  const openedAfterCount: boolean[] = [];
+  const open = group.getDirectoryHandle.bind(group);
+  group.getDirectoryHandle = async (name: string, options?: { create?: boolean }) => {
+    openedAfterCount.push(seen.some((walk) => walk !== null && walk.total === paths.length));
+    return open(name, options);
+  };
+  const stop = subscribeStickIndexProgress(root, (walk) => {
+    seen.push(walk);
+  });
+  const beats = await readStickBeatGrid(root, 1, paths[0] ?? "");
+  stop();
+  assert.equal(beats?.[0]?.timeMs, 1517);
+  assert.equal(openedAfterCount.length, paths.length);
+  assert.equal(openedAfterCount.every(Boolean), true);
+  const counted = seen.filter((walk): walk is StickIndexWalk => walk !== null && walk.total > 0);
+  assert.equal(counted[0]?.finished, 0);
+  assert.equal(counted[0]?.total, paths.length);
+  assert.ok(counted.some((walk) => walk.finished > 0 && walk.finished < walk.total));
+});
+
+test("a background preload fills the index the player uses, and a second start does not walk", async () => {
+  const paths = ["/Contents/A/One.mp3", "/Contents/B/Two.mp3", "/Contents/C/Three.mp3"];
+  const root = new MemoryDir("LE_BACKUP");
+  const pioneer = new MemoryDir("PIONEER");
+  const library = new MemoryDir("USBANLZ");
+  const group = new MemoryDir("P009");
+  const files: MemoryFile[] = [];
+  paths.forEach((path, index) => {
+    const track = new MemoryDir(`0000000${index}`);
+    const dat = new MemoryFile("ANLZ0000.DAT", fileWith([pathTag(path), beatTag()]));
+    files.push(dat);
+    track.files.set(dat.name, dat);
+    group.dirs.set(track.name, track);
+  });
+  library.dirs.set(group.name, group);
+  pioneer.dirs.set(library.name, library);
+  root.dirs.set(pioneer.name, pioneer);
+
+  let walks = 0;
+  let release = () => {};
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const list = library.keys.bind(library);
+  library.keys = async function* () {
+    walks += 1;
+    await gate;
+    yield* list();
+  };
+
+  const during: Array<StickIndexWalk | null> = [];
+  const stopDuring = subscribeStickIndexProgress(root, (walk) => {
+    during.push(walk);
+  });
+  const first = preloadStickAnalysisIndex(root);
+  try {
+    for (let attempt = 0; attempt < 20 && walks === 0; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+    const second = preloadStickAnalysisIndex(root);
+    assert.equal(walks, 1);
+    release();
+    await first;
+    await second;
+  } finally {
+    release();
+    stopDuring();
+  }
+  assert.equal(walks, 1);
+  assert.equal(during[during.length - 1], null);
+  assert.equal(files.every((file) => file.writes === 0), true);
+
+  const later: Array<StickIndexWalk | null> = [];
+  const stopLater = subscribeStickIndexProgress(root, (walk) => {
+    later.push(walk);
+  });
+  const beats = await readStickBeatGrid(root, 1, paths[0] ?? "");
+  stopLater();
+  assert.equal(beats?.[0]?.timeMs, 1517);
+  assert.equal(walks, 1);
+  assert.deepEqual(later, []);
+
+  await preloadStickAnalysisIndex(root);
+  assert.equal(walks, 1);
+
+  const other = new MemoryDir("OTHER");
+  const otherPioneer = new MemoryDir("PIONEER");
+  const otherLibrary = new MemoryDir("USBANLZ");
+  const otherGroup = new MemoryDir("P009");
+  const otherTrack = new MemoryDir("00000000");
+  const otherDat = new MemoryFile(
+    "ANLZ0000.DAT",
+    fileWith([pathTag(paths[0] ?? ""), beatTag()]),
+  );
+  otherTrack.files.set(otherDat.name, otherDat);
+  otherGroup.dirs.set(otherTrack.name, otherTrack);
+  otherLibrary.dirs.set(otherGroup.name, otherGroup);
+  otherPioneer.dirs.set(otherLibrary.name, otherLibrary);
+  other.dirs.set(otherPioneer.name, otherPioneer);
+  let otherWalks = 0;
+  const otherList = otherLibrary.keys.bind(otherLibrary);
+  otherLibrary.keys = async function* () {
+    otherWalks += 1;
+    yield* otherList();
+  };
+  await preloadStickAnalysisIndex(other);
+  assert.equal(otherWalks, 1);
+  assert.equal(walks, 1);
+  assert.equal((await readStickBeatGrid(other, 1, paths[0] ?? ""))?.[0]?.timeMs, 1517);
+  assert.equal(otherWalks, 1);
 });

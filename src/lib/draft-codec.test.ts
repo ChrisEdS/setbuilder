@@ -211,6 +211,21 @@ test("mid pins are kept and opener or closer ids are not stored twice", () => {
   assert.equal(JSON.parse(encodeStoredDraft(draft!)).schemaVersion, DRAFT_SCHEMA_VERSION);
 });
 
+test("kept ids round-trip and lose a slot that is already pinned or an end", () => {
+  const draft = normalizeStoredDraft({
+    title: "Nachtlinie",
+    tracks: [],
+    openerId: "a",
+    pinnedIds: ["b"],
+    keptIds: ["c", "a", "b", "c", "", 4],
+    unsortedIds: ["c", "d"],
+  });
+  assert.deepEqual(draft?.keptIds, ["c"]);
+  assert.deepEqual(draft?.unsortedIds, ["d"]);
+  const round = decodeStoredDraft(encodeStoredDraft(draft!));
+  assert.deepEqual(round?.keptIds, ["c"]);
+});
+
 test("excluded ids are kept and collide with pins are dropped", () => {
   const draft = normalizeStoredDraft({
     title: "Nachtlinie",
