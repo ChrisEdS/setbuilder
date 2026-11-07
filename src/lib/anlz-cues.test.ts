@@ -9,6 +9,10 @@ import {
   readAnlzBeatGrid,
   readAnlzContentPath,
   readAnlzHotCues,
+  readAnlzPhrases,
+  shiftAnlzGrid,
+  shiftBeatTimes,
+  snapCueTime,
   writeAnlzHotCues,
 } from "./anlz-cues.ts";
 
@@ -198,6 +202,94 @@ test("a bpm fallback starts at zero and counts four beats to the bar", () => {
     { timeMs: 1500, beat: 4 },
     { timeMs: 2000, beat: 1 },
   ]);
+});
+
+test("quantize off keeps the cue time and on snaps to the downbeat", () => {
+  const grid = beatsFromBpm(120, 4000);
+  assert.equal(snapCueTime(1100, grid, false), 1100);
+  assert.equal(snapCueTime(1100, grid, true), 2000);
+});
+
+test("a grid shift adds the same delta and refuses a step before zero", () => {
+  const grid = [
+    { timeMs: 436, beat: 3 },
+    { timeMs: 1517, beat: 1 },
+  ];
+  assert.deepEqual(shiftBeatTimes(grid, 5), [
+    { timeMs: 441, beat: 3 },
+    { timeMs: 1522, beat: 1 },
+  ]);
+  assert.equal(shiftBeatTimes(grid, -500), null);
+  assert.equal(grid[0]?.timeMs, 436);
+});
+
+test("shifting the file moves PQTZ and the PQT2 anchors and leaves the PQT2 body", () => {
+  const pqtz = new Uint8Array(24 + 8);
+  const grid = new DataView(pqtz.buffer);
+  pqtz.set(ascii("PQTZ"), 0);
+  grid.setUint32(4, 0x18, false);
+  grid.setUint32(8, pqtz.length, false);
+  grid.setUint32(20, 1, false);
+  grid.setUint16(24, 1, false);
+  grid.setUint16(26, 10_000, false);
+  grid.setUint32(28, 1000, false);
+  const pqt2 = new Uint8Array(60);
+  const ext = new DataView(pqt2.buffer);
+  pqt2.set(ascii("PQT2"), 0);
+  ext.setUint32(4, 0x38, false);
+  ext.setUint32(8, pqt2.length, false);
+  ext.setUint16(24, 1, false);
+  ext.setUint16(26, 10_000, false);
+  ext.setUint32(28, 1000, false);
+  ext.setUint16(32, 2, false);
+  ext.setUint16(34, 10_000, false);
+  ext.setUint32(36, 1500, false);
+  pqt2.set([0x11, 0x22, 0x33, 0x44], 56);
+  const dat = pmai([pqtz]);
+  const extended = pmai([pqt2]);
+  const shifted = shiftAnlzGrid(dat, extended, 5);
+  assert.equal(readAnlzBeatGrid(shifted?.dat ?? dat)?.[0]?.timeMs, 1005);
+  assert.equal(new DataView((shifted?.ext ?? extended).buffer).getUint32(28 + 28, false), 1005);
+  assert.deepEqual([...(shifted?.ext ?? extended).subarray(28 + 56, 28 + 60)], [0x11, 0x22, 0x33, 0x44]);
+  assert.equal(shiftAnlzGrid(dat, extended, -2000), null);
+  assert.equal(readAnlzBeatGrid(dat)?.[0]?.timeMs, 1000);
+});
+
+function maskedPhrases(): Uint8Array {
+  const tag = new Uint8Array(32 + 48);
+  const view = new DataView(tag.buffer);
+  tag.set(ascii("PSSI"), 0);
+  view.setUint32(4, 0x20, false);
+  view.setUint32(8, tag.length, false);
+  view.setUint32(12, 24, false);
+  view.setUint16(16, 2, false);
+  view.setUint16(18, 1, false);
+  view.setUint16(26, 4, false);
+  view.setUint16(32, 1, false);
+  view.setUint16(34, 1, false);
+  view.setUint16(36, 1, false);
+  tag[39] = 1;
+  view.setUint16(56, 2, false);
+  view.setUint16(58, 3, false);
+  view.setUint16(60, 6, false);
+  tag[63] = 1;
+  const mask = [0xcb, 0xe1, 0xee, 0xfa, 0xe5, 0xee, 0xad, 0xee, 0xe9, 0xd2, 0xe9, 0xeb, 0xe1, 0xe9, 0xf3, 0xe8, 0xe9, 0xf4, 0xe1].map(
+    (byte) => (byte + 2) & 0xff,
+  );
+  for (let index = 18; index < tag.length; index += 1) tag[index] = (tag[index] ?? 0) ^ (mask[(index - 18) % mask.length] ?? 0);
+  return tag;
+}
+
+test("a masked phrase tag reads intro at the first grid beat and outro at the end", () => {
+  const beats = beatsFromBpm(120, 2000);
+  const phrases = readAnlzPhrases(pmai([maskedPhrases()]), beats);
+  assert.equal(phrases?.[0]?.name, "intro1");
+  assert.equal(phrases?.[0]?.beat, 1);
+  assert.equal(phrases?.[0]?.timeMs, 0);
+  assert.equal(phrases?.[1]?.name, "outro1");
+  assert.equal(phrases?.[1]?.beat, 3);
+  assert.equal(phrases?.[1]?.timeMs, 1000);
+  assert.equal(phrases?.[1]?.endMs, 1500);
 });
 
 test("a file without a hot-cue tag is left unchanged", () => {

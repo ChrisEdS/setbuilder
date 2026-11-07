@@ -2,7 +2,7 @@
 
 [Deutsch](README.de.md) · **English**
 
-**Version 5.0.0**
+**Version 5.0.1**
 
 SETBUILDER builds a DJ set from a rekordbox USB stick. Load a playlist or a history, fit the night to the slot, and check key, BPM, and energy. Then write the set back and hear the joins before the gig. The interface is German and English.
 
@@ -15,6 +15,8 @@ The player is a Rekordbox-style deck.
 The waveform uses the full width. Zoom follows playback, and the mouse wheel zooms. A click seeks while playback continues. A drag pauses so you can scrub. Space resumes. The arrow keys move one bar and land on a downbeat.
 
 The beatgrid on the wave is the one rekordbox already made. SETBUILDER reads it and does not change it. If a track has no grid, the deck says so.
+
+5.0.1 adds quantize, nudging the beatgrid, and the rekordbox phrase bands, plus a current guide.
 
 Hot cues A–H load with the track. A new cue snaps to the nearest downbeat when a grid is there, and it is written to the stick straight away. Cues already stored as memory cues stay as they are. If the stick has no analysis for that track yet, the cues stay in the set and the player does not see them yet.
 

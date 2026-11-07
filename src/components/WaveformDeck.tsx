@@ -2,7 +2,15 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "@/lib/i18n/react";
-import { beatsFromBpm, nearestDownbeat, type AnlzBeat } from "@/lib/anlz-cues";
+import {
+  beatsFromBpm,
+  GRID_NUDGE_MS,
+  snapCueTime,
+  type AnlzBeat,
+  type AnlzPhrase,
+  type PhraseName,
+} from "@/lib/anlz-cues";
+import type { MessageKey } from "@/lib/i18n/core";
 import { CUE_SLOT_COUNT, cueColor, cueLetter, type TrackCue } from "@/lib/set";
 import {
   waveformBands,
@@ -48,6 +56,52 @@ function prepareCanvas(canvas: HTMLCanvasElement): CanvasRenderingContext2D | nu
   ctx.clearRect(0, 0, width, height);
   return ctx;
 }
+
+const PHRASE_KEY: Record<PhraseName, MessageKey> = {
+  intro: "crates.player.phrase.intro",
+  intro1: "crates.player.phrase.intro1",
+  intro2: "crates.player.phrase.intro2",
+  up1: "crates.player.phrase.up1",
+  up2: "crates.player.phrase.up2",
+  up3: "crates.player.phrase.up3",
+  down: "crates.player.phrase.down",
+  chorus: "crates.player.phrase.chorus",
+  chorus1: "crates.player.phrase.chorus1",
+  chorus2: "crates.player.phrase.chorus2",
+  outro: "crates.player.phrase.outro",
+  outro1: "crates.player.phrase.outro1",
+  outro2: "crates.player.phrase.outro2",
+  verse1: "crates.player.phrase.verse1",
+  verse2: "crates.player.phrase.verse2",
+  verse3: "crates.player.phrase.verse3",
+  verse4: "crates.player.phrase.verse4",
+  verse5: "crates.player.phrase.verse5",
+  verse6: "crates.player.phrase.verse6",
+  bridge: "crates.player.phrase.bridge",
+};
+
+const PHRASE_COLOR: Record<PhraseName, string> = {
+  intro: "#38bdf8",
+  intro1: "#38bdf8",
+  intro2: "#7dd3fc",
+  up1: "#fb923c",
+  up2: "#f97316",
+  up3: "#ea580c",
+  down: "#facc15",
+  chorus: "#f43f5e",
+  chorus1: "#fb7185",
+  chorus2: "#e11d48",
+  outro: "#818cf8",
+  outro1: "#a5b4fc",
+  outro2: "#6366f1",
+  verse1: "#4ade80",
+  verse2: "#22c55e",
+  verse3: "#16a34a",
+  verse4: "#86efac",
+  verse5: "#15803d",
+  verse6: "#bbf7d0",
+  bridge: "#c084fc",
+};
 
 function laneHeight(height: number, lane: boolean): number {
   return lane ? Math.round(height * 0.16) : 0;
@@ -185,6 +239,11 @@ export function WaveformDeck({
   fallback,
   gridNote,
   cues,
+  quantize,
+  onQuantize,
+  phrases,
+  phraseNote,
+  onShiftGrid,
   onSeek,
   onPlay,
   onPause,
@@ -202,6 +261,11 @@ export function WaveformDeck({
   fallback: boolean;
   gridNote: string | null;
   cues: TrackCue[];
+  quantize: boolean;
+  onQuantize: (on: boolean) => void;
+  phrases: readonly AnlzPhrase[] | null;
+  phraseNote: string | null;
+  onShiftGrid: (deltaMs: number) => void;
   onSeek: (seconds: number) => void;
   onPlay: (seconds: number) => void;
   onPause: () => void;
@@ -233,13 +297,17 @@ export function WaveformDeck({
   const viewRef = useRef(0);
   const playingRef = useRef(playing);
   const holdRef = useRef(false);
-  const gridRef = useRef<{ marks: readonly AnlzBeat[]; fromFile: boolean }>({ marks: [], fromFile: false });
+  const gridRef = useRef<{ marks: readonly AnlzBeat[]; fromFile: boolean; quantize: boolean }>({
+    marks: [],
+    fromFile: false,
+    quantize: true,
+  });
   const drawRef = useRef<{ marks: readonly AnlzBeat[]; fromFile: boolean }>({ marks: [], fromFile: false });
   const span = duration > 0 ? duration : 0;
   const spanRef = useRef(span);
   const timeRef = useRef(currentTime);
   const fromFile = Boolean(beats && beats.length > 0);
-  const quantize = useMemo(() => (fromFile && beats ? beats : []), [fromFile, beats]);
+  const gridMarks = useMemo(() => (fromFile && beats ? beats : []), [fromFile, beats]);
   const drawn = useMemo(
     () => (fromFile && beats ? beats : fallback ? beatsFromBpm(Number.parseFloat(bpm), span * 1000) : []),
     [fromFile, beats, fallback, bpm, span],
@@ -249,9 +317,9 @@ export function WaveformDeck({
     timeRef.current = currentTime;
     zoomRef.current = zoom;
     viewRef.current = viewStart;
-    gridRef.current = { marks: quantize, fromFile };
+    gridRef.current = { marks: gridMarks, fromFile, quantize };
     drawRef.current = { marks: drawn, fromFile };
-  }, [span, currentTime, zoom, viewStart, quantize, fromFile, drawn]);
+  }, [span, currentTime, zoom, viewStart, gridMarks, fromFile, quantize, drawn]);
 
   function playCue(seconds: number) {
     if (playTimer.current) window.clearTimeout(playTimer.current);
@@ -363,6 +431,18 @@ export function WaveformDeck({
     return ((seconds / span - viewStart) / viewSpan) * 100;
   }
 
+  function phraseBox(phrase: AnlzPhrase, zoomed: boolean): { left: string; width: string } | null {
+    if (span <= 0) return null;
+    const start = phrase.timeMs / 1000 / span;
+    const end = phrase.endMs / 1000 / span;
+    if (!zoomed) return { left: `${start * 100}%`, width: `${Math.max(0.3, (end - start) * 100)}%` };
+    const left = (start - viewStart) / viewSpan;
+    const right = (end - viewStart) / viewSpan;
+    if (right <= 0 || left >= 1) return null;
+    const clamped = Math.max(0, left);
+    return { left: `${clamped * 100}%`, width: `${(Math.min(1, right) - clamped) * 100}%` };
+  }
+
   function changeZoom(factor: number) {
     let start = viewStart;
     let anchor = 0.5;
@@ -402,7 +482,7 @@ export function WaveformDeck({
       return;
     }
     if (span <= 0) return;
-    const timeMs = nearestDownbeat(Math.round(currentTime * 1000), quantize);
+    const timeMs = snapCueTime(Math.round(currentTime * 1000), gridMarks, quantize);
     onCues([...cues, { slot, timeMs, name: cueLetter(slot) }]);
   }
 
@@ -447,6 +527,29 @@ export function WaveformDeck({
         </span>
         <span>{formatTime(span)}</span>
       </div>
+      <div className="preview-wave-tools">
+        <button type="button" aria-pressed={quantize} aria-label={t("crates.player.quantize")} onClick={() => onQuantize(!quantize)}>
+          Q
+        </button>
+        <button type="button" aria-label={t("crates.player.gridEarlier")} disabled={!fromFile} onClick={() => onShiftGrid(-GRID_NUDGE_MS)}>
+          −5
+        </button>
+        <button type="button" aria-label={t("crates.player.gridLater")} disabled={!fromFile} onClick={() => onShiftGrid(GRID_NUDGE_MS)}>
+          +5
+        </button>
+        <button
+          type="button"
+          aria-label={t("crates.player.gridToPlayhead")}
+          disabled={!fromFile}
+          onClick={() => {
+            const marks = gridRef.current.marks;
+            const playMs = Math.round(timeRef.current * 1000);
+            onShiftGrid(playMs - snapCueTime(playMs, marks, true));
+          }}
+        >
+          1
+        </button>
+      </div>
       <div
         className="preview-wave-overview"
         onPointerDown={(event) => {
@@ -454,6 +557,19 @@ export function WaveformDeck({
         }}
       >
         <canvas ref={overviewRef} aria-hidden="true" />
+        {phrases?.map((phrase) => {
+          const box = phraseBox(phrase, false);
+          if (!box) return null;
+          return (
+            <i
+              key={`over-${phrase.beat}`}
+              className="preview-phrase"
+              title={t(PHRASE_KEY[phrase.name])}
+              style={{ ...box, background: PHRASE_COLOR[phrase.name] }}
+              onPointerDown={(event) => event.stopPropagation()}
+            />
+          );
+        })}
         {zoom > 1.05 ? (
           <span className="preview-wave-window" style={{ left: `${windowLeft}%`, width: `${windowWidth}%` }} />
         ) : null}
@@ -508,6 +624,19 @@ export function WaveformDeck({
         }}
       >
         <canvas ref={canvasRef} aria-label={t("crates.player.seek")} />
+        {phrases?.map((phrase) => {
+          const box = phraseBox(phrase, true);
+          if (!box) return null;
+          return (
+            <i
+              key={`zoom-${phrase.beat}`}
+              className="preview-phrase"
+              title={t(PHRASE_KEY[phrase.name])}
+              style={{ ...box, background: PHRASE_COLOR[phrase.name] }}
+              onPointerDown={(event) => event.stopPropagation()}
+            />
+          );
+        })}
         <span className="preview-playhead" style={{ left: `${playhead}%` }} />
         {shown.map((cue) => (
           <button
@@ -535,7 +664,7 @@ export function WaveformDeck({
             onPointerUp={(event) => {
               const active = dragRef.current;
               if (!active || active.slot !== cue.slot) return;
-              const timeMs = nearestDownbeat(Math.round(timeAt(event.clientX) * 1000), gridRef.current.marks);
+              const timeMs = snapCueTime(Math.round(timeAt(event.clientX) * 1000), gridMarks, quantize);
               dragRef.current = null;
               setDrag(null);
               if (dragMoved.current) onCues(cues.map((item) => (item.slot === cue.slot ? { ...item, timeMs } : item)));
@@ -599,6 +728,7 @@ export function WaveformDeck({
         })}
       </div>
       {gridNote ? <p className="preview-cue-note">{gridNote}</p> : null}
+      {phraseNote ? <p className="preview-cue-note">{phraseNote}</p> : null}
       {notice ? <p className="preview-cue-note">{notice}</p> : null}
     </div>
   );

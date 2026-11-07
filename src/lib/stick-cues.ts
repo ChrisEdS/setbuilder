@@ -4,9 +4,12 @@ import {
   readAnlzBeatGrid,
   readAnlzContentPath,
   readAnlzHotCues,
+  readAnlzPhrases,
+  shiftAnlzGrid,
   writeAnlzHotCues,
   type AnlzBeat,
   type AnlzCue,
+  type AnlzPhrase,
 } from "@/lib/anlz-cues";
 import { BACKUP_DIR } from "@/lib/brand";
 import { getStickFilesEpoch, listRememberedAnalysisFiles, lookupStickAnalysisFile } from "@/lib/stick-audio";
@@ -265,6 +268,25 @@ async function cuesIn(dir: DirLike): Promise<AnlzCue[] | null> {
   return readAnlzHotCues(await readBytes(dat));
 }
 
+function sameBytes(left: Uint8Array, right: Uint8Array): boolean {
+  if (left.length !== right.length) return false;
+  for (let index = 0; index < left.length; index += 1) {
+    if (left[index] !== right[index]) return false;
+  }
+  return true;
+}
+
+async function commitBytes(file: FileLike, next: Uint8Array): Promise<"written" | "rejected"> {
+  const original = await readBytes(file);
+  await writeBytes(file, next);
+  const back = await readBytes(file);
+  if (!sameBytes(back, next)) {
+    await writeBytes(file, original);
+    return "rejected";
+  }
+  return "written";
+}
+
 /** Read the stored beat grid. Null when this track has no analysis file or no grid tag. */
 export async function readStickBeatGrid(root: DirLike, trackId: number, filePath = ""): Promise<AnlzBeat[] | null> {
   const located = await locateAnalysis(root, trackId, filePath);
@@ -272,6 +294,84 @@ export async function readStickBeatGrid(root: DirLike, trackId: number, filePath
   const dat = await maybeFile(located.dir, DAT);
   if (!dat) return null;
   return readAnlzBeatGrid(await readBytes(dat));
+}
+
+/** Phrases from the exported PSSI tag. Null when the file has none, or the mask does not read as phrases. */
+export async function readStickPhrases(
+  root: DirLike,
+  trackId: number,
+  beats: readonly AnlzBeat[],
+  filePath = "",
+): Promise<AnlzPhrase[] | null> {
+  const located = await locateAnalysis(root, trackId, filePath);
+  if (!located || !beats.length) return null;
+  const ext = await maybeFile(located.dir, EXT);
+  if (!ext) return null;
+  return readAnlzPhrases(await readBytes(ext), beats);
+}
+
+export async function readRememberedPhrases(
+  trackId: number,
+  beats: readonly AnlzBeat[],
+  filePath = "",
+): Promise<AnlzPhrase[] | null> {
+  try {
+    const byPath = filePath ? await rememberedDat(filePath) : null;
+    const dat = byPath ?? (trackId > 0 ? lookupStickAnalysisFile(trackId) : null);
+    if (!dat || !beats.length) return null;
+    const ext = rememberedExt(dat);
+    if (!ext) return null;
+    return readAnlzPhrases(new Uint8Array(await ext.arrayBuffer()), beats);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Shift the existing beat grid by one delta and write those times back.
+ * A step before zero is refused and nothing is written.
+ */
+export async function saveStickBeatGrid(
+  root: DirLike,
+  trackId: number,
+  deltaMs: number,
+  filePath = "",
+): Promise<CueStickStatus> {
+  const located = await locateAnalysis(root, trackId, filePath);
+  if (!located) return "missing";
+  const dat = await maybeFile(located.dir, DAT);
+  if (!dat) return "missing";
+  const ext = await maybeFile(located.dir, EXT);
+  const datBytes = await readBytes(dat);
+  const extBytes = ext ? await readBytes(ext) : null;
+  const shifted = shiftAnlzGrid(datBytes, extBytes, deltaMs);
+  if (!shifted) return "rejected";
+  const expected = readAnlzBeatGrid(shifted.dat);
+  if (!expected?.length) return "rejected";
+  const hex = located.folder.replace(/[^0-9A-F]/gi, "").toUpperCase().padStart(8, "0").slice(-8);
+  const writeExt = Boolean(ext && shifted.ext && !sameBytes(extBytes ?? new Uint8Array(), shifted.ext));
+  await backup(root, `ANLZ-${hex}.DAT`, datBytes);
+  if (writeExt && ext && extBytes) await backup(root, `ANLZ-${hex}.EXT`, extBytes);
+  const datStatus = await commitBytes(dat, shifted.dat);
+  if (datStatus === "rejected") return "rejected";
+  if (!sameBytes(await readBytes(dat), shifted.dat) || !beatTimes(readAnlzBeatGrid(await readBytes(dat)), expected)) {
+    await writeBytes(dat, datBytes);
+    return "rejected";
+  }
+  if (writeExt && ext && shifted.ext) {
+    const extStatus = await commitBytes(ext, shifted.ext);
+    if (extStatus === "rejected") {
+      await writeBytes(dat, datBytes);
+      if (extBytes) await writeBytes(ext, extBytes);
+      return "rejected";
+    }
+  }
+  return "written";
+}
+
+function beatTimes(left: AnlzBeat[] | null, right: readonly AnlzBeat[]): boolean {
+  if (!left || left.length !== right.length) return false;
+  return left.every((beat, index) => beat.timeMs === right[index]?.timeMs && beat.beat === right[index]?.beat);
 }
 
 export async function readStickHotCues(root: DirLike, trackId: number, filePath = ""): Promise<AnlzCue[] | null> {

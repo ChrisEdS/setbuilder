@@ -2,7 +2,7 @@
 
 **Deutsch** · [English](README.md)
 
-**Version 5.0.0**
+**Version 5.0.1**
 
 SETBUILDER baut ein DJ-Set aus einem rekordbox-USB-Stick. Du lädst eine Playlist oder eine History, legst die Nacht auf den Slot und prüfst Key, BPM und Energie. Danach schreibst du das Set zurück und hörst die Übergänge vor dem Gig. Die Oberfläche ist Deutsch und Englisch.
 
@@ -15,6 +15,8 @@ Der Player ist ein Deck im Rekordbox-Stil.
 Die Wellenform nutzt die volle Breite. Der Zoom folgt der Wiedergabe, das Mausrad zoomt. Ein Klick sucht, die Wiedergabe läuft weiter. Ein Ziehen pausiert zum Schieben. Die Leertaste setzt fort. Die Pfeiltasten springen einen Takt und landen auf einem Downbeat.
 
 Das Beatgrid auf der Welle ist das, das rekordbox schon angelegt hat. SETBUILDER liest es und ändert es nicht. Fehlt ein Grid, sagt das Deck das.
+
+5.0.1 ergänzt Quantize, das Verschieben des Beatgrids und die Rekordbox-Phrasenbänder, plus eine aktuelle Anleitung.
 
 Hot Cues A–H kommen mit dem Track. Ein neuer Cue rastet auf den nächsten Downbeat ein, wenn ein Grid da ist, und wird sofort auf den Stick geschrieben. Cues, die schon als Memory Cues liegen, bleiben. Liegt für den Track noch keine Analyse auf dem Stick, bleiben die Cues im Set. Der Player sieht sie dann noch nicht.
 

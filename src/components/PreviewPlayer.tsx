@@ -36,12 +36,15 @@ import { hasKnownEnergy } from "@/lib/energy";
 import {
   readRememberedBeatGrid,
   readRememberedHotCues,
+  readRememberedPhrases,
   readStickBeatGrid,
   readStickHotCues,
+  readStickPhrases,
   rekordboxTrackId,
+  saveStickBeatGrid,
   saveStickHotCues,
 } from "@/lib/stick-cues";
-import { barJump, type AnlzBeat } from "@/lib/anlz-cues";
+import { barJump, phrasesOnGrid, shiftBeatTimes, type AnlzBeat, type AnlzPhrase } from "@/lib/anlz-cues";
 import { loadPersistedStickHandle, stickPermission } from "@/lib/stick-session";
 import {
   BLEND_MS,
@@ -330,6 +333,19 @@ function PreviewDock({
   const [cueNotice, setCueNotice] = useState<string | null>(null);
   const [fileBeats, setFileBeats] = useState<AnlzBeat[] | null>(null);
   const [gridMissing, setGridMissing] = useState(false);
+  const [phrases, setPhrases] = useState<AnlzPhrase[] | null>(null);
+  const [phrasesMissing, setPhrasesMissing] = useState(false);
+  const [quantize, setQuantize] = useState(true);
+  const [gridNotice, setGridNotice] = useState<string | null>(null);
+  const beatsRef = useRef<AnlzBeat[] | null>(null);
+  const phrasesRef = useRef<AnlzPhrase[] | null>(null);
+  const shifting = useRef(false);
+  const openTrack = useRef(track.id);
+  useEffect(() => {
+    beatsRef.current = fileBeats;
+    phrasesRef.current = phrases;
+    openTrack.current = track.id;
+  }, [fileBeats, phrases, track.id]);
   const filePath = trackFilePath(track);
   const fileBase = stickAudioBaseName(filePath);
   const seed = initialAudio(filePath, fileBase, track.name);
@@ -372,6 +388,9 @@ function PreviewDock({
     setGridRequestSeen(gridRequest);
     setFileBeats(null);
     setGridMissing(false);
+    setPhrases(null);
+    setPhrasesMissing(false);
+    setGridNotice(null);
   }
   useEffect(() => {
     const pdbId = rekordboxTrackId({ id: trackKey, uri: trackUri }) ?? 0;
@@ -385,11 +404,24 @@ function PreviewDock({
       if ((!found || found.length === 0) && !cancel) found = await readRememberedBeatGrid(pdbId, filePath);
       if (cancel) return;
       if (found?.length) {
+        let phraseList = null as AnlzPhrase[] | null;
+        if (root && !cancel && (await stickPermission(root, "read", false))) {
+          phraseList = await readStickPhrases(root, pdbId, found, filePath);
+        }
+        if ((!phraseList || phraseList.length === 0) && !cancel) {
+          phraseList = await readRememberedPhrases(pdbId, found, filePath);
+        }
+        if (cancel) return;
         setFileBeats(found);
         setGridMissing(false);
+        setPhrases(phraseList);
+        setPhrasesMissing(!phraseList?.length);
       } else {
+        if (cancel) return;
         setFileBeats(null);
         setGridMissing(true);
+        setPhrases(null);
+        setPhrasesMissing(false);
       }
     })();
     return () => {
@@ -436,6 +468,52 @@ function PreviewDock({
         setCueNotice(status === "written" ? null : status === "rejected" ? rejected : setOnly);
       })();
     }, 400);
+  }
+
+  function shiftGrid(deltaMs: number) {
+    if (shifting.current || !deltaMs) return;
+    const current = beatsRef.current;
+    if (!current) return;
+    const next = shiftBeatTimes(current, deltaMs);
+    if (!next) return;
+    const previous = current;
+    const previousPhrases = phrasesRef.current;
+    const moved = previousPhrases ? phrasesOnGrid(previousPhrases, next) : null;
+    beatsRef.current = next;
+    if (moved) phrasesRef.current = moved;
+    setFileBeats(next);
+    if (moved) setPhrases(moved);
+    const pdbId = rekordboxTrackId(track) ?? 0;
+    const shiftTrack = track.id;
+    const kept = t("crates.player.gridSetOnly");
+    const rejected = t("crates.player.gridRejected");
+    shifting.current = true;
+    void (async () => {
+      try {
+        const root = await loadPersistedStickHandle();
+        if (openTrack.current !== shiftTrack) return;
+        if (!root || !(await stickPermission(root, "readwrite", true))) {
+          setGridNotice(kept);
+          return;
+        }
+        const status = await saveStickBeatGrid(root, pdbId, deltaMs, filePath);
+        if (status === "written") {
+          setGridNotice(null);
+          return;
+        }
+        if (status === "rejected") {
+          beatsRef.current = previous;
+          phrasesRef.current = previousPhrases;
+          setFileBeats(previous);
+          setPhrases(previousPhrases);
+          setGridNotice(rejected);
+          return;
+        }
+        setGridNotice(kept);
+      } finally {
+        shifting.current = false;
+      }
+    })();
   }
 
   useEffect(() => {
@@ -903,7 +981,12 @@ function PreviewDock({
               fallback={gridMissing}
               gridNote={gridMissing ? t("crates.player.gridMissing") : null}
               cues={track.cues ?? []}
-              notice={cueNotice}
+              quantize={quantize}
+              onQuantize={setQuantize}
+              phrases={phrases}
+              phraseNote={phrasesMissing ? t("crates.player.phrasesMissing") : null}
+              onShiftGrid={shiftGrid}
+              notice={gridNotice ?? cueNotice}
               onPause={() => {
                 const audio = audioRef.current;
                 if (audio) audio.pause();

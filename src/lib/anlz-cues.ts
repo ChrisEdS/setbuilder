@@ -211,6 +211,215 @@ export function nearestDownbeat(timeMs: number, beats: readonly AnlzBeat[]): num
   return best;
 }
 
+/** Cue time. Quantize lands on the nearest downbeat. Off keeps the time that was asked for. */
+export function snapCueTime(timeMs: number, beats: readonly AnlzBeat[], quantize: boolean): number {
+  if (!quantize) return timeMs;
+  return nearestDownbeat(timeMs, beats);
+}
+
+export const GRID_NUDGE_MS = 5;
+
+/**
+ * Move every stored beat by the same amount. Beat numbers and tempo stay.
+ * A step that would put a beat before 0 is refused.
+ */
+export function shiftBeatTimes(beats: readonly AnlzBeat[], deltaMs: number): AnlzBeat[] | null {
+  if (!beats.length || !Number.isFinite(deltaMs)) return null;
+  const delta = Math.round(deltaMs);
+  if (beats.some((beat) => beat.timeMs + delta < 0 || beat.timeMs + delta > 0xffffffff)) return null;
+  return beats.map((beat) => ({ beat: beat.beat, timeMs: beat.timeMs + delta }));
+}
+
+const PHRASE_MASK = [0xcb, 0xe1, 0xee, 0xfa, 0xe5, 0xee, 0xad, 0xee, 0xe9, 0xd2, 0xe9, 0xeb, 0xe1, 0xe9, 0xf3, 0xe8, 0xe9, 0xf4, 0xe1];
+
+export type PhraseName =
+  | "intro"
+  | "intro1"
+  | "intro2"
+  | "up1"
+  | "up2"
+  | "up3"
+  | "down"
+  | "chorus"
+  | "chorus1"
+  | "chorus2"
+  | "outro"
+  | "outro1"
+  | "outro2"
+  | "verse1"
+  | "verse2"
+  | "verse3"
+  | "verse4"
+  | "verse5"
+  | "verse6"
+  | "bridge";
+
+/** One rekordbox phrase. `beat` is the 1-based index into the PQTZ grid. */
+export type AnlzPhrase = {
+  beat: number;
+  endBeat: number;
+  timeMs: number;
+  endMs: number;
+  name: PhraseName;
+};
+
+export function phraseName(mood: number, kind: number, k1: number, k2: number, k3: number): PhraseName | null {
+  if (mood === 1) {
+    if (kind === 1) return k1 === 1 ? "intro1" : "intro2";
+    if (kind === 2) return k2 === 1 ? "up3" : k3 === 1 ? "up2" : "up1";
+    if (kind === 3) return "down";
+    if (kind === 5) return k1 === 1 ? "chorus2" : "chorus1";
+    if (kind === 6) return k1 === 1 ? "outro1" : "outro2";
+    return null;
+  }
+  const mid: Partial<Record<number, PhraseName>> = {
+    1: "intro",
+    2: "verse1",
+    3: "verse2",
+    4: "verse3",
+    5: "verse4",
+    6: "verse5",
+    7: "verse6",
+    8: "bridge",
+    9: "chorus",
+    10: "outro",
+  };
+  if (mood === 2) return mid[kind] ?? null;
+  if (mood === 3) {
+    if (kind === 1) return "intro";
+    if (kind >= 2 && kind <= 4) return "verse1";
+    if (kind >= 5 && kind <= 7) return "verse2";
+    if (kind === 8) return "bridge";
+    if (kind === 9) return "chorus";
+    if (kind === 10) return "outro";
+  }
+  return null;
+}
+
+function beatTime(beats: readonly AnlzBeat[], beat: number): number | null {
+  if (!Number.isInteger(beat) || beat < 1 || beat > beats.length) return null;
+  return beats[beat - 1]?.timeMs ?? null;
+}
+
+/** Place phrase starts on the current grid. The bands follow a grid shift. */
+export function phrasesOnGrid(
+  phrases: readonly Pick<AnlzPhrase, "beat" | "endBeat" | "name">[],
+  beats: readonly AnlzBeat[],
+): AnlzPhrase[] | null {
+  if (!phrases.length || !beats.length) return null;
+  const placed: AnlzPhrase[] = [];
+  for (let index = 0; index < phrases.length; index += 1) {
+    const phrase = phrases[index];
+    if (!phrase) return null;
+    const timeMs = beatTime(beats, phrase.beat);
+    const endMs = beatTime(beats, phrase.endBeat);
+    if (timeMs == null || endMs == null || endMs <= timeMs) return null;
+    if (index > 0 && phrase.beat <= (phrases[index - 1]?.beat ?? 0)) return null;
+    placed.push({ beat: phrase.beat, endBeat: phrase.endBeat, timeMs, endMs, name: phrase.name });
+  }
+  return placed;
+}
+
+function unmaskPssi(tag: Uint8Array, count: number): Uint8Array {
+  const mask = PHRASE_MASK.map((byte) => (byte + count) & 0xff);
+  const out = tag.slice();
+  for (let index = 18; index < out.length; index += 1) {
+    out[index] = (out[index] ?? 0) ^ (mask[(index - 18) % mask.length] ?? 0);
+  }
+  return out;
+}
+
+function phrasesFromTag(tag: Uint8Array, beats: readonly AnlzBeat[]): AnlzPhrase[] | null {
+  if (tag.length < 32) return null;
+  const view = viewOf(tag);
+  const entryBytes = view.getUint32(12, false);
+  const count = view.getUint16(16, false);
+  if (entryBytes !== 24 || count < 1 || count > 64 || 32 + count * 24 > tag.length) return null;
+  const mood = view.getUint16(18, false);
+  const endBeat = view.getUint16(26, false);
+  if (mood < 1 || mood > 3) return null;
+  const raw: Array<Pick<AnlzPhrase, "beat" | "endBeat" | "name">> = [];
+  for (let index = 0; index < count; index += 1) {
+    const offset = 32 + index * 24;
+    const beat = view.getUint16(offset + 2, false);
+    const kind = view.getUint16(offset + 4, false);
+    const name = phraseName(mood, kind, tag[offset + 7] ?? 0, tag[offset + 9] ?? 0, tag[offset + 19] ?? 0);
+    if (!name) return null;
+    const nextBeat = index + 1 < count ? view.getUint16(offset + 24 + 2, false) : endBeat;
+    raw.push({ beat, endBeat: nextBeat, name });
+  }
+  return phrasesOnGrid(raw, beats);
+}
+
+/**
+ * Phrases rekordbox already stored in PSSI.
+ * Exported files XOR the body. A tag that does not come out as rising beat indexes is ignored.
+ */
+export function readAnlzPhrases(data: Uint8Array, beats: readonly AnlzBeat[]): AnlzPhrase[] | null {
+  const tagInfo = listTags(data).find((item) => item.kind === "PSSI");
+  if (!tagInfo || !beats.length) return null;
+  const tag = data.subarray(tagInfo.offset, tagInfo.offset + tagInfo.length);
+  const plain = phrasesFromTag(tag, beats);
+  if (plain) return plain;
+  const count = tag.length >= 18 ? viewOf(tag).getUint16(16, false) : 0;
+  if (count < 1 || count > 64) return null;
+  return phrasesFromTag(unmaskPssi(tag, count), beats);
+}
+
+function gridTimeOffsets(data: Uint8Array): number[] | null {
+  const offsets: number[] = [];
+  for (const tag of listTags(data)) {
+    if (tag.kind === "PQTZ") {
+      if (tag.length < 24) return null;
+      const view = viewOf(data);
+      const count = view.getUint32(tag.offset + 20, false);
+      if (count < 1 || count > 100_000 || tag.offset + 24 + count * 8 > tag.offset + tag.length) return null;
+      for (let index = 0; index < count; index += 1) offsets.push(tag.offset + 24 + index * 8 + 4);
+    }
+    if (tag.kind === "PQT2" && tag.length >= 40 && viewOf(data).getUint32(tag.offset + 4, false) === 0x38) {
+      const view = viewOf(data);
+      const first = view.getUint16(tag.offset + 24, false);
+      const second = view.getUint16(tag.offset + 32, false);
+      if (first >= 1 && first <= 4 && second >= 1 && second <= 4) {
+        offsets.push(tag.offset + 28, tag.offset + 36);
+      }
+    }
+  }
+  return offsets.length ? offsets : null;
+}
+
+/**
+ * Add one delta to every PQTZ time, and to the two time anchors in a PQT2 header.
+ * The unknown PQT2 body is left as it was. A negative time refuses the whole shift.
+ */
+export function shiftAnlzGrid(
+  dat: Uint8Array,
+  ext: Uint8Array | null,
+  deltaMs: number,
+): { dat: Uint8Array; ext: Uint8Array | null } | null {
+  if (!Number.isFinite(deltaMs)) return null;
+  const delta = Math.round(deltaMs);
+  const nextDat = dat.slice();
+  const nextExt = ext ? ext.slice() : null;
+  const datOffsets = gridTimeOffsets(nextDat);
+  const extOffsets = nextExt ? (gridTimeOffsets(nextExt) ?? []) : [];
+  if (!datOffsets) return null;
+  const pairs: Array<[Uint8Array, number[]]> = [[nextDat, datOffsets]];
+  if (nextExt) pairs.push([nextExt, extOffsets]);
+  for (const [bytes, times] of pairs) {
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    for (const at of times) {
+      const time = view.getUint32(at, false) + delta;
+      if (time < 0 || time > 0xffffffff) return null;
+    }
+  }
+  for (const [bytes, times] of pairs) {
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    for (const at of times) view.setUint32(at, view.getUint32(at, false) + delta, false);
+  }
+  return { dat: nextDat, ext: nextExt };
+}
+
 /** Even beats from a BPM, phase at the start. Used only when no stored grid exists. */
 export function beatsFromBpm(bpm: number, durationMs: number): AnlzBeat[] {
   if (!Number.isFinite(bpm) || bpm < 40 || bpm > 240 || durationMs <= 0) return [];

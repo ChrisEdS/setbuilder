@@ -2189,6 +2189,49 @@ html[data-frame="mac"] .set-shell .hero-copy {
   cursor: default;
 }
 
+.preview-player .preview-wave-tools {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.28rem;
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.preview-player .preview-wave-tools button {
+  flex: 0 0 auto;
+  height: 1.35rem;
+  margin: 0;
+  padding: 0 0.45rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.preview-player .preview-wave-tools button[aria-pressed="true"] {
+  background: #fff;
+  color: #111;
+}
+
+.preview-player .preview-wave-tools button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.preview-player .preview-phrase {
+  position: absolute;
+  top: 0;
+  z-index: 1;
+  display: block;
+  height: 5px;
+}
+
 .preview-player .preview-wave-overview {
   position: relative;
   width: 100%;
