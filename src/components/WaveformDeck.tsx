@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Tip } from "@/components/Hint";
 import { useI18n } from "@/lib/i18n/react";
 import {
   beatsFromBpm,
@@ -80,31 +81,35 @@ const PHRASE_KEY: Record<PhraseName, MessageKey> = {
   bridge: "crates.player.phrase.bridge",
 };
 
+/** Muted ribbon so hot-cue flags stay the saturated marks. */
 const PHRASE_COLOR: Record<PhraseName, string> = {
-  intro: "#38bdf8",
-  intro1: "#38bdf8",
-  intro2: "#7dd3fc",
-  up1: "#fb923c",
-  up2: "#f97316",
-  up3: "#ea580c",
-  down: "#facc15",
-  chorus: "#f43f5e",
-  chorus1: "#fb7185",
-  chorus2: "#e11d48",
-  outro: "#818cf8",
-  outro1: "#a5b4fc",
-  outro2: "#6366f1",
-  verse1: "#4ade80",
-  verse2: "#22c55e",
-  verse3: "#16a34a",
-  verse4: "#86efac",
-  verse5: "#15803d",
-  verse6: "#bbf7d0",
-  bridge: "#c084fc",
+  intro: "#6d8499",
+  intro1: "#6d8499",
+  intro2: "#849aaf",
+  up1: "#a07c56",
+  up2: "#8b6844",
+  up3: "#b08d62",
+  down: "#8d8668",
+  chorus: "#946878",
+  chorus1: "#a6808e",
+  chorus2: "#7a5564",
+  outro: "#6e6a90",
+  outro1: "#847ea6",
+  outro2: "#565278",
+  verse1: "#5d7564",
+  verse2: "#4c6456",
+  verse3: "#3e5246",
+  verse4: "#769482",
+  verse5: "#35483c",
+  verse6: "#8aa894",
+  bridge: "#74667e",
 };
 
+/** Share of the deck given to the beat-grid lane. Cue flags sit just under it. */
+const WAVE_LANE = 0.16;
+
 function laneHeight(height: number, lane: boolean): number {
-  return lane ? Math.round(height * 0.16) : 0;
+  return lane ? Math.round(height * WAVE_LANE) : 0;
 }
 
 function drawBands(
@@ -505,50 +510,64 @@ export function WaveformDeck({
       <div className="preview-wave-times">
         <span>{formatTime(currentTime)}</span>
         <span className="preview-wave-zoom">
-          <button type="button" aria-label={t("crates.player.zoomOut")} disabled={zoom <= WAVE_ZOOM_MIN} onClick={() => changeZoom(0.5)}>
-            −
-          </button>
-          <button
-            type="button"
-            aria-label={t("crates.player.zoomReset")}
-            disabled={zoom <= WAVE_ZOOM_MIN}
-            onClick={() => {
-              zoomRef.current = 1;
-              viewRef.current = 0;
-              setZoom(1);
-              setViewStart(0);
-            }}
-          >
-            {zoomLabel}
-          </button>
-          <button type="button" aria-label={t("crates.player.zoomIn")} disabled={zoom >= WAVE_ZOOM_MAX} onClick={() => changeZoom(2)}>
-            +
-          </button>
+          <Tip as="span" text={t("crates.player.zoomOut")} disabled={zoom <= WAVE_ZOOM_MIN}>
+            <button type="button" aria-label={t("crates.player.zoomOut")} disabled={zoom <= WAVE_ZOOM_MIN} onClick={() => changeZoom(0.5)}>
+              −
+            </button>
+          </Tip>
+          <Tip as="span" text={t("crates.player.zoomReset")} disabled={zoom <= WAVE_ZOOM_MIN}>
+            <button
+              type="button"
+              aria-label={t("crates.player.zoomReset")}
+              disabled={zoom <= WAVE_ZOOM_MIN}
+              onClick={() => {
+                zoomRef.current = 1;
+                viewRef.current = 0;
+                setZoom(1);
+                setViewStart(0);
+              }}
+            >
+              {zoomLabel}
+            </button>
+          </Tip>
+          <Tip as="span" text={t("crates.player.zoomIn")} disabled={zoom >= WAVE_ZOOM_MAX}>
+            <button type="button" aria-label={t("crates.player.zoomIn")} disabled={zoom >= WAVE_ZOOM_MAX} onClick={() => changeZoom(2)}>
+              +
+            </button>
+          </Tip>
         </span>
         <span>{formatTime(span)}</span>
       </div>
       <div className="preview-wave-tools">
-        <button type="button" aria-pressed={quantize} aria-label={t("crates.player.quantize")} onClick={() => onQuantize(!quantize)}>
-          Q
-        </button>
-        <button type="button" aria-label={t("crates.player.gridEarlier")} disabled={!fromFile} onClick={() => onShiftGrid(-GRID_NUDGE_MS)}>
-          −5
-        </button>
-        <button type="button" aria-label={t("crates.player.gridLater")} disabled={!fromFile} onClick={() => onShiftGrid(GRID_NUDGE_MS)}>
-          +5
-        </button>
-        <button
-          type="button"
-          aria-label={t("crates.player.gridToPlayhead")}
-          disabled={!fromFile}
-          onClick={() => {
-            const marks = gridRef.current.marks;
-            const playMs = Math.round(timeRef.current * 1000);
-            onShiftGrid(playMs - snapCueTime(playMs, marks, true));
-          }}
-        >
-          1
-        </button>
+        <Tip text={t("crates.player.quantize")}>
+          <button type="button" aria-pressed={quantize} aria-label={t("crates.player.quantize")} onClick={() => onQuantize(!quantize)}>
+            Q
+          </button>
+        </Tip>
+        <Tip text={t("crates.player.gridEarlier")} disabled={!fromFile}>
+          <button type="button" aria-label={t("crates.player.gridEarlier")} disabled={!fromFile} onClick={() => onShiftGrid(-GRID_NUDGE_MS)}>
+            −5
+          </button>
+        </Tip>
+        <Tip text={t("crates.player.gridLater")} disabled={!fromFile}>
+          <button type="button" aria-label={t("crates.player.gridLater")} disabled={!fromFile} onClick={() => onShiftGrid(GRID_NUDGE_MS)}>
+            +5
+          </button>
+        </Tip>
+        <Tip text={t("crates.player.gridToPlayhead")} disabled={!fromFile}>
+          <button
+            type="button"
+            aria-label={t("crates.player.gridToPlayhead")}
+            disabled={!fromFile}
+            onClick={() => {
+              const marks = gridRef.current.marks;
+              const playMs = Math.round(timeRef.current * 1000);
+              onShiftGrid(playMs - snapCueTime(playMs, marks, true));
+            }}
+          >
+            1
+          </button>
+        </Tip>
       </div>
       <div
         className="preview-wave-overview"
@@ -578,6 +597,7 @@ export function WaveformDeck({
       <div
         ref={stageRef}
         className={zoom > 1 ? "preview-wave-stage is-zoomed" : "preview-wave-stage"}
+        style={{ "--wave-lane": `${WAVE_LANE * 100}%` } as CSSProperties}
         title={t("crates.player.zoomWheel")}
         onPointerDown={(event) => {
           if ((event.target as HTMLElement).closest(".preview-cue-mark")) return;
@@ -672,7 +692,9 @@ export function WaveformDeck({
             }}
           >
             <i />
-            <em>{cueLetter(cue.slot)}</em>
+            <em>
+              <span>{cueLetter(cue.slot)}</span>
+            </em>
           </button>
         ))}
       </div>
@@ -699,29 +721,36 @@ export function WaveformDeck({
                   }}
                 />
               ) : (
-                <button
-                  type="button"
-                  className="preview-cue-jump"
-                  aria-label={cue ? t("crates.player.cuePadPlay", { letter }) : t("crates.player.cuePadSet", { letter })}
-                  onClick={() => setPad(slot)}
-                  onDoubleClick={() => {
-                    if (!cue) return;
-                    if (playTimer.current) window.clearTimeout(playTimer.current);
-                    setEditing(slot);
-                  }}
+                <Tip
+                  as="span"
+                  text={cue ? t("crates.player.cuePadPlay", { letter }) : t("crates.player.cuePadSet", { letter })}
                 >
-                  {letter}
-                </button>
+                  <button
+                    type="button"
+                    className="preview-cue-jump"
+                    aria-label={cue ? t("crates.player.cuePadPlay", { letter }) : t("crates.player.cuePadSet", { letter })}
+                    onClick={() => setPad(slot)}
+                    onDoubleClick={() => {
+                      if (!cue) return;
+                      if (playTimer.current) window.clearTimeout(playTimer.current);
+                      setEditing(slot);
+                    }}
+                  >
+                    {letter}
+                  </button>
+                </Tip>
               )}
               {cue ? (
-                <button
-                  type="button"
-                  className="preview-cue-x"
-                  aria-label={t("crates.player.cueDelete", { letter })}
-                  onClick={() => remove(slot)}
-                >
-                  ×
-                </button>
+                <Tip as="span" text={t("crates.player.cueDelete", { letter })}>
+                  <button
+                    type="button"
+                    className="preview-cue-x"
+                    aria-label={t("crates.player.cueDelete", { letter })}
+                    onClick={() => remove(slot)}
+                  >
+                    ×
+                  </button>
+                </Tip>
               ) : null}
             </span>
           );

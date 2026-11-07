@@ -2189,6 +2189,10 @@ html[data-frame="mac"] .set-shell .hero-copy {
   cursor: default;
 }
 
+.preview-player .preview-wave-zoom > .tip {
+  flex: 0 0 auto;
+}
+
 .preview-player .preview-wave-tools {
   display: flex;
   flex-wrap: nowrap;
@@ -2224,12 +2228,18 @@ html[data-frame="mac"] .set-shell .hero-copy {
   cursor: default;
 }
 
+.preview-player .preview-wave-tools > .tip {
+  flex: 0 0 auto;
+}
+
 .preview-player .preview-phrase {
   position: absolute;
   top: 0;
   z-index: 1;
   display: block;
   height: 5px;
+  opacity: 0.9;
+  pointer-events: auto;
 }
 
 .preview-player .preview-wave-overview {
@@ -2294,6 +2304,7 @@ html[data-frame="mac"] .set-shell .hero-copy {
   position: absolute;
   top: 0;
   bottom: 0;
+  z-index: 2;
   width: 2px;
   margin-left: -1px;
   background: #fff;
@@ -2305,33 +2316,51 @@ html[data-frame="mac"] .set-shell .hero-copy {
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 1.1rem;
+  z-index: 3;
+  width: 1.35rem;
   margin: 0;
   padding: 0;
   border: 0;
   background: transparent;
   color: #fff;
-  transform: translateX(-50%);
+  transform: translateX(-1px);
   cursor: ew-resize;
 }
 
 .preview-player .preview-cue-mark i {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 50%;
+  top: calc(var(--wave-lane, 16%) + 2px);
+  bottom: 0.12rem;
+  left: 0;
   width: 2px;
   background: currentColor;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.72);
+  pointer-events: none;
 }
 
 .preview-player .preview-cue-mark em {
   position: absolute;
-  top: 0.15rem;
-  left: 0.45rem;
-  font-size: 0.62rem;
+  top: calc(var(--wave-lane, 16%) + 3px);
+  left: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 0.95rem;
+  height: 0.95rem;
+  padding: 0 0.14rem;
+  border-radius: 0 0.18rem 0.18rem 0;
+  background: currentColor;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.72);
+  font-size: 0.64rem;
   font-style: normal;
-  font-weight: 700;
-  white-space: nowrap;
+  font-weight: 750;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.preview-player .preview-cue-mark em span {
+  color: #121212;
 }
 
 .preview-player .preview-cue-row {
@@ -2360,6 +2389,19 @@ html[data-frame="mac"] .set-shell .hero-copy {
 
 .preview-player .preview-cue-pad.is-set {
   background: color-mix(in srgb, currentColor 16%, transparent);
+}
+
+.preview-player .preview-cue-pad > .tip {
+  min-width: 0;
+  height: 100%;
+}
+
+.preview-player .preview-cue-pad > .tip:has(> .preview-cue-jump) {
+  flex: 1 1 auto;
+}
+
+.preview-player .preview-cue-pad > .tip:has(> .preview-cue-x) {
+  flex: 0 0 auto;
 }
 
 .preview-player .preview-cue-jump {
