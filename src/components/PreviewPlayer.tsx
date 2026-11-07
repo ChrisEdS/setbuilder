@@ -366,9 +366,14 @@ function PreviewDock({
     },
     [],
   );
-  useEffect(() => {
+  const gridRequest = `${trackKey}\0${trackUri ?? ""}\0${stickEpoch}\0${filePath}`;
+  const [gridRequestSeen, setGridRequestSeen] = useState(gridRequest);
+  if (gridRequest !== gridRequestSeen) {
+    setGridRequestSeen(gridRequest);
     setFileBeats(null);
     setGridMissing(false);
+  }
+  useEffect(() => {
     const pdbId = rekordboxTrackId({ id: trackKey, uri: trackUri }) ?? 0;
     let cancel = false;
     void (async () => {
@@ -687,11 +692,14 @@ function PreviewDock({
     beats: null as AnlzBeat[] | null,
     trackMs: 0,
   });
-  deckClock.current.time = currentTime;
-  deckClock.current.duration = duration;
-  deckClock.current.bpm = track.bpm || "";
-  deckClock.current.beats = fileBeats;
-  deckClock.current.trackMs = track.durationMs ?? 0;
+  useEffect(() => {
+    const clock = deckClock.current;
+    clock.time = currentTime;
+    clock.duration = duration;
+    clock.bpm = track.bpm || "";
+    clock.beats = fileBeats;
+    clock.trackMs = track.durationMs ?? 0;
+  }, [currentTime, duration, track.bpm, fileBeats, track.durationMs]);
 
   useEffect(() => {
     function typing(target: EventTarget | null): boolean {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "@/lib/i18n/react";
 import { beatsFromBpm, nearestDownbeat, type AnlzBeat } from "@/lib/anlz-cues";
 import { CUE_SLOT_COUNT, cueColor, cueLetter, type TrackCue } from "@/lib/set";
@@ -215,6 +215,13 @@ export function WaveformDeck({
   const [bands, setBands] = useState<WaveformBands | null>(null);
   const [zoom, setZoom] = useState(1);
   const [viewStart, setViewStart] = useState(0);
+  const [waveSrc, setWaveSrc] = useState(src);
+  if (src !== waveSrc) {
+    setWaveSrc(src);
+    setBands(null);
+    setZoom(1);
+    setViewStart(0);
+  }
   const [drag, setDrag] = useState<{ slot: number; timeMs: number } | null>(null);
   const [editing, setEditing] = useState<number | null>(null);
   const [hold, setHold] = useState(false);
@@ -231,16 +238,20 @@ export function WaveformDeck({
   const span = duration > 0 ? duration : 0;
   const spanRef = useRef(span);
   const timeRef = useRef(currentTime);
-  spanRef.current = span;
-  timeRef.current = currentTime;
-  zoomRef.current = zoom;
-  viewRef.current = viewStart;
-
   const fromFile = Boolean(beats && beats.length > 0);
-  const quantize = fromFile && beats ? beats : [];
-  const drawn = fromFile && beats ? beats : fallback ? beatsFromBpm(Number.parseFloat(bpm), span * 1000) : [];
-  gridRef.current = { marks: quantize, fromFile };
-  drawRef.current = { marks: drawn, fromFile };
+  const quantize = useMemo(() => (fromFile && beats ? beats : []), [fromFile, beats]);
+  const drawn = useMemo(
+    () => (fromFile && beats ? beats : fallback ? beatsFromBpm(Number.parseFloat(bpm), span * 1000) : []),
+    [fromFile, beats, fallback, bpm, span],
+  );
+  useEffect(() => {
+    spanRef.current = span;
+    timeRef.current = currentTime;
+    zoomRef.current = zoom;
+    viewRef.current = viewStart;
+    gridRef.current = { marks: quantize, fromFile };
+    drawRef.current = { marks: drawn, fromFile };
+  }, [span, currentTime, zoom, viewStart, quantize, fromFile, drawn]);
 
   function playCue(seconds: number) {
     if (playTimer.current) window.clearTimeout(playTimer.current);
@@ -248,10 +259,7 @@ export function WaveformDeck({
   }
 
   useEffect(() => {
-    if (!src) {
-      setBands(null);
-      return;
-    }
+    if (!src) return;
     let cancel = false;
     const context = new AudioContext();
     void (async () => {
@@ -272,11 +280,6 @@ export function WaveformDeck({
       cancel = true;
       void context.close();
     };
-  }, [src]);
-
-  useEffect(() => {
-    setZoom(1);
-    setViewStart(0);
   }, [src]);
 
   useEffect(() => {
