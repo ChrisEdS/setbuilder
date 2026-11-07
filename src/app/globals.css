@@ -3940,6 +3940,13 @@ label.btn:hover {
   font-weight: 700;
 }
 
+.timeline-tools button.is-unsort,
+.manual-controls .icon-action.is-unsort {
+  background: color-mix(in oklab, #f0d48a 28%, #242424) !important;
+  color: #fff8e6 !important;
+  border-color: rgba(240, 212, 138, 0.75) !important;
+}
+
 .anchor-pills {
   display: flex;
   flex-wrap: wrap;
@@ -3980,6 +3987,11 @@ label.btn:hover {
 .anchor-pill.is-pin {
   background: rgba(255, 255, 255, 0.12);
   color: #f2f2f2;
+}
+
+.anchor-pill.is-unsort {
+  background: color-mix(in oklab, #f0d48a 42%, #1a1a1a);
+  color: #fff6dc;
 }
 
 .anchor-pill.is-exclude {
@@ -7190,7 +7202,7 @@ body {
 
 .set-tools-body {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: stretch;
   gap: 0.55rem;
   width: 100%;
@@ -7199,11 +7211,11 @@ body {
 
 .set-tools-group {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(max-content, 1fr));
   align-items: stretch;
   gap: 0.4rem;
   flex: 1 1 0;
-  min-width: 0;
+  min-width: max-content;
 }
 
 .set-tools-group + .set-tools-group {
@@ -7214,13 +7226,13 @@ body {
 .set-tools-group > .tip,
 .set-tools-group > .menu {
   display: grid !important;
-  min-width: 0;
+  min-width: max-content;
   width: 100%;
 }
 
 .set-tools-group > .tip > .menu {
   display: grid !important;
-  min-width: 0;
+  min-width: max-content;
   width: 100%;
 }
 
@@ -7228,7 +7240,23 @@ body {
 .set-tools-group > .tip > .menu > summary.btn,
 .set-tools-group > .menu > summary.btn,
 .set-tools .btn,
-.set-tools .menu > summary.btn,
+.set-tools .menu > summary.btn {
+  box-sizing: border-box;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: max-content !important;
+  justify-content: center;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+  min-height: 34px !important;
+  height: 34px !important;
+  padding: 0 0.75rem !important;
+  font-size: 0.78rem !important;
+  font-weight: 650 !important;
+  line-height: 1;
+}
+
 .set-menus .btn {
   box-sizing: border-box;
   width: 100% !important;
@@ -7282,6 +7310,63 @@ body {
 .set-tools .menu-panel {
   left: 0;
   right: auto;
+}
+
+/* Energy and Spotify sit as round icon buttons, not stretched pills. */
+.set-tools-group.set-tools-icons {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  width: auto;
+  min-width: 0;
+  gap: 0.4rem;
+}
+
+.set-tools .set-tools-icons > .tip,
+.set-tools .set-tools-icons > .menu,
+.set-tools .set-tools-icons > .tip > .menu {
+  display: inline-flex !important;
+  width: auto !important;
+  min-width: 0 !important;
+}
+
+.set-tools .set-tools-icons > .tip > .btn.set-tool-icon,
+.set-tools .set-tools-icons > .tip > .menu > summary.btn,
+.set-tools .set-tools-icons > .menu > summary.btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 34px !important;
+  min-width: 34px !important;
+  max-width: 34px !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: #242424 !important;
+  color: #fff !important;
+}
+
+.set-tools .set-tools-icons > .tip > .btn.set-tool-icon:hover:not(:disabled),
+.set-tools .set-tools-icons > .menu:not(.menu-disabled) > summary.btn:hover,
+.set-tools .set-tools-icons > .tip > .menu:not(.menu-disabled) > summary.btn:hover,
+.set-tools .set-tools-icons .menu[open] > summary.btn {
+  background: #2a2a2a !important;
+  color: #fff !important;
+  border: 0 !important;
+}
+
+.set-tools .set-tools-icons .action-icon {
+  display: block;
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.set-tools .set-tools-icons .menu-panel {
+  left: auto;
+  right: 0;
 }
 
 .harm-advice {
@@ -8665,7 +8750,16 @@ details:not([open]) > .menu-panel {
 .stick-strip-facts dd {
   margin: 0;
   color: var(--ink);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  line-height: 1.45;
+}
+.stick-strip-fact-parts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.45rem;
+}
+.stick-strip-fact-parts > span {
+  white-space: nowrap;
 }
 .stick-strip-facts > div.is-mute dd {
   color: var(--muted);
@@ -8887,7 +8981,7 @@ details:not([open]) > .menu-panel {
 
 .library-source-pane p.stick-head-live {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 0.55rem;
   min-width: 0;
   flex: 1 1 auto;
@@ -8900,9 +8994,10 @@ details:not([open]) > .menu-panel {
 
 .stick-head-live-text {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+  overflow-wrap: break-word;
   font-weight: 650;
 }
 
@@ -8913,32 +9008,23 @@ details:not([open]) > .menu-panel {
 }
 
 .library-panel .stick-import-head.has-status.has-live > .stick-head-live {
-  grid-column: 2;
-  grid-row: 1;
-  min-width: 0;
-}
-
-.library-panel .stick-import-head.has-status.has-live .stick-head-cluster > .stick-actions {
-  grid-column: 1 / -1;
-  grid-row: 2;
-  justify-content: flex-end;
+  flex: 1 1 14rem;
+  min-width: min(100%, 14rem);
+  max-width: 100%;
+  align-items: baseline;
 }
 
 .library-panel .stick-import-head.has-live .stick-head-verdict {
   display: none;
 }
 
-/* Stick status lives in the Rekordbox-stick header. The cluster dissolves
-   so title, verdict and buttons share one row; facts span the row below. */
+/* Title and the full status share the first line and may wrap.
+   Actions always take the next line so they cannot clip the sentence. */
 .library-panel .stick-import-head.has-status {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.55rem 0.85rem;
-}
-
-.library-panel .stick-import-head.has-status.has-live {
-  grid-template-columns: auto minmax(0, 1fr);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.4rem 0.75rem;
 }
 
 .stick-head-cluster {
@@ -8946,13 +9032,17 @@ details:not([open]) > .menu-panel {
 }
 
 .library-panel .stick-import-head.has-status > .library-browser-title {
-  grid-column: 1;
-  grid-row: 1;
+  flex: 0 1 auto;
   margin-right: 0;
   min-width: max-content;
+  max-width: 100%;
 }
 
-.library-panel .stick-import-head.has-status > .library-browser-title .library-browser-heading {
+.library-panel .stick-import-head .library-browser-heading {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  max-width: 100%;
   overflow: visible;
   text-overflow: unset;
   white-space: nowrap;
@@ -8960,21 +9050,41 @@ details:not([open]) > .menu-panel {
 
 .library-source-pane p.stick-head-verdict,
 .stick-head-verdict {
-  grid-column: 2;
-  grid-row: 1;
   display: flex;
-  align-items: center;
+  flex: 1 1 14rem;
+  align-items: baseline;
   gap: 0.55rem;
-  min-width: 0;
-  max-width: none;
+  min-width: min(100%, 14rem);
+  max-width: 100%;
   margin: 0;
   color: #d9d9d9;
   font-size: 0.86rem;
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
-/* Strip card uses margin-top to align with multi-line start; header
-   rows are single-line with align-items:center, so drop the offset. */
+/* Status sits under the title and chip and uses the full row, so a long
+   sentence wraps instead of being ellipsized beside the buttons. */
+.library-panel .stick-import-head.has-status .stick-head-verdict,
+.library-panel .stick-import-head.has-status > .stick-head-live {
+  flex: 1 1 100%;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+}
+
+.library-panel .stick-import-head.has-status .stick-strip-verdict,
+.library-panel .stick-import-head.has-status .stick-head-live-text {
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+/* Header dot tracks the first line only. Baseline alignment uses that
+   line's baseline even when the sentence wraps, and the 0.55rem dot
+   then sits on the cap-height / x-height. The strip's 0.4em offset
+   would push it below the baseline, so keep the header offset at 0. */
 .stick-head-verdict .stick-strip-dot,
 .stick-head-live .stick-strip-dot {
   margin-top: 0;
@@ -8988,23 +9098,26 @@ details:not([open]) > .menu-panel {
 
 .stick-head-verdict .stick-strip-verdict {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+  overflow-wrap: break-word;
   color: #d9d9d9;
   font-size: 0.86rem;
 }
 
 .library-panel .stick-import-head.has-status .stick-head-cluster > .stick-actions {
-  grid-column: 3;
-  grid-row: 1;
-  flex: 0 0 auto;
+  flex: 1 1 100%;
+  width: 100%;
+  min-width: 0;
   margin-left: 0;
+  justify-content: flex-end;
 }
 
 .stick-head-more {
-  grid-column: 1 / -1;
-  grid-row: 2;
+  flex: 1 1 100%;
+  order: 2;
+  width: 100%;
   min-width: 0;
 }
 
@@ -9059,6 +9172,58 @@ details:not([open]) > .menu-panel {
   margin-left: 0;
 }
 
+.stick-head-more .stick-strip-details.is-sheet {
+  margin-top: 0.15rem;
+  padding-top: 0.5rem;
+  padding-left: 0;
+}
+
+.stick-head-more .stick-strip-details.is-sheet .stick-strip-facts {
+  gap: 0.12rem 0.7rem;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.stick-head-more .stick-strip-details.is-sheet .stick-strip-facts > div {
+  padding-block: 0.08rem;
+}
+
+.stick-head-more .stick-strip-why {
+  margin: 0.4rem 0 0;
+  max-width: 62ch;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.stick-head-more .stick-strip-more {
+  margin-top: 0.45rem;
+  gap: 0.4rem;
+}
+
+.stick-strip-fact-parts > span.is-more {
+  color: var(--muted);
+  font-weight: 650;
+}
+
+.library-panel .stick-import-head .stick-strip-actions,
+.library-panel .stick-import-head .stick-strip-actions-main,
+.library-panel .stick-import-head .stick-strip-actions-trail {
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.library-panel .stick-import-head .stick-strip-actions.has-trail .stick-strip-actions-trail {
+  padding-left: 0.4rem;
+  margin-left: 0.1rem;
+}
+
+.library-panel .stick-import-head .stick-actions .btn,
+.library-panel .stick-import-head .stick-strip-actions .btn {
+  min-height: var(--ui-control-height, 36px);
+  padding-inline: 0.85rem;
+}
+
 .stick-strip-extra {
   margin-top: 0.75rem;
 }
@@ -9067,9 +9232,11 @@ details:not([open]) > .menu-panel {
   margin: 0.2rem 0 0;
 }
 
-.library-browser-heading .stick-volume-name {
+.library-browser-heading .stick-volume-name,
+.library-panel .stick-import-head .stick-volume-name {
   display: inline-block;
-  margin-left: 0.55rem;
+  flex: 0 0 auto;
+  margin-left: 0;
   padding: 0.05rem 0.45rem;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.1);
@@ -9078,45 +9245,52 @@ details:not([open]) > .menu-panel {
   font-weight: 750;
   letter-spacing: 0;
   vertical-align: 0.05em;
+  white-space: nowrap;
 }
 
 .stick-volume-list {
   display: flex;
   flex: 1 1 100%;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  margin: 0.15rem 0 0;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+  width: 100%;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .library-panel .stick-import-head.has-status > .stick-volume-list {
-  grid-column: 1 / -1;
-  grid-row: 2;
+  order: 1;
+  width: 100%;
 }
 
-.library-panel .stick-import-head.has-status:has(.stick-volume-list) .stick-head-more {
-  grid-row: 3;
+.stick-volume-list > li {
+  margin: 0;
+  padding: 0;
 }
 
 .stick-volume-choice {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.25rem 0.55rem;
-  max-width: 100%;
+  align-items: center;
+  gap: 0.35rem 0.65rem;
+  width: 100%;
+  box-sizing: border-box;
   margin: 0;
-  padding: 0.4rem 0.7rem;
+  padding: 0.4rem 0.55rem;
   border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 999px;
-  background: transparent;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
   color: #f4f4f4;
   text-align: left;
   cursor: pointer;
 }
 
 .stick-volume-choice.is-current {
-  border-color: var(--ok, #22c55e);
+  border-color: color-mix(in srgb, var(--ok, #1ed760) 70%, transparent);
+  background: color-mix(in srgb, var(--ok, #1ed760) 14%, #1a1a1a);
+  box-shadow: inset 3px 0 0 var(--ok, #1ed760);
 }
 
 .stick-volume-choice:disabled {
@@ -9125,18 +9299,36 @@ details:not([open]) > .menu-panel {
 }
 
 .stick-volume-choice-name {
+  flex: 0 0 auto;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .stick-volume-choice-flag {
-  color: var(--ok, #22c55e);
-  font-size: 0.78rem;
-  font-weight: 650;
+  flex: 0 0 auto;
+  padding: 0.08rem 0.45rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ok, #1ed760) 22%, transparent);
+  color: #c8f7d8;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
-.stick-volume-choice-meta {
+.stick-volume-choice-stats {
+  display: flex;
+  flex: 1 1 16rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.75rem;
+  min-width: min(100%, 12rem);
   color: #b3b3b3;
   font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.stick-volume-stat {
+  white-space: nowrap;
 }
 
 .set-shell .library-panel .stick-import-pane.is-folded .stick-import-head {
@@ -9145,18 +9337,12 @@ details:not([open]) > .menu-panel {
 }
 
 @media (max-width: 720px) {
-  .library-panel .stick-import-head.has-status {
-    grid-template-columns: minmax(0, 1fr);
+  .library-panel .stick-import-head.has-status > .library-browser-title {
+    min-width: 0;
+    max-width: 100%;
   }
 
-  .library-panel .stick-import-head.has-status > .library-browser-title,
-  .stick-head-verdict,
-  .stick-head-cluster > .stick-actions {
-    grid-column: 1;
-    grid-row: auto;
-  }
-
-  .stick-head-cluster > .stick-actions {
+  .library-panel .stick-import-head.has-status .stick-head-cluster > .stick-actions {
     justify-content: flex-start;
   }
 }

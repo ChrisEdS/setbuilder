@@ -137,6 +137,25 @@ test("after prepare, a .PIONEER stick with OneLibrary aside is ready", () => {
   assert.equal(health.libraryAside, true);
 });
 
+test("library aside plus a readable export.pdb with playlists is ready, not needsRekordbox", () => {
+  const health = assessStick({
+    pioneer: ".PIONEER",
+    pdb: { buffer: fixture(), size: fixture().byteLength, lastModified: 200 },
+    libraryDb: { size: 1_000, lastModified: 50 },
+    exportExt: true,
+    analysis: true,
+    sidecar: true,
+    libraryAside: true,
+  });
+  assert.ok(health.pdb.present);
+  assert.equal(health.pdb.error, null);
+  assert.ok(health.pdb.playlists >= 1);
+  assert.equal(health.libraryDb.present, true);
+  assert.equal(health.libraryDb.stale, true);
+  assert.equal(health.libraryAside, true);
+  assert.equal(health.verdict, "ready");
+});
+
 test("picking only export.pdb cannot say whether a player will find the library", () => {
   const health = assessStick({
     pioneer: "none",

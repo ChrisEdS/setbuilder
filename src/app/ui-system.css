@@ -726,6 +726,12 @@ html[data-frame="mac"] .set-shell .hero-copy {
   border-color: rgba(30, 215, 96, 0.55) !important;
 }
 
+.set-shell .timeline-tools .icon-action.is-unsort {
+  background: color-mix(in oklab, #f0d48a 28%, #242424) !important;
+  color: #fff8e6 !important;
+  border-color: rgba(240, 212, 138, 0.75) !important;
+}
+
 /* Details · collapse · trash stay one unit (never orphan the bin). */
 .set-shell .timeline-tools-tail {
   display: inline-flex;
@@ -805,7 +811,8 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 .set-shell .manual-row.is-compact-open .manual-controls {
-  min-width: 0;
+  /* One-line tools (icons + Zuklappen + delete). Shrinking to 0 wraps the tail off. */
+  min-width: max-content;
 }
 
 .set-shell .manual-row.is-compact .manual-select {
@@ -878,6 +885,12 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 .set-shell .manual-list.is-compact .manual-row.is-compact .timeline-tools {
+  min-width: max-content;
+}
+
+/* Expanded compact: Zuklappen stays on the icon row. Wrap only in the narrow stack. */
+.set-shell .manual-list.is-compact .manual-row.is-compact-open .timeline-tools {
+  flex-wrap: nowrap !important;
   min-width: max-content;
 }
 
@@ -1563,6 +1576,16 @@ html[data-frame="mac"] .set-shell .hero-copy {
   .set-shell {
     width: min(100% - 1rem, 1280px);
     padding-top: var(--ui-space-4);
+  }
+
+  /* Stacked row: the action strip may wrap once the window cannot hold one line. */
+  .set-shell .manual-row.is-compact-open .manual-controls {
+    min-width: 0;
+  }
+
+  .set-shell .manual-list.is-compact .manual-row.is-compact-open .timeline-tools {
+    flex-wrap: wrap !important;
+    min-width: 0;
   }
 
   .set-shell .hero {

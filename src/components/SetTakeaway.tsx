@@ -267,12 +267,8 @@ export function SetEnergyMenu({
       disabled={locked}
     >
     <Menu
-      label={
-        <>
-          {busy ? t("builder.tool.energyBusy") : t("builder.tool.energy")}{" "}
-          <span aria-hidden="true">▾</span>
-        </>
-      }
+      className="set-tool-icon"
+      label={<ActionIcon name="energy" />}
       ariaLabel={t("builder.tool.energy")}
       disabled={locked}
     >
@@ -590,13 +586,13 @@ export function SetMatchLinksButton({
     <Tip disabled={!canMatch} text={t("library.tools.matchTip")}>
       <button
         type="button"
-        className="btn ghost"
+        className="btn ghost set-tool-icon"
         onClick={onMatchLinks}
         disabled={!canMatch || matchingLinks}
+        aria-label={t("library.tools.matchLinks")}
+        aria-busy={matchingLinks || undefined}
       >
-        {matchingLinks
-          ? t("library.tools.searching")
-          : t("library.tools.matchLinks")}
+        <ActionIcon name="spotify" />
       </button>
     </Tip>
   );

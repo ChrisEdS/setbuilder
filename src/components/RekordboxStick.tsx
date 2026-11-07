@@ -698,20 +698,18 @@ export function RekordboxStick({
       >
         {volumes.map((volume) => {
           const current = stickName === volume.name && Boolean(label);
-          const meta = [
+          const stats = [
             volume.freeBytes != null
               ? t("library.stick.volumeFree", { free: formatMacBytes(volume.freeBytes, locale) })
               : null,
             t("library.stick.volumePdb", { size: formatMacBytes(volume.pdbBytes, locale) }),
-            volume.tracks != null && volume.playlists != null
-              ? t("library.stick.volumeCounts", {
-                  playlists: volume.playlists,
-                  tracks: volume.tracks,
-                })
+            volume.playlists != null
+              ? t("library.stick.volumePlaylists", { playlists: volume.playlists })
               : null,
-          ]
-            .filter(Boolean)
-            .join(" · ");
+            volume.tracks != null
+              ? t("library.stick.volumeTracks", { tracks: volume.tracks })
+              : null,
+          ].filter((stat): stat is string => Boolean(stat));
           return (
             <li key={volume.name}>
               <button
@@ -726,7 +724,13 @@ export function RekordboxStick({
                 {current ? (
                   <span className="stick-volume-choice-flag">{t("library.stick.volumeCurrent")}</span>
                 ) : null}
-                <span className="stick-volume-choice-meta">{meta}</span>
+                <span className="stick-volume-choice-stats">
+                  {stats.map((stat) => (
+                    <span key={stat} className="stick-volume-stat">
+                      {stat}
+                    </span>
+                  ))}
+                </span>
               </button>
             </li>
           );
@@ -816,7 +820,6 @@ export function RekordboxStick({
                     }
                   : undefined
               }
-              detailsExtra={foundPath}
               trailing={chooseActions}
             />
           ) : (

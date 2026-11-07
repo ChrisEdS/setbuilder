@@ -453,6 +453,14 @@ const de = {
   "builder.row.clearPin": "Pin lösen",
   "builder.row.clearPinTip":
     "Pin lösen. Der Track bleibt im Set, kann aber beim Kürzen zu den Alternativen wandern.",
+  "builder.row.unsort": "Im Set behalten, neu sortieren",
+  "builder.row.unsortTip":
+    "Bleibt im Set, aber nicht an dieser Stelle. Pin, Ausschluss, erster und letzter Track an diesem Song werden gelöst. Der nächste Sortiervorgang sucht einen anderen Platz.",
+  "builder.row.unsortClear": "Diesen Platz behalten",
+  "builder.row.unsortClearTip": "Nicht mehr neu sortieren. Der Track bleibt, wo er jetzt steht.",
+  "builder.row.unsortBadge": "Neu sortieren",
+  "builder.row.unsortBadgeTip":
+    "Bleibt im Set, aber nicht an dieser Stelle. Der nächste Sortiervorgang sucht einen anderen Platz.",
   "builder.row.setExclude": "Ausschließen",
   "builder.row.setExcludeTitle":
     "Darf nicht in die Performance. Bleibt beim Kürzen, Auffüllen und bei Andere Songs draußen. Löst Pin/Opener/Closer.",
@@ -1223,6 +1231,14 @@ const en: Record<keyof typeof de, string> = {
   "builder.row.clearPin": "Unpin",
   "builder.row.clearPinTip":
     "Unpin. The track stays in the set, and trim may move it to Alternatives.",
+  "builder.row.unsort": "Keep in set, resort",
+  "builder.row.unsortTip":
+    "Stays in the set, but not in this slot. Pin, exclude, first and last on this track are cleared. The next sort may place it somewhere else.",
+  "builder.row.unsortClear": "Keep this position",
+  "builder.row.unsortClearTip": "Stop resorting. The track stays where it is now.",
+  "builder.row.unsortBadge": "Resort",
+  "builder.row.unsortBadgeTip":
+    "Stays in the set, but not in this slot. The next sort may place it somewhere else.",
   "builder.row.setExclude": "Exclude",
   "builder.row.setExcludeTitle":
     "Must not be in the performance. Stays out through trim, refill and Different songs. Clears pin/opener/closer.",

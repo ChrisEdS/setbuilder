@@ -33,6 +33,24 @@ type BubblePos = {
 
 const MARGIN = 8;
 const MAX_WIDTH = 260;
+/** Wait before the first tip, so sweeping across controls does not flash one. */
+const SHOW_DELAY_MS = 450;
+/** Once a tip is open (or just closed), the next neighbor can appear sooner. */
+const SKIP_DELAY_MS = 100;
+const SKIP_GRACE_MS = 120;
+/** Keyboard focus still waits briefly so tabbing does not strobe every tip. */
+const FOCUS_DELAY_MS = 180;
+/** Leave hides almost immediately; long enough to ignore a one-frame gap. */
+const HIDE_DELAY_MS = 60;
+
+let openTipCount = 0;
+let lastTipClosedAt = 0;
+
+function showDelay(source: "pointer" | "focus"): number {
+  if (source === "focus") return FOCUS_DELAY_MS;
+  const warm = openTipCount > 0 || Date.now() - lastTipClosedAt < SKIP_GRACE_MS;
+  return warm ? SKIP_DELAY_MS : SHOW_DELAY_MS;
+}
 
 function estimateRect(width: number, height: number): DOMRect {
   return {
@@ -114,38 +132,72 @@ export function Tip({
   const Wrap = as;
   const bubbleRef = useRef<HTMLSpanElement>(null);
   const hideTimer = useRef<number | null>(null);
+  const showTimer = useRef<number | null>(null);
+  const openRef = useRef(false);
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<BubblePos | null>(null);
   const tipId = useId();
 
-  const show = useCallback(() => {
-    if (hideTimer.current != null) {
-      window.clearTimeout(hideTimer.current);
-      hideTimer.current = null;
+  const clearShow = useCallback(() => {
+    if (showTimer.current != null) {
+      window.clearTimeout(showTimer.current);
+      showTimer.current = null;
     }
-    setOpen(true);
   }, []);
 
-  const hide = useCallback((immediate = false) => {
-    if (hideTimer.current != null) {
-      window.clearTimeout(hideTimer.current);
-      hideTimer.current = null;
-    }
-    const close = () => {
-      setOpen(false);
-      setPos(null);
-      hideTimer.current = null;
+  const show = useCallback(
+    (source: "pointer" | "focus" = "pointer") => {
+      if (hideTimer.current != null) {
+        window.clearTimeout(hideTimer.current);
+        hideTimer.current = null;
+      }
+      if (openRef.current || showTimer.current != null) return;
+      const delay = showDelay(source);
+      showTimer.current = window.setTimeout(() => {
+        showTimer.current = null;
+        openRef.current = true;
+        setOpen(true);
+      }, delay);
+    },
+    [],
+  );
+
+  const hide = useCallback(
+    (immediate = false) => {
+      clearShow();
+      if (hideTimer.current != null) {
+        window.clearTimeout(hideTimer.current);
+        hideTimer.current = null;
+      }
+      const close = () => {
+        openRef.current = false;
+        setOpen(false);
+        setPos(null);
+        hideTimer.current = null;
+      };
+      if (!openRef.current) return;
+      if (immediate) {
+        close();
+        return;
+      }
+      hideTimer.current = window.setTimeout(close, HIDE_DELAY_MS);
+    },
+    [clearShow],
+  );
+
+  useEffect(() => {
+    if (!open) return;
+    openTipCount += 1;
+    return () => {
+      openTipCount = Math.max(0, openTipCount - 1);
+      lastTipClosedAt = Date.now();
     };
-    if (immediate) {
-      close();
-      return;
-    }
-    hideTimer.current = window.setTimeout(close, 80);
-  }, []);
+  }, [open]);
 
   useEffect(() => {
     return () => {
       if (hideTimer.current != null) window.clearTimeout(hideTimer.current);
+      if (showTimer.current != null) window.clearTimeout(showTimer.current);
     };
   }, []);
 
@@ -182,7 +234,11 @@ export function Tip({
   useEffect(() => {
     if (!open) return;
     function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") {
+        openRef.current = false;
+        setOpen(false);
+        setPos(null);
+      }
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -200,10 +256,10 @@ export function Tip({
         .join(" ")}
       tabIndex={disabled ? 0 : undefined}
       aria-describedby={open ? tipId : undefined}
-      onPointerEnter={show}
+      onPointerEnter={() => show("pointer")}
       onPointerLeave={() => hide()}
       onPointerDownCapture={() => hide(true)}
-      onFocusCapture={show}
+      onFocusCapture={() => show("focus")}
       onBlurCapture={(event) => {
         const next = event.relatedTarget;
         if (next instanceof Node && wrapRef.current?.contains(next)) return;

@@ -85,7 +85,14 @@ function verdictTone(health: StickHealth): Tone {
   }
 }
 
-type Fact = { id: string; tone: Tone; label: string; value: string };
+type Fact = {
+  id: string;
+  tone: Tone;
+  label: string;
+  value: string;
+  parts?: string[];
+  more?: number;
+};
 
 function folderFact(health: StickHealth, t: Translate): Fact {
   if (health.pioneer === "none") {
@@ -153,13 +160,21 @@ function facts(health: StickHealth, t: Translate): Fact[] {
     value: t(library.key),
   });
 
+  const setform = health.pdb.setform;
+  const setformShown = setform.slice(0, 2);
+  const setformMore = Math.max(0, setform.length - setformShown.length);
   list.push({
     id: "setform",
-    tone: health.pdb.setform.length ? "ok" : "mute",
+    tone: setform.length ? "ok" : "mute",
     label: t("library.stickHealth.fact.setform"),
-    value: health.pdb.setform.length
-      ? health.pdb.setform.slice(0, 4).join(" · ")
+    value: setform.length
+      ? setformShown.join(" · ") +
+        (setformMore > 0
+          ? " · " + t("library.stickHealth.fact.setformMore", { count: setformMore })
+          : "")
       : t("library.stickHealth.fact.setformNone"),
+    parts: setform.length ? setformShown : undefined,
+    more: setformMore > 0 ? setformMore : undefined,
   });
 
   const rank: Record<Tone, number> = { bad: 0, warn: 1, ok: 2, mute: 3 };
@@ -433,19 +448,39 @@ export function StickHealthCard({
     ) : primary && !deferPrimaryAction && !open ? (
       <p className="stick-strip-next">{t(nextKey(primary))}</p>
     ) : null;
+  const headerSheet = placement === "header";
   const details = open && !busy ? (
-    <div className="stick-strip-details" id={detailsId}>
-          <p className="stick-strip-meaning">{t(meaningKey(health, caps.canPrepare))}</p>
+    <div className={"stick-strip-details" + (headerSheet ? " is-sheet" : "")} id={detailsId}>
+          {headerSheet ? null : (
+            <p className="stick-strip-meaning">{t(meaningKey(health, caps.canPrepare))}</p>
+          )}
           <dl className="stick-strip-facts">
             {facts(health, t).map((fact) => (
               <div key={fact.id} className={`is-${fact.tone}`}>
                 <dt>{fact.label}</dt>
-                <dd>{fact.value}</dd>
+                <dd>
+                  {fact.parts ? (
+                    <span className="stick-strip-fact-parts">
+                      {fact.parts.map((part) => (
+                        <span key={part}>{part}</span>
+                      ))}
+                      {fact.more ? (
+                        <span className="is-more">
+                          {t("library.stickHealth.fact.setformMore", { count: fact.more })}
+                        </span>
+                      ) : null}
+                    </span>
+                  ) : (
+                    fact.value
+                  )}
+                </dd>
               </div>
             ))}
           </dl>
-          <p className="stick-strip-why">{t("library.stickHealth.why")}</p>
-          {detailsExtra ? <div className="stick-strip-extra">{detailsExtra}</div> : null}
+          <p className="stick-strip-why">
+            {t(headerSheet ? "library.stickHealth.whyShort" : "library.stickHealth.why")}
+          </p>
+          {!headerSheet && detailsExtra ? <div className="stick-strip-extra">{detailsExtra}</div> : null}
           <div className="stick-strip-more">
             {onRecheck ? (
               <Tip

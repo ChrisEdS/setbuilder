@@ -138,7 +138,10 @@ export function assessStick(input: StickHealthInput): StickHealth {
   let verdict: StickHealthVerdict = "ready";
   if (!pdb.present || pdb.error) verdict = "broken";
   else if (pdb.playlists === 0) verdict = "empty";
-  else if (libraryDb.present && !libraryDb.synced) verdict = "needsRekordbox";
+  // A backup in SETBUILDER-Backup means prepare already moved the old library
+  // out of the player's way. A leftover exportLibrary.db must not keep the
+  // stick on "needs prepare" once that backup exists and export.pdb has playlists.
+  else if (libraryDb.present && !libraryDb.synced && !input.libraryAside) verdict = "needsRekordbox";
   else if (input.pioneer === "none") verdict = "incomplete";
   // .PIONEER alone is a soft warning — after prepare (OneLibrary aside) the stick
   // is ready for Device Library players; don't keep alarming the DJ.

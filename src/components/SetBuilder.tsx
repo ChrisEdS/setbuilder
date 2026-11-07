@@ -4230,7 +4230,7 @@ export function SetBuilder() {
                     </button>
                   </Tip>
                 </div>
-                <div className="set-tools-group">
+                <div className="set-tools-group set-tools-icons">
                   <SetEnergyMenu
                     busy={energyBusy}
                     stickReady={stickReady}
@@ -4635,6 +4635,9 @@ export function SetBuilder() {
                               {rowCompact && draft.pinnedIds?.includes(track.id) ? (
                                 <em className="anchor-pill is-pin">{t("builder.row.pinBadge")}</em>
                               ) : null}
+                              {rowCompact && draft.unsortedIds?.includes(track.id) ? (
+                                <em className="anchor-pill is-unsort">{t("builder.row.unsortBadge")}</em>
+                              ) : null}
                               {rowCompact && draft.excludedIds?.includes(track.id) ? (
                                 <em className="anchor-pill is-exclude">{t("builder.row.excludeBadge")}</em>
                               ) : null}
@@ -4672,6 +4675,13 @@ export function SetBuilder() {
                               <Tip text={t("builder.row.pinBadgeTip")}>
                                 <em className="anchor-pill is-pin">
                                   {t("builder.row.pinBadge")}
+                                </em>
+                              </Tip>
+                            ) : null}
+                            {draft.unsortedIds?.includes(track.id) ? (
+                              <Tip text={t("builder.row.unsortBadgeTip")}>
+                                <em className="anchor-pill is-unsort">
+                                  {t("builder.row.unsortBadge")}
                                 </em>
                               </Tip>
                             ) : null}
@@ -5001,6 +5011,34 @@ export function SetBuilder() {
                               }}
                             >
                               <ActionIcon name="pin" />
+                            </button>
+                          </Tip>
+                          <Tip
+                            className={extraToolsClass}
+                            text={
+                              draft.unsortedIds?.includes(track.id)
+                                ? t("builder.row.unsortClearTip")
+                                : t("builder.row.unsortTip")
+                            }
+                          >
+                            <button
+                              type="button"
+                              className={
+                                draft.unsortedIds?.includes(track.id)
+                                  ? "icon-action is-unsort"
+                                  : "icon-action"
+                              }
+                              aria-label={
+                                draft.unsortedIds?.includes(track.id)
+                                  ? t("builder.row.unsortClear")
+                                  : t("builder.row.unsort")
+                              }
+                              aria-pressed={Boolean(draft.unsortedIds?.includes(track.id))}
+                              onClick={() =>
+                                setDraft((current) => toggleUnsort(current, track.id))
+                              }
+                            >
+                              <ActionIcon name="unsort" />
                             </button>
                           </Tip>
                           <Tip

@@ -15,7 +15,8 @@ type ActionIconName =
   | "exclude"
   | "rehearse"
   | "remove"
-  | "more";
+  | "more"
+  | "spotify";
 
 const svgProps: SVGProps<SVGSVGElement> = {
   className: "action-icon",
@@ -40,9 +41,16 @@ export function ActionIcon({ name }: { name: ActionIconName }) {
       </svg>
     );
   }
+  if (name === "spotify") {
+    return (
+      <svg {...svgProps} data-icon="spotify" fill="currentColor">
+        <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm4.6 14.4c-.2.3-.5.4-.8.2-2.2-1.3-5-1.6-8.3-.9-.3.1-.7-.1-.8-.4-.1-.3.1-.7.4-.8 3.6-.8 6.7-.5 9.2 1 .3.2.4.6.3.9Zm1.1-2.5c-.2.4-.6.5-.9.3-2.5-1.5-6.4-2-9.4-1.1-.4.1-.8-.1-.9-.5-.1-.4.1-.8.5-.9 3.4-1 7.7-.5 10.6 1.2.3.2.4.6.1 1Zm.1-2.6c-3-1.8-8-2-10.9-1.1-.4.1-.9-.1-1-.6-.1-.4.1-.9.6-1 3.3-1 8.8-.8 12.2 1.2.4.2.5.7.3 1.1-.2.3-.7.5-1.2.4Z" />
+      </svg>
+    );
+  }
 
   const strokes: Record<
-    Exclude<ActionIconName, "play" | "pause">,
+    Exclude<ActionIconName, "play" | "pause" | "spotify">,
     ReactNode
   > = {
     up: <path d="m7.5 11 4.5-4.5L16.5 11M12 7v11" />,
