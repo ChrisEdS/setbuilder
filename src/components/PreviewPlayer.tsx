@@ -687,7 +687,7 @@ function PreviewDock({
     const card = cardRef.current;
     if (!card) return;
     function fit() {
-      if (zoomed || !place || !card) return;
+      if (!place || !card) return;
       const rect = card.getBoundingClientRect();
       const next = clampPlace(place.x, place.y, rect.width, rect.height);
       if (next.x !== place.x || next.y !== place.y) onPlace(next);
@@ -700,7 +700,7 @@ function PreviewDock({
       observer.disconnect();
       window.removeEventListener("resize", fit);
     };
-  }, [place, onPlace, zoomed]);
+  }, [place, onPlace]);
 
   const embed = playerEmbed(track);
   const hasStickLabel = Boolean(filePath) && (Boolean(src) || localIssue != null);
@@ -719,7 +719,7 @@ function PreviewDock({
     : null;
 
   function onDragStart(event: ReactPointerEvent<HTMLDivElement>) {
-    if (zoomed || event.button !== 0) return;
+    if (event.button !== 0) return;
     const card = cardRef.current;
     if (!card) return;
     const rect = card.getBoundingClientRect();
@@ -754,7 +754,7 @@ function PreviewDock({
   }
 
   function onResizeStart(event: ReactPointerEvent<HTMLDivElement>) {
-    if (zoomed || minimized || event.button !== 0) return;
+    if (event.button !== 0) return;
     const card = cardRef.current;
     if (!card) return;
     resizeRef.current = {
@@ -784,7 +784,7 @@ function PreviewDock({
   }
 
   function onResizeYStart(event: ReactPointerEvent<HTMLDivElement>) {
-    if (zoomed || minimized || event.button !== 0) return;
+    if (event.button !== 0) return;
     const card = cardRef.current;
     if (!card) return;
     const rect = card.getBoundingClientRect();
