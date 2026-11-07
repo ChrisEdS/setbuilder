@@ -2,7 +2,7 @@
 
 **Deutsch** · [English](README.md)
 
-**Version 5.0.8**
+**Version 5.0.9**
 
 SETBUILDER baut ein DJ-Set aus einem rekordbox-USB-Stick. Du lädst eine Playlist oder eine History, legst die Nacht auf den Slot und prüfst Key, BPM und Energie. Danach schreibst du das Set zurück und hörst die Übergänge vor dem Gig. Die Oberfläche ist Deutsch und Englisch.
 
@@ -16,7 +16,7 @@ Die Wellenform nutzt die volle Breite. Der Zoom folgt der Wiedergabe, das Mausra
 
 Das Beatgrid auf der Welle ist das, das rekordbox schon angelegt hat. SETBUILDER liest es und ändert es nicht. Fehlt ein Grid, sagt das Deck das.
 
-5.0.1 ergänzt Quantize, das Verschieben des Beatgrids und die Rekordbox-Phrasenbänder, plus eine aktuelle Anleitung. 5.0.2 macht Set-Cues auf der Welle sichtbar und ergänzt Tooltips an den Deck-Bedienelementen. 5.0.3 ergänzt eine kleinere Wellenform, Struktur-Cues mit Zurück, Platz vor dem ersten Downbeat und einen Playhead, der mitläuft. 5.0.4 findet das Beatgrid, das schon beim Track liegt, zeichnet dünnere leisere Grid-Linien, die sich ausblenden lassen, und ein Cue-Klick spielt, ohne den Cue zu verschieben. 5.0.5 zeigt einen Hinweis, solange das Beatgrid noch gelesen wird, zeichnet deutlichere Phrasenbänder und hält geplanten Übergang, Länge und Set-Notiz in einer Zeile. 5.0.6 zieht das Player-Fenster mit Light zusammen, ergänzt Schließen, Einklappen und Vergrößern, zeigt die Längenvorgaben vollständig und lässt den Zoom am Anfang der Welle heranzoomen. 5.0.7 nimmt die Fensterknöpfe wieder weg. Der Player schließt nur sich selbst, über das × neben den Sprungtasten. 5.0.8 behält dieses Schließen und bringt den Desktop-Build wieder durch die Typprüfung.
+5.0.1 ergänzt Quantize, das Verschieben des Beatgrids und die Rekordbox-Phrasenbänder, plus eine aktuelle Anleitung. 5.0.2 macht Set-Cues auf der Welle sichtbar und ergänzt Tooltips an den Deck-Bedienelementen. 5.0.3 ergänzt eine kleinere Wellenform, Struktur-Cues mit Zurück, Platz vor dem ersten Downbeat und einen Playhead, der mitläuft. 5.0.4 findet das Beatgrid, das schon beim Track liegt, zeichnet dünnere leisere Grid-Linien, die sich ausblenden lassen, und ein Cue-Klick spielt, ohne den Cue zu verschieben. 5.0.5 zeigt einen Hinweis, solange das Beatgrid noch gelesen wird, zeichnet deutlichere Phrasenbänder und hält geplanten Übergang, Länge und Set-Notiz in einer Zeile. 5.0.6 zieht das Player-Fenster mit Light zusammen, ergänzt Schließen, Einklappen und Vergrößern, zeigt die Längenvorgaben vollständig und lässt den Zoom am Anfang der Welle heranzoomen. 5.0.7 nimmt die Fensterknöpfe wieder weg. Der Player schließt nur sich selbst, über das × neben den Sprungtasten. 5.0.8 behält dieses Schließen und bringt den Desktop-Build wieder durch die Typprüfung. 5.0.9 zoomt die Welle bis 128× und liest nur das Beatgrid, nicht die ganze Analyse-Datei.
 
 Hot Cues A–H kommen mit dem Track. Ein neuer Cue rastet auf den nächsten Downbeat ein, wenn ein Grid da ist, und wird sofort auf den Stick geschrieben. Cues, die schon als Memory Cues liegen, bleiben. Liegt für den Track noch keine Analyse auf dem Stick, bleiben die Cues im Set. Der Player sieht sie dann noch nicht.
 

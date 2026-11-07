@@ -38,6 +38,57 @@ async function readBytes(file: FileLike): Promise<Uint8Array> {
   return new Uint8Array(await blob.arrayBuffer());
 }
 
+type ByteBlob = {
+  size: number;
+  arrayBuffer(): Promise<ArrayBuffer>;
+  slice?: (start: number, end?: number) => { arrayBuffer(): Promise<ArrayBuffer> };
+};
+
+async function sliceBytes(blob: ByteBlob, start: number, end: number): Promise<Uint8Array> {
+  if (blob.slice) return new Uint8Array(await blob.slice(start, end).arrayBuffer());
+  const all = new Uint8Array(await blob.arrayBuffer());
+  return all.subarray(start, Math.min(all.length, end));
+}
+
+function uint32be(data: Uint8Array, offset: number): number {
+  return new DataView(data.buffer, data.byteOffset, data.byteLength).getUint32(offset, false);
+}
+
+/** PMAI wrapper around one tag, so the existing grid parser can read a slice. */
+function wrapTag(tag: Uint8Array): Uint8Array {
+  const out = new Uint8Array(28 + tag.length);
+  out.set([0x50, 0x4d, 0x41, 0x49], 0);
+  const view = new DataView(out.buffer);
+  view.setUint32(4, 28, false);
+  view.setUint32(8, out.length, false);
+  out.set(tag, 28);
+  return out;
+}
+
+/**
+ * The beat grid is a small tag. The same file also holds the waveform, which is
+ * the large part. Read tag headers and then only the grid tag.
+ */
+async function readGridBuffer(blob: ByteBlob): Promise<Uint8Array | null> {
+  if (blob.size < 28 || !blob.slice) return new Uint8Array(await blob.arrayBuffer());
+  const head = await sliceBytes(blob, 0, Math.min(32, blob.size));
+  const magic = String.fromCharCode(head[0] ?? 0, head[1] ?? 0, head[2] ?? 0, head[3] ?? 0);
+  if (magic !== "PMAI") return new Uint8Array(await blob.arrayBuffer());
+  let offset = uint32be(head, 4);
+  for (let step = 0; step < 32 && offset + 12 <= blob.size; step += 1) {
+    const tagHead = await sliceBytes(blob, offset, offset + 12);
+    const length = uint32be(tagHead, 8);
+    if (length < 12) break;
+    const kind = String.fromCharCode(tagHead[0] ?? 0, tagHead[1] ?? 0, tagHead[2] ?? 0, tagHead[3] ?? 0);
+    if (kind === "PQTZ") {
+      const tag = await sliceBytes(blob, offset, Math.min(blob.size, offset + length));
+      return wrapTag(tag);
+    }
+    offset += length;
+  }
+  return null;
+}
+
 async function writeBytes(file: FileLike, data: Uint8Array): Promise<void> {
   const writable = await file.createWritable();
   try {
@@ -113,10 +164,13 @@ async function readHead(file: FileLike): Promise<Uint8Array> {
 const analysisIndexes = new WeakMap<DirLike, Promise<Map<string, Located>>>();
 const indexRetried = new WeakSet<DirLike>();
 
+type IndexFile = { dir: DirLike; folder: string; datName: string; file: FileLike };
+
 async function buildAnalysisIndex(root: DirLike): Promise<Map<string, Located>> {
   const map = new Map<string, Located>();
   const library = await analysisLibrary(root);
   if (!library?.keys) return map;
+  const files: IndexFile[] = [];
   for await (const parent of library.keys()) {
     let group: DirLike;
     try {
@@ -137,17 +191,29 @@ async function buildAnalysisIndex(root: DirLike): Promise<Map<string, Located>> 
         if (!ANALYSIS_DAT.test(entry)) continue;
         const dat = await maybeFile(track, entry);
         if (!dat) continue;
-        let stored: string | null = null;
-        try {
-          stored = readAnlzContentPath(await readHead(dat));
-        } catch {
-          continue;
-        }
-        if (!stored) continue;
-        map.set(stored, { dir: track, folder: name.toUpperCase(), datName: entry });
+        files.push({ dir: track, folder: name.toUpperCase(), datName: entry, file: dat });
       }
     }
   }
+  const paths = new Array<string | null>(files.length);
+  let cursor = 0;
+  async function readNext(): Promise<void> {
+    for (;;) {
+      const index = cursor;
+      cursor += 1;
+      if (index >= files.length) return;
+      try {
+        paths[index] = readAnlzContentPath(await readHead(files[index].file));
+      } catch {
+        paths[index] = null;
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(8, files.length) }, () => readNext()));
+  files.forEach((file, index) => {
+    const stored = paths[index];
+    if (stored) map.set(stored, { dir: file.dir, folder: file.folder, datName: file.datName });
+  });
   return map;
 }
 
@@ -261,7 +327,8 @@ export async function readRememberedBeatGrid(trackId: number, filePath = ""): Pr
         ? lookupStickAnalysisFile(trackId)
         : null;
     if (!file) return null;
-    return readAnlzBeatGrid(new Uint8Array(await file.arrayBuffer()));
+    const bytes = await readGridBuffer(file);
+    return bytes ? readAnlzBeatGrid(bytes) : null;
   } catch {
     return null;
   }
@@ -323,7 +390,8 @@ export async function readStickBeatGrid(root: DirLike, trackId: number, filePath
   if (!located) return null;
   const dat = await maybeFile(located.dir, located.datName);
   if (!dat) return null;
-  return readAnlzBeatGrid(await readBytes(dat));
+  const bytes = await readGridBuffer(await dat.getFile());
+  return bytes ? readAnlzBeatGrid(bytes) : null;
 }
 
 /** Phrases from the exported PSSI tag. Null when the file has none, or the mask does not read as phrases. */

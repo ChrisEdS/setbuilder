@@ -2,7 +2,7 @@
 
 [Deutsch](README.de.md) · **English**
 
-**Version 5.0.8**
+**Version 5.0.9**
 
 SETBUILDER builds a DJ set from a rekordbox USB stick. Load a playlist or a history, fit the night to the slot, and check key, BPM, and energy. Then write the set back and hear the joins before the gig. The interface is German and English.
 
@@ -16,7 +16,7 @@ The waveform uses the full width. Zoom follows playback, and the mouse wheel zoo
 
 The beatgrid on the wave is the one rekordbox already made. SETBUILDER reads it and does not change it. If a track has no grid, the deck says so.
 
-5.0.1 adds quantize, nudging the beatgrid, and the rekordbox phrase bands, plus a current guide. 5.0.2 makes set cues visible on the wave and adds tooltips on the deck controls. 5.0.3 adds a smaller waveform, structure cues you can undo, room before the first downbeat, and a playhead that keeps up. 5.0.4 finds the beatgrid already stored with the track, draws thinner quieter grid lines you can hide, and a cue click plays without moving the cue. 5.0.5 shows a note while the beatgrid is still loading, draws clearer phrase bands, and keeps the planned transition, length, and set note on one row. 5.0.6 shrinks the player with Light, adds close, minimize, and zoom, shows the full length presets, and keeps a zoomed view at the start of the wave. 5.0.7 drops those window buttons. The player closes only itself, with the × next to the skip buttons. 5.0.8 keeps that close button and lets the desktop build typecheck again.
+5.0.1 adds quantize, nudging the beatgrid, and the rekordbox phrase bands, plus a current guide. 5.0.2 makes set cues visible on the wave and adds tooltips on the deck controls. 5.0.3 adds a smaller waveform, structure cues you can undo, room before the first downbeat, and a playhead that keeps up. 5.0.4 finds the beatgrid already stored with the track, draws thinner quieter grid lines you can hide, and a cue click plays without moving the cue. 5.0.5 shows a note while the beatgrid is still loading, draws clearer phrase bands, and keeps the planned transition, length, and set note on one row. 5.0.6 shrinks the player with Light, adds close, minimize, and zoom, shows the full length presets, and keeps a zoomed view at the start of the wave. 5.0.7 drops those window buttons. The player closes only itself, with the × next to the skip buttons. 5.0.8 keeps that close button and lets the desktop build typecheck again. 5.0.9 lets the wave zoom to 128× and reads only the beatgrid instead of the whole analysis file.
 
 Hot cues A–H load with the track. A new cue snaps to the nearest downbeat when a grid is there, and it is written to the stick straight away. Cues already stored as memory cues stay as they are. If the stick has no analysis for that track yet, the cues stay in the set and the player does not see them yet.
 

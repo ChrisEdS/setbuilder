@@ -26,7 +26,7 @@ test("zooming keeps the time under the pointer and stays inside the track", () =
   assert.equal(edge.start, 0.25);
 
   const limited = zoomAround(0, 1, 0, 1000);
-  assert.equal(limited.zoom, 64);
+  assert.equal(limited.zoom, 128);
   assert.equal(limited.start, 0);
 });
 

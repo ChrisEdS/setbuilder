@@ -1,5 +1,5 @@
 export const WAVE_ZOOM_MIN = 1;
-export const WAVE_ZOOM_MAX = 64;
+export const WAVE_ZOOM_MAX = 128;
 
 /** Bars of empty view before the first downbeat, so beat 1 can be lined up. */
 export const WAVE_LEAD_BARS = 3;
