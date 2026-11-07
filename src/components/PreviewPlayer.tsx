@@ -423,7 +423,6 @@ function PreviewDock({
   );
   const gridRequest = `${trackKey}\0${trackUri ?? ""}\0${stickEpoch}\0${stickHandleEpoch}\0${filePath}`;
   const gridRequestRef = useRef(gridRequest);
-  gridRequestRef.current = gridRequest;
   const [gridRequestSeen, setGridRequestSeen] = useState(gridRequest);
   if (gridRequest !== gridRequestSeen) {
     setGridRequestSeen(gridRequest);
@@ -438,6 +437,7 @@ function PreviewDock({
     setGridUndo(undefined);
   }
   useLayoutEffect(() => {
+    gridRequestRef.current = gridRequest;
     analyzeToken.current += 1;
     analyzing.current = false;
   }, [gridRequest]);
@@ -557,7 +557,7 @@ function PreviewDock({
       window.clearTimeout(showTimer);
       for (const stop of stoppers) stop();
     };
-  }, [trackKey, trackUri, stickEpoch, stickHandleEpoch, filePath]);
+  }, [gridRequest, trackKey, trackUri, stickEpoch, stickHandleEpoch, filePath]);
   useEffect(() => {
     if (cuesKnown) return;
     const pdbId = rekordboxTrackId({ id: trackKey, uri: trackUri }) ?? 0;

@@ -4693,13 +4693,11 @@ export function SetBuilder() {
                           <span className="manual-copy">
                             <span className="manual-title-line">
                               <strong title={track.name}>{track.name}</strong>
-                              {rowCompact ? (
-                                <SourceBadge
-                                  source={track.source}
-                                  tip={t("builder.row.sourceTip")}
-                                  inline
-                                />
-                              ) : null}
+                              <SourceBadge
+                                source={track.source}
+                                tip={t("builder.row.sourceTip")}
+                                inline
+                              />
                               {rowCompact && draft.openerId === track.id ? (
                                 <em className="anchor-pill is-opener">{t("builder.row.openerBadge")}</em>
                               ) : null}
@@ -4727,13 +4725,14 @@ export function SetBuilder() {
                             </span>
                           </span>
                         </button>
-                        {!rowCompact ? (
+                        {!rowCompact &&
+                        (draft.openerId === track.id ||
+                          draft.closerId === track.id ||
+                          draft.keptIds?.includes(track.id) ||
+                          draft.pinnedIds?.includes(track.id) ||
+                          draft.unsortedIds?.includes(track.id) ||
+                          draft.excludedIds?.includes(track.id)) ? (
                           <span className="anchor-pills">
-                            <SourceBadge
-                              source={track.source}
-                              tip={t("builder.row.sourceTip")}
-                              inline
-                            />
                             {draft.openerId === track.id ? (
                               <Tip text={t("builder.row.openerBadgeTip")}>
                                 <em className="anchor-pill is-opener">

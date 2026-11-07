@@ -967,9 +967,9 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 .set-shell .manual-list:not(.is-compact) .manual-row-main {
-  grid-template-columns: minmax(12rem, 1fr) minmax(0, max-content);
-  column-gap: 1.15rem;
-  align-items: center;
+  grid-template-columns: minmax(12rem, max-content) minmax(0, 1fr);
+  column-gap: 0.75rem;
+  align-items: start;
 }
 
 .set-shell .manual-list:not(.is-compact) .manual-controls {
@@ -977,8 +977,8 @@ html[data-frame="mac"] .set-shell .hero-copy {
   flex-flow: row wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 0.4rem 0.6rem;
-  width: max-content;
+  gap: 0.35rem 0.5rem;
+  width: 100%;
   max-width: 100%;
   min-width: 0;
 }
@@ -1014,6 +1014,10 @@ html[data-frame="mac"] .set-shell .hero-copy {
   gap: 0.35rem;
 }
 
+
+.set-shell .manual-row.is-compact .manual-index {
+  align-self: center;
+}
 
 .set-shell .manual-row.is-compact {
   align-items: center;
@@ -1075,17 +1079,47 @@ html[data-frame="mac"] .set-shell .hero-copy {
   padding-top: 0 !important;
 }
 
-/* Compact → expanded: same main grid as Comfortable, plus Zuklappen. */
-.set-shell .manual-row.is-compact-open .manual-row-main {
-  align-items: start;
-  column-gap: 2.5rem;
-  grid-template-columns: minmax(14rem, 1fr) auto;
+/* Compact → expanded: number, cover, title and the phase/role fields share
+   one line. The icon strip is the next line and does not shift that line. */
+.set-shell .manual-row.is-compact-open {
+  grid-template-columns: max-content max-content minmax(0, 1fr);
 }
 
+.set-shell .manual-row.is-compact-open .manual-row-main,
 .set-shell .manual-row.is-compact-open .manual-controls {
-  /* Stay inside the row. max-content pushed Zuklappen and the bin past the card. */
+  display: contents;
+}
+
+.set-shell .manual-row.is-compact-open .manual-index {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: center;
+}
+
+.set-shell .manual-row.is-compact-open .manual-select-wrap {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
   min-width: 0;
-  max-width: 100%;
+}
+
+.set-shell .manual-row.is-compact-open .manual-meta {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+  align-self: center;
+}
+
+.set-shell .manual-row.is-compact-open .timeline-tools {
+  grid-column: 2 / -1;
+  grid-row: 2;
+  justify-self: end;
+}
+
+.set-shell .manual-row.is-compact-open .manual-subline,
+.set-shell .manual-row.is-compact-open .track-details,
+.set-shell .manual-row.is-compact-open .compact-details-line {
+  grid-column: 2 / -1;
 }
 
 .set-shell .manual-row.is-compact .manual-select {
@@ -1115,6 +1149,27 @@ html[data-frame="mac"] .set-shell .hero-copy {
 
 .set-shell .manual-row.is-compact .manual-copy > span:not(.manual-title-line) {
   margin-top: 0 !important;
+}
+
+.set-shell .manual-row .manual-title-line {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.28rem;
+  min-width: 0;
+}
+
+.set-shell .manual-row .manual-title-line > strong {
+  min-width: 0;
+  line-height: 1.15;
+}
+
+.set-shell .manual-row .manual-title-line > .tip:has(.source-badge),
+.set-shell .manual-row .manual-title-line > .source-badge,
+.set-shell .manual-row .manual-title-line > .anchor-pill {
+  flex: none;
+  align-self: center;
+  margin: 0 !important;
 }
 
 .set-shell .manual-row.is-compact .manual-title-line {
@@ -1161,12 +1216,14 @@ html[data-frame="mac"] .set-shell .hero-copy {
   min-width: max-content;
 }
 
-/* Expanded compact: icons wrap inside the card. Zuklappen + bin stay one unit. */
+/* Expanded compact: one icon line across the free width. The whole strip
+   drops under the selects only when that line does not fit. */
 .set-shell .manual-list.is-compact .manual-row.is-compact-open .timeline-tools {
-  flex-wrap: wrap !important;
+  flex: 1 1 auto;
+  flex-wrap: nowrap !important;
   justify-content: flex-end;
   width: auto;
-  min-width: 0;
+  min-width: min(100%, max-content);
   max-width: 100%;
 }
 
@@ -3565,7 +3622,7 @@ dialog.stick-dialog.gig-ready-dialog .gig-ready-actions .btn {
 }
 
 .set-shell .manual-row.is-compact-open {
-  row-gap: 0.55rem;
+  row-gap: 0.28rem;
 }
 
 .set-shell .manual-body {
@@ -3660,6 +3717,8 @@ dialog.stick-dialog.gig-ready-dialog .gig-ready-actions .btn {
 
 .set-shell .manual-row .track-details > summary {
   align-items: center;
+  width: 100%;
+  max-width: 100%;
   min-height: 0;
   padding-top: 0;
   padding-bottom: 0;

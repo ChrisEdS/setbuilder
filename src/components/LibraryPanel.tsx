@@ -133,11 +133,11 @@ export function LibraryBrowser({
 }) {
   const { t } = useI18n();
   const [fitTo, setFitTo] = useState("");
-  const [insertSide, setInsertSide] = useState<"before" | "after">("after");
-  useEffect(() => {
+  const [insertSide, setInsertSide] = useState<"before" | "after">(() => {
+    if (typeof window === "undefined") return "after";
     const stored = sessionStorage.getItem("setbuilder-add-place");
-    if (stored === "before" || stored === "after") setInsertSide(stored);
-  }, []);
+    return stored === "before" || stored === "after" ? stored : "after";
+  });
   function chooseInsertSide(side: "before" | "after") {
     setInsertSide(side);
     sessionStorage.setItem("setbuilder-add-place", side);
