@@ -204,6 +204,106 @@ test("a cue is written to the analysis file that contains the track path", async
   assert.equal(readAnlzBeatGrid(dat.data)?.[0]?.timeMs, 1517);
 });
 
+test("a later analysis file in the same folder is the grid when its path is this track", async () => {
+  const other = "/Contents/Other/Artist/Other - Track.mp3";
+  const path = "/Contents/Bless You/Gotta Move/Bless You - Gotta Move.mp3";
+  const decoy = new MemoryFile("ANLZ0000.DAT", fileWith([pathTag(other), beatTag()]));
+  const realTag = beatTag();
+  new DataView(realTag.buffer).setUint32(28, 4242, false);
+  const real = new MemoryFile("ANLZ0001.DAT", fileWith([pathTag(path), realTag]));
+  const root = new MemoryDir("LE_BACKUP");
+  const pioneer = new MemoryDir("PIONEER");
+  const library = new MemoryDir("USBANLZ");
+  const group = new MemoryDir("P009");
+  const track = new MemoryDir("0001918A");
+  track.files.set(decoy.name, decoy);
+  track.files.set(real.name, real);
+  group.dirs.set(track.name, track);
+  library.dirs.set(group.name, group);
+  pioneer.dirs.set(library.name, library);
+  root.dirs.set(pioneer.name, pioneer);
+  const beats = await readStickBeatGrid(root, 1676, path);
+  assert.equal(beats?.[0]?.timeMs, 4242);
+  const otherBeats = await readStickBeatGrid(root, 1676, other);
+  assert.equal(otherBeats?.[0]?.timeMs, 1517);
+});
+
+test("USBANLZ directly under the chosen folder still matches the track path", async () => {
+  const path = "/Contents/Bless You/Gotta Move/Bless You - Gotta Move.mp3";
+  const dat = new MemoryFile("ANLZ0000.DAT", fileWith([pathTag(path), beatTag()]));
+  const pioneer = new MemoryDir("PIONEER");
+  const library = new MemoryDir("USBANLZ");
+  const group = new MemoryDir("P009");
+  const track = new MemoryDir("0000091A");
+  track.files.set(dat.name, dat);
+  group.dirs.set(track.name, track);
+  library.dirs.set(group.name, group);
+  pioneer.dirs.set(library.name, library);
+  const beats = await readStickBeatGrid(pioneer, 99, path);
+  assert.equal(beats?.[0]?.timeMs, 1517);
+});
+
+test("a grid past the first 4 KB is found even after an empty scan", async () => {
+  const path = "/Contents/Toman/Verano En NY/Toman - Verano En NY_2.mp3";
+  const count = 400;
+  const beats = new Uint8Array(24 + count * 8);
+  const beatView = new DataView(beats.buffer);
+  beats.set(ascii("PQTZ"), 0);
+  beatView.setUint32(4, 0x18, false);
+  beatView.setUint32(8, beats.length, false);
+  beatView.setUint32(20, count, false);
+  for (let index = 0; index < count; index += 1) {
+    const offset = 24 + index * 8;
+    beatView.setUint16(offset, (index % 4) + 1, false);
+    beatView.setUint32(offset + 4, 1000 + index * 500, false);
+  }
+  const pad = new Uint8Array(3600);
+  const padView = new DataView(pad.buffer);
+  pad.set(ascii("PVBR"), 0);
+  padView.setUint32(4, 0x10, false);
+  padView.setUint32(8, pad.length, false);
+  const bytes = fileWith([pathTag(path), pad, beats]);
+  assert.ok(bytes.length > 4096);
+  const dat = new MemoryFile("ANLZ0000.DAT", bytes);
+  const full = dat.getFile.bind(dat);
+  dat.getFile = async () => {
+    const blob = await full();
+    const data = new Uint8Array(await blob.arrayBuffer());
+    return {
+      size: data.byteLength,
+      arrayBuffer: async () => data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength),
+      slice: (start = 0, end = data.byteLength) => {
+        const view = data.subarray(start, end);
+        const copy = view.slice();
+        return {
+          arrayBuffer: async () => copy.buffer.slice(copy.byteOffset, copy.byteOffset + copy.byteLength),
+        };
+      },
+    };
+  };
+  const root = new MemoryDir("LE_BACKUP");
+  const pioneer = new MemoryDir("PIONEER");
+  const library = new MemoryDir("USBANLZ");
+  const group = new MemoryDir("P005");
+  const track = new MemoryDir("0002184B");
+  track.files.set(dat.name, dat);
+  group.dirs.set(track.name, track);
+  library.dirs.set(group.name, group);
+  pioneer.dirs.set(library.name, library);
+  root.dirs.set(pioneer.name, pioneer);
+  let scans = 0;
+  const listed = library.keys.bind(library);
+  library.keys = async function* () {
+    scans += 1;
+    if (scans === 1) return;
+    yield* listed();
+  };
+  const read = await readStickBeatGrid(root, 91, path);
+  assert.equal(scans, 2);
+  assert.equal(read?.length, count);
+  assert.equal(read?.[0]?.timeMs, 1000);
+});
+
 test("rekordbox track ids come from the uri or the set-track id", () => {
   assert.equal(rekordboxTrackId({ id: "rekordbox:12:86123:4", uri: "rekordbox:86123" }), 86123);
   assert.equal(rekordboxTrackId({ id: "rekordbox:12:86123:4" }), 86123);

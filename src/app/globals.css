@@ -80,8 +80,8 @@ textarea {
 }
 
 :focus-visible {
-  outline: 2px solid rgba(30, 215, 96, 0.8);
-  outline-offset: 2px;
+  outline: 1px solid rgba(255, 255, 255, 0.65);
+  outline-offset: 1px;
 }
 
 .set-shell {
@@ -9840,7 +9840,7 @@ details:not([open]) > .menu-panel {
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-/* Accessibility: one high-contrast keyboard ring that never changes layout. */
+/* Accessibility: a thin keyboard ring. Outline does not change layout. */
 :where(
   button,
   a[href],
@@ -9853,9 +9853,9 @@ details:not([open]) > .menu-panel {
   [role="menuitemradio"],
   [draggable="true"]
 ):focus-visible {
-  outline: 3px solid #ffffff !important;
-  outline-offset: 3px !important;
-  box-shadow: 0 0 0 5px #117a37 !important;
+  outline: 1px solid rgba(255, 255, 255, 0.65) !important;
+  outline-offset: 1px !important;
+  box-shadow: none !important;
 }
 
 /* Folds use a familiar chevron in addition to their state text. */

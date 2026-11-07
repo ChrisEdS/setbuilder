@@ -20,6 +20,7 @@ import { playerNeighbors } from "@/lib/player-queue";
 import {
   getStickFilesEpoch,
   isPlayableStickAudio,
+  listRememberedAnalysisFiles,
   lookupStickAudio,
   stickAudioBaseName,
   subscribeStickFiles,
@@ -45,7 +46,14 @@ import {
   saveStickHotCues,
 } from "@/lib/stick-cues";
 import { barJump, phrasesOnGrid, shiftBeatTimes, type AnlzBeat, type AnlzPhrase } from "@/lib/anlz-cues";
-import { loadPersistedStickHandle, stickPermission } from "@/lib/stick-session";
+import {
+  getStickHandleEpoch,
+  loadPersistedStickHandle,
+  stickPermission,
+  subscribeStickHandle,
+} from "@/lib/stick-session";
+import { savedVolumeHandle } from "@/lib/stick-volume-client";
+import type { DirLike } from "@/lib/rekordbox-stick-write";
 import {
   BLEND_MS,
   TRANSITIONS,
@@ -66,6 +74,10 @@ function useIsClient() {
 
 function useStickFilesEpoch() {
   return useSyncExternalStore(subscribeStickFiles, getStickFilesEpoch, () => 0);
+}
+
+function useStickHandleEpoch() {
+  return useSyncExternalStore(subscribeStickHandle, getStickHandleEpoch, () => 0);
 }
 
 function formatTime(seconds: number): string {
@@ -336,6 +348,7 @@ function PreviewDock({
   const [phrases, setPhrases] = useState<AnlzPhrase[] | null>(null);
   const [phrasesMissing, setPhrasesMissing] = useState(false);
   const [quantize, setQuantize] = useState(true);
+  const [showGrid, setShowGrid] = useState(true);
   const [light, setLight] = useState(false);
   const [gridNotice, setGridNotice] = useState<string | null>(null);
   const beatsRef = useRef<AnlzBeat[] | null>(null);
@@ -347,6 +360,7 @@ function PreviewDock({
     phrasesRef.current = phrases;
     openTrack.current = track.id;
   }, [fileBeats, phrases, track.id]);
+  const stickHandleEpoch = useStickHandleEpoch();
   const filePath = trackFilePath(track);
   const fileBase = stickAudioBaseName(filePath);
   const seed = initialAudio(filePath, fileBase, track.name);
@@ -383,7 +397,7 @@ function PreviewDock({
     },
     [],
   );
-  const gridRequest = `${trackKey}\0${trackUri ?? ""}\0${stickEpoch}\0${filePath}`;
+  const gridRequest = `${trackKey}\0${trackUri ?? ""}\0${stickEpoch}\0${stickHandleEpoch}\0${filePath}`;
   const [gridRequestSeen, setGridRequestSeen] = useState(gridRequest);
   if (gridRequest !== gridRequestSeen) {
     setGridRequestSeen(gridRequest);
@@ -397,38 +411,81 @@ function PreviewDock({
     const pdbId = rekordboxTrackId({ id: trackKey, uri: trackUri }) ?? 0;
     let cancel = false;
     void (async () => {
-      let found: AnlzBeat[] | null = null;
-      const root = await loadPersistedStickHandle();
-      if (root && !cancel && (await stickPermission(root, "read", false))) {
-        found = await readStickBeatGrid(root, pdbId, filePath);
+      const roots: DirLike[] = [];
+      const volume = savedVolumeHandle();
+      if (volume) roots.push(volume);
+      try {
+        const persisted = await loadPersistedStickHandle();
+        if (
+          persisted &&
+          persisted !== volume &&
+          !cancel &&
+          (await stickPermission(persisted, "read", false))
+        ) {
+          roots.push(persisted);
+        }
+      } catch {
+        /* the saved volume is still tried above */
       }
-      if ((!found || found.length === 0) && !cancel) found = await readRememberedBeatGrid(pdbId, filePath);
+      let found: AnlzBeat[] | null = null;
+      let root: DirLike | null = null;
+      let sawFile = false;
+      for (const candidate of roots) {
+        if (cancel) return;
+        try {
+          const beats = await readStickBeatGrid(candidate, pdbId, filePath);
+          sawFile = true;
+          if (beats?.length) {
+            found = beats;
+            root = candidate;
+            break;
+          }
+        } catch {
+          /* this folder could not be read; try the next one */
+        }
+      }
+      if ((!found || found.length === 0) && !cancel) {
+        try {
+          const remembered = await readRememberedBeatGrid(pdbId, filePath);
+          if (remembered?.length) {
+            found = remembered;
+            sawFile = true;
+          } else if (listRememberedAnalysisFiles().length > 0) {
+            sawFile = true;
+          }
+        } catch {
+          /* remembered files are unreadable */
+        }
+      }
       if (cancel) return;
       if (found?.length) {
         let phraseList = null as AnlzPhrase[] | null;
-        if (root && !cancel && (await stickPermission(root, "read", false))) {
-          phraseList = await readStickPhrases(root, pdbId, found, filePath);
-        }
-        if ((!phraseList || phraseList.length === 0) && !cancel) {
-          phraseList = await readRememberedPhrases(pdbId, found, filePath);
+        try {
+          if (root && !cancel) phraseList = await readStickPhrases(root, pdbId, found, filePath);
+          if ((!phraseList || phraseList.length === 0) && !cancel) {
+            phraseList = await readRememberedPhrases(pdbId, found, filePath);
+          }
+        } catch {
+          phraseList = null;
         }
         if (cancel) return;
         setFileBeats(found);
         setGridMissing(false);
         setPhrases(phraseList);
         setPhrasesMissing(!phraseList?.length);
-      } else {
-        if (cancel) return;
-        setFileBeats(null);
-        setGridMissing(true);
-        setPhrases(null);
-        setPhrasesMissing(false);
+        return;
       }
+      // A failed read is not the same as a file with no PQTZ tag.
+      if (!sawFile) return;
+      setFileBeats(null);
+      setGridMissing(true);
+      setPhrases(null);
+      setPhrasesMissing(false);
     })();
     return () => {
       cancel = true;
     };
-  }, [trackKey, trackUri, stickEpoch, filePath]);
+  }, [trackKey, trackUri, stickEpoch, stickHandleEpoch, filePath]);
   useEffect(() => {
     if (cuesKnown) return;
     const pdbId = rekordboxTrackId({ id: trackKey, uri: trackUri }) ?? 0;
@@ -989,6 +1046,8 @@ function PreviewDock({
               cueSession={track.id}
               quantize={quantize}
               onQuantize={setQuantize}
+              showGrid={showGrid}
+              onShowGrid={setShowGrid}
               light={light}
               onLight={setLight}
               phrases={phrases}

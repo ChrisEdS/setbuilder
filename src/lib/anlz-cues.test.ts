@@ -127,6 +127,8 @@ test("the analysis path is the link to the track, not the database id", () => {
   assert.equal(readAnlzContentPath(pmai([tag])), path);
   assert.equal(anlzPathsMatch(`\\${path}`, path), true);
   assert.equal(anlzPathsMatch("/Contents/Other.mp3", path), false);
+  const umlaut = "/Contents/HÄWK/No Diggity/HÄWK - No Diggity.mp3";
+  assert.equal(anlzPathsMatch(umlaut.normalize("NFD"), umlaut.normalize("NFC")), true);
 });
 
 test("a real PQTZ grid keeps the first-beat offset instead of starting at zero", () => {
@@ -175,6 +177,26 @@ test("a stored beat grid is read at its millisecond and beat 1 is the downbeat",
     { timeMs: 1000, beat: 2 },
   ]);
   assert.equal(readAnlzBeatGrid(pmai([emptyTag("PWAV", 20, 0)])), null);
+});
+
+test("a beat grid that continues past the bytes in hand is still a grid", () => {
+  const beats = new Uint8Array(24 + 32);
+  const view = new DataView(beats.buffer);
+  beats.set(ascii("PQTZ"), 0);
+  view.setUint32(4, 0x18, false);
+  view.setUint32(8, beats.length, false);
+  view.setUint32(20, 4, false);
+  for (let index = 0; index < 4; index += 1) {
+    const offset = 24 + index * 8;
+    view.setUint16(offset, (index % 4) + 1, false);
+    view.setUint32(offset + 4, 1000 + index * 500, false);
+  }
+  const file = pmai([beats]);
+  const head = file.slice(0, file.length - 16);
+  const read = readAnlzBeatGrid(head);
+  assert.equal(read?.length, 2);
+  assert.equal(read?.[0]?.timeMs, 1000);
+  assert.equal(readAnlzBeatGrid(file)?.length, 4);
 });
 
 test("a cue snaps to the nearest downbeat and ignores beats 2 to 4", () => {

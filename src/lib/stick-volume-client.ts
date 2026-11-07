@@ -194,7 +194,26 @@ export function saveVolumeName(name: string): void {
   }
 }
 
+let cachedVolumeName = "";
+let cachedVolume: PersistableDir | null = null;
+
+/** One handle per saved volume name, so the analysis index is not rebuilt per track. */
+export function savedVolumeHandle(): PersistableDir | null {
+  const name = readSavedVolumeName();
+  if (!name) {
+    cachedVolumeName = "";
+    cachedVolume = null;
+    return null;
+  }
+  if (cachedVolume && cachedVolumeName === name) return cachedVolume;
+  cachedVolumeName = name;
+  cachedVolume = localStickVolume(name);
+  return cachedVolume;
+}
+
 export function clearSavedVolumeName(): void {
+  cachedVolumeName = "";
+  cachedVolume = null;
   try {
     localStorage.removeItem(SAVED_VOLUME);
   } catch {

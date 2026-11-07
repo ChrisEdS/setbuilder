@@ -40,6 +40,27 @@ export function pickerFailureKind(error: unknown): "cancel" | "blocked" | "error
 }
 
 let sessionHandle: PersistableDir | null = null;
+let handleEpoch = 0;
+const handleListeners = new Set<() => void>();
+
+function noteHandle(handle: PersistableDir | null): void {
+  if (sessionHandle === handle) return;
+  sessionHandle = handle;
+  handleEpoch += 1;
+  for (const listener of handleListeners) listener();
+}
+
+/** Bumps when the live stick folder handle is stored or dropped. */
+export function getStickHandleEpoch(): number {
+  return handleEpoch;
+}
+
+export function subscribeStickHandle(onStoreChange: () => void): () => void {
+  handleListeners.add(onStoreChange);
+  return () => {
+    handleListeners.delete(onStoreChange);
+  };
+}
 
 function openDb(name = DB_NAME): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -55,7 +76,7 @@ function openDb(name = DB_NAME): Promise<IDBDatabase> {
 }
 
 export async function rememberStickHandle(handle: PersistableDir): Promise<void> {
-  sessionHandle = handle;
+  noteHandle(handle);
   if (typeof indexedDB === "undefined") return;
   const db = await openDb();
   await new Promise<void>((resolve, reject) => {
@@ -92,10 +113,11 @@ async function loadPersistedStickHandleFromDb(): Promise<PersistableDir | null> 
       handle = await readHandleFromDb(DB_NAME_LEGACY);
       if (handle) await rememberStickHandle(handle);
     }
-    if (handle) sessionHandle = handle;
-    return handle;
+    if (sessionHandle) return sessionHandle;
+    if (handle) noteHandle(handle);
+    return sessionHandle;
   } catch {
-    return null;
+    return sessionHandle;
   }
 }
 
@@ -274,14 +296,14 @@ async function deleteHandleFromDb(name: string): Promise<void> {
  * can soft-reconnect without re-picking the folder.
  */
 export function softReleaseStickSession(): void {
-  sessionHandle = null;
+  noteHandle(null);
   handleLoad = null;
   forgetStickFiles();
 }
 
 /** Forget the persisted folder handle after a successful OS eject. */
 export async function forgetPersistedStickHandle(): Promise<void> {
-  sessionHandle = null;
+  noteHandle(null);
   handleLoad = null;
   await deleteHandleFromDb(DB_NAME);
   await deleteHandleFromDb(DB_NAME_LEGACY);

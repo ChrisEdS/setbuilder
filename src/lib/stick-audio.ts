@@ -330,7 +330,7 @@ export function listRememberedAnalysisFiles(): File[] {
   const out: File[] = [];
   for (const file of stickFiles) {
     const rel = foldPath(file.webkitRelativePath || file.name);
-    if (rel.includes("/usbanlz/") && (rel.endsWith("/anlz0000.dat") || rel.endsWith("/anlz0000.ext"))) {
+    if (rel.includes("/usbanlz/") && /\/anlz\d+\.(dat|ext)$/.test(rel)) {
       out.push(file);
     }
   }

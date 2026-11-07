@@ -48,7 +48,13 @@ function listTags(data: Uint8Array): Tag[] {
   let offset = header;
   while (offset + 12 <= data.length) {
     const length = view.getUint32(offset + 8, false);
-    if (length < 12 || offset + length > data.length) break;
+    if (length < 12) break;
+    // A short read still holds the start of the beat grid. Dropping that tag
+    // made every long PQTZ look like "no grid".
+    if (offset + length > data.length) {
+      tags.push({ kind: kindAt(data, offset), offset, length: data.length - offset });
+      break;
+    }
     tags.push({ kind: kindAt(data, offset), offset, length });
     offset += length;
   }
@@ -116,10 +122,14 @@ export function readAnlzContentPath(data: Uint8Array): string | null {
   return path || null;
 }
 
+function foldAnlzPath(value: string): string {
+  return value.replaceAll("\\", "/").replace(/^\/+/, "").trim().normalize("NFC").toLowerCase();
+}
+
 /** Compare a track path with the path stored in an analysis file. */
 export function anlzPathsMatch(trackPath: string, storedPath: string): boolean {
-  const left = trackPath.replaceAll("\\", "/").replace(/^\/+/, "").trim().toLowerCase();
-  const right = storedPath.replaceAll("\\", "/").replace(/^\/+/, "").trim().toLowerCase();
+  const left = foldAnlzPath(trackPath);
+  const right = foldAnlzPath(storedPath);
   if (!left || !right) return false;
   if (left === right) return true;
   const shorter = left.length < right.length ? left : right;

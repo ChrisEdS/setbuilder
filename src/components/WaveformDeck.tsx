@@ -218,20 +218,14 @@ function drawBeatMarks(
     const waveTop = downbeat ? laneH : laneH + (height - laneH) * (fromFile ? 0.22 : 0.34);
     const waveBottom = height - (downbeat ? 2 : height * 0.08);
     ctx.setLineDash(fromFile ? [] : [2, 5]);
-    ctx.strokeStyle = "rgba(0,0,0,0.72)";
-    ctx.lineWidth = downbeat ? 3 : 2;
-    ctx.beginPath();
-    ctx.moveTo(x, waveTop);
-    ctx.lineTo(x, waveBottom);
-    ctx.stroke();
     ctx.strokeStyle = downbeat
       ? fromFile
-        ? "rgba(255,255,255,0.96)"
-        : "rgba(190,190,190,0.32)"
+        ? "rgba(255,255,255,0.34)"
+        : "rgba(190,190,190,0.24)"
       : fromFile
-        ? "rgba(255,255,255,0.42)"
-        : "rgba(190,190,190,0.14)";
-    ctx.lineWidth = downbeat && fromFile ? 1.5 : 1;
+        ? "rgba(255,255,255,0.14)"
+        : "rgba(190,190,190,0.1)";
+    ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(x, waveTop);
     ctx.lineTo(x, waveBottom);
@@ -239,10 +233,10 @@ function drawBeatMarks(
     if (laneH > 2) {
       ctx.setLineDash([]);
       if (downbeat) {
-        ctx.fillStyle = fromFile ? "#fff" : "rgba(210,210,210,0.4)";
-        ctx.fillRect(x - 1.5, 1, 3, laneH - 3);
+        ctx.fillStyle = fromFile ? "rgba(255,255,255,0.92)" : "rgba(210,210,210,0.5)";
+        ctx.fillRect(x - 1, 1, 2, laneH - 3);
       } else {
-        ctx.fillStyle = fromFile ? "rgba(255,255,255,0.45)" : "rgba(190,190,190,0.18)";
+        ctx.fillStyle = fromFile ? "rgba(255,255,255,0.55)" : "rgba(190,190,190,0.22)";
         ctx.fillRect(x - 0.5, laneH * 0.48, 1, laneH * 0.42);
       }
     }
@@ -264,6 +258,8 @@ export function WaveformDeck({
   cueSession,
   quantize,
   onQuantize,
+  showGrid,
+  onShowGrid,
   light,
   onLight,
   phrases,
@@ -292,6 +288,8 @@ export function WaveformDeck({
   cueSession: string;
   quantize: boolean;
   onQuantize: (on: boolean) => void;
+  showGrid: boolean;
+  onShowGrid: (on: boolean) => void;
   light: boolean;
   onLight: (on: boolean) => void;
   phrases: readonly AnlzPhrase[] | null;
@@ -342,7 +340,6 @@ export function WaveformDeck({
   const firstRef = useRef(0);
   const playingRef = useRef(playing);
   const holdRef = useRef(false);
-  const lightRef = useRef(light);
   const gridRef = useRef<{ marks: readonly AnlzBeat[]; fromFile: boolean; quantize: boolean }>({
     marks: [],
     fromFile: false,
@@ -368,8 +365,7 @@ export function WaveformDeck({
     firstRef.current = span > 0 ? lead.first / span : 0;
     gridRef.current = { marks: gridMarks, fromFile, quantize };
     drawRef.current = { marks: drawn, fromFile };
-    lightRef.current = light;
-  }, [span, currentTime, playing, zoom, viewStart, gridMarks, fromFile, quantize, drawn, bpm, light]);
+  }, [span, currentTime, playing, zoom, viewStart, gridMarks, fromFile, quantize, drawn, bpm]);
 
   function playCue(seconds: number) {
     if (playTimer.current) window.clearTimeout(playTimer.current);
@@ -411,12 +407,12 @@ export function WaveformDeck({
       const spanView = win.span;
       const grid = !light;
       drawBands(canvas, bands, start, spanView, grid);
-      if (grid) {
+      if (grid && showGrid) {
         drawBeatMarks(canvas, drawRef.current.marks, spanRef.current, start, spanView, drawRef.current.fromFile, true);
       }
       if (overview && grid) {
         drawBands(overview, bands, 0, 1, false);
-        drawBeatMarks(overview, drawRef.current.marks, spanRef.current, 0, 1, drawRef.current.fromFile, false);
+        if (showGrid) drawBeatMarks(overview, drawRef.current.marks, spanRef.current, 0, 1, drawRef.current.fromFile, false);
       }
     };
     paint();
@@ -424,7 +420,7 @@ export function WaveformDeck({
     observer.observe(stage);
     if (overview?.parentElement) observer.observe(overview.parentElement);
     return () => observer.disconnect();
-  }, [bands, zoom, viewStart, beats, bpm, duration, fallback, light]);
+  }, [bands, zoom, viewStart, beats, bpm, duration, fallback, light, showGrid]);
 
   useEffect(() => {
     playingRef.current = playing;
@@ -435,7 +431,6 @@ export function WaveformDeck({
     if (!stage) return;
     function onWheel(event: WheelEvent) {
       event.preventDefault();
-      if (lightRef.current) return;
       const rect = stage!.getBoundingClientRect();
       if (rect.width <= 0) return;
       const zoomNow = zoomRef.current;
@@ -665,14 +660,7 @@ export function WaveformDeck({
   }
 
   function toggleLight() {
-    const next = !light;
-    if (next) {
-      zoomRef.current = 1;
-      viewRef.current = 0;
-      setZoom(1);
-      setViewStart(0);
-    }
-    onLight(next);
+    onLight(!light);
   }
 
   const playhead = place(currentTime);
@@ -694,35 +682,31 @@ export function WaveformDeck({
               {t("crates.player.light")}
             </button>
           </Tip>
-          {light ? null : (
-            <>
-              <Tip text={t("crates.player.zoomOut")} disabled={zoom <= WAVE_ZOOM_MIN}>
-                <button type="button" aria-label={t("crates.player.zoomOut")} disabled={zoom <= WAVE_ZOOM_MIN} onClick={() => changeZoom(0.5)}>
-                  −
-                </button>
-              </Tip>
-              <Tip text={t("crates.player.zoomReset")} disabled={zoom <= WAVE_ZOOM_MIN}>
-                <button
-                  type="button"
-                  aria-label={t("crates.player.zoomReset")}
-                  disabled={zoom <= WAVE_ZOOM_MIN}
-                  onClick={() => {
-                    zoomRef.current = 1;
-                    viewRef.current = 0;
-                    setZoom(1);
-                    setViewStart(0);
-                  }}
-                >
-                  {zoomLabel}
-                </button>
-              </Tip>
-              <Tip text={t("crates.player.zoomIn")} disabled={zoom >= WAVE_ZOOM_MAX}>
-                <button type="button" aria-label={t("crates.player.zoomIn")} disabled={zoom >= WAVE_ZOOM_MAX} onClick={() => changeZoom(2)}>
-                  +
-                </button>
-              </Tip>
-            </>
-          )}
+          <Tip text={t("crates.player.zoomOut")} disabled={zoom <= WAVE_ZOOM_MIN}>
+            <button type="button" aria-label={t("crates.player.zoomOut")} disabled={zoom <= WAVE_ZOOM_MIN} onClick={() => changeZoom(0.5)}>
+              −
+            </button>
+          </Tip>
+          <Tip text={t("crates.player.zoomReset")} disabled={zoom <= WAVE_ZOOM_MIN}>
+            <button
+              type="button"
+              aria-label={t("crates.player.zoomReset")}
+              disabled={zoom <= WAVE_ZOOM_MIN}
+              onClick={() => {
+                zoomRef.current = 1;
+                viewRef.current = 0;
+                setZoom(1);
+                setViewStart(0);
+              }}
+            >
+              {zoomLabel}
+            </button>
+          </Tip>
+          <Tip text={t("crates.player.zoomIn")} disabled={zoom >= WAVE_ZOOM_MAX}>
+            <button type="button" aria-label={t("crates.player.zoomIn")} disabled={zoom >= WAVE_ZOOM_MAX} onClick={() => changeZoom(2)}>
+              +
+            </button>
+          </Tip>
         </div>
         <div className="preview-tool-group">
           <Tip text={t("crates.player.structureTip")} disabled={!phrasesReady}>
@@ -738,6 +722,11 @@ export function WaveformDeck({
         </div>
         {light ? null : (
           <div className="preview-tool-group">
+            <Tip text={t("crates.player.gridLinesTip")}>
+              <button type="button" aria-pressed={showGrid} aria-label={t("crates.player.gridLines")} onClick={() => onShowGrid(!showGrid)}>
+                {t("crates.player.gridLines")}
+              </button>
+            </Tip>
             <Tip text={t("crates.player.quantize")}>
               <button type="button" aria-pressed={quantize} aria-label={t("crates.player.quantize")} onClick={() => onQuantize(!quantize)}>
                 Q
@@ -802,9 +791,9 @@ export function WaveformDeck({
       )}
       <div
         ref={stageRef}
-        className={["preview-wave-stage", zoom > 1 && !light ? "is-zoomed" : "", light ? "is-light" : ""].filter(Boolean).join(" ")}
+        className={["preview-wave-stage", zoom > 1 ? "is-zoomed" : "", light ? "is-light" : ""].filter(Boolean).join(" ")}
         style={{ "--wave-lane": light ? "0%" : `${WAVE_LANE * 100}%` } as CSSProperties}
-        title={light ? undefined : t("crates.player.zoomWheel")}
+        title={t("crates.player.zoomWheel")}
         onPointerDown={(event) => {
           if ((event.target as HTMLElement).closest(".preview-cue-mark")) return;
           holdRef.current = true;
@@ -879,12 +868,14 @@ export function WaveformDeck({
             onPointerDown={(event) => {
               event.stopPropagation();
               dragMoved.current = false;
+              event.currentTarget.setPointerCapture(event.pointerId);
+              if (light) return;
               const next = { slot: cue.slot, timeMs: cue.timeMs };
               dragRef.current = next;
               setDrag(next);
-              event.currentTarget.setPointerCapture(event.pointerId);
             }}
             onPointerMove={(event) => {
+              if (light) return;
               const active = dragRef.current;
               if (!active || active.slot !== cue.slot) return;
               dragMoved.current = true;
@@ -893,6 +884,10 @@ export function WaveformDeck({
               setDrag(next);
             }}
             onPointerUp={(event) => {
+              if (light) {
+                onPlay(cue.timeMs / 1000);
+                return;
+              }
               const active = dragRef.current;
               if (!active || active.slot !== cue.slot) return;
               const timeMs = snapCueTime(Math.round(timeAt(event.clientX) * 1000), gridMarks, quantize);

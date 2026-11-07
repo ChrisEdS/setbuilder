@@ -1558,18 +1558,18 @@ html[data-frame="mac"] .set-shell .hero-copy {
   [role="menuitemradio"],
   [draggable="true"]
 ):focus-visible {
-  outline: 3px solid var(--ui-focus) !important;
-  outline-offset: 2px !important;
+  outline: 1px solid rgba(255, 255, 255, 0.65) !important;
+  outline-offset: 1px !important;
   box-shadow: none !important;
 }
 
 .set-shell .explain-fold > summary:focus-visible {
   outline: 0 !important;
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ui-focus) 70%, transparent) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55) !important;
 }
 
 .set-shell .explain-fold.nested > summary:focus-visible {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ui-focus) 55%, transparent) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4) !important;
 }
 
 @media (max-width: 900px) {
@@ -2085,8 +2085,7 @@ html[data-frame="mac"] .set-shell .hero-copy {
   text-align: center;
 }
 
-.preview-player .preview-overlap:focus {
-  outline: none;
+.preview-player .preview-overlap:focus-visible {
   border-color: rgba(255, 255, 255, 0.45);
 }
 
@@ -2122,8 +2121,7 @@ html[data-frame="mac"] .set-shell .hero-copy {
   font-weight: 650;
 }
 
-.preview-player .preview-transition:focus {
-  outline: none;
+.preview-player .preview-transition:focus-visible {
   border-color: rgba(255, 255, 255, 0.45);
 }
 
@@ -2302,6 +2300,10 @@ html[data-frame="mac"] .set-shell .hero-copy {
   height: 3.75rem;
 }
 
+.preview-player .preview-wave-stage.is-light .preview-cue-mark {
+  cursor: pointer;
+}
+
 .preview-player .preview-wave-stage.is-light::before {
   content: none;
 }
@@ -2447,10 +2449,6 @@ html[data-frame="mac"] .set-shell .hero-copy {
   text-align: center;
 }
 
-.preview-player .preview-cue-pad input:focus {
-  outline: none;
-}
-
 .preview-player .preview-cue-x {
   flex: 0 0 auto;
   width: 0.9rem;
@@ -2458,11 +2456,26 @@ html[data-frame="mac"] .set-shell .hero-copy {
   margin-right: 0.1rem;
   padding: 0;
   border: 0;
+  border-radius: 2px;
   background: transparent;
   color: inherit;
   font-size: 0.75rem;
   line-height: 1;
   cursor: pointer;
+}
+
+.preview-player :is(
+  .preview-cue-x,
+  .preview-cue-jump,
+  .preview-cue-mark,
+  .preview-close,
+  .preview-wave-tools button,
+  .preview-wave-zoom button,
+  .preview-transitions button
+):focus-visible {
+  outline: 1px solid rgba(255, 255, 255, 0.65) !important;
+  outline-offset: 1px !important;
+  box-shadow: none !important;
 }
 
 .preview-player .preview-cue-note {
@@ -2535,8 +2548,7 @@ html[data-frame="mac"] .set-shell .hero-copy {
   font-size: 0.8rem;
 }
 
-.preview-player .preview-note:focus {
-  outline: none;
+.preview-player .preview-note:focus-visible {
   border-color: rgba(255, 255, 255, 0.45);
 }
 
@@ -2785,8 +2797,8 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 .replace-layer :where(button, [role="menuitem"]):focus-visible {
-  outline: 3px solid var(--ui-focus);
-  outline-offset: 2px;
+  outline: 1px solid rgba(255, 255, 255, 0.65);
+  outline-offset: 1px;
   box-shadow: none;
 }
 
@@ -3044,8 +3056,8 @@ dialog.stick-dialog.gig-ready-dialog .gig-ready-actions .btn {
 }
 
 .guide-layer :where(button):focus-visible {
-  outline: 3px solid var(--ui-focus);
-  outline-offset: 2px;
+  outline: 1px solid rgba(255, 255, 255, 0.65);
+  outline-offset: 1px;
   box-shadow: none;
 }
 

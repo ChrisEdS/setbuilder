@@ -310,7 +310,13 @@ export function RekordboxStick({
       const saved = readSavedVolumeName();
       if (saved) {
         try {
-          await applyHandle(localStickVolume(saved));
+          const handle = localStickVolume(saved);
+          try {
+            await rememberStickHandle(handle);
+          } catch {
+            /* IndexedDB cannot clone this handle; the session copy is enough */
+          }
+          await applyHandle(handle);
           return;
         } catch {
           clearSavedVolumeName();

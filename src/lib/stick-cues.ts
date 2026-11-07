@@ -18,7 +18,11 @@ import type { DirLike, FileLike } from "@/lib/rekordbox-stick-write";
 export type CueStickStatus = "written" | "missing" | "rejected" | "no-stick" | "no-id";
 
 const DAT = "ANLZ0000.DAT";
-const EXT = "ANLZ0000.EXT";
+const ANALYSIS_DAT = /^ANLZ\d+\.DAT$/i;
+
+function pairedExt(datName: string): string {
+  return datName.replace(/DAT$/i, "EXT");
+}
 
 export function rekordboxTrackId(track: { id: string; uri?: string }): number | null {
   const uri = track.uri ?? "";
@@ -65,9 +69,16 @@ async function findChild(dir: DirLike, name: string): Promise<DirLike | null> {
   }
 }
 
-async function analysisDir(root: DirLike, trackId: number): Promise<DirLike | null> {
+/** Volume root has PIONEER/USBANLZ. A pick of the PIONEER folder has USBANLZ itself. */
+async function analysisLibrary(root: DirLike): Promise<DirLike | null> {
   const pioneer = await findChild(root, "PIONEER");
-  const library = pioneer ? await findChild(pioneer, "USBANLZ") : null;
+  const nested = pioneer ? await findChild(pioneer, "USBANLZ") : null;
+  if (nested) return nested;
+  return findChild(root, "USBANLZ");
+}
+
+async function analysisDir(root: DirLike, trackId: number): Promise<DirLike | null> {
+  const library = await analysisLibrary(root);
   if (!library?.keys) return null;
   const folder = trackId.toString(16).toUpperCase().padStart(8, "0");
   for await (const parent of library.keys()) {
@@ -91,7 +102,7 @@ async function maybeFile(dir: DirLike, name: string): Promise<FileLike | null> {
   }
 }
 
-type Located = { dir: DirLike; folder: string };
+type Located = { dir: DirLike; folder: string; datName: string };
 
 async function readHead(file: FileLike): Promise<Uint8Array> {
   const blob = await file.getFile();
@@ -100,11 +111,11 @@ async function readHead(file: FileLike): Promise<Uint8Array> {
 }
 
 const analysisIndexes = new WeakMap<DirLike, Promise<Map<string, Located>>>();
+const indexRetried = new WeakSet<DirLike>();
 
 async function buildAnalysisIndex(root: DirLike): Promise<Map<string, Located>> {
   const map = new Map<string, Located>();
-  const pioneer = await findChild(root, "PIONEER");
-  const library = pioneer ? await findChild(pioneer, "USBANLZ") : null;
+  const library = await analysisLibrary(root);
   if (!library?.keys) return map;
   for await (const parent of library.keys()) {
     let group: DirLike;
@@ -121,11 +132,20 @@ async function buildAnalysisIndex(root: DirLike): Promise<Map<string, Located>> 
       } catch {
         continue;
       }
-      const dat = await maybeFile(track, DAT);
-      if (!dat) continue;
-      const stored = readAnlzContentPath(await readHead(dat));
-      if (!stored) continue;
-      map.set(stored, { dir: track, folder: name.toUpperCase() });
+      if (!track.keys) continue;
+      for await (const entry of track.keys()) {
+        if (!ANALYSIS_DAT.test(entry)) continue;
+        const dat = await maybeFile(track, entry);
+        if (!dat) continue;
+        let stored: string | null = null;
+        try {
+          stored = readAnlzContentPath(await readHead(dat));
+        } catch {
+          continue;
+        }
+        if (!stored) continue;
+        map.set(stored, { dir: track, folder: name.toUpperCase(), datName: entry });
+      }
     }
   }
   return map;
@@ -156,19 +176,22 @@ function matchLocated(map: Map<string, Located>, filePath: string): Located | nu
  */
 async function locateAnalysis(root: DirLike, trackId: number, filePath: string): Promise<Located | null> {
   if (filePath) {
-    const found = matchLocated(await analysisIndex(root), filePath);
+    const map = await analysisIndex(root);
+    let found = matchLocated(map, filePath);
+    // An empty index is cached on the folder handle. A scan that ran before
+    // USBANLZ was readable would otherwise miss every later track.
+    if (!found && map.size === 0 && !indexRetried.has(root)) {
+      indexRetried.add(root);
+      analysisIndexes.delete(root);
+      found = matchLocated(await analysisIndex(root), filePath);
+    }
     if (found) return found;
   }
-  if (!Number.isInteger(trackId) || trackId <= 0) return null;
+  if (filePath || !Number.isInteger(trackId) || trackId <= 0) return null;
   const dir = await analysisDir(root, trackId);
   if (!dir) return null;
   const folder = trackId.toString(16).toUpperCase().padStart(8, "0");
-  if (!filePath) return { dir, folder };
-  const dat = await maybeFile(dir, DAT);
-  if (!dat) return { dir, folder };
-  const stored = readAnlzContentPath(await readHead(dat));
-  if (stored && !anlzPathsMatch(filePath, stored)) return null;
-  return { dir, folder };
+  return { dir, folder, datName: DAT };
 }
 
 let rememberedEpoch = -1;
@@ -181,7 +204,7 @@ async function rememberedDat(filePath: string): Promise<File | null> {
     const next = new Map<string, File>();
     for (const file of listRememberedAnalysisFiles()) {
       const rel = (file.webkitRelativePath || file.name).replaceAll("\\", "/").toLowerCase();
-      if (!rel.endsWith("/anlz0000.dat")) continue;
+      if (!/\/anlz\d+\.dat$/.test(rel)) continue;
       try {
         const stored = readAnlzContentPath(new Uint8Array(await file.slice(0, 4096).arrayBuffer()));
         if (stored) next.set(stored, file);
@@ -201,7 +224,7 @@ async function rememberedDat(filePath: string): Promise<File | null> {
 function rememberedExt(dat: File): File | null {
   const rel = (dat.webkitRelativePath || "").replaceAll("\\", "/");
   if (!rel) return null;
-  const want = rel.replace(/ANLZ0000\.DAT$/i, "ANLZ0000.EXT").toLowerCase();
+  const want = rel.replace(/ANLZ(\d+)\.DAT$/i, "ANLZ$1.EXT").toLowerCase();
   for (const file of listRememberedAnalysisFiles()) {
     const path = (file.webkitRelativePath || file.name).replaceAll("\\", "/").toLowerCase();
     if (path === want) return file;
@@ -232,8 +255,11 @@ async function commitFile(file: FileLike, cues: AnlzCue[]): Promise<"written" | 
 /** Beat grid from the ANLZ file still held after the stick folder was picked. */
 export async function readRememberedBeatGrid(trackId: number, filePath = ""): Promise<AnlzBeat[] | null> {
   try {
-    const byPath = filePath ? await rememberedDat(filePath) : null;
-    const file = byPath ?? (trackId > 0 ? lookupStickAnalysisFile(trackId) : null);
+    const file = filePath
+      ? await rememberedDat(filePath)
+      : trackId > 0
+        ? lookupStickAnalysisFile(trackId)
+        : null;
     if (!file) return null;
     return readAnlzBeatGrid(new Uint8Array(await file.arrayBuffer()));
   } catch {
@@ -244,7 +270,11 @@ export async function readRememberedBeatGrid(trackId: number, filePath = ""): Pr
 /** Hot cues from the remembered analysis files. Read only. */
 export async function readRememberedHotCues(trackId: number, filePath = ""): Promise<AnlzCue[] | null> {
   try {
-    const dat = filePath ? await rememberedDat(filePath) : trackId > 0 ? lookupStickAnalysisFile(trackId) : null;
+    const dat = filePath
+      ? await rememberedDat(filePath)
+      : trackId > 0
+        ? lookupStickAnalysisFile(trackId)
+        : null;
     if (!dat) return null;
     const ext = rememberedExt(dat);
     if (ext) {
@@ -257,9 +287,9 @@ export async function readRememberedHotCues(trackId: number, filePath = ""): Pro
   }
 }
 
-async function cuesIn(dir: DirLike): Promise<AnlzCue[] | null> {
-  const ext = await maybeFile(dir, EXT);
-  const dat = await maybeFile(dir, DAT);
+async function cuesIn(dir: DirLike, datName = DAT): Promise<AnlzCue[] | null> {
+  const ext = await maybeFile(dir, pairedExt(datName));
+  const dat = await maybeFile(dir, datName);
   if (ext) {
     const named = readAnlzHotCues(await readBytes(ext));
     if (named.length) return named;
@@ -291,7 +321,7 @@ async function commitBytes(file: FileLike, next: Uint8Array): Promise<"written" 
 export async function readStickBeatGrid(root: DirLike, trackId: number, filePath = ""): Promise<AnlzBeat[] | null> {
   const located = await locateAnalysis(root, trackId, filePath);
   if (!located) return null;
-  const dat = await maybeFile(located.dir, DAT);
+  const dat = await maybeFile(located.dir, located.datName);
   if (!dat) return null;
   return readAnlzBeatGrid(await readBytes(dat));
 }
@@ -305,7 +335,7 @@ export async function readStickPhrases(
 ): Promise<AnlzPhrase[] | null> {
   const located = await locateAnalysis(root, trackId, filePath);
   if (!located || !beats.length) return null;
-  const ext = await maybeFile(located.dir, EXT);
+  const ext = await maybeFile(located.dir, pairedExt(located.datName));
   if (!ext) return null;
   return readAnlzPhrases(await readBytes(ext), beats);
 }
@@ -316,8 +346,11 @@ export async function readRememberedPhrases(
   filePath = "",
 ): Promise<AnlzPhrase[] | null> {
   try {
-    const byPath = filePath ? await rememberedDat(filePath) : null;
-    const dat = byPath ?? (trackId > 0 ? lookupStickAnalysisFile(trackId) : null);
+    const dat = filePath
+      ? await rememberedDat(filePath)
+      : trackId > 0
+        ? lookupStickAnalysisFile(trackId)
+        : null;
     if (!dat || !beats.length) return null;
     const ext = rememberedExt(dat);
     if (!ext) return null;
@@ -339,9 +372,9 @@ export async function saveStickBeatGrid(
 ): Promise<CueStickStatus> {
   const located = await locateAnalysis(root, trackId, filePath);
   if (!located) return "missing";
-  const dat = await maybeFile(located.dir, DAT);
+  const dat = await maybeFile(located.dir, located.datName);
   if (!dat) return "missing";
-  const ext = await maybeFile(located.dir, EXT);
+  const ext = await maybeFile(located.dir, pairedExt(located.datName));
   const datBytes = await readBytes(dat);
   const extBytes = ext ? await readBytes(ext) : null;
   const shifted = shiftAnlzGrid(datBytes, extBytes, deltaMs);
@@ -377,7 +410,7 @@ function beatTimes(left: AnlzBeat[] | null, right: readonly AnlzBeat[]): boolean
 export async function readStickHotCues(root: DirLike, trackId: number, filePath = ""): Promise<AnlzCue[] | null> {
   const located = await locateAnalysis(root, trackId, filePath);
   if (!located) return null;
-  return cuesIn(located.dir);
+  return cuesIn(located.dir, located.datName);
 }
 
 /**
@@ -394,8 +427,8 @@ export async function saveStickHotCues(
   const located = await locateAnalysis(root, trackId, filePath);
   if (!located) return "missing";
   const { dir } = located;
-  const dat = await maybeFile(dir, DAT);
-  const ext = await maybeFile(dir, EXT);
+  const dat = await maybeFile(dir, located.datName);
+  const ext = await maybeFile(dir, pairedExt(located.datName));
   if (!dat && !ext) return "missing";
   const originals = new Map<FileLike, Uint8Array>();
   const hex = located.folder.replace(/[^0-9A-F]/gi, "").toUpperCase().padStart(8, "0").slice(-8);
