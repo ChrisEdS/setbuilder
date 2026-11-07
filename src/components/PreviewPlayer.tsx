@@ -36,6 +36,7 @@ import { OverlapField } from "@/components/OverlapField";
 import { WaveformDeck } from "@/components/WaveformDeck";
 import { hasKnownEnergy } from "@/lib/energy";
 import {
+  formatGridReadingNote,
   readRememberedBeatGrid,
   readRememberedHotCues,
   readRememberedPhrases,
@@ -46,6 +47,8 @@ import {
   saveStickAnalyzedGrid,
   saveStickBeatGrid,
   saveStickHotCues,
+  subscribeStickIndexProgress,
+  type StickIndexWalk,
 } from "@/lib/stick-cues";
 import { analyzeSourceGrid } from "@/lib/analyze-grid";
 import { barJump, phrasesOnGrid, shiftBeatTimes, type AnlzBeat, type AnlzPhrase } from "@/lib/anlz-cues";
@@ -349,6 +352,7 @@ function PreviewDock({
   const [fileBeats, setFileBeats] = useState<AnlzBeat[] | null>(null);
   const [gridMissing, setGridMissing] = useState(false);
   const [gridReading, setGridReading] = useState(false);
+  const [indexWalk, setIndexWalk] = useState<StickIndexWalk | null>(null);
   const [phrases, setPhrases] = useState<AnlzPhrase[] | null>(null);
   const [phrasesMissing, setPhrasesMissing] = useState(false);
   const [quantize, setQuantize] = useState(true);
@@ -406,12 +410,15 @@ function PreviewDock({
     [],
   );
   const gridRequest = `${trackKey}\0${trackUri ?? ""}\0${stickEpoch}\0${stickHandleEpoch}\0${filePath}`;
+  const gridRequestRef = useRef(gridRequest);
+  gridRequestRef.current = gridRequest;
   const [gridRequestSeen, setGridRequestSeen] = useState(gridRequest);
   if (gridRequest !== gridRequestSeen) {
     setGridRequestSeen(gridRequest);
     setFileBeats(null);
     setGridMissing(false);
     setGridReading(false);
+    setIndexWalk(null);
     setPhrases(null);
     setPhrasesMissing(false);
     setGridNotice(null);
@@ -424,7 +431,25 @@ function PreviewDock({
   }, [gridRequest]);
   useEffect(() => {
     const pdbId = rekordboxTrackId({ id: trackKey, uri: trackUri }) ?? 0;
+    const request = gridRequest;
     let cancel = false;
+    let active: DirLike | null = null;
+    const walks = new Map<DirLike, StickIndexWalk>();
+    const stoppers: Array<() => void> = [];
+    const showWalk = () => {
+      if (cancel || gridRequestRef.current !== request) return;
+      setIndexWalk(active ? (walks.get(active) ?? null) : null);
+    };
+    const listen = (root: DirLike) => {
+      if (cancel) return;
+      stoppers.push(
+        subscribeStickIndexProgress(root, (walk) => {
+          if (walk) walks.set(root, walk);
+          else walks.delete(root);
+          if (root === active) showWalk();
+        }),
+      );
+    };
     // A read that finishes in this turn never paints the note. A real wait does.
     const showTimer = window.setTimeout(() => {
       if (!cancel) setGridReading(true);
@@ -433,7 +458,10 @@ function PreviewDock({
       try {
         const roots: DirLike[] = [];
         const volume = savedVolumeHandle();
-        if (volume) roots.push(volume);
+        if (volume) {
+          roots.push(volume);
+          listen(volume);
+        }
         try {
           const persisted = await loadPersistedStickHandle();
           if (
@@ -443,6 +471,7 @@ function PreviewDock({
             (await stickPermission(persisted, "read", false))
           ) {
             roots.push(persisted);
+            listen(persisted);
           }
         } catch {
           /* the saved volume is still tried above */
@@ -452,6 +481,8 @@ function PreviewDock({
         let sawFile = false;
         for (const candidate of roots) {
           if (cancel) return;
+          active = candidate;
+          showWalk();
           try {
             const beats = await readStickBeatGrid(candidate, pdbId, filePath);
             sawFile = true;
@@ -503,12 +534,16 @@ function PreviewDock({
         setPhrasesMissing(false);
       } finally {
         window.clearTimeout(showTimer);
-        if (!cancel) setGridReading(false);
+        if (!cancel && gridRequestRef.current === request) {
+          setGridReading(false);
+          setIndexWalk(null);
+        }
       }
     })();
     return () => {
       cancel = true;
       window.clearTimeout(showTimer);
+      for (const stop of stoppers) stop();
     };
   }, [trackKey, trackUri, stickEpoch, stickHandleEpoch, filePath]);
   useEffect(() => {
@@ -1177,7 +1212,12 @@ function PreviewDock({
                 gridAnalyzing
                   ? t("crates.player.gridAnalyzing")
                   : gridReading && !gridMissing
-                    ? t("crates.player.gridReading")
+                    ? formatGridReadingNote(indexWalk, {
+                        reading: t("crates.player.gridReading"),
+                        first: t("crates.player.gridReadingFirst"),
+                        withPercent: (percent) =>
+                          t("crates.player.gridReadingFirstPercent", { percent }),
+                      })
                     : null
               }
               cues={track.cues ?? []}

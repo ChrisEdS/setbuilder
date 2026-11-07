@@ -2,7 +2,7 @@
 
 **Deutsch** · [English](README.md)
 
-**Version 5.0.12**
+**Version 5.1.0**
 
 SETBUILDER baut ein DJ-Set aus einem rekordbox-USB-Stick. Du lädst eine Playlist oder eine History, legst die Nacht auf den Slot und prüfst Key, BPM und Energie. Danach schreibst du das Set zurück und hörst die Übergänge vor dem Gig. Die Oberfläche ist Deutsch und Englisch.
 

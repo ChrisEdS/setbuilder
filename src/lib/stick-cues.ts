@@ -166,57 +166,133 @@ async function readHead(file: FileLike): Promise<Uint8Array> {
 const analysisIndexes = new WeakMap<DirLike, Promise<Map<string, Located>>>();
 const indexRetried = new WeakSet<DirLike>();
 
+/** Files already read over files still to look at. `total` 0 means the count is not known yet. */
+export type StickIndexWalk = { finished: number; total: number };
+
+const indexListeners = new WeakMap<DirLike, Set<(walk: StickIndexWalk | null) => void>>();
+const indexLive = new WeakMap<DirLike, StickIndexWalk>();
+
+/**
+ * The first lookup walks every analysis file. Later lookups of the same
+ * directory handle use the cached index and do not notify.
+ * A null walk means that build has finished.
+ */
+export function subscribeStickIndexProgress(
+  root: DirLike,
+  listener: (walk: StickIndexWalk | null) => void,
+): () => void {
+  let set = indexListeners.get(root);
+  if (!set) {
+    set = new Set();
+    indexListeners.set(root, set);
+  }
+  set.add(listener);
+  const live = indexLive.get(root);
+  if (live) listener(live);
+  const listeners = set;
+  return () => {
+    listeners.delete(listener);
+    if (listeners.size === 0) indexListeners.delete(root);
+  };
+}
+
+function reportIndex(root: DirLike, walk: StickIndexWalk | null): void {
+  if (walk) indexLive.set(root, walk);
+  else indexLive.delete(root);
+  const set = indexListeners.get(root);
+  if (!set) return;
+  for (const listener of [...set]) listener(walk);
+}
+
+/** Whole percent from files finished / files to look at. Null until the count is known. */
+export function indexWalkPercent(finished: number, total: number): number | null {
+  if (!Number.isFinite(finished) || !Number.isFinite(total) || total <= 0) return null;
+  const bounded = Math.min(1, Math.max(0, finished / total));
+  return Math.round(bounded * 100);
+}
+
+/** Short sentence once the index exists. The first walk names itself, with a percent when the count is known. */
+export function formatGridReadingNote(
+  walk: StickIndexWalk | null,
+  text: {
+    reading: string;
+    first: string;
+    withPercent: (percent: number) => string;
+  },
+): string {
+  if (!walk) return text.reading;
+  const percent = indexWalkPercent(walk.finished, walk.total);
+  if (percent == null) return text.first;
+  return text.withPercent(percent);
+}
+
 type IndexFile = { dir: DirLike; folder: string; datName: string; file: FileLike };
 
 async function buildAnalysisIndex(root: DirLike): Promise<Map<string, Located>> {
-  const map = new Map<string, Located>();
-  const library = await analysisLibrary(root);
-  if (!library?.keys) return map;
-  const files: IndexFile[] = [];
-  for await (const parent of library.keys()) {
-    let group: DirLike;
-    try {
-      group = await library.getDirectoryHandle(parent);
-    } catch {
-      continue;
-    }
-    if (!group.keys) continue;
-    for await (const name of group.keys()) {
-      let track: DirLike;
+  reportIndex(root, { finished: 0, total: 0 });
+  try {
+    const map = new Map<string, Located>();
+    const library = await analysisLibrary(root);
+    if (!library?.keys) return map;
+    const files: IndexFile[] = [];
+    for await (const parent of library.keys()) {
+      let group: DirLike;
       try {
-        track = await group.getDirectoryHandle(name);
+        group = await library.getDirectoryHandle(parent);
       } catch {
         continue;
       }
-      if (!track.keys) continue;
-      for await (const entry of track.keys()) {
-        if (!ANALYSIS_DAT.test(entry)) continue;
-        const dat = await maybeFile(track, entry);
-        if (!dat) continue;
-        files.push({ dir: track, folder: name.toUpperCase(), datName: entry, file: dat });
+      if (!group.keys) continue;
+      for await (const name of group.keys()) {
+        let track: DirLike;
+        try {
+          track = await group.getDirectoryHandle(name);
+        } catch {
+          continue;
+        }
+        if (!track.keys) continue;
+        for await (const entry of track.keys()) {
+          if (!ANALYSIS_DAT.test(entry)) continue;
+          const dat = await maybeFile(track, entry);
+          if (!dat) continue;
+          files.push({ dir: track, folder: name.toUpperCase(), datName: entry, file: dat });
+        }
       }
     }
-  }
-  const paths = new Array<string | null>(files.length);
-  let cursor = 0;
-  async function readNext(): Promise<void> {
-    for (;;) {
-      const index = cursor;
-      cursor += 1;
-      if (index >= files.length) return;
-      try {
-        paths[index] = readAnlzContentPath(await readHead(files[index].file));
-      } catch {
-        paths[index] = null;
+    const paths = new Array<string | null>(files.length);
+    let cursor = 0;
+    let finished = 0;
+    let shown: number | null = null;
+    const publish = () => {
+      const percent = indexWalkPercent(finished, files.length);
+      if (percent == null || percent === shown) return;
+      shown = percent;
+      reportIndex(root, { finished, total: files.length });
+    };
+    if (files.length > 0) publish();
+    async function readNext(): Promise<void> {
+      for (;;) {
+        const index = cursor;
+        cursor += 1;
+        if (index >= files.length) return;
+        try {
+          paths[index] = readAnlzContentPath(await readHead(files[index].file));
+        } catch {
+          paths[index] = null;
+        }
+        finished += 1;
+        publish();
       }
     }
+    await Promise.all(Array.from({ length: Math.min(8, files.length) }, () => readNext()));
+    files.forEach((file, index) => {
+      const stored = paths[index];
+      if (stored) map.set(stored, { dir: file.dir, folder: file.folder, datName: file.datName });
+    });
+    return map;
+  } finally {
+    reportIndex(root, null);
   }
-  await Promise.all(Array.from({ length: Math.min(8, files.length) }, () => readNext()));
-  files.forEach((file, index) => {
-    const stored = paths[index];
-    if (stored) map.set(stored, { dir: file.dir, folder: file.folder, datName: file.datName });
-  });
-  return map;
 }
 
 function analysisIndex(root: DirLike): Promise<Map<string, Located>> {

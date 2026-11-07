@@ -2,13 +2,18 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readAnlzBeatGrid, readAnlzHotCues, writeAnlzHotCues } from "./anlz-cues.ts";
 import { BACKUP_DIR } from "./brand.ts";
+import { tDe, tEn } from "./i18n/core.ts";
 import type { DirLike, FileLike } from "./rekordbox-stick-write.ts";
 import {
+  formatGridReadingNote,
+  indexWalkPercent,
   readStickBeatGrid,
   readStickHotCues,
   rekordboxTrackId,
   saveStickAnalyzedGrid,
   saveStickHotCues,
+  subscribeStickIndexProgress,
+  type StickIndexWalk,
 } from "./stick-cues.ts";
 
 function ascii(value: string): Uint8Array {
@@ -353,4 +358,88 @@ test("rekordbox track ids come from the uri or the set-track id", () => {
   assert.equal(rekordboxTrackId({ id: "rekordbox:12:86123:4", uri: "rekordbox:86123" }), 86123);
   assert.equal(rekordboxTrackId({ id: "rekordbox:12:86123:4" }), 86123);
   assert.equal(rekordboxTrackId({ id: "spotify:1" }), null);
+});
+
+function readingText(lang: "de" | "en") {
+  const translate = lang === "de" ? tDe : tEn;
+  return {
+    reading: translate("crates.player.gridReading"),
+    first: translate("crates.player.gridReadingFirst"),
+    withPercent: (percent: number) =>
+      translate("crates.player.gridReadingFirstPercent", { percent }),
+  };
+}
+
+test("the first beatgrid sentence names the wait and shows a real percent", () => {
+  assert.equal(indexWalkPercent(0, 0), null);
+  assert.equal(indexWalkPercent(0, 10), 0);
+  assert.equal(indexWalkPercent(42, 100), 42);
+  assert.equal(indexWalkPercent(1, 3), 33);
+  assert.equal(indexWalkPercent(3, 3), 100);
+  const german = readingText("de");
+  const english = readingText("en");
+  assert.equal(formatGridReadingNote(null, german), "Beatgrid wird gelesen.");
+  assert.equal(
+    formatGridReadingNote({ finished: 0, total: 0 }, german),
+    "Beatgrid wird zum ersten Mal gelesen.",
+  );
+  assert.equal(
+    formatGridReadingNote({ finished: 42, total: 100 }, german),
+    "Beatgrid wird zum ersten Mal gelesen. 42 %",
+  );
+  assert.equal(formatGridReadingNote(null, english), "Reading the beatgrid.");
+  assert.equal(
+    formatGridReadingNote({ finished: 0, total: 0 }, english),
+    "Reading the beatgrid for the first time.",
+  );
+  assert.equal(
+    formatGridReadingNote({ finished: 42, total: 100 }, english),
+    "Reading the beatgrid for the first time. 42%",
+  );
+});
+
+test("the first index walk reports files finished over files to read, and the next read does not", async () => {
+  const paths = [
+    "/Contents/A/One.mp3",
+    "/Contents/B/Two.mp3",
+    "/Contents/C/Three.mp3",
+  ];
+  const root = new MemoryDir("LE_BACKUP");
+  const pioneer = new MemoryDir("PIONEER");
+  const library = new MemoryDir("USBANLZ");
+  const group = new MemoryDir("P009");
+  paths.forEach((path, index) => {
+    const folder = `0000000${index}`;
+    const track = new MemoryDir(folder);
+    const dat = new MemoryFile("ANLZ0000.DAT", fileWith([pathTag(path), beatTag()]));
+    track.files.set(dat.name, dat);
+    group.dirs.set(track.name, track);
+  });
+  library.dirs.set(group.name, group);
+  pioneer.dirs.set(library.name, library);
+  root.dirs.set(pioneer.name, pioneer);
+  const seen: Array<StickIndexWalk | null> = [];
+  const stop = subscribeStickIndexProgress(root, (walk) => {
+    seen.push(walk);
+  });
+  const beats = await readStickBeatGrid(root, 1, paths[0] ?? "");
+  stop();
+  assert.equal(beats?.[0]?.timeMs, 1517);
+  assert.equal(seen[0]?.total, 0);
+  const counted = seen.filter((walk): walk is StickIndexWalk => walk !== null && walk.total > 0);
+  assert.equal(counted[0]?.finished, 0);
+  assert.equal(counted[0]?.total, 3);
+  const last = counted[counted.length - 1];
+  assert.equal(last?.finished, 3);
+  assert.equal(last?.total, 3);
+  assert.equal(indexWalkPercent(last?.finished ?? 0, last?.total ?? 0), 100);
+  assert.equal(seen[seen.length - 1], null);
+  const later: Array<StickIndexWalk | null> = [];
+  const stopLater = subscribeStickIndexProgress(root, (walk) => {
+    later.push(walk);
+  });
+  const again = await readStickBeatGrid(root, 1, paths[1] ?? "");
+  stopLater();
+  assert.equal(again?.[0]?.timeMs, 1517);
+  assert.deepEqual(later, []);
 });

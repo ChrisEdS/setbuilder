@@ -4201,9 +4201,12 @@ h3,
 }
 
 .manual-comment textarea {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  max-width: 100%;
   min-height: 64px;
   resize: vertical;
-  width: 100%;
   padding: 0.7rem 0.8rem !important;
   line-height: 1.4;
 }
@@ -4980,15 +4983,20 @@ button.drag-handle:active i {
 }
 
 .manual-comment {
-  display: grid;
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
   gap: 0.35rem;
   margin: 0.15rem 0 0;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .manual-comment > span {
-  font-size: 0.68rem !important;
+  flex: 0 0 auto;
+  font-size: 0.62rem !important;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   line-height: 1;
   color: #b3b3b3 !important;
@@ -6390,12 +6398,14 @@ html[lang="en"] .energy-bars li.jump::before {
 }
 
 .list-details-toggle.list-setting {
-  font-size: 0.68rem !important;
-  font-weight: 500 !important;
-  line-height: 1 !important;
-  padding: 0 !important;
-  text-underline-offset: 0.16em;
-  color: #8d8d8d !important;
+  font-size: 0.875rem !important;
+  font-weight: 650 !important;
+  line-height: 1.2 !important;
+  padding: 0.15rem 0 !important;
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: rgba(255, 255, 255, 0.55);
+  color: #ececec !important;
 }
 
 .crate-view .role-crates,
