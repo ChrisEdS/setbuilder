@@ -3840,10 +3840,8 @@ label.btn:hover {
 }
 
 .preview-seek {
-  display: grid;
-  grid-template-columns: 2.5rem minmax(0, 1fr) 2.5rem;
-  gap: 0.55rem;
-  align-items: center;
+  display: block;
+  min-width: 0;
 }
 
 .preview-audio-hidden {

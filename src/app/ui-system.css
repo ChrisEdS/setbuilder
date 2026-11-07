@@ -1857,9 +1857,9 @@ html[data-frame="mac"] .set-shell .hero-copy {
 
 .preview-player .preview-seek {
   display: grid;
-  grid-template-columns: 2.4rem minmax(0, 1fr) 2.4rem;
-  gap: 0.4rem;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.45rem;
+  align-items: stretch;
 }
 
 .preview-player iframe {
@@ -2028,7 +2028,8 @@ html[data-frame="mac"] .set-shell .hero-copy {
 
 .preview-player .preview-plan {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   flex: 0 0 auto;
   gap: 0.55rem;
   min-width: 0;
@@ -2087,6 +2088,286 @@ html[data-frame="mac"] .set-shell .hero-copy {
 .preview-player .preview-overlap:focus {
   outline: none;
   border-color: rgba(255, 255, 255, 0.45);
+}
+
+.preview-player .preview-plan-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.preview-player .preview-plan-row > span {
+  color: var(--muted, #b3b3b3);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.preview-player .preview-transition {
+  max-width: 11rem;
+  height: 1.7rem;
+  margin: 0;
+  padding: 0 0.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0.4rem;
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.preview-player .preview-transition:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+.preview-player .preview-body,
+.preview-player .preview-seek,
+.preview-player .preview-wave {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  align-self: stretch;
+}
+
+.preview-player .preview-seek,
+.preview-player .preview-wave,
+.preview-player .preview-cue-row {
+  flex-shrink: 0;
+}
+
+.preview-player .preview-wave {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.35rem;
+}
+
+.preview-player .preview-wave-times {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  color: #b3b3b3;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.preview-player .preview-wave-times span {
+  white-space: nowrap;
+}
+
+.preview-player .preview-wave-zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.preview-player .preview-wave-zoom button {
+  height: 1.25rem;
+  min-width: 1.25rem;
+  margin: 0;
+  padding: 0 0.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.preview-player .preview-wave-zoom button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.preview-player .preview-wave-overview {
+  position: relative;
+  width: 100%;
+  height: 1.7rem;
+  border-radius: 0.35rem;
+  background: #121212;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.preview-player .preview-wave-overview canvas,
+.preview-player .preview-wave-stage canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.preview-player .preview-wave-window {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+
+.preview-player .preview-wave-stage {
+  position: relative;
+  width: 100%;
+  height: 8.75rem;
+  border-radius: 0.45rem;
+  background: #141414;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.preview-player .preview-wave-stage.is-zoomed {
+  cursor: grab;
+}
+
+.preview-player .preview-wave-stage::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 58%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+}
+
+.preview-player .preview-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+.preview-player .preview-cue-mark {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1.1rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  transform: translateX(-50%);
+  cursor: ew-resize;
+}
+
+.preview-player .preview-cue-mark i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  background: currentColor;
+}
+
+.preview-player .preview-cue-mark em {
+  position: absolute;
+  top: 0.15rem;
+  left: 0.45rem;
+  font-size: 0.62rem;
+  font-style: normal;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.preview-player .preview-cue-row {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 0.28rem;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+}
+
+.preview-player .preview-cue-pad {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.05rem;
+  min-width: 0;
+  height: 1.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 0.45rem;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  white-space: nowrap;
+}
+
+.preview-player .preview-cue-pad.is-set {
+  background: color-mix(in srgb, currentColor 16%, transparent);
+}
+
+.preview-player .preview-cue-jump {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.preview-player .preview-cue-pad input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-size: 0.62rem;
+  text-align: center;
+}
+
+.preview-player .preview-cue-pad input:focus {
+  outline: none;
+}
+
+.preview-player .preview-cue-x {
+  flex: 0 0 auto;
+  width: 0.9rem;
+  height: 1.1rem;
+  margin-right: 0.1rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 0.75rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.preview-player .preview-cue-note {
+  margin: 0;
+  color: #fbbf24;
+  font-size: 0.72rem;
+  line-height: 1.35;
 }
 
 .preview-player .preview-transitions {

@@ -2,7 +2,6 @@
 
 import {
   useEffect,
-  useId,
   useRef,
   useState,
   useSyncExternalStore,
@@ -32,11 +31,24 @@ import {
 } from "@/lib/preview-transport";
 import { resolveTrackAudio } from "@/lib/stick-file";
 import { OverlapField } from "@/components/OverlapField";
+import { WaveformDeck } from "@/components/WaveformDeck";
+import { hasKnownEnergy } from "@/lib/energy";
+import {
+  readRememberedBeatGrid,
+  readRememberedHotCues,
+  readStickBeatGrid,
+  readStickHotCues,
+  rekordboxTrackId,
+  saveStickHotCues,
+} from "@/lib/stick-cues";
+import { barJump, type AnlzBeat } from "@/lib/anlz-cues";
+import { loadPersistedStickHandle, stickPermission } from "@/lib/stick-session";
 import {
   BLEND_MS,
   TRANSITIONS,
   performanceTracks,
   type SetTrack,
+  type TrackCue,
   type TransitionVerb,
 } from "@/lib/set";
 import { transitionHint, transitionLabel } from "@/lib/i18n/domain";
@@ -76,6 +88,9 @@ type PlayTrack = PlayableTrack &
       | "role"
       | "overlapMs"
       | "durationMs"
+      | "energyLevel"
+      | "energySource"
+      | "cues"
     >
   >;
 
@@ -110,6 +125,7 @@ type Props = {
   actions?: PlayerTrackActions | null;
   /** Fired when stick-backed preview audio fails after it had a playable source. */
   onStickMediaLost?: () => void;
+  onCues?: (id: string, cues: TrackCue[]) => void;
 };
 
 function listed(ids: readonly string[] | undefined, id: string): boolean {
@@ -283,6 +299,7 @@ function PreviewDock({
   onStickMediaLost,
   rehearsal,
   actions,
+  onCues,
 }: {
   track: PlayTrack;
   tracks: PlayTrack[];
@@ -299,6 +316,7 @@ function PreviewDock({
   onStickMediaLost?: () => void;
   rehearsal?: Rehearsal | null;
   actions?: PlayerTrackActions | null;
+  onCues?: (id: string, cues: TrackCue[]) => void;
 }) {
   const { t } = useI18n();
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -309,7 +327,9 @@ function PreviewDock({
     null,
   );
   const [dragging, setDragging] = useState(false);
-  const seekId = useId();
+  const [cueNotice, setCueNotice] = useState<string | null>(null);
+  const [fileBeats, setFileBeats] = useState<AnlzBeat[] | null>(null);
+  const [gridMissing, setGridMissing] = useState(false);
   const filePath = trackFilePath(track);
   const fileBase = stickAudioBaseName(filePath);
   const seed = initialAudio(filePath, fileBase, track.name);
@@ -331,6 +351,87 @@ function PreviewDock({
   useEffect(() => {
     stickLostRef.current = onStickMediaLost;
   }, [onStickMediaLost]);
+
+  const onCuesRef = useRef(onCues);
+  const cueTimer = useRef<number | null>(null);
+  const trackKey = track.id;
+  const trackUri = track.uri;
+  const cuesKnown = Boolean(track.cues);
+  useEffect(() => {
+    onCuesRef.current = onCues;
+  }, [onCues]);
+  useEffect(
+    () => () => {
+      if (cueTimer.current) window.clearTimeout(cueTimer.current);
+    },
+    [],
+  );
+  useEffect(() => {
+    setFileBeats(null);
+    setGridMissing(false);
+    const pdbId = rekordboxTrackId({ id: trackKey, uri: trackUri }) ?? 0;
+    let cancel = false;
+    void (async () => {
+      let found: AnlzBeat[] | null = null;
+      const root = await loadPersistedStickHandle();
+      if (root && !cancel && (await stickPermission(root, "read", false))) {
+        found = await readStickBeatGrid(root, pdbId, filePath);
+      }
+      if ((!found || found.length === 0) && !cancel) found = await readRememberedBeatGrid(pdbId, filePath);
+      if (cancel) return;
+      if (found?.length) {
+        setFileBeats(found);
+        setGridMissing(false);
+      } else {
+        setFileBeats(null);
+        setGridMissing(true);
+      }
+    })();
+    return () => {
+      cancel = true;
+    };
+  }, [trackKey, trackUri, stickEpoch, filePath]);
+  useEffect(() => {
+    if (cuesKnown) return;
+    const pdbId = rekordboxTrackId({ id: trackKey, uri: trackUri }) ?? 0;
+    let cancel = false;
+    void (async () => {
+      let found: Awaited<ReturnType<typeof readStickHotCues>> = null;
+      const root = await loadPersistedStickHandle();
+      if (root && !cancel && (await stickPermission(root, "read", false))) {
+        found = await readStickHotCues(root, pdbId, filePath);
+      }
+      if ((!found || found.length === 0) && !cancel) found = await readRememberedHotCues(pdbId, filePath);
+      if (cancel || !found?.length) return;
+      onCuesRef.current?.(
+        trackKey,
+        found.map((cue) => ({ slot: cue.slot, timeMs: cue.timeMs, name: cue.name })),
+      );
+    })();
+    return () => {
+      cancel = true;
+    };
+  }, [cuesKnown, trackKey, trackUri, stickEpoch, filePath]);
+
+  function commitCues(next: TrackCue[]) {
+    onCues?.(track.id, next);
+    const pdbId = rekordboxTrackId(track) ?? 0;
+    const setOnly = t("crates.player.cueSetOnly");
+    const rejected = t("crates.player.cueRejected");
+    if (cueTimer.current) window.clearTimeout(cueTimer.current);
+    cueTimer.current = window.setTimeout(() => {
+      cueTimer.current = null;
+      void (async () => {
+        const root = await loadPersistedStickHandle();
+        if (!root || !(await stickPermission(root, "readwrite", true))) {
+          setCueNotice(setOnly);
+          return;
+        }
+        const status = await saveStickHotCues(root, pdbId, next, filePath);
+        setCueNotice(status === "written" ? null : status === "rejected" ? rejected : setOnly);
+      })();
+    }, 400);
+  }
 
   useEffect(() => {
     reportPreviewPlayback(track.id, playing);
@@ -579,6 +680,77 @@ function PreviewDock({
     }
   }
 
+  const deckClock = useRef({
+    time: 0,
+    duration: 0,
+    bpm: "",
+    beats: null as AnlzBeat[] | null,
+    trackMs: 0,
+  });
+  deckClock.current.time = currentTime;
+  deckClock.current.duration = duration;
+  deckClock.current.bpm = track.bpm || "";
+  deckClock.current.beats = fileBeats;
+  deckClock.current.trackMs = track.durationMs ?? 0;
+
+  useEffect(() => {
+    function typing(target: EventTarget | null): boolean {
+      if (!(target instanceof HTMLElement)) return false;
+      if (target.isContentEditable) return true;
+      const tag = target.tagName;
+      if (tag === "TEXTAREA" || tag === "SELECT") return true;
+      if (target.getAttribute("role") === "slider") return true;
+      if (target instanceof HTMLInputElement) {
+        const type = target.type;
+        return type !== "button" && type !== "checkbox" && type !== "radio" && type !== "file";
+      }
+      return false;
+    }
+    function spanSeconds(audio: HTMLAudioElement | null): number {
+      const clock = deckClock.current;
+      if (audio && Number.isFinite(audio.duration) && audio.duration > 0) return audio.duration;
+      if (clock.duration > 0) return clock.duration;
+      return clock.trackMs > 0 ? clock.trackMs / 1000 : 0;
+    }
+    function place(seconds: number, audio: HTMLAudioElement | null) {
+      const span = spanSeconds(audio);
+      if (span <= 0) return;
+      const next = Math.min(span, Math.max(0, seconds));
+      if (audio && src) audio.currentTime = next;
+      setCurrentTime(next);
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.altKey || event.metaKey || event.ctrlKey) return;
+      if (typing(event.target)) return;
+      const audio = audioRef.current;
+      if (event.code === "Space") {
+        if (event.repeat || !audio || !src) return;
+        event.preventDefault();
+        if (audio.paused) {
+          void audio.play().then(
+            () => setPlaying(true),
+            () => setPlaying(false),
+          );
+        } else {
+          audio.pause();
+          setPlaying(false);
+        }
+        return;
+      }
+      if (event.code !== "ArrowLeft" && event.code !== "ArrowRight") return;
+      const span = spanSeconds(audio);
+      if (span <= 0) return;
+      event.preventDefault();
+      const clock = deckClock.current;
+      const marks = clock.beats ?? [];
+      const nowMs = (audio && src ? audio.currentTime : clock.time) * 1000;
+      const nextMs = barJump(nowMs, span * 1000, marks, event.code === "ArrowRight" ? 1 : -1);
+      place(nextMs / 1000, audio);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [src]);
+
   const placed = {
     ...(place
       ? {
@@ -630,6 +802,10 @@ function PreviewDock({
                 {(track.artists ?? []).join(", ") || "—"}
                 {track.keyCamelot ? ` · ${track.keyCamelot}` : ""}
                 {track.bpm ? ` · ${track.bpm}` : ""}
+                {(track.durationMs ?? 0) > 0 ? ` · ${formatTime((track.durationMs ?? 0) / 1000)}` : ""}
+                {hasKnownEnergy(track)
+                  ? ` · ${t("crates.player.energy", { level: track.energyLevel ?? 0 })}`
+                  : ""}
                 {hasStickLabel ? " · Stick" : embed ? ` · ${embed.label}` : ""}
               </span>
               {nextJoin && !rehearsal ? (
@@ -685,46 +861,73 @@ function PreviewDock({
           <TrackActions id={track.id} name={track.name} actions={actions} />
         ) : null}
 
-        {src ? (
+        {src || (track.durationMs ?? 0) > 0 ? (
           <div className="preview-seek">
-            <audio
-              ref={audioRef}
-              className="preview-audio-hidden"
-              src={src}
-              preload="auto"
-              onPlay={() => setPlaying(true)}
-              onPause={() => setPlaying(false)}
-              onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime ?? 0)}
-              onLoadedMetadata={() => setDuration(audioRef.current?.duration ?? 0)}
-              onDurationChange={() => setDuration(audioRef.current?.duration ?? 0)}
-              onEnded={() => {
+            {src ? (
+              <audio
+                ref={audioRef}
+                className="preview-audio-hidden"
+                src={src}
+                preload="auto"
+                onPlay={() => setPlaying(true)}
+                onPause={() => setPlaying(false)}
+                onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime ?? 0)}
+                onLoadedMetadata={() => setDuration(audioRef.current?.duration ?? 0)}
+                onDurationChange={() => setDuration(audioRef.current?.duration ?? 0)}
+                onEnded={() => {
+                  setPlaying(false);
+                  if (next) onChange(next.id);
+                }}
+                onError={() => {
+                  setLocalIssue("error");
+                  setSrc(null);
+                  if (filePath && hadStickSrc.current) stickLostRef.current?.();
+                }}
+              />
+            ) : null}
+            <WaveformDeck
+              src={src ?? ""}
+              currentTime={currentTime}
+              duration={duration || (track.durationMs ?? 0) / 1000}
+              playing={playing}
+              beats={fileBeats}
+              bpm={track.bpm || ""}
+              fallback={gridMissing}
+              gridNote={gridMissing ? t("crates.player.gridMissing") : null}
+              cues={track.cues ?? []}
+              notice={cueNotice}
+              onPause={() => {
+                const audio = audioRef.current;
+                if (audio) audio.pause();
                 setPlaying(false);
-                if (next) onChange(next.id);
               }}
-              onError={() => {
-                setLocalIssue("error");
-                setSrc(null);
-                if (filePath && hadStickSrc.current) stickLostRef.current?.();
-              }}
-            />
-            <span className="preview-time">{formatTime(currentTime)}</span>
-            <input
-              id={seekId}
-              className="preview-range"
-              type="range"
-              min={0}
-              max={duration || 0}
-              step={0.1}
-              value={Math.min(currentTime, duration || 0)}
-              aria-label={t("crates.player.seek")}
-              onChange={(event) => {
-                const nextTime = Number(event.currentTarget.value);
+              onSeek={(nextTime) => {
                 const audio = audioRef.current;
                 if (audio) audio.currentTime = nextTime;
                 setCurrentTime(nextTime);
               }}
+              onPlay={(nextTime) => {
+                const audio = audioRef.current;
+                if (audio) {
+                  audio.currentTime = nextTime;
+                  void audio.play().then(
+                    () => setPlaying(true),
+                    () => setPlaying(false),
+                  );
+                }
+                setCurrentTime(nextTime);
+              }}
+              onCues={commitCues}
             />
-            <span className="preview-time">{formatTime(duration)}</span>
+            {src ? null : (
+              <p className="player-fallback">
+                {localIssue === "unsupported"
+                  ? t("crates.player.unsupportedFormat")
+                  : localIssue === "error"
+                    ? t("crates.player.loadFailed")
+                    : t("crates.player.pickStick")}
+              </p>
+            )}
           </div>
         ) : embed ? (
           <iframe
@@ -796,28 +999,25 @@ function PreviewDock({
               })}
             </div>
             <div className="preview-plan">
-              <span>{t("crates.player.planned")}</span>
-              <div className="preview-transitions" role="group" aria-label={t("crates.player.transition")}>
-                {TRANSITIONS.map((item) => {
-                  const on = (track.transition ?? "unset") === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      className={on ? "is-on" : undefined}
-                      aria-pressed={on}
-                      title={transitionHint(t, item.id)}
-                      onClick={() => {
-                        if ((track.transition ?? "unset") === item.id) return;
-                        rehearsal.onTransition(track.id, item.id);
-                      }}
-                    >
+              <label className="preview-plan-row">
+                <span>{t("crates.player.planned")}</span>
+                <select
+                  className="preview-transition"
+                  aria-label={t("crates.player.transition")}
+                  title={transitionHint(t, track.transition ?? "unset")}
+                  value={track.transition ?? "unset"}
+                  onChange={(event) => {
+                    const next = event.currentTarget.value as TransitionVerb;
+                    if ((track.transition ?? "unset") === next) return;
+                    rehearsal.onTransition(track.id, next);
+                  }}
+                >
+                  {TRANSITIONS.map((item) => (
+                    <option key={item.id} value={item.id}>
                       {transitionLabel(t, item.id)}
-                    </button>
-                  );
-                })}
-              </div>
-              <label className="preview-length">
+                    </option>
+                  ))}
+                </select>
                 <span>{t("crates.player.length")}</span>
                 <OverlapField
                   className="preview-overlap"
@@ -878,6 +1078,7 @@ export function PreviewPlayer({
   rehearsal,
   actions,
   onStickMediaLost,
+  onCues,
 }: Props) {
   const isClient = useIsClient();
   const stickEpoch = useStickFilesEpoch();
@@ -905,6 +1106,7 @@ export function PreviewPlayer({
       onStickMediaLost={onStickMediaLost}
       rehearsal={rehearsal}
       actions={actions}
+      onCues={onCues}
     />,
     document.body,
   );

@@ -5600,6 +5600,7 @@ export function SetBuilder() {
         }}
         blendMs={blendMs}
         onStickMediaLost={() => reportStickLost(true)}
+        onCues={(id, cues) => patchTrack(id, { cues })}
         rehearsal={
           rehearsal
             ? {

@@ -47,6 +47,58 @@ export type TrackSource =
 /** Where an Energy Level came from. A stored 1 with no source is the old failed-scan placeholder. */
 export type EnergySource = "tag" | "measured" | "manual";
 
+/** Hot cues on a set track. Eight slots, same limit as a CDJ. */
+export type TrackCue = {
+  slot: number;
+  timeMs: number;
+  name: string;
+};
+
+export const CUE_SLOT_COUNT = 8;
+
+export const CUE_COLORS = [
+  "#3dd68c",
+  "#f472b6",
+  "#60a5fa",
+  "#fbbf24",
+  "#a78bfa",
+  "#fb7185",
+  "#2dd4bf",
+  "#f97316",
+] as const;
+
+export function cueColor(slot: number): string {
+  return CUE_COLORS[slot] ?? CUE_COLORS[0];
+}
+
+const CUE_LETTERS = "ABCDEFGH";
+
+/** Hot-cue pad letter. Eight slots are A through H. */
+export function cueLetter(slot: number): string {
+  return CUE_LETTERS[slot] ?? CUE_LETTERS[0];
+}
+
+/** Keep up to eight cues. An array (even empty) is kept; anything else is absent. */
+export function normalizeCues(value: unknown): TrackCue[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const used = new Set<number>();
+  const cues: TrackCue[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object") continue;
+    const raw = item as Record<string, unknown>;
+    const slot = Math.floor(Number(raw.slot));
+    const timeMs = Math.round(Number(raw.timeMs));
+    if (!Number.isInteger(slot) || slot < 0 || slot >= CUE_SLOT_COUNT) continue;
+    if (!Number.isFinite(timeMs) || timeMs < 0) continue;
+    if (used.has(slot)) continue;
+    used.add(slot);
+    const name = typeof raw.name === "string" ? raw.name.trim().slice(0, 24) : "";
+    cues.push({ slot, timeMs, name });
+  }
+  cues.sort((a, b) => a.timeMs - b.timeMs || a.slot - b.slot);
+  return cues;
+}
+
 export type SetTrack = {
   id: string;
   name: string;
@@ -94,6 +146,11 @@ export type SetTrack = {
    * 0 is an explicit length and wins over the verb.
    */
   overlapMs?: number;
+  /**
+   * Hot cues for this set. Missing means the stick has not been read yet.
+   * An empty list is a deliberate clear and stays empty.
+   */
+  cues?: TrackCue[];
 };
 
 export type SetSlotKind = "warmup" | "support" | "peaktime" | "closing";

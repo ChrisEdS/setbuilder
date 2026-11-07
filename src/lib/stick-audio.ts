@@ -324,6 +324,28 @@ export function lookupStickAudio(
   return { kind: "url", url };
 }
 
+/** Analysis files from the folder pick. The track id is not the folder name. */
+export function listRememberedAnalysisFiles(): File[] {
+  if (!stickFiles.length) return [];
+  const out: File[] = [];
+  for (const file of stickFiles) {
+    const rel = foldPath(file.webkitRelativePath || file.name);
+    if (rel.includes("/usbanlz/") && (rel.endsWith("/anlz0000.dat") || rel.endsWith("/anlz0000.ext"))) {
+      out.push(file);
+    }
+  }
+  return out;
+}
+
+/** ANLZ0000.DAT the folder pick still holds for this rekordbox track id. Read only. */
+export function lookupStickAnalysisFile(trackId: number): File | null {
+  if (!Number.isInteger(trackId) || trackId < 0 || !stickFiles.length) return null;
+  ensureStickIndex();
+  const folder = trackId.toString(16).padStart(8, "0").toLowerCase();
+  const hit = pick(byEndsWith.get(`/${folder}/anlz0000.dat`), "any");
+  return hit?.file ?? null;
+}
+
 export function stickAudioUrl(filePath: string, filename = ""): string | null {
   const hit = lookupStickAudio(filePath, filename);
   return hit.kind === "url" ? hit.url : null;

@@ -4,7 +4,9 @@
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
 
-**Version 4.7.19** · Raus aus der Playlist.
+**Version 5.0.0** · Raus aus der Playlist.
+
+Der Player ist ein Deck. Die Wellenform nutzt die volle Breite, das Rekordbox-Beatgrid liegt darauf, und der Zoom folgt dem Playhead. Ein Klick spielt weiter, ein Griff hält an zum Schieben, die Leertaste setzt fort, und die Pfeiltasten springen einen Takt. Acht Hot Cues, A–H, rasten auf den Downbeat ein und werden in die bestehende Analyse-Datei auf dem Stick geschrieben. Das ist eine Hauptversion.
 
 Der Stick ist das Material. Du ziehst den Bogen, setzt den Anschluss und hörst, ob er trägt.
 

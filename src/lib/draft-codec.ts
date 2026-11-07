@@ -11,6 +11,7 @@ import {
   blendMsOf,
   DEFAULT_SET,
   explicitOverlapMs,
+  normalizeCues,
   type SetDraft,
   type SetPhaseId,
   type SetSlotKind,
@@ -179,6 +180,9 @@ export function normalizeDraftTrack(value: unknown): SetTrack | null {
   };
   if (overlapMs === undefined) delete track.overlapMs;
   else track.overlapMs = overlapMs;
+  const cues = normalizeCues(raw.cues);
+  if (cues) track.cues = cues;
+  else delete track.cues;
   return track;
 }
 

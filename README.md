@@ -4,7 +4,9 @@
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
 
-**Version 4.7.19** · Out of the playlist.
+**Version 5.0.0** · Out of the playlist.
+
+The player is a deck. The waveform uses the full width, the Rekordbox beatgrid sits on it, and zoom follows the playhead. A click keeps playing, a grab pauses so you can scrub, space resumes, and the arrow keys move one bar. Eight hot cues, A–H, snap to the downbeat and are written to the stick’s existing analysis file. This is a major version.
 
 The stick is the material. You draw the arc, set the join, and hear if it holds.
 

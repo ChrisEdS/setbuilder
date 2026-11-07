@@ -236,6 +236,32 @@ test("codec rejects unsafe shapes and versions the same storage payload", () => 
   assert.equal(decodeStoredDraft(encoded)?.title, "Old");
 });
 
+test("a draft keeps cue points through a save and reload", () => {
+  const draft = normalizeStoredDraft({
+    title: "Cues",
+    tracks: [
+      {
+        id: "t1",
+        name: "One",
+        artists: ["Ada"],
+        cues: [
+          { slot: 2, timeMs: 125000.4, name: "  Drop  " },
+          { slot: 2, timeMs: 10, name: "duplicate" },
+          { slot: 9, timeMs: 10, name: "too many" },
+          { slot: 0, timeMs: 800, name: "Intro" },
+        ],
+      },
+    ],
+  });
+  assert.ok(draft);
+  assert.deepEqual(draft.tracks[0].cues, [
+    { slot: 0, timeMs: 800, name: "Intro" },
+    { slot: 2, timeMs: 125000, name: "Drop" },
+  ]);
+  const round = decodeStoredDraft(encodeStoredDraft(draft));
+  assert.deepEqual(round?.tracks[0].cues, draft.tracks[0].cues);
+});
+
 test("bulk normalization adds accepted ids to seen while filtering", () => {
   const track = (id: string, name: string) => ({ id, name, artists: [] });
   const fresh = uniqueIncomingDraftTracks(
