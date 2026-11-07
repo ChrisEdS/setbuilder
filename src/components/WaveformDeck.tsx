@@ -267,6 +267,11 @@ export function WaveformDeck({
   phrasesReady,
   phraseNote,
   onShiftGrid,
+  onAnalyzeGrid,
+  onUndoGrid,
+  analyzingGrid,
+  canUndoGrid,
+  canAnalyzeGrid,
   onSeek,
   onPlay,
   onPause,
@@ -300,6 +305,11 @@ export function WaveformDeck({
   phrasesReady: boolean;
   phraseNote: string | null;
   onShiftGrid: (deltaMs: number) => void;
+  onAnalyzeGrid: () => void;
+  onUndoGrid: () => void;
+  analyzingGrid: boolean;
+  canUndoGrid: boolean;
+  canAnalyzeGrid: boolean;
   onSeek: (seconds: number) => void;
   onPlay: (seconds: number) => void;
   onPause: () => void;
@@ -727,6 +737,26 @@ export function WaveformDeck({
         </div>
         {light ? null : (
           <div className="preview-tool-group">
+            <Tip text={t("crates.player.gridAnalyzeTip")} disabled={!canAnalyzeGrid}>
+              <button
+                type="button"
+                aria-label={t("crates.player.gridAnalyze")}
+                disabled={!canAnalyzeGrid}
+                onClick={onAnalyzeGrid}
+              >
+                {t("crates.player.gridAnalyze")}
+              </button>
+            </Tip>
+            <Tip text={t("crates.player.gridAnalyzeUndoTip")} disabled={!canUndoGrid || analyzingGrid}>
+              <button
+                type="button"
+                aria-label={t("crates.player.gridAnalyzeUndo")}
+                disabled={!canUndoGrid || analyzingGrid}
+                onClick={onUndoGrid}
+              >
+                {t("crates.player.gridAnalyzeUndo")}
+              </button>
+            </Tip>
             <Tip text={t("crates.player.gridLinesTip")}>
               <button type="button" aria-pressed={showGrid} aria-label={t("crates.player.gridLines")} onClick={() => onShowGrid(!showGrid)}>
                 {t("crates.player.gridLines")}

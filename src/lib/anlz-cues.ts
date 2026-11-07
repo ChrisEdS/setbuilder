@@ -1,8 +1,9 @@
+import { beatTempo } from "./beatgrid";
 import { CUE_SLOT_COUNT, type TrackCue } from "@/lib/set";
 
 /**
- * Hot cues inside an existing Pioneer ANLZ file (PMAI, big-endian).
- * Only the hot-cue tag is rewritten. Beatgrid, waveform and memory cues stay.
+ * Hot cues and, on request, the beat-grid tag inside an existing Pioneer ANLZ
+ * file (PMAI, big-endian). Waveform, memory cues and phrases stay.
  */
 
 const HOT_CUE = 1;
@@ -157,6 +158,76 @@ export function readAnlzBeatGrid(data: Uint8Array): AnlzBeat[] | null {
     offset += 8;
   }
   return beats;
+}
+
+function pqtzTag(beats: readonly AnlzBeat[]): Uint8Array {
+  const tag = new Uint8Array(24 + beats.length * 8);
+  const view = new DataView(tag.buffer);
+  tag.set(ascii("PQTZ"), 0);
+  view.setUint32(4, 0x18, false);
+  view.setUint32(8, tag.length, false);
+  view.setUint32(16, 0x00080000, false);
+  view.setUint32(20, beats.length, false);
+  for (let index = 0; index < beats.length; index += 1) {
+    const beat = beats[index];
+    if (!beat) continue;
+    const next = beats[index + 1]?.timeMs ?? beat.timeMs;
+    const previous = beats[index - 1]?.timeMs ?? beat.timeMs;
+    const gap = Math.max(1, index + 1 < beats.length ? next - beat.timeMs : beat.timeMs - previous);
+    const tempo = beatTempo(gap);
+    const offset = 24 + index * 8;
+    view.setUint16(offset, beat.beat, false);
+    view.setUint16(offset + 2, tempo, false);
+    view.setUint32(offset + 4, beat.timeMs, false);
+  }
+  return tag;
+}
+
+/**
+ * Replace every PQTZ tag with this grid and fix the file length.
+ * A file with no beat-grid tag is left unchanged.
+ */
+export function replaceAnlzBeatGrid(
+  data: Uint8Array,
+  beats: readonly AnlzBeat[],
+): { bytes: Uint8Array; wrote: boolean } {
+  if (!beats.length) return { bytes: data, wrote: false };
+  const tags = listTags(data).filter((tag) => tag.kind === "PQTZ");
+  if (!tags.length) return { bytes: data, wrote: false };
+  const next = pqtzTag(beats);
+  let bytes = data;
+  for (const tag of [...tags].sort((left, right) => right.offset - left.offset)) {
+    bytes = splice(bytes, tag.offset, tag.length, next);
+  }
+  viewOf(bytes).setUint32(8, bytes.length, false);
+  return { bytes, wrote: true };
+}
+
+/**
+ * Point the two known PQT2 header times at the first new beats with those
+ * beat numbers. The rest of the tag stays. Returns null when there is no
+ * such header, or a beat number has no match.
+ */
+export function anchorAnlzGrid(data: Uint8Array, beats: readonly AnlzBeat[]): Uint8Array | null {
+  const tags = listTags(data).filter(
+    (tag) => tag.kind === "PQT2" && tag.length >= 40 && viewOf(data).getUint32(tag.offset + 4, false) === 0x38,
+  );
+  if (!tags.length) return null;
+  const updates: Array<{ offset: number; timeMs: number }> = [];
+  const view = viewOf(data);
+  for (const tag of tags) {
+    const first = view.getUint16(tag.offset + 24, false);
+    const second = view.getUint16(tag.offset + 32, false);
+    if (first < 1 || first > 4 || second < 1 || second > 4) return null;
+    const firstTime = beats.find((beat) => beat.beat === first)?.timeMs;
+    const secondTime = beats.find((beat) => beat.beat === second)?.timeMs;
+    if (firstTime == null || secondTime == null) return null;
+    updates.push({ offset: tag.offset + 28, timeMs: firstTime }, { offset: tag.offset + 36, timeMs: secondTime });
+  }
+  const bytes = data.slice();
+  const next = viewOf(bytes);
+  for (const update of updates) next.setUint32(update.offset, update.timeMs, false);
+  return bytes;
 }
 
 const BAR_EDGE_MS = 40;

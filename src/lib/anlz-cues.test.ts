@@ -10,6 +10,8 @@ import {
   readAnlzContentPath,
   readAnlzHotCues,
   readAnlzPhrases,
+  anchorAnlzGrid,
+  replaceAnlzBeatGrid,
   shiftAnlzGrid,
   shiftBeatTimes,
   snapCueTime,
@@ -353,6 +355,52 @@ function maskedPhrases(): Uint8Array {
   for (let index = 18; index < tag.length; index += 1) tag[index] = (tag[index] ?? 0) ^ (mask[(index - 18) % mask.length] ?? 0);
   return tag;
 }
+
+test("replacing the beat grid keeps a longer or shorter grid and moves only the PQT2 times", () => {
+  const original = new Uint8Array(24 + 8);
+  const view = new DataView(original.buffer);
+  original.set(ascii("PQTZ"), 0);
+  view.setUint32(4, 0x18, false);
+  view.setUint32(8, original.length, false);
+  view.setUint32(20, 1, false);
+  view.setUint16(24, 1, false);
+  view.setUint16(26, 10_000, false);
+  view.setUint32(28, 1000, false);
+  const wave = emptyTag("PWAV", 20, 0);
+  wave.set([9, 8, 7, 6], 16);
+  const longer = [
+    { timeMs: 0, beat: 1 },
+    { timeMs: 500, beat: 2 },
+    { timeMs: 1000, beat: 3 },
+  ];
+  const replaced = replaceAnlzBeatGrid(pmai([original, wave]), longer);
+  assert.equal(replaced.wrote, true);
+  assert.deepEqual(readAnlzBeatGrid(replaced.bytes), longer);
+  const tempo = new DataView(replaced.bytes.buffer).getUint16(28 + 26, false);
+  assert.equal(tempo, 12_000);
+  assert.deepEqual([...replaced.bytes.subarray(replaced.bytes.length - 4)], [9, 8, 7, 6]);
+  const shorter = replaceAnlzBeatGrid(replaced.bytes, [{ timeMs: 250, beat: 1 }]);
+  assert.deepEqual(readAnlzBeatGrid(shorter.bytes), [{ timeMs: 250, beat: 1 }]);
+  const untouched = pmai([emptyTag("PWAV", 20, 0)]);
+  assert.equal(replaceAnlzBeatGrid(untouched, longer).wrote, false);
+
+  const pqt2 = new Uint8Array(60);
+  const ext = new DataView(pqt2.buffer);
+  pqt2.set(ascii("PQT2"), 0);
+  ext.setUint32(4, 0x38, false);
+  ext.setUint32(8, pqt2.length, false);
+  ext.setUint16(24, 1, false);
+  ext.setUint32(28, 1000, false);
+  ext.setUint16(32, 2, false);
+  ext.setUint32(36, 1500, false);
+  pqt2.set([0x11, 0x22, 0x33, 0x44], 56);
+  const anchored = anchorAnlzGrid(pmai([pqt2]), longer);
+  const read = new DataView((anchored ?? new Uint8Array()).buffer);
+  assert.equal(read.getUint32(28 + 28, false), 0);
+  assert.equal(read.getUint32(28 + 36, false), 500);
+  assert.deepEqual([...(anchored ?? new Uint8Array()).subarray(28 + 56, 28 + 60)], [0x11, 0x22, 0x33, 0x44]);
+  assert.equal(anchorAnlzGrid(pmai([pqt2]), [{ timeMs: 0, beat: 4 }]), null);
+});
 
 test("a masked phrase tag reads intro at the first grid beat and outro at the end", () => {
   const beats = beatsFromBpm(120, 2000);

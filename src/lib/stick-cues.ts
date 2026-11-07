@@ -1,10 +1,12 @@
 import {
   anlzPathsMatch,
   cuesMatch,
+  anchorAnlzGrid,
   readAnlzBeatGrid,
   readAnlzContentPath,
   readAnlzHotCues,
   readAnlzPhrases,
+  replaceAnlzBeatGrid,
   shiftAnlzGrid,
   writeAnlzHotCues,
   type AnlzBeat,
@@ -462,6 +464,50 @@ export async function saveStickBeatGrid(
   if (writeExt && ext && shifted.ext) {
     const extStatus = await commitBytes(ext, shifted.ext);
     if (extStatus === "rejected") {
+      await writeBytes(dat, datBytes);
+      if (extBytes) await writeBytes(ext, extBytes);
+      return "rejected";
+    }
+  }
+  return "written";
+}
+
+/**
+ * Replace the beat grid in the track's existing analysis file.
+ * A file with no beat-grid tag is left untouched.
+ * The original bytes are copied into SETBUILDER-Backup first.
+ */
+export async function saveStickAnalyzedGrid(
+  root: DirLike,
+  trackId: number,
+  beats: readonly AnlzBeat[],
+  filePath = "",
+): Promise<CueStickStatus> {
+  const located = await locateAnalysis(root, trackId, filePath);
+  if (!located || !beats.length) return "missing";
+  const dat = await maybeFile(located.dir, located.datName);
+  if (!dat) return "missing";
+  const ext = await maybeFile(located.dir, pairedExt(located.datName));
+  const datBytes = await readBytes(dat);
+  const replaced = replaceAnlzBeatGrid(datBytes, beats);
+  if (!replaced.wrote) return "missing";
+  const expected = readAnlzBeatGrid(replaced.bytes);
+  if (!beatTimes(expected, beats)) return "rejected";
+  const extBytes = ext ? await readBytes(ext) : null;
+  const anchored = extBytes ? anchorAnlzGrid(extBytes, beats) : null;
+  const hex = located.folder.replace(/[^0-9A-F]/gi, "").toUpperCase().padStart(8, "0").slice(-8);
+  await backup(root, `ANLZ-${hex}.DAT`, datBytes);
+  if (anchored && ext && extBytes) await backup(root, `ANLZ-${hex}.EXT`, extBytes);
+  const datStatus = await commitBytes(dat, replaced.bytes);
+  if (datStatus === "rejected") return "rejected";
+  const readBack = await readBytes(dat);
+  if (!expected || !sameBytes(readBack, replaced.bytes) || !beatTimes(readAnlzBeatGrid(readBack), expected)) {
+    await writeBytes(dat, datBytes);
+    return "rejected";
+  }
+  if (anchored && ext) {
+    const extStatus = await commitBytes(ext, anchored);
+    if (extStatus === "rejected" || !sameBytes(await readBytes(ext), anchored)) {
       await writeBytes(dat, datBytes);
       if (extBytes) await writeBytes(ext, extBytes);
       return "rejected";

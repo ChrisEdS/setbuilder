@@ -25,6 +25,7 @@ const WHOLE_FILE_LIMIT = 16 * 1024 * 1024;
 type WorkerResponse = {
   id: number;
   result?: Analysis;
+  beats?: number[];
   error?: string;
 };
 
@@ -32,7 +33,7 @@ let worker: Worker | null = null;
 let nextId = 1;
 const pending = new Map<
   number,
-  { resolve: (value: Analysis) => void; reject: (error: Error) => void }
+  { resolve: (value: WorkerResponse) => void; reject: (error: Error) => void }
 >();
 
 function getWorker(): Worker {
@@ -43,8 +44,7 @@ function getWorker(): Worker {
     if (!request) return;
     pending.delete(event.data.id);
     if (event.data.error) request.reject(new Error(event.data.error));
-    else if (event.data.result) request.resolve(event.data.result);
-    else request.reject(new Error("Analysis returned no result"));
+    else request.resolve(event.data);
   };
   worker.onerror = (event) => {
     const message = event.message || "Analysis failed to start";
@@ -64,8 +64,30 @@ export function analyzeSamples(
   const id = nextId;
   nextId += 1;
   return new Promise((resolve, reject) => {
-    pending.set(id, { resolve, reject });
+    pending.set(id, {
+      resolve: (message) => {
+        if (message.result) resolve(message.result);
+        else reject(new Error("Analysis returned no result"));
+      },
+      reject,
+    });
     getWorker().postMessage({ id, samples, sampleRate, kind }, [samples.buffer]);
+  });
+}
+
+/** Tick times in milliseconds. The caller keeps its own sample buffer. */
+export function analyzeBeatTicks(samples: Float32Array, sampleRate: number): Promise<number[]> {
+  const id = nextId++;
+  const copy = samples.slice();
+  return new Promise((resolve, reject) => {
+    pending.set(id, {
+      resolve: (message) => {
+        if (message.beats) resolve(message.beats);
+        else reject(new Error("Analysis returned no result"));
+      },
+      reject,
+    });
+    getWorker().postMessage({ id, samples: copy, sampleRate, kind: "beats" }, [copy.buffer]);
   });
 }
 

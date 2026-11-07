@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   useSyncExternalStore,
@@ -42,9 +43,11 @@ import {
   readStickHotCues,
   readStickPhrases,
   rekordboxTrackId,
+  saveStickAnalyzedGrid,
   saveStickBeatGrid,
   saveStickHotCues,
 } from "@/lib/stick-cues";
+import { analyzeSourceGrid } from "@/lib/analyze-grid";
 import { barJump, phrasesOnGrid, shiftBeatTimes, type AnlzBeat, type AnlzPhrase } from "@/lib/anlz-cues";
 import {
   getStickHandleEpoch,
@@ -352,9 +355,13 @@ function PreviewDock({
   const [showGrid, setShowGrid] = useState(true);
   const [light, setLight] = useState(false);
   const [gridNotice, setGridNotice] = useState<string | null>(null);
+  const [gridAnalyzing, setGridAnalyzing] = useState(false);
+  const [gridUndo, setGridUndo] = useState<AnlzBeat[] | null | undefined>(undefined);
   const beatsRef = useRef<AnlzBeat[] | null>(null);
   const phrasesRef = useRef<AnlzPhrase[] | null>(null);
   const shifting = useRef(false);
+  const analyzing = useRef(false);
+  const analyzeToken = useRef(0);
   const openTrack = useRef(track.id);
   useEffect(() => {
     beatsRef.current = fileBeats;
@@ -408,7 +415,13 @@ function PreviewDock({
     setPhrases(null);
     setPhrasesMissing(false);
     setGridNotice(null);
+    setGridAnalyzing(false);
+    setGridUndo(undefined);
   }
+  useLayoutEffect(() => {
+    analyzeToken.current += 1;
+    analyzing.current = false;
+  }, [gridRequest]);
   useEffect(() => {
     const pdbId = rekordboxTrackId({ id: trackKey, uri: trackUri }) ?? 0;
     let cancel = false;
@@ -541,7 +554,7 @@ function PreviewDock({
   }
 
   function shiftGrid(deltaMs: number) {
-    if (shifting.current || !deltaMs) return;
+    if (shifting.current || analyzing.current || !deltaMs) return;
     const current = beatsRef.current;
     if (!current) return;
     const next = shiftBeatTimes(current, deltaMs);
@@ -576,6 +589,107 @@ function PreviewDock({
           phrasesRef.current = previousPhrases;
           setFileBeats(previous);
           setPhrases(previousPhrases);
+          setGridNotice(rejected);
+          return;
+        }
+        setGridNotice(kept);
+      } finally {
+        shifting.current = false;
+      }
+    })();
+  }
+
+  function applyGrid(next: AnlzBeat[] | null, missing: boolean) {
+    beatsRef.current = next;
+    setFileBeats(next);
+    setGridMissing(missing);
+  }
+
+  function analyzeGrid() {
+    if (analyzing.current || shifting.current || !src) return;
+    analyzing.current = true;
+    const token = analyzeToken.current + 1;
+    analyzeToken.current = token;
+    const analyzeTrack = track.id;
+    const kept = t("crates.player.gridSetOnly");
+    const rejected = t("crates.player.gridRejected");
+    const failed = t("crates.player.gridAnalyzeFailed");
+    setGridAnalyzing(true);
+    setGridNotice(null);
+    void (async () => {
+      try {
+        const grid = await analyzeSourceGrid(src);
+        if (analyzeToken.current !== token || openTrack.current !== analyzeTrack) return;
+        const current = beatsRef.current;
+        const previous = current ? current.map((beat) => ({ ...beat })) : null;
+        const first = gridUndo === undefined;
+        if (first) setGridUndo(previous);
+        applyGrid(grid, false);
+        const pdbId = rekordboxTrackId(track) ?? 0;
+        const root = await loadPersistedStickHandle();
+        if (analyzeToken.current !== token || openTrack.current !== analyzeTrack) return;
+        if (!root || !(await stickPermission(root, "readwrite", true))) {
+          setGridNotice(kept);
+          return;
+        }
+        const status = await saveStickAnalyzedGrid(root, pdbId, grid, filePath);
+        if (analyzeToken.current !== token || openTrack.current !== analyzeTrack) return;
+        if (status === "written") {
+          setGridNotice(null);
+          return;
+        }
+        if (status === "rejected") {
+          applyGrid(previous, previous == null);
+          if (first) setGridUndo(undefined);
+          setGridNotice(rejected);
+          return;
+        }
+        setGridNotice(kept);
+      } catch {
+        if (analyzeToken.current !== token || openTrack.current !== analyzeTrack) return;
+        setGridNotice(failed);
+      } finally {
+        if (analyzeToken.current === token) {
+          analyzing.current = false;
+          setGridAnalyzing(false);
+        }
+      }
+    })();
+  }
+
+  function undoAnalyzedGrid() {
+    if (gridUndo === undefined || analyzing.current || shifting.current) return;
+    const snapshot = gridUndo;
+    const shown = beatsRef.current ? beatsRef.current.map((beat) => ({ ...beat })) : null;
+    const undoTrack = track.id;
+    setGridUndo(undefined);
+    if (snapshot == null) {
+      applyGrid(null, true);
+      setGridNotice(null);
+      return;
+    }
+    applyGrid(snapshot, false);
+    const pdbId = rekordboxTrackId(track) ?? 0;
+    const kept = t("crates.player.gridSetOnly");
+    const rejected = t("crates.player.gridRejected");
+    shifting.current = true;
+    void (async () => {
+      try {
+        const root = await loadPersistedStickHandle();
+        if (openTrack.current !== undoTrack) return;
+        if (!root || !(await stickPermission(root, "readwrite", true))) {
+          setGridNotice(kept);
+          return;
+        }
+        const status = await saveStickAnalyzedGrid(root, pdbId, snapshot, filePath);
+        if (openTrack.current !== undoTrack) return;
+        if (status === "written") {
+          setGridNotice(null);
+          return;
+        }
+        if (status === "rejected") {
+          applyGrid(shown, shown == null);
+          setGridUndo(snapshot);
           setGridNotice(rejected);
           return;
         }
@@ -1057,7 +1171,13 @@ function PreviewDock({
               bpm={track.bpm || ""}
               fallback={gridMissing}
               gridNote={gridMissing ? t("crates.player.gridMissing") : null}
-              gridReadingNote={gridReading && !gridMissing ? t("crates.player.gridReading") : null}
+              gridReadingNote={
+                gridAnalyzing
+                  ? t("crates.player.gridAnalyzing")
+                  : gridReading && !gridMissing
+                    ? t("crates.player.gridReading")
+                    : null
+              }
               cues={track.cues ?? []}
               cueSession={track.id}
               quantize={quantize}
@@ -1070,6 +1190,11 @@ function PreviewDock({
               phrasesReady={gridMissing || phrasesMissing || phrases !== null}
               phraseNote={phrasesMissing ? t("crates.player.phrasesMissing") : null}
               onShiftGrid={shiftGrid}
+              onAnalyzeGrid={analyzeGrid}
+              onUndoGrid={undoAnalyzedGrid}
+              analyzingGrid={gridAnalyzing}
+              canUndoGrid={gridUndo !== undefined}
+              canAnalyzeGrid={Boolean(src) && !gridAnalyzing && !gridReading}
               notice={gridNotice ?? cueNotice}
               onPause={() => {
                 const audio = audioRef.current;

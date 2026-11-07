@@ -55,6 +55,13 @@ type EssentiaModule = {
     outputSampleRate: number,
     quality: number,
   ): { signal: VectorFloat };
+  RhythmExtractor2013(
+    signal: VectorFloat,
+    maxTempo: number,
+    method: string,
+    minTempo: number,
+  ): { ticks?: VectorFloat; estimates?: VectorFloat; bpmIntervals?: VectorFloat };
+  vectorToArray(vector: VectorFloat): Float32Array;
 };
 
 const EssentiaCtor = Essentia as unknown as new (wasm: unknown) => EssentiaModule;
@@ -259,11 +266,33 @@ function finite(value: number): number {
   return Number.isFinite(value) ? value : 0;
 }
 
+async function beatTicks(samples: Float32Array, sampleRate: number): Promise<number[]> {
+  if (samples.length === 0) throw new Error("This file has no audio to analyze");
+  const engine = await library();
+  const prepared = signalAt44100(engine, samples, sampleRate);
+  let rhythm: { ticks?: VectorFloat; estimates?: VectorFloat; bpmIntervals?: VectorFloat } | null = null;
+  try {
+    rhythm = engine.RhythmExtractor2013(prepared.signal, 208, "multifeature", 40);
+    const values = rhythm.ticks ? engine.vectorToArray(rhythm.ticks) : new Float32Array();
+    const ms: number[] = [];
+    for (let index = 0; index < values.length; index += 1) {
+      const seconds = values[index];
+      if (Number.isFinite(seconds) && seconds >= 0) ms.push(Math.round(seconds * 1000));
+    }
+    return ms;
+  } finally {
+    release(rhythm?.ticks ?? null);
+    release(rhythm?.estimates ?? null);
+    release(rhythm?.bpmIntervals ?? null);
+    prepared.release();
+  }
+}
+
 type WorkerRequest = {
   id: number;
   samples: Float32Array;
   sampleRate: number;
-  kind?: "full" | "energy";
+  kind?: "full" | "energy" | "beats";
 };
 
 type WorkerScope = {
@@ -277,6 +306,11 @@ scope.onmessage = (event) => {
   const { id, samples, sampleRate, kind } = event.data;
   void (async () => {
     try {
+      if (kind === "beats") {
+        const beats = await beatTicks(samples, sampleRate);
+        scope.postMessage({ id, beats });
+        return;
+      }
       const result =
         kind === "energy"
           ? await energyOnly(samples, sampleRate)

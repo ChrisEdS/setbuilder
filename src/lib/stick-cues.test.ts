@@ -3,7 +3,13 @@ import test from "node:test";
 import { readAnlzBeatGrid, readAnlzHotCues, writeAnlzHotCues } from "./anlz-cues.ts";
 import { BACKUP_DIR } from "./brand.ts";
 import type { DirLike, FileLike } from "./rekordbox-stick-write.ts";
-import { readStickBeatGrid, readStickHotCues, rekordboxTrackId, saveStickHotCues } from "./stick-cues.ts";
+import {
+  readStickBeatGrid,
+  readStickHotCues,
+  rekordboxTrackId,
+  saveStickAnalyzedGrid,
+  saveStickHotCues,
+} from "./stick-cues.ts";
 
 function ascii(value: string): Uint8Array {
   return Uint8Array.from(value, (char) => char.charCodeAt(0));
@@ -302,6 +308,45 @@ test("a grid past the first 4 KB is found even after an empty scan", async () =>
   assert.equal(scans, 2);
   assert.equal(read?.length, count);
   assert.equal(read?.[0]?.timeMs, 1000);
+});
+
+test("an analyzed grid replaces the existing one and a file without one stays untouched", async () => {
+  const path = "/Contents/Bless You/Gotta Move/Bless You - Gotta Move.mp3";
+  const dat = new MemoryFile("ANLZ0000.DAT", fileWith([pathTag(path), beatTag()]));
+  const root = new MemoryDir("LE_BACKUP");
+  const pioneer = new MemoryDir("PIONEER");
+  const library = new MemoryDir("USBANLZ");
+  const group = new MemoryDir("P009");
+  const track = new MemoryDir("0000091A");
+  track.files.set(dat.name, dat);
+  group.dirs.set(track.name, track);
+  library.dirs.set(group.name, group);
+  pioneer.dirs.set(library.name, library);
+  root.dirs.set(pioneer.name, pioneer);
+  const beats = [
+    { timeMs: 10, beat: 1 },
+    { timeMs: 510, beat: 2 },
+    { timeMs: 1010, beat: 3 },
+  ];
+  assert.equal(await saveStickAnalyzedGrid(root, 1676, beats, path), "written");
+  assert.deepEqual(await readStickBeatGrid(root, 1676, path), beats);
+  assert.equal(root.dirs.get(BACKUP_DIR)?.files.has("ANLZ-0000091A.DAT"), true);
+
+  const quiet = "/Contents/Bless You/Gotta Move/Bless You - Quiet.mp3";
+  const bare = new MemoryFile("ANLZ0000.DAT", fileWith([pathTag(quiet)]));
+  const quietRoot = new MemoryDir("LE_BACKUP");
+  const quietPioneer = new MemoryDir("PIONEER");
+  const quietLibrary = new MemoryDir("USBANLZ");
+  const quietGroup = new MemoryDir("P009");
+  const quietTrack = new MemoryDir("0000091B");
+  quietTrack.files.set(bare.name, bare);
+  quietGroup.dirs.set(quietTrack.name, quietTrack);
+  quietLibrary.dirs.set(quietGroup.name, quietGroup);
+  quietPioneer.dirs.set(quietLibrary.name, quietLibrary);
+  quietRoot.dirs.set(quietPioneer.name, quietPioneer);
+  const before = bare.data.byteLength;
+  assert.equal(await saveStickAnalyzedGrid(quietRoot, 1677, beats, quiet), "missing");
+  assert.equal(bare.data.byteLength, before);
 });
 
 test("rekordbox track ids come from the uri or the set-track id", () => {
