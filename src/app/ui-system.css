@@ -2249,18 +2249,31 @@ html[data-frame="mac"] .set-shell .hero-copy {
   gap: 0.35rem;
 }
 
-.preview-player .preview-wave-times {
+.preview-player .preview-clock {
   display: flex;
-  justify-content: space-between;
-  gap: 0.75rem;
-  width: 100%;
-  color: #b3b3b3;
-  font-size: 0.72rem;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin-right: 0.15rem;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-.preview-player .preview-wave-times span {
-  white-space: nowrap;
+.preview-player .preview-clock-now {
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.preview-player .preview-clock-total {
+  color: #8a8a8a;
+  font-size: 0.72rem;
+}
+
+.preview-player .preview-clock-total::before {
+  content: "/";
+  margin-right: 0.4rem;
+  color: #5c5c5c;
 }
 
 .preview-player .preview-wave-zoom {
@@ -2309,6 +2322,8 @@ html[data-frame="mac"] .set-shell .hero-copy {
   align-items: center;
   gap: 0.28rem;
   min-width: 0;
+  padding-left: 0.65rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.14);
 }
 
 .preview-player .preview-wave-tools button {

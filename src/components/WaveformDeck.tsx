@@ -676,11 +676,11 @@ export function WaveformDeck({
 
   return (
     <div className="preview-wave">
-      <div className="preview-wave-times">
-        <span ref={elapsedRef}>{formatTime(currentTime)}</span>
-        <span>{formatTime(span)}</span>
-      </div>
       <div className="preview-wave-tools">
+        <div className="preview-clock">
+          <span ref={elapsedRef} className="preview-clock-now">{formatTime(currentTime)}</span>
+          <span className="preview-clock-total">{formatTime(span)}</span>
+        </div>
         <div className="preview-tool-group">
           <Tip text={t("crates.player.lightTip")}>
             <button type="button" aria-pressed={light} aria-label={t("crates.player.light")} onClick={toggleLight}>
