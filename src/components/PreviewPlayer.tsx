@@ -287,27 +287,6 @@ function clampPlace(x: number, y: number, width: number, height: number): Player
   };
 }
 
-function WindowGlyph({ kind }: { kind: "close" | "min" | "zoom" | "restore" }) {
-  if (kind === "restore") {
-    return (
-      <svg className="preview-light-glyph" viewBox="0 0 12 12" aria-hidden="true">
-        <rect x="2.2" y="2.2" width="7.6" height="7.6" rx="1.2" fill="none" stroke="currentColor" strokeWidth="1.4" />
-      </svg>
-    );
-  }
-  const d =
-    kind === "close"
-      ? "M3.1 3.1 L8.9 8.9 M8.9 3.1 L3.1 8.9"
-      : kind === "min"
-        ? "M2.6 6 H9.4"
-        : "M6 2.6 V9.4 M2.6 6 H9.4";
-  return (
-    <svg className="preview-light-glyph" viewBox="0 0 12 12" aria-hidden="true">
-      <path d={d} fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 function initialAudio(filePath: string, fileBase: string, title: string): {
   src: string | null;
   issue: LocalIssue;
@@ -332,10 +311,6 @@ function PreviewDock({
   onHeight,
   onChange,
   onClose,
-  minimized,
-  zoomed,
-  onToggleMinimized,
-  onToggleZoomed,
   onStickMediaLost,
   rehearsal,
   actions,
@@ -353,10 +328,6 @@ function PreviewDock({
   onHeight: (height: number) => void;
   onChange: (id: string) => void;
   onClose: () => void;
-  minimized: boolean;
-  zoomed: boolean;
-  onToggleMinimized: () => void;
-  onToggleZoomed: () => void;
   onStickMediaLost?: () => void;
   rehearsal?: Rehearsal | null;
   actions?: PlayerTrackActions | null;
@@ -950,23 +921,10 @@ function PreviewDock({
     ...(height ? { "--player-h": `${height}px` } : {}),
   } as CSSProperties;
 
-  const closeLabel = t("crates.player.windowClose");
-  const minimizeLabel = minimized
-    ? t("crates.player.windowRestore")
-    : t("crates.player.windowMinimize");
-  const zoomLabel = zoomed ? t("crates.player.windowRestore") : t("crates.player.windowZoom");
-  const restoreLabel = t("crates.player.windowRestore");
-
   return (
     <aside
       ref={cardRef}
-      className={[
-        "preview-player",
-        dragging ? "is-dragging" : "",
-        minimized ? "is-minimized" : "",
-        zoomed ? "is-zoomed" : "",
-        light ? "is-light" : "",
-      ]
+      className={["preview-player", dragging ? "is-dragging" : "", light ? "is-light" : ""]
         .filter(Boolean)
         .join(" ")}
       style={placed}
@@ -975,43 +933,6 @@ function PreviewDock({
       <div className="preview-dock">
         <div className="preview-body">
         <div className="preview-now">
-          <div className="preview-traffic">
-            <Tip text={closeLabel}>
-              <button
-                type="button"
-                className="preview-light"
-                data-kind="close"
-                onClick={onClose}
-                aria-label={closeLabel}
-              >
-                <WindowGlyph kind="close" />
-              </button>
-            </Tip>
-            <Tip text={minimizeLabel}>
-              <button
-                type="button"
-                className="preview-light"
-                data-kind="min"
-                aria-pressed={minimized}
-                onClick={onToggleMinimized}
-                aria-label={minimizeLabel}
-              >
-                <WindowGlyph kind="min" />
-              </button>
-            </Tip>
-            <Tip text={zoomLabel}>
-              <button
-                type="button"
-                className="preview-light"
-                data-kind="zoom"
-                aria-pressed={zoomed}
-                onClick={onToggleZoomed}
-                aria-label={zoomLabel}
-              >
-                <WindowGlyph kind="zoom" />
-              </button>
-            </Tip>
-          </div>
           <div
             className="preview-drag"
             onPointerDown={onDragStart}
@@ -1045,19 +966,6 @@ function PreviewDock({
             </div>
           </div>
           <div className="preview-transport">
-            {minimized ? (
-              <Tip text={restoreLabel}>
-                <button
-                  type="button"
-                  className="preview-restore"
-                  onClick={onToggleMinimized}
-                  aria-label={restoreLabel}
-                >
-                  <WindowGlyph kind="restore" />
-                </button>
-              </Tip>
-            ) : (
-              <>
             <Tip text={t("crates.player.prevTip")} disabled={!prev}>
               <button
                 type="button"
@@ -1096,8 +1004,16 @@ function PreviewDock({
                 ›
               </button>
             </Tip>
-              </>
-            )}
+            <Tip text={t("crates.player.closeTip")}>
+              <button
+                type="button"
+                className="preview-close"
+                onClick={onClose}
+                aria-label={t("crates.player.close")}
+              >
+                ×
+              </button>
+            </Tip>
           </div>
         </div>
         {actions && inSet && !rehearsal ? (
@@ -1347,8 +1263,6 @@ export function PreviewPlayer({
   const [place, setPlace] = useState<PlayerPlace | null>(null);
   const [width, setWidth] = useState<number | null>(null);
   const [height, setHeight] = useState<number | null>(null);
-  const [minimized, setMinimized] = useState(false);
-  const [zoomed, setZoomed] = useState(false);
   const track = tracks.find((item) => item.id === currentId) ?? null;
   if (!isClient || !track) return null;
 
@@ -1367,10 +1281,6 @@ export function PreviewPlayer({
       onHeight={setHeight}
       onChange={onChange}
       onClose={onClose}
-      minimized={minimized}
-      zoomed={zoomed}
-      onToggleMinimized={() => setMinimized((open) => !open)}
-      onToggleZoomed={() => setZoomed((open) => !open)}
       onStickMediaLost={onStickMediaLost}
       rehearsal={rehearsal}
       actions={actions}

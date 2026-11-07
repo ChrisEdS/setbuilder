@@ -1809,69 +1809,10 @@ html[data-frame="mac"] .set-shell .hero-copy {
   padding-bottom: 0.45rem;
 }
 
-.preview-player .preview-traffic {
-  display: flex;
-  align-items: center;
-  align-self: start;
-  gap: 8px;
-  margin-top: 0.15rem;
-}
-
-.preview-player .preview-light {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 12px;
-  height: 12px;
-  min-width: 12px;
-  min-height: 12px;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  color: rgba(0, 0, 0, 0.72);
-  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.28);
-  cursor: pointer;
-}
-
-.preview-player .preview-light::after {
-  content: "";
-  position: absolute;
-  inset: -4px;
-}
-
-.preview-player .preview-light[data-kind="close"] {
-  background: #ff5f57;
-}
-
-.preview-player .preview-light[data-kind="min"] {
-  background: #febc2e;
-}
-
-.preview-player .preview-light[data-kind="zoom"] {
-  background: #28c840;
-}
-
-.preview-player .preview-light .preview-light-glyph {
-  width: 7px;
-  height: 7px;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.preview-player .preview-traffic:hover .preview-light-glyph,
-.preview-player .preview-traffic:focus-within .preview-light-glyph {
-  opacity: 1;
-}
-
-.preview-player .preview-light:active {
-  filter: brightness(0.86);
-}
-
 .preview-player .preview-now {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 0.65rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.55rem;
   align-items: center;
   min-width: 0;
 }
@@ -1914,30 +1855,26 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 .preview-player .player-skip,
-.preview-player .preview-close,
-.preview-player .preview-restore {
+.preview-player .preview-close {
   width: 2rem;
   height: 2rem;
   min-width: 2rem;
   min-height: 2rem;
 }
 
-.preview-player .preview-restore {
-  display: grid;
-  place-items: center;
-  margin: 0;
-  padding: 0;
+.preview-player .preview-close {
   border: 0;
   border-radius: 999px;
-  background: transparent;
-  color: #fff;
+  background: transparent !important;
+  color: #fff !important;
+  font-size: 1.4rem;
+  line-height: 1;
   cursor: pointer;
 }
 
-.preview-player .preview-restore .preview-light-glyph {
-  width: 13px;
-  height: 13px;
-  opacity: 1;
+.preview-player .preview-close:hover {
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.08) !important;
 }
 
 .preview-player .player-play {
@@ -2467,36 +2404,6 @@ html[data-frame="mac"] .set-shell .hero-copy {
   height: 3.75rem;
 }
 
-.preview-player.is-zoomed:not(.is-minimized) .preview-body {
-  flex-grow: 1;
-  min-height: 0;
-}
-
-.preview-player.is-zoomed:not(.is-minimized) .preview-seek {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.preview-player.is-zoomed:not(.is-minimized) .preview-wave {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.preview-player.is-zoomed:not(.is-minimized) .preview-wave-stage {
-  flex: 1 1 auto;
-  height: auto;
-  min-height: 8.75rem;
-}
-
-.preview-player.is-zoomed:not(.is-minimized) .preview-wave-stage.is-light {
-  height: auto;
-  min-height: 3.75rem;
-}
-
 .preview-player .preview-wave-stage.is-light .preview-cue-mark {
   cursor: pointer;
 }
@@ -2666,8 +2573,6 @@ html[data-frame="mac"] .set-shell .hero-copy {
   .preview-cue-jump,
   .preview-cue-mark,
   .preview-close,
-  .preview-light,
-  .preview-restore,
   .preview-wave-tools button,
   .preview-wave-zoom button,
   .preview-transitions button
@@ -2781,63 +2686,12 @@ html[data-frame="mac"] .set-shell .hero-copy {
 @media (max-width: 720px), (pointer: coarse) {
   .preview-player .player-skip,
   .preview-player .player-play,
-  .preview-player .preview-close,
-  .preview-player .preview-restore {
+  .preview-player .preview-close {
     width: var(--ui-touch-target) !important;
     height: var(--ui-touch-target) !important;
     min-width: var(--ui-touch-target) !important;
     min-height: var(--ui-touch-target) !important;
   }
-}
-
-aside.preview-player.is-zoomed:not(.is-minimized) {
-  left: 0.5rem !important;
-  top: 0.5rem !important;
-  right: auto !important;
-  bottom: auto !important;
-  width: calc(100vw - 1rem) !important;
-  max-width: calc(100vw - 1rem) !important;
-}
-
-aside.preview-player.is-zoomed:not(.is-minimized) .preview-dock {
-  height: calc(100vh - 1rem) !important;
-  max-height: calc(100vh - 1rem) !important;
-}
-
-aside.preview-player.is-minimized .preview-dock {
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
-  padding-top: 0.45rem !important;
-  padding-bottom: 0.45rem !important;
-}
-
-.preview-player.is-minimized .preview-body {
-  gap: 0;
-  padding-bottom: 0;
-  overflow: hidden;
-}
-
-.preview-player.is-minimized .preview-traffic {
-  align-self: center;
-  margin-top: 0;
-}
-
-.preview-player.is-minimized .preview-drag {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.preview-player.is-minimized .preview-seek,
-.preview-player.is-minimized .preview-actions,
-.preview-player.is-minimized .preview-rehearse,
-.preview-player.is-minimized .preview-resize,
-.preview-player.is-minimized .preview-resize-y,
-.preview-player.is-zoomed .preview-resize,
-.preview-player.is-zoomed .preview-resize-y,
-.preview-player.is-minimized .preview-art,
-.preview-player.is-minimized .preview-marks,
-.preview-player.is-minimized .mix-join {
-  display: none !important;
 }
 
 .replace-layer .replace-menu {
