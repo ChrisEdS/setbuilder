@@ -199,6 +199,8 @@ export function StickHealthCard({
   deferPrimaryAction = false,
   placement = "card",
   trailing,
+  /** Shown inside the same disclosure as the health facts (found path, intro). */
+  detailsExtra,
 }: {
   health: StickHealth;
   onRecheck?: () => void | Promise<void>;
@@ -217,6 +219,7 @@ export function StickHealthCard({
   /** `header` sits in the Rekordbox-stick bar: verdict in the middle, actions on the right. */
   placement?: "card" | "header";
   trailing?: ReactNode;
+  detailsExtra?: ReactNode;
 }) {
   const { t } = useI18n();
   const detailsId = useId();
@@ -442,6 +445,7 @@ export function StickHealthCard({
             ))}
           </dl>
           <p className="stick-strip-why">{t("library.stickHealth.why")}</p>
+          {detailsExtra ? <div className="stick-strip-extra">{detailsExtra}</div> : null}
           <div className="stick-strip-more">
             {onRecheck ? (
               <Tip

@@ -125,7 +125,7 @@ test("reorderDraft keeps pinned opener and closer at the ends", () => {
   assert.equal(performance[performance.length - 1].id, "first");
 });
 
-test("reorderDraft moves a mid pin and keeps opener and closer at the ends", () => {
+test("reorderDraft keeps a mid pin in its slot and the opener and closer at the ends", () => {
   const draft = {
     ...DEFAULT_SET,
     openerId: "a",
@@ -140,7 +140,7 @@ test("reorderDraft moves a mid pin and keeps opener and closer at the ends", () 
   };
   const next = reorderDraft(draft, "energy");
   const performance = next.tracks.filter((item) => item.role !== "safety").map((item) => item.id);
-  assert.deepEqual(performance, ["a", "c", "b", "d"]);
+  assert.deepEqual(performance, ["a", "b", "c", "d"]);
   assert.deepEqual(next.pinnedIds, ["b"]);
   assert.equal(next.openerId, "a");
   assert.equal(next.closerId, "d");

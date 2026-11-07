@@ -268,7 +268,7 @@ test("switching sort techniques can change order; repeating one does not", () =>
   );
 });
 
-test("reorderDraft promotes a non-excluded alternative, keeps ends, and moves a mid pin", () => {
+test("reorderDraft promotes a non-excluded alternative, keeps ends, and holds a mid pin", () => {
   const row = (
     id: string,
     energyLevel: number,
@@ -311,8 +311,8 @@ test("reorderDraft promotes a non-excluded alternative, keeps ends, and moves a 
   };
   const next = reorderDraft(draft, "energy");
   const performance = next.tracks.filter((item) => item.role !== "safety").map((item) => item.id);
-  // Energy would put a late and d first; the ends stay, the pin walks toward the closer.
-  assert.deepEqual(performance, ["a", "c", "alt", "b", "d"]);
+  // Energy would walk b toward the closer; the pin keeps slot 1. Ends stay.
+  assert.deepEqual(performance, ["a", "b", "c", "alt", "d"]);
   assert.equal(next.tracks.find((item) => item.id === "alt")?.role, "groove");
   assert.equal(next.tracks.find((item) => item.id === "alt")?.phase, "peak");
   assert.equal(next.tracks.find((item) => item.id === "alt")?.why, "");

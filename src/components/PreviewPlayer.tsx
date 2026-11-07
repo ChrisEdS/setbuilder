@@ -16,6 +16,8 @@ import { playerEmbed, type PlayableTrack } from "@/lib/player";
 import { useI18n } from "@/lib/i18n/react";
 import { Tip } from "@/components/Hint";
 import { TrackArt } from "@/components/TrackArt";
+import { ActionIcon } from "@/components/ActionIcon";
+import { playerNeighbors } from "@/lib/player-queue";
 import {
   getStickFilesEpoch,
   isPlayableStickAudio,
@@ -83,6 +85,21 @@ type Rehearsal = {
   onNote: (id: string, value: string) => void;
 };
 
+export type PlayerTrackActions = {
+  trackIds: readonly string[];
+  pinnedIds?: readonly string[];
+  excludedIds?: readonly string[];
+  unsortedIds?: readonly string[];
+  openerId?: string | null;
+  closerId?: string | null;
+  onPin: (id: string) => void;
+  onExclude: (id: string) => void;
+  onUnsort: (id: string) => void;
+  onDelete: (id: string) => void;
+  onOpener: (id: string) => void;
+  onCloser: (id: string) => void;
+};
+
 type Props = {
   tracks: PlayTrack[];
   currentId: string | null;
@@ -90,9 +107,138 @@ type Props = {
   onClose: () => void;
   blendMs?: number;
   rehearsal?: Rehearsal | null;
+  actions?: PlayerTrackActions | null;
   /** Fired when stick-backed preview audio fails after it had a playable source. */
   onStickMediaLost?: () => void;
 };
+
+function listed(ids: readonly string[] | undefined, id: string): boolean {
+  return Boolean(ids?.includes(id));
+}
+
+function TrackMarks({
+  id,
+  actions,
+}: {
+  id: string;
+  actions: PlayerTrackActions;
+}) {
+  const { t } = useI18n();
+  const marks: { key: string; text: string; className?: string }[] = [];
+  if (actions.openerId === id) marks.push({ key: "opener", text: t("crates.player.markOpener") });
+  if (actions.closerId === id) marks.push({ key: "closer", text: t("crates.player.markCloser") });
+  if (listed(actions.pinnedIds, id)) marks.push({ key: "pin", text: t("crates.player.markPin") });
+  if (listed(actions.unsortedIds, id)) {
+    marks.push({ key: "unsort", text: t("crates.player.markUnsorted"), className: "is-free" });
+  }
+  if (listed(actions.excludedIds, id)) {
+    marks.push({ key: "out", text: t("crates.player.markExcluded"), className: "is-out" });
+  }
+  if (!marks.length) return null;
+  return (
+    <span className="preview-marks">
+      {marks.map((mark) => (
+        <span key={mark.key} className={mark.className}>
+          {mark.text}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+function TrackActions({
+  id,
+  name,
+  actions,
+}: {
+  id: string;
+  name: string;
+  actions: PlayerTrackActions;
+}) {
+  const { t } = useI18n();
+  if (!actions.trackIds.includes(id)) return null;
+  const pinned = listed(actions.pinnedIds, id);
+  const excluded = listed(actions.excludedIds, id);
+  const unsorted = listed(actions.unsortedIds, id);
+  const opener = actions.openerId === id;
+  const closer = actions.closerId === id;
+  const buttons = [
+    {
+      key: "exclude",
+      icon: "exclude" as const,
+      pressed: excluded,
+      label: excluded ? t("crates.player.include") : t("crates.player.exclude"),
+      tip: excluded ? t("crates.player.includeTip") : t("crates.player.excludeTip"),
+      onClick: () => actions.onExclude(id),
+    },
+    {
+      key: "pin",
+      icon: "pin" as const,
+      pressed: pinned,
+      label: pinned ? t("crates.player.unpin") : t("crates.player.pin"),
+      tip: pinned ? t("crates.player.unpinTip") : t("crates.player.pinTip"),
+      onClick: () => actions.onPin(id),
+    },
+    {
+      key: "unsort",
+      icon: "unsort" as const,
+      pressed: unsorted,
+      label: unsorted ? t("crates.player.unsortClear") : t("crates.player.unsort"),
+      tip: unsorted ? t("crates.player.unsortClearTip") : t("crates.player.unsortTip"),
+      onClick: () => actions.onUnsort(id),
+    },
+    {
+      key: "opener",
+      icon: "opener" as const,
+      pressed: opener,
+      label: opener ? t("crates.player.openerClear") : t("crates.player.opener"),
+      tip: opener ? t("crates.player.openerClearTip") : t("crates.player.openerTip"),
+      onClick: () => actions.onOpener(id),
+    },
+    {
+      key: "closer",
+      icon: "closer" as const,
+      pressed: closer,
+      label: closer ? t("crates.player.closerClear") : t("crates.player.closer"),
+      tip: closer ? t("crates.player.closerClearTip") : t("crates.player.closerTip"),
+      onClick: () => actions.onCloser(id),
+    },
+    {
+      key: "delete",
+      icon: "remove" as const,
+      pressed: false,
+      danger: true,
+      label: t("crates.player.delete"),
+      tip: t("crates.player.deleteTip"),
+      onClick: () => actions.onDelete(id),
+    },
+  ];
+  return (
+    <div
+      className="preview-actions"
+      role="group"
+      aria-label={t("crates.player.actions", { name })}
+      onPointerDown={(event) => event.stopPropagation()}
+    >
+      {buttons.map((button) => (
+        <Tip key={button.key} text={button.tip}>
+          <button
+            type="button"
+            className={button.danger ? "is-danger" : undefined}
+            aria-pressed={button.key === "delete" ? undefined : button.pressed}
+            aria-label={button.label}
+            onClick={(event) => {
+              event.stopPropagation();
+              button.onClick();
+            }}
+          >
+            <ActionIcon name={button.icon} />
+          </button>
+        </Tip>
+      ))}
+    </div>
+  );
+}
 
 type LocalIssue = "missing" | "unsupported" | "error" | null;
 
@@ -136,6 +282,7 @@ function PreviewDock({
   onClose,
   onStickMediaLost,
   rehearsal,
+  actions,
 }: {
   track: PlayTrack;
   tracks: PlayTrack[];
@@ -151,6 +298,7 @@ function PreviewDock({
   onClose: () => void;
   onStickMediaLost?: () => void;
   rehearsal?: Rehearsal | null;
+  actions?: PlayerTrackActions | null;
 }) {
   const { t } = useI18n();
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -303,13 +451,11 @@ function PreviewDock({
   const embed = playerEmbed(track);
   const hasStickLabel = Boolean(filePath) && (Boolean(src) || localIssue != null);
   const lane = performanceTracks(tracks as SetTrack[]);
-  const sequence = lane.some((item) => item.id === track.id) ? lane : tracks;
-  const seqIndex = sequence.findIndex((item) => item.id === track.id);
-  const prev = seqIndex > 0 ? sequence[seqIndex - 1] : null;
-  const next =
-    seqIndex >= 0 && seqIndex < sequence.length - 1
-      ? sequence[seqIndex + 1]
-      : null;
+  const neighbors = playerNeighbors(tracks, actions?.excludedIds, track.id);
+  const prev = neighbors.prev;
+  const next = neighbors.next;
+  const inPerformance = lane.some((item) => item.id === track.id);
+  const inSet = Boolean(actions?.trackIds.includes(track.id));
   const nextJoin = next
     ? mixJoin(
         { keyCamelot: track.keyCamelot || "", bpm: track.bpm || "" },
@@ -491,6 +637,7 @@ function PreviewDock({
                   {t("crates.player.then", { join: nextJoin.label })}
                 </em>
               ) : null}
+              {actions && inSet ? <TrackMarks id={track.id} actions={actions} /> : null}
             </div>
           </div>
           <div className="preview-transport">
@@ -534,6 +681,9 @@ function PreviewDock({
             </Tip>
           </div>
         </div>
+        {actions && inSet && !rehearsal ? (
+          <TrackActions id={track.id} name={track.name} actions={actions} />
+        ) : null}
 
         {src ? (
           <div className="preview-seek">
@@ -605,7 +755,7 @@ function PreviewDock({
             ) : null}
           </p>
         )}
-        {rehearsal && sequence === lane ? (
+        {rehearsal && (inPerformance || inSet) ? (
           <div className="preview-rehearse">
             <div className="preview-join">
               {(
@@ -619,21 +769,29 @@ function PreviewDock({
                   ? [item.keyCamelot, item.bpm].filter(Boolean).join(" · ")
                   : "";
                 return (
-                  <button
+                  <div
                     key={role}
-                    type="button"
                     className={role === "now" ? "preview-join-card is-now" : "preview-join-card"}
-                    disabled={!item || role === "now"}
                     aria-current={role === "now" ? "true" : undefined}
-                    onClick={() => item && role !== "now" && onChange(item.id)}
                   >
-                    <small>{label}</small>
-                    <strong>{item?.name || t("crates.player.rehearseEdge")}</strong>
-                    <em>{meta || t("crates.player.rehearseEdge")}</em>
-                    {role === "after" && nextJoin ? (
-                      <b className={`mix-join harm-${nextJoin.relation}`}>{nextJoin.label}</b>
+                    <button
+                      type="button"
+                      className="preview-join-main"
+                      disabled={!item || role === "now"}
+                      onClick={() => item && role !== "now" && onChange(item.id)}
+                    >
+                      <small>{label}</small>
+                      <strong>{item?.name || t("crates.player.rehearseEdge")}</strong>
+                      <em>{meta || t("crates.player.rehearseEdge")}</em>
+                      {role === "after" && nextJoin ? (
+                        <b className={`mix-join harm-${nextJoin.relation}`}>{nextJoin.label}</b>
+                      ) : null}
+                      {item && actions ? <TrackMarks id={item.id} actions={actions} /> : null}
+                    </button>
+                    {item && actions ? (
+                      <TrackActions id={item.id} name={item.name} actions={actions} />
                     ) : null}
-                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -718,6 +876,7 @@ export function PreviewPlayer({
   onClose,
   blendMs = BLEND_MS,
   rehearsal,
+  actions,
   onStickMediaLost,
 }: Props) {
   const isClient = useIsClient();
@@ -745,6 +904,7 @@ export function PreviewPlayer({
       onClose={onClose}
       onStickMediaLost={onStickMediaLost}
       rehearsal={rehearsal}
+      actions={actions}
     />,
     document.body,
   );

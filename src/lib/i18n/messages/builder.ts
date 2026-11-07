@@ -447,9 +447,9 @@ const de = {
     "Pin lösen — der Track bleibt im Set. Sortieren hält weiter den aktuellen letzten Track, bis du einen anderen pinnst oder nach hinten ziehst.",
   "builder.row.setPin": "Pin",
   "builder.row.setPinTitle":
-    "Im Set behalten. Beim Kürzen und bei Andere Songs bleibt der Track. Sortieren darf ihn frei verschieben.",
+    "An dieser Stelle halten, wenn der Rest sortiert wird. „Perfekt · nur Pins“ tauscht nur die Pins. Kürzen und Andere Songs lassen den Track im Set.",
   "builder.row.setPinFromAltTitle":
-    "Ins Set holen und pinnen. Bleibt beim Kürzen und bei Andere Songs. Sortieren darf ihn frei verschieben.",
+    "Ins Set holen und an dieser Stelle halten. Kürzen und Andere Songs lassen ihn im Set.",
   "builder.row.clearPin": "Pin lösen",
   "builder.row.clearPinTip":
     "Pin lösen. Der Track bleibt im Set, kann aber beim Kürzen zu den Alternativen wandern.",
@@ -479,7 +479,7 @@ const de = {
   "builder.status.pinnedFromAlt": "Pin: {name} ist wieder in der Performance.",
   "builder.row.pinBadge": "Pin",
   "builder.row.pinBadgeTip":
-    "Gepinnt. Bleibt im Set beim Kürzen und bei Andere Songs. Die Reihenfolge beim Sortieren ist frei.",
+    "Gepinnt. Bleibt an dieser Stelle, wenn der Rest sortiert wird. Kürzen und Andere Songs lassen ihn im Set.",
   "builder.row.openerBadge": "Opener",
   "builder.row.openerBadgeTip": "Gepinnter Opener — erster Performance-Track, auch nach Sortieren.",
   "builder.row.closerBadge": "Closer",
@@ -681,18 +681,23 @@ const de = {
     "Slot aufgefüllt, {before} auf {after}. {added} in die Performance geholt.",
   "builder.status.fitAdjusted":
     "Slot angepasst, {before} auf {after}. {moved} zu Alternativen, {added} dazu.",
-  "builder.trim.undoTitle": "Aus dem Slot genommen",
+  "builder.trim.undoTitle": "Passt nicht mehr in die neue Länge",
   "builder.trim.undoBody": "{name}",
-  "builder.trim.undoPlace": "Zurück auf Platz {position}",
-  "builder.trim.undoBodyMany": "{count} Tracks bei den Alternativen",
+  "builder.trim.undoPlace": "Käme zurück auf Platz {position}",
+  "builder.trim.undoBodyMany":
+    "{count} Tracks passen nicht mehr in die neue Länge. Sie liegen bei den Alternativen.",
+  "builder.trim.undoHint": "Zurückholen setzt sie wieder an den alten Platz.",
+  "builder.trim.undoShowRest": "Die anderen {count} anzeigen",
   "builder.trim.undoDetail": "{name} · Platz {position}",
-  "builder.trim.fillUndoTitle": "Ins Set geholt",
+  "builder.trim.fillUndoTitle": "Ins Set geholt, damit die neue Länge voll wird",
   "builder.trim.fillUndoBody": "{name}",
-  "builder.trim.fillUndoPlace": "Jetzt auf Platz {position}",
-  "builder.trim.fillUndoBodyMany": "{count} Tracks ins Set",
+  "builder.trim.fillUndoPlace": "Würde Platz {position} verlassen und zu den Alternativen zurück",
+  "builder.trim.fillUndoBodyMany":
+    "{count} Tracks wurden ins Set geholt, damit die neue Länge voll wird.",
+  "builder.trim.fillUndoHint": "Rückgängig legt sie wieder zu den Alternativen.",
   "builder.trim.undo": "Zurückholen",
   "builder.trim.fillUndo": "Rückgängig",
-  "builder.trim.dismiss": "Lassen",
+  "builder.trim.dismiss": "Schließen",
   "builder.trim.undoDone": "Wieder im Slot.",
   "builder.status.excluded": "Ausschluss: {name} → Alternativen (bleibt draußen).",
   "builder.status.excludeCleared": "Ausschluss gelöst: {name}.",
@@ -1212,9 +1217,9 @@ const en: Record<keyof typeof de, string> = {
     "Unpin — the track stays in the set. Sorting still keeps the current last track until you pin another or move one to the end.",
   "builder.row.setPin": "Pin",
   "builder.row.setPinTitle":
-    "Keep this track in the set. Trim and Different songs leave it in. Sorting may move it freely.",
+    "Hold this slot when the rest is sorted. “Perfect · pins only” swaps pins with each other. Trim and Different songs keep the track in the set.",
   "builder.row.setPinFromAltTitle":
-    "Bring it into the set and pin it. Stays through trim and Different songs. Sorting may move it freely.",
+    "Bring it into the set and hold this slot. Trim and Different songs keep it in the set.",
   "builder.row.clearPin": "Unpin",
   "builder.row.clearPinTip":
     "Unpin. The track stays in the set, and trim may move it to Alternatives.",
@@ -1244,7 +1249,7 @@ const en: Record<keyof typeof de, string> = {
   "builder.status.pinnedFromAlt": "Pin: {name} is back in the performance.",
   "builder.row.pinBadge": "Pin",
   "builder.row.pinBadgeTip":
-    "Pinned. Stays in the set through trim and Different songs. Sort order stays free.",
+    "Pinned. Stays in this slot when the rest is sorted. Trim and Different songs keep it in the set.",
   "builder.row.openerBadge": "Opener",
   "builder.row.openerBadgeTip": "Pinned opener — first performance track, even after sorting.",
   "builder.row.closerBadge": "Closer",
@@ -1442,18 +1447,23 @@ const en: Record<keyof typeof de, string> = {
     "Slot filled, {before} up to {after}. {added} brought into the performance.",
   "builder.status.fitAdjusted":
     "Slot adjusted, {before} to {after}. {moved} to Alternatives, {added} added.",
-  "builder.trim.undoTitle": "Taken out of the slot",
+  "builder.trim.undoTitle": "No longer fits the new length",
   "builder.trim.undoBody": "{name}",
-  "builder.trim.undoPlace": "Back at position {position}",
-  "builder.trim.undoBodyMany": "{count} tracks with the alternatives",
+  "builder.trim.undoPlace": "Would go back to position {position}",
+  "builder.trim.undoBodyMany":
+    "{count} tracks no longer fit the new length. They are with the alternatives.",
+  "builder.trim.undoHint": "Bring back puts them at their old place.",
+  "builder.trim.undoShowRest": "Show the other {count}",
   "builder.trim.undoDetail": "{name} · position {position}",
-  "builder.trim.fillUndoTitle": "Added to the set",
+  "builder.trim.fillUndoTitle": "Brought in to fill the new length",
   "builder.trim.fillUndoBody": "{name}",
-  "builder.trim.fillUndoPlace": "Now at position {position}",
-  "builder.trim.fillUndoBodyMany": "{count} tracks added to the set",
+  "builder.trim.fillUndoPlace": "Would leave position {position} and go back to the alternatives",
+  "builder.trim.fillUndoBodyMany":
+    "{count} tracks were brought into the set to fill the new length.",
+  "builder.trim.fillUndoHint": "Undo puts them back with the alternatives.",
   "builder.trim.undo": "Bring back",
   "builder.trim.fillUndo": "Undo",
-  "builder.trim.dismiss": "Leave them",
+  "builder.trim.dismiss": "Dismiss",
   "builder.trim.undoDone": "Back in the slot.",
   "builder.status.excluded": "Excluded: {name} → Alternatives (stays out).",
   "builder.status.excludeCleared": "Exclude cleared: {name}.",

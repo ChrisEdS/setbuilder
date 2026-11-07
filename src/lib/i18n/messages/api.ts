@@ -66,6 +66,9 @@ const de = {
   "api.repair.notPioneer": "Unter diesem Namen liegt kein rekordbox-Stick.",
   "api.repair.unsupported": "Stick-Reparatur kann SETBUILDER nur auf dem Mac.",
   "api.repair.failed": "Die Stick-Reparatur ist fehlgeschlagen. In der Festplattendienstprogramm → Erste Hilfe versuchen.",
+  "api.volume.badPath": "Der Pfad liegt nicht auf diesem Stick.",
+  "api.volume.notFound": "Diese Datei liegt nicht auf dem Stick.",
+  "api.volume.failed": "Der Stick konnte nicht gelesen oder geschrieben werden.",
 } as const;
 
 const en: Record<keyof typeof de, string> = {
@@ -129,6 +132,9 @@ const en: Record<keyof typeof de, string> = {
   "api.repair.unsupported": "SETBUILDER can only repair sticks on a Mac.",
   "api.repair.failed":
     "Stick repair failed. Try Disk Utility → First Aid on the volume.",
+  "api.volume.badPath": "That path is not on this stick.",
+  "api.volume.notFound": "That file is not on the stick.",
+  "api.volume.failed": "The stick could not be read or written.",
 };
 
 export const api = { de, en };

@@ -6,8 +6,10 @@ import {
   type HarmonicRelation,
 } from "@/lib/harmonic";
 import {
+  holdPinnedIndexes,
   orderPhase,
   orderPinnedSlotsOnly,
+  releaseUnsortedIndexes,
   type SetSortTechnique,
 } from "@/lib/sort-set";
 import { PHASE_ENERGY, energyFitsPhase, energyStep, hasKnownEnergy } from "@/lib/energy";
@@ -803,11 +805,13 @@ export function alternativesPulledIntoPerformance(before: SetDraft, after: SetDr
 
 /**
  * Reorder the performance and every non-excluded Alternative.
- * Opener and closer stay at the ends; mid-pins move with the cast.
+ * Opener and closer stay at the ends. Mid-pins keep their slots.
+ * Unsorted tracks are free to leave their old index.
  * Excluded tracks stay Alternatives. Does not trim to the slot.
  *
  * `perfectPins` is different: only mid-pins swap among their current slots;
  * non-pins stay between those slots, Alternatives stay parked, phases stay.
+ * Unsorted tracks may still leave their slot in that mode.
  */
 export function reorderDraft(draft: SetDraft, technique: SetSortTechnique): SetDraft {
   if (technique === "perfectPins") {
@@ -822,11 +826,22 @@ export function reorderDraft(draft: SetDraft, technique: SetSortTechnique): SetD
   const stayingOut = draft.tracks.filter(
     (track) => track.role === "safety" && excluded.has(track.id),
   );
-  // Pins win; otherwise keep the current first/last performance song at the ends.
-  // Measured before Alternatives join, so a parked track cannot become the closer.
-  const startId = draft.openerId?.trim() || performance[0]?.id || null;
+  const unsorted = new Set(
+    (draft.unsortedIds ?? []).map((id) => id.trim()).filter(Boolean),
+  );
+  // Explicit opener/closer win. Otherwise keep the current first/last song,
+  // unless that song was marked to be resorted — then the next track that
+  // still has a slot holds the end. Measured before Alternatives join.
+  const explicitOpener = draft.openerId?.trim() || null;
+  const explicitCloser = draft.closerId?.trim() || null;
+  const startId =
+    explicitOpener ||
+    performance.find((track) => !unsorted.has(track.id))?.id ||
+    performance[0]?.id ||
+    null;
   const endId =
-    draft.closerId?.trim() ||
+    explicitCloser ||
+    [...performance].reverse().find((track) => !unsorted.has(track.id))?.id ||
     performance[performance.length - 1]?.id ||
     null;
 
@@ -845,7 +860,19 @@ export function reorderDraft(draft: SetDraft, technique: SetSortTechnique): SetD
       ? phased
       : lockPerformanceEnds(phased, startId, endId);
 
-  const withRelations = locked.map((track, index, arr) => {
+  const pinHold = (withoutEndPins(draft.pinnedIds, startId, endId) ?? []).filter(
+    (id) => !unsorted.has(id),
+  );
+  const held = holdPinnedIndexes(performance, locked, pinHold);
+  const released = releaseUnsortedIndexes(
+    performance,
+    held,
+    unsorted,
+    new Set([startId, endId, ...pinHold].filter((id): id is string => Boolean(id))),
+  );
+  const settled = lockPerformanceEnds(released, startId, endId);
+
+  const withRelations = settled.map((track, index, arr) => {
     const prev = index > 0 ? arr[index - 1] : null;
     const relation = prev
       ? harmonicRelation(prev.keyCamelot, track.keyCamelot)
@@ -866,18 +893,30 @@ export function reorderDraft(draft: SetDraft, technique: SetSortTechnique): SetD
  * are not pulled in.
  */
 function reorderPinnedDraft(draft: SetDraft): SetDraft {
-  const pinnedIds = withoutEndPins(
-    draft.pinnedIds,
-    draft.openerId,
-    draft.closerId,
+  const pinnedIds =
+    withoutEndPins(draft.pinnedIds, draft.openerId, draft.closerId) ?? [];
+  const unsorted = new Set(
+    (draft.unsortedIds ?? []).map((id) => id.trim()).filter(Boolean),
   );
-  if (!pinnedIds?.length) return draft;
+  if (!pinnedIds.length && !unsorted.size) return draft;
 
   const performance = draft.tracks.filter((track) => track.role !== "safety");
   const safeties = draft.tracks.filter((track) => track.role === "safety");
-  const reordered = orderPinnedSlotsOnly(performance, pinnedIds);
+  const reordered = pinnedIds.length
+    ? orderPinnedSlotsOnly(performance, pinnedIds)
+    : performance;
+  const released = releaseUnsortedIndexes(
+    performance,
+    reordered,
+    unsorted,
+    new Set(
+      [draft.openerId, draft.closerId, ...pinnedIds].filter(
+        (id): id is string => Boolean(id?.trim()),
+      ),
+    ),
+  );
 
-  const withRelations = reordered.map((track, index, arr) => {
+  const withRelations = released.map((track, index, arr) => {
     const prev = index > 0 ? arr[index - 1] : null;
     const relation = prev
       ? harmonicRelation(prev.keyCamelot, track.keyCamelot)

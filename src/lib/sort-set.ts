@@ -73,6 +73,73 @@ export function orderPinnedSlotsOnly<T extends Sortable & { id: string }>(
   return next;
 }
 
+/**
+ * Put pinned tracks back on the indexes they had in `before`.
+ * Everyone else keeps the order `sorted` gave them, filling the free slots.
+ * A pin that is new to the lineup (not in `before`) is left in that sorted order.
+ */
+export function holdPinnedIndexes<T extends { id: string }>(
+  before: readonly T[],
+  sorted: readonly T[],
+  pinnedIds: Iterable<string>,
+): T[] {
+  const pins = new Set([...pinnedIds].map((id) => id.trim()).filter(Boolean));
+  if (!pins.size || sorted.length === 0) return [...sorted];
+  const beforeIndex = new Map(before.map((track, index) => [track.id, index]));
+  const byId = new Map(sorted.map((track) => [track.id, track]));
+  const placed = new Map<number, T>();
+  const placedIds = new Set<string>();
+  for (const id of pins) {
+    const slot = beforeIndex.get(id);
+    const track = byId.get(id);
+    if (slot == null || !track || slot >= sorted.length || placed.has(slot)) continue;
+    placed.set(slot, track);
+    placedIds.add(id);
+  }
+  if (!placed.size) return [...sorted];
+  const floating = sorted.filter((track) => !placedIds.has(track.id));
+  let cursor = 0;
+  return sorted.map((_, index) => {
+    const held = placed.get(index);
+    if (held) return held;
+    const next = floating[cursor];
+    cursor += 1;
+    return next;
+  });
+}
+
+/**
+ * If a sort left an unsorted track on its old index, swap it with another
+ * track that is allowed to move. Opener, closer and pins stay put.
+ * A track the sort already moved is left where the sort put it.
+ */
+export function releaseUnsortedIndexes<T extends { id: string }>(
+  before: readonly T[],
+  sorted: readonly T[],
+  unsortedIds: Iterable<string>,
+  lockedIds: Iterable<string>,
+): T[] {
+  const unsorted = new Set([...unsortedIds].map((id) => id.trim()).filter(Boolean));
+  const locked = new Set([...lockedIds].map((id) => id.trim()).filter(Boolean));
+  if (!unsorted.size) return [...sorted];
+  const next = [...sorted];
+  const beforeIndex = new Map(before.map((track, index) => [track.id, index]));
+  for (const id of unsorted) {
+    if (locked.has(id)) continue;
+    const was = beforeIndex.get(id);
+    const now = next.findIndex((track) => track.id === id);
+    if (was == null || now < 0 || now !== was) continue;
+    const swapAt = next.findIndex(
+      (track, index) => index !== now && !locked.has(track.id),
+    );
+    if (swapAt < 0) continue;
+    const displaced = next[swapAt];
+    next[swapAt] = next[now];
+    next[now] = displaced;
+  }
+  return next;
+}
+
 export function orderPhase<T extends Sortable>(
   tracks: T[],
   phase: SetPhaseId,

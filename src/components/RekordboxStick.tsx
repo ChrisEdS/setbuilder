@@ -21,6 +21,7 @@ import {
   readStickFromHandle,
   requestStickEject,
   requestStickRepair,
+  rememberStickHandle,
   stickPermission,
   stickPicker,
 } from "@/lib/stick-session";
@@ -33,6 +34,14 @@ import {
   type DirLike,
   type StickPrepareReporter,
 } from "@/lib/rekordbox-stick-write";
+import {
+  clearSavedVolumeName,
+  localStickVolume,
+  readSavedVolumeName,
+  saveVolumeName,
+  type PioneerVolumeInfo,
+} from "@/lib/stick-volume-client";
+import { formatMacBytes, stickVolumeName } from "@/lib/stick-volumes";
 
 export type StickStatusSlice = {
   health: StickHealth;
@@ -215,10 +224,10 @@ export function RekordboxStick({
   chooseStick: chooseStickRef,
   reconnectStick: reconnectStickRef,
 }: Props) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [phase, setPhase] = useState<LoadPhase>("idle");
   const [label, setLabel] = useState<string | null>(null);
-  const [folded, setFolded] = useState(true);
+  const [volumes, setVolumes] = useState<PioneerVolumeInfo[] | null>(null);
   const [error, setError] = useState<StickError | null>(null);
   const [health, setHealth] = useState<StickHealth | null>(null);
   const [checkingHealth, setCheckingHealth] = useState(false);
@@ -229,6 +238,7 @@ export function RekordboxStick({
   /** True once this session actually held a stick — cold start must not say “Reconnect”. */
   const [hadStickThisSession, setHadStickThisSession] = useState(false);
   const dirInput = useRef<HTMLInputElement>(null);
+  const volumeListRef = useRef<HTMLUListElement>(null);
   const chooseImpl = useRef<() => void>(() => {});
   const softReconnectImpl = useRef<() => Promise<boolean>>(async () => false);
   const onSetsRef = useRef(onSets);
@@ -270,6 +280,15 @@ export function RekordboxStick({
 
   useEffect(() => {
     void (async () => {
+      const saved = readSavedVolumeName();
+      if (saved) {
+        try {
+          await applyHandle(localStickVolume(saved));
+          return;
+        } catch {
+          clearSavedVolumeName();
+        }
+      }
       const handle = await loadPersistedStickHandle();
       setRememberedStick(Boolean(handle));
       // Mount restore: no permission prompt (needs a gesture). Soft reconnect
@@ -284,8 +303,33 @@ export function RekordboxStick({
         setError(isPickerBlocked(caught) ? { kind: "blocked" } : { kind: "read", error: caught });
       }
     })();
-    // Once: remembered stick, no prompt.
+    // Once: remembered stick, no prompt. A second mounted stick must not take over.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    let stop = false;
+    async function poll() {
+      try {
+        const response = await fetch("/api/desktop/volumes");
+        if (stop) return;
+        if (response.status === 403) {
+          setVolumes(null);
+          return;
+        }
+        if (!response.ok) return;
+        const body = (await response.json()) as { volumes?: PioneerVolumeInfo[] };
+        if (!stop) setVolumes(Array.isArray(body.volumes) ? body.volumes : []);
+      } catch {
+        /* keep the last list; the folder picker stays the fallback */
+      }
+    }
+    void poll();
+    const timer = window.setInterval(() => void poll(), 12_000);
+    return () => {
+      stop = true;
+      window.clearInterval(timer);
+    };
   }, []);
 
   function beginLoad(): number {
@@ -402,13 +446,39 @@ export function RekordboxStick({
     }
   }
 
+  async function loadVolume(name: string) {
+    if (stickVolumeName(healthRoot?.name, label) === name && label && health) return;
+    const token = beginLoad();
+    setPhase("reading");
+    setError(null);
+    try {
+      const handle = localStickVolume(name);
+      await applyHandle(handle);
+      if (!stillCurrent(token)) return;
+      saveVolumeName(name);
+      try {
+        await rememberStickHandle(handle);
+      } catch {
+        /* session handle is enough; IndexedDB cannot store this proxy */
+      }
+    } catch (caught) {
+      if (!stillCurrent(token)) return;
+      publishSets([]);
+      setLabel(null);
+      setError(isPickerBlocked(caught) ? { kind: "blocked" } : { kind: "read", error: caught });
+    } finally {
+      if (stillCurrent(token)) setPhase("idle");
+    }
+  }
+
   async function chooseFolder() {
     setError(null);
-    // Soft path first: remembered handle + permission prompt, no OS picker.
-    if (await trySoftReconnect()) {
-      setFolded(false);
+    if ((volumes?.length ?? 0) > 1) {
+      volumeListRef.current?.querySelector("button")?.focus();
       return;
     }
+    // Soft path first: remembered handle + permission prompt, no OS picker.
+    if (await trySoftReconnect()) return;
     if (!stickPicker()) {
       dirInput.current?.click();
       return;
@@ -435,7 +505,6 @@ export function RekordboxStick({
   }
 
   chooseImpl.current = () => {
-    setFolded(false);
     void chooseFolder();
   };
 
@@ -520,6 +589,7 @@ export function RekordboxStick({
             const name = healthRoot.name;
             // Full release before diskutil — keeps macOS from “Disk Not Ejected Properly”.
             requestPreviewPause();
+            clearSavedVolumeName();
             setHealthRoot(null);
             setHealth(null);
             refreshRememberedFlag();
@@ -531,19 +601,9 @@ export function RekordboxStick({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- handlers recreated; slice is for display only
   }, [health, checkingHealth, healthRoot, onStickStatus]);
 
-  const loaded = Boolean(label);
-  const showBody = !loaded || !folded;
+  const showBody = !health;
   const offerReconnect = rememberedStick && !healthRoot && hadStickThisSession;
-  const foldButton = loaded ? (
-    <button
-      type="button"
-      className="btn ghost stick-fold"
-      aria-expanded={showBody}
-      onClick={() => setFolded((value) => !value)}
-    >
-      {t(showBody ? "library.stick.fold" : "library.stick.unfold")}
-    </button>
-  ) : null;
+  const stickName = stickVolumeName(healthRoot?.name, label);
   // When health already sits in the header, keep pick/fold quiet (ghost) so
   // Prepare / Eject stays the only solid CTA.
   const choosePrimary = !health;
@@ -611,19 +671,73 @@ export function RekordboxStick({
               {t("library.stick.cancel")}
             </button>
           ) : null}
-          {foldButton}
         </>
       )}
     </>
   );
 
+  const foundPath = (
+    <>
+      <p className="library-path stick-import-lede">{t("library.stick.intro")}</p>
+      <p className="library-path">
+        {label
+          ? rich(t("library.stick.found"), { label: <strong>{label}</strong> })
+          : rich(t("library.stick.path"), {
+              pioneer: <code>PIONEER</code>,
+              dotPioneer: <code>.PIONEER</code>,
+            })}
+      </p>
+    </>
+  );
+  const volumeChooser =
+    volumes && volumes.length > 1 ? (
+      <ul
+        className="stick-volume-list"
+        ref={volumeListRef}
+        aria-label={t("library.stick.volumesAria")}
+      >
+        {volumes.map((volume) => {
+          const current = stickName === volume.name && Boolean(label);
+          const meta = [
+            volume.freeBytes != null
+              ? t("library.stick.volumeFree", { free: formatMacBytes(volume.freeBytes, locale) })
+              : null,
+            t("library.stick.volumePdb", { size: formatMacBytes(volume.pdbBytes, locale) }),
+            volume.tracks != null && volume.playlists != null
+              ? t("library.stick.volumeCounts", {
+                  playlists: volume.playlists,
+                  tracks: volume.tracks,
+                })
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" · ");
+          return (
+            <li key={volume.name}>
+              <button
+                type="button"
+                className={"stick-volume-choice" + (current ? " is-current" : "")}
+                aria-current={current ? "true" : undefined}
+                aria-label={t("library.stick.volumeLoad", { name: volume.name })}
+                disabled={pending}
+                onClick={() => void loadVolume(volume.name)}
+              >
+                <span className="stick-volume-choice-name">{volume.name}</span>
+                {current ? (
+                  <span className="stick-volume-choice-flag">{t("library.stick.volumeCurrent")}</span>
+                ) : null}
+                <span className="stick-volume-choice-meta">{meta}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    ) : null;
+
   return (
     <div className="rekordbox-stick-nested builder-stack">
       <div
-        className={
-          "library-source-pane stick-import-pane builder-card" +
-          (loaded && folded ? " is-folded" : "")
-        }
+        className="library-source-pane stick-import-pane builder-card"
         role="tabpanel"
       >
         <div
@@ -634,7 +748,10 @@ export function RekordboxStick({
           }
         >
           <h3 className="library-browser-title">
-            <span className="library-browser-heading">{t("library.stick.title")}</span>
+            <span className="library-browser-heading">
+              {t("library.stick.title")}
+              {stickName ? <span className="stick-volume-name">{stickName}</span> : null}
+            </span>
           </h3>
           {live ? (
             <p className="stick-head-live" role="status">
@@ -690,6 +807,7 @@ export function RekordboxStick({
                   ? async () => {
                       const name = healthRoot.name;
                       requestPreviewPause();
+                      clearSavedVolumeName();
                       setHealthRoot(null);
                       setHealth(null);
                       refreshRememberedFlag();
@@ -698,25 +816,21 @@ export function RekordboxStick({
                     }
                   : undefined
               }
+              detailsExtra={foundPath}
               trailing={chooseActions}
             />
           ) : (
             <div className="stick-actions">{chooseActions}</div>
           )}
+          {volumeChooser}
         </div>
-        {showBody ? (
+        {notice && !live ? (
           <div className="library-source-pane-body stick-import-body">
-            <p className="library-path stick-import-lede">{t("library.stick.intro")}</p>
-            <p className="library-path">
-              {label
-                ? rich(t("library.stick.found"), { label: <strong>{label}</strong> })
-                : rich(t("library.stick.path"), {
-                    pioneer: <code>PIONEER</code>,
-                    dotPioneer: <code>.PIONEER</code>,
-                  })}
-            </p>
-            <FieldNoticeView notice={live ? null : notice} />
+            <FieldNoticeView notice={notice} />
           </div>
+        ) : null}
+        {showBody ? (
+          <div className="library-source-pane-body stick-import-body">{foundPath}</div>
         ) : null}
       </div>
     </div>

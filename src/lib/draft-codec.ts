@@ -1,6 +1,7 @@
 import { isGeneratedNote } from "@/lib/i18n";
 import {
   normalizeExcludedIds,
+  normalizeUnsortedIds,
   withoutEndPins,
   withoutKeepPins,
 } from "@/lib/set-anchors";
@@ -96,6 +97,18 @@ function storedExcluded(
       value.filter((item): item is string => typeof item === "string"),
     ),
     draft,
+  );
+}
+
+function storedUnsorted(
+  value: unknown,
+  drop: Set<string>,
+): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  return normalizeUnsortedIds(
+    value
+      .filter((item): item is string => typeof item === "string")
+      .filter((item) => !drop.has(item.trim())),
   );
 }
 
@@ -251,6 +264,13 @@ export function normalizeStoredDraft(value: unknown): SetDraft | null {
   const openerId = storedId(raw.openerId);
   const closerId = storedId(raw.closerId);
   const pinnedIds = storedPins(raw.pinnedIds, openerId, closerId);
+  const excludedIds = storedExcluded(raw.excludedIds, { openerId, closerId, pinnedIds });
+  const taken = new Set<string>([
+    ...(openerId ? [openerId] : []),
+    ...(closerId ? [closerId] : []),
+    ...(pinnedIds ?? []),
+    ...(excludedIds ?? []),
+  ]);
   const draft: SetDraft = {
     ...DEFAULT_SET,
     ...raw,
@@ -269,7 +289,8 @@ export function normalizeStoredDraft(value: unknown): SetDraft | null {
     openerId,
     closerId,
     pinnedIds,
-    excludedIds: storedExcluded(raw.excludedIds, { openerId, closerId, pinnedIds }),
+    excludedIds,
+    unsortedIds: storedUnsorted(raw.unsortedIds, taken),
     durationMinutes: finite(raw.durationMinutes, DEFAULT_SET.durationMinutes),
     blendMs: blendMsOf(raw.blendMs),
     tracks,

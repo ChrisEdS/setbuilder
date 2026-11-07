@@ -42,6 +42,7 @@ import {
 import { AppUpdateCard } from "@/components/AppUpdateCard";
 import { OverlapField } from "@/components/OverlapField";
 import { PreviewPlayer } from "@/components/PreviewPlayer";
+import { playerNeighbors } from "@/lib/player-queue";
 import {
   getPreviewTransportSnapshot,
   requestPreviewPause,
@@ -153,12 +154,16 @@ import {
   applySetAnchors,
   clearCloser,
   clearOpener,
+  deleteTrackFromSet,
   pinCloser,
   pinOpener,
   normalizeExcludedIds,
+  normalizeUnsortedIds,
   placeInPerformance,
+  restoreExcludedTrack,
   toggleExclude,
   toggleKeepPin,
+  toggleUnsort,
   withoutEndPins,
 } from "@/lib/set-anchors";
 import { energyStatusLine, hasKnownEnergy } from "@/lib/energy";
@@ -1809,14 +1814,15 @@ export function SetBuilder() {
 
   function removeTrack(id: string) {
     setFocusTrackId((current) => (current === id ? null : current));
-    setDraft((current) => ({
-      ...current,
-      openerId: current.openerId === id ? null : current.openerId,
-      closerId: current.closerId === id ? null : current.closerId,
-      pinnedIds: withoutEndPins(current.pinnedIds?.filter((item) => item !== id), null, null),
-      excludedIds: normalizeExcludedIds(current.excludedIds?.filter((item) => item !== id)),
-      tracks: current.tracks.filter((track) => track.id !== id),
-    }));
+    setDraft((current) => deleteTrackFromSet(current, id));
+  }
+
+  function deleteFromPlayer(id: string) {
+    if (focusTrackId === id) {
+      const { next, prev } = playerNeighbors(draft.tracks, draft.excludedIds, id);
+      setFocusTrackId(next?.id ?? prev?.id ?? null);
+    }
+    removeTrack(id);
   }
 
   /** Put an Alternative into the performance before or after a playlist track. */
@@ -4284,75 +4290,72 @@ export function SetBuilder() {
           ) : null}
 
           {trimUndoLive.length > 0 || fillUndoLive.length > 0 ? (
-            <div className="set-undo stick-reload" role="status">
-              <div className="stick-reload-copy">
-                {(() => {
-                  const items = trimUndoLive.length ? trimUndoLive : fillUndoLive;
-                  const isFill = !trimUndoLive.length;
-                  const trackName = (id: string) =>
-                    draft.tracks.find((track) => track.id === id)?.name ?? id;
-                  const placeOf = (item: (typeof items)[number]) => {
-                    if (typeof item.place === "number" && item.place >= 0) return item.place + 1;
-                    if (!isFill) return item.index + 1;
-                    const idx = draft.tracks
-                      .filter((track) => track.role !== "safety")
-                      .findIndex((track) => track.id === item.id);
-                    return idx >= 0 ? idx + 1 : 0;
-                  };
-                  if (items.length === 1) {
-                    const item = items[0];
-                    return (
-                      <>
-                        <strong className="set-undo-title">
-                          {t(isFill ? "builder.trim.fillUndoTitle" : "builder.trim.undoTitle")}
-                        </strong>
-                        <p className="set-undo-line">
-                          <span className="set-undo-track">{trackName(item.id)}</span>
-                          <span className="set-undo-place">
-                            {t(isFill ? "builder.trim.fillUndoPlace" : "builder.trim.undoPlace", {
-                              position: placeOf(item),
-                            })}
-                          </span>
-                        </p>
-                      </>
-                    );
-                  }
-                  return (
-                    <>
+            <div className="set-undo stick-reload set-undo-compact" role="status">
+              {(() => {
+                const items = trimUndoLive.length ? trimUndoLive : fillUndoLive;
+                const isFill = !trimUndoLive.length;
+                const sample = items.slice(0, 3);
+                const rest = items.slice(3);
+                const trackName = (id: string) =>
+                  draft.tracks.find((track) => track.id === id)?.name ?? id;
+                const placeOf = (item: (typeof items)[number]) => {
+                  if (typeof item.place === "number" && item.place >= 0) return item.place + 1;
+                  if (!isFill) return item.index + 1;
+                  const idx = draft.tracks
+                    .filter((track) => track.role !== "safety")
+                    .findIndex((track) => track.id === item.id);
+                  return idx >= 0 ? idx + 1 : 0;
+                };
+                const row = (item: (typeof items)[number]) => (
+                  <li key={item.id}>
+                    <span className="set-undo-track">{trackName(item.id)}</span>
+                    <span className="set-undo-place">
+                      {t(isFill ? "builder.trim.fillUndoPlace" : "builder.trim.undoPlace", {
+                        position: placeOf(item),
+                      })}
+                    </span>
+                  </li>
+                );
+                return (
+                  <>
+                    <div className="set-undo-head">
                       <strong className="set-undo-title">
-                        {t(isFill ? "builder.trim.fillUndoBodyMany" : "builder.trim.undoBodyMany", {
-                          count: items.length,
-                        })}
+                        {items.length === 1
+                          ? t(isFill ? "builder.trim.fillUndoTitle" : "builder.trim.undoTitle")
+                          : t(isFill ? "builder.trim.fillUndoBodyMany" : "builder.trim.undoBodyMany", {
+                              count: items.length,
+                            })}
                       </strong>
-                      <ul className="set-undo-list">
-                        {items.map((item) => (
-                          <li key={item.id}>
-                            <span className="set-undo-track">{trackName(item.id)}</span>
-                            <span className="set-undo-place">
-                              {t(
-                                isFill ? "builder.trim.fillUndoPlace" : "builder.trim.undoPlace",
-                                { position: placeOf(item) },
-                              )}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  );
-                })()}
-              </div>
-              <div className="stick-reload-actions">
-                <button type="button" className="btn" onClick={undoTrim}>
-                  {t(trimUndoLive.length ? "builder.trim.undo" : "builder.trim.fillUndo")}
-                </button>
-                <button
-                  type="button"
-                  className="btn ghost"
-                  onClick={() => setTrimUndo(null)}
-                >
-                  {t("builder.trim.dismiss")}
-                </button>
-              </div>
+                      <div className="stick-reload-actions">
+                        <button type="button" className="btn" onClick={undoTrim}>
+                          {t(trimUndoLive.length ? "builder.trim.undo" : "builder.trim.fillUndo")}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn ghost"
+                          onClick={() => setTrimUndo(null)}
+                        >
+                          {t("builder.trim.dismiss")}
+                        </button>
+                      </div>
+                    </div>
+                    <p className="set-undo-meta">
+                      {t(isFill ? "builder.trim.fillUndoHint" : "builder.trim.undoHint")}
+                    </p>
+                    <ul className="set-undo-list">
+                      {sample.map(row)}
+                    </ul>
+                    {rest.length ? (
+                      <details className="set-undo-more">
+                        <summary>
+                          {t("builder.trim.undoShowRest", { count: rest.length })}
+                        </summary>
+                        <ul className="set-undo-list">{rest.map(row)}</ul>
+                      </details>
+                    ) : null}
+                  </>
+                );
+              })()}
             </div>
           ) : null}
 
@@ -5568,6 +5571,53 @@ export function SetBuilder() {
               }
             : null
         }
+        actions={{
+          trackIds: draft.tracks.map((item) => item.id),
+          pinnedIds: draft.pinnedIds,
+          excludedIds: draft.excludedIds,
+          unsortedIds: draft.unsortedIds,
+          openerId: draft.openerId,
+          closerId: draft.closerId,
+          onExclude: (id) =>
+            setDraft((current) =>
+              current.excludedIds?.includes(id)
+                ? restoreExcludedTrack(current, id)
+                : toggleExclude(current, id, t("analysis.why.excluded")),
+            ),
+          onPin: (id) => setDraft((current) => toggleKeepPin(current, id)),
+          onUnsort: (id) => setDraft((current) => toggleUnsort(current, id)),
+          onDelete: deleteFromPlayer,
+          onOpener: (id) =>
+            setDraft((current) => {
+              if (current.openerId === id) return clearOpener(current);
+              const track = current.tracks.find((item) => item.id === id);
+              const ready = track?.role === "safety" ? placeInPerformance(current, id) : current;
+              return pinOpener(
+                {
+                  ...ready,
+                  unsortedIds: normalizeUnsortedIds(
+                    ready.unsortedIds?.filter((item) => item !== id),
+                  ),
+                },
+                id,
+              );
+            }),
+          onCloser: (id) =>
+            setDraft((current) => {
+              if (current.closerId === id) return clearCloser(current);
+              const track = current.tracks.find((item) => item.id === id);
+              const ready = track?.role === "safety" ? placeInPerformance(current, id) : current;
+              return pinCloser(
+                {
+                  ...ready,
+                  unsortedIds: normalizeUnsortedIds(
+                    ready.unsortedIds?.filter((item) => item !== id),
+                  ),
+                },
+                id,
+              );
+            }),
+        }}
       />
     </div>
   );

@@ -158,6 +158,38 @@ const de = {
   "crates.player.transition": "Übergang",
   "crates.player.note": "Set/Mix-Notiz",
   "crates.player.notePlaceholder": "Cue, Floor, wie du rübergehst…",
+  "crates.player.actions": "Aktionen für {name}",
+  "crates.player.exclude": "Aus der Playlist ausschließen",
+  "crates.player.excludeTip":
+    "Nicht mehr vorschlagen oder als Nächstes einreihen. Der Track bleibt im Set und kann wieder rein.",
+  "crates.player.include": "Wieder in die Playlist",
+  "crates.player.includeTip": "Ausschluss lösen. Der Track darf wieder in der Playlist stehen.",
+  "crates.player.pin": "An dieser Stelle halten",
+  "crates.player.pinTip":
+    "Bleibt an dieser Stelle, wenn der Rest sortiert wird. Kürzen nimmt ihn nicht raus.",
+  "crates.player.unpin": "Stelle freigeben",
+  "crates.player.unpinTip": "Pin lösen. Sortieren darf den Track wieder verschieben.",
+  "crates.player.unsort": "Im Set behalten, neu sortieren",
+  "crates.player.unsortTip":
+    "Bleibt im Set, aber nicht an dieser Stelle. Der nächste Sortiervorgang sucht einen anderen Platz.",
+  "crates.player.unsortClear": "Diesen Platz behalten",
+  "crates.player.unsortClearTip": "Nicht mehr neu sortieren. Der Track bleibt, wo er jetzt steht.",
+  "crates.player.delete": "Aus dem Set löschen",
+  "crates.player.deleteTip":
+    "Nimmt den Track ganz aus dem Set. Das ist kein Ausschluss und kein Umsortieren.",
+  "crates.player.opener": "Als ersten Track",
+  "crates.player.openerTip": "Wird Track 1. Der bisherige erste Track verliert die Rolle.",
+  "crates.player.openerClear": "Ersten Track lösen",
+  "crates.player.openerClearTip": "Nicht mehr der erste Track. Sortieren darf ihn wie die anderen behandeln.",
+  "crates.player.closer": "Als letzten Track",
+  "crates.player.closerTip": "Wird der letzte Track. Der bisherige letzte verliert die Rolle.",
+  "crates.player.closerClear": "Letzten Track lösen",
+  "crates.player.closerClearTip": "Nicht mehr der letzte Track. Sortieren darf ihn wie die anderen behandeln.",
+  "crates.player.markPin": "Hält die Stelle",
+  "crates.player.markExcluded": "Ausgeschlossen",
+  "crates.player.markUnsorted": "Neu sortieren",
+  "crates.player.markOpener": "Erster",
+  "crates.player.markCloser": "Letzter",
 } as const;
 
 const en: Record<keyof typeof de, string> = {
@@ -311,6 +343,38 @@ const en: Record<keyof typeof de, string> = {
   "crates.player.transition": "Transition",
   "crates.player.note": "Set/Mix note",
   "crates.player.notePlaceholder": "Cue, floor, how you go across…",
+  "crates.player.actions": "Actions for {name}",
+  "crates.player.exclude": "Exclude from playlist",
+  "crates.player.excludeTip":
+    "Do not suggest or queue this track again. It stays in the set and can come back.",
+  "crates.player.include": "Back in the playlist",
+  "crates.player.includeTip": "Lift the exclude. The track may stand in the playlist again.",
+  "crates.player.pin": "Keep this slot",
+  "crates.player.pinTip":
+    "Stays in this slot when the rest is sorted. Trim does not drop it.",
+  "crates.player.unpin": "Release this slot",
+  "crates.player.unpinTip": "Unpin. Sorting may move the track again.",
+  "crates.player.unsort": "Keep in set, resort",
+  "crates.player.unsortTip":
+    "Stays in the set, but not in this slot. The next sort may place it somewhere else.",
+  "crates.player.unsortClear": "Keep this position",
+  "crates.player.unsortClearTip": "Stop resorting. The track stays where it is now.",
+  "crates.player.delete": "Delete from set",
+  "crates.player.deleteTip":
+    "Removes the track from the set entirely. This is not exclude and not a resort.",
+  "crates.player.opener": "Set as first track",
+  "crates.player.openerTip": "Becomes track 1. The previous first track loses that role.",
+  "crates.player.openerClear": "Clear first track",
+  "crates.player.openerClearTip": "No longer the first track. Sorting may treat it like the others.",
+  "crates.player.closer": "Set as last track",
+  "crates.player.closerTip": "Becomes the last track. The previous last track loses that role.",
+  "crates.player.closerClear": "Clear last track",
+  "crates.player.closerClearTip": "No longer the last track. Sorting may treat it like the others.",
+  "crates.player.markPin": "Slot held",
+  "crates.player.markExcluded": "Excluded",
+  "crates.player.markUnsorted": "Resort",
+  "crates.player.markOpener": "First",
+  "crates.player.markCloser": "Last",
 };
 
 export const crates = { de, en };

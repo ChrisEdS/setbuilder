@@ -9059,6 +9059,86 @@ details:not([open]) > .menu-panel {
   margin-left: 0;
 }
 
+.stick-strip-extra {
+  margin-top: 0.75rem;
+}
+
+.stick-strip-extra .library-path {
+  margin: 0.2rem 0 0;
+}
+
+.library-browser-heading .stick-volume-name {
+  display: inline-block;
+  margin-left: 0.55rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 0.92em;
+  font-weight: 750;
+  letter-spacing: 0;
+  vertical-align: 0.05em;
+}
+
+.stick-volume-list {
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0.15rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.library-panel .stick-import-head.has-status > .stick-volume-list {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+
+.library-panel .stick-import-head.has-status:has(.stick-volume-list) .stick-head-more {
+  grid-row: 3;
+}
+
+.stick-volume-choice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.55rem;
+  max-width: 100%;
+  margin: 0;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: transparent;
+  color: #f4f4f4;
+  text-align: left;
+  cursor: pointer;
+}
+
+.stick-volume-choice.is-current {
+  border-color: var(--ok, #22c55e);
+}
+
+.stick-volume-choice:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.stick-volume-choice-name {
+  font-weight: 700;
+}
+
+.stick-volume-choice-flag {
+  color: var(--ok, #22c55e);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.stick-volume-choice-meta {
+  color: #b3b3b3;
+  font-size: 0.78rem;
+}
+
 .set-shell .library-panel .stick-import-pane.is-folded .stick-import-head {
   padding-bottom: 0 !important;
   border-bottom: 0 !important;

@@ -11,6 +11,7 @@ type ActionIconName =
   | "opener"
   | "closer"
   | "pin"
+  | "unsort"
   | "exclude"
   | "rehearse"
   | "remove"
@@ -85,6 +86,15 @@ export function ActionIcon({ name }: { name: ActionIconName }) {
         <path d="M9 10.5 12 4l3 6.5" />
         <path d="M8 10.5h8" />
         <path d="M12 10.5V20" />
+      </>
+    ),
+    unsort: (
+      <>
+        <path d="M4.5 7h8" />
+        <path d="M4.5 12h5" />
+        <path d="M4.5 17h8" />
+        <path d="M16 6.5v7" />
+        <path d="m13.2 11.2 2.8 2.8 2.8-2.8" />
       </>
     ),
     exclude: (

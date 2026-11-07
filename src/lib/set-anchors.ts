@@ -166,8 +166,8 @@ export function withoutEndPins(
   return next.length ? next : undefined;
 }
 
-/** Drop blank ids and duplicates (exclude list — no end-pin filtering). */
-export function normalizeExcludedIds(ids: string[] | undefined): string[] | undefined {
+/** Drop blank ids and duplicates. Shared by exclude and unsort lists. */
+export function normalizeIdList(ids: string[] | undefined): string[] | undefined {
   const next: string[] = [];
   const seen = new Set<string>();
   for (const raw of ids ?? []) {
@@ -177,6 +177,16 @@ export function normalizeExcludedIds(ids: string[] | undefined): string[] | unde
     next.push(id);
   }
   return next.length ? next : undefined;
+}
+
+/** Drop blank ids and duplicates (exclude list — no end-pin filtering). */
+export function normalizeExcludedIds(ids: string[] | undefined): string[] | undefined {
+  return normalizeIdList(ids);
+}
+
+/** Same cleanup as exclude ids. A released slot, not a ban and not a pin. */
+export function normalizeUnsortedIds(ids: string[] | undefined): string[] | undefined {
+  return normalizeIdList(ids);
 }
 
 /** Drop ids that are opener, closer or mid-pinned (exclude ↔ pin mutual exclusion). */
@@ -288,6 +298,8 @@ export function placeInPerformance(
     pinnedIds,
     // Bringing a track into the set clears exclude on that id.
     excludedIds: normalizeExcludedIds(draft.excludedIds?.filter((item) => item !== id)),
+    // A chosen slot is no longer "resort this".
+    unsortedIds: normalizeUnsortedIds(draft.unsortedIds?.filter((item) => item !== id)),
     tracks: [...performance, ...safeties],
   });
 }
@@ -313,6 +325,7 @@ export function toggleKeepPin(draft: SetDraft, trackId: string): SetDraft {
     closerId,
     pinnedIds: withoutEndPins([...(draft.pinnedIds ?? []), id], openerId, closerId),
     excludedIds: normalizeExcludedIds(draft.excludedIds?.filter((item) => item !== id)),
+    unsortedIds: normalizeUnsortedIds(draft.unsortedIds?.filter((item) => item !== id)),
   };
 }
 
@@ -344,9 +357,10 @@ export function toggleExclude(
     closerId,
   );
   const excludedIds = normalizeExcludedIds([...(draft.excludedIds ?? []), id]);
+  const unsortedIds = normalizeUnsortedIds(draft.unsortedIds?.filter((item) => item !== id));
   const track = draft.tracks.find((item) => item.id === id);
   if (!track || track.role === "safety") {
-    return { ...draft, openerId, closerId, pinnedIds, excludedIds };
+    return { ...draft, openerId, closerId, pinnedIds, excludedIds, unsortedIds };
   }
 
   return {
@@ -355,6 +369,7 @@ export function toggleExclude(
     closerId,
     pinnedIds,
     excludedIds,
+    unsortedIds,
     tracks: draft.tracks.map((item) =>
       item.id === id
         ? {
@@ -380,6 +395,7 @@ export function pinOpener(draft: SetDraft, trackId: string): SetDraft {
     closerId,
     pinnedIds: withoutEndPins(draft.pinnedIds, id, closerId),
     excludedIds: normalizeExcludedIds(draft.excludedIds?.filter((item) => item !== id)),
+    unsortedIds: normalizeUnsortedIds(draft.unsortedIds?.filter((item) => item !== id)),
   });
 }
 
@@ -395,6 +411,7 @@ export function pinCloser(draft: SetDraft, trackId: string): SetDraft {
     closerId: id,
     pinnedIds: withoutEndPins(draft.pinnedIds, openerId, id),
     excludedIds: normalizeExcludedIds(draft.excludedIds?.filter((item) => item !== id)),
+    unsortedIds: normalizeUnsortedIds(draft.unsortedIds?.filter((item) => item !== id)),
   });
 }
 
@@ -404,4 +421,87 @@ export function clearOpener(draft: SetDraft): SetDraft {
 
 export function clearCloser(draft: SetDraft): SetDraft {
   return { ...draft, closerId: null };
+}
+
+/**
+ * Keep the track in the set, but release its slot so the next sort may move it.
+ * Clears pin, exclude, opener and closer on that id. Calling again locks the
+ * current slot again (drops the flag) without pinning it.
+ * A parked alternative is brought back into the performance, still unpinned.
+ */
+export function toggleUnsort(draft: SetDraft, trackId: string): SetDraft {
+  const id = trackId.trim();
+  if (!id) return draft;
+  const current = draft.unsortedIds ?? [];
+  if (current.includes(id)) {
+    return {
+      ...draft,
+      unsortedIds: normalizeUnsortedIds(current.filter((item) => item !== id)),
+    };
+  }
+
+  const openerId = draft.openerId === id ? null : draft.openerId ?? null;
+  const closerId = draft.closerId === id ? null : draft.closerId ?? null;
+  const pinnedIds = withoutEndPins(
+    draft.pinnedIds?.filter((item) => item !== id),
+    openerId,
+    closerId,
+  );
+  const excludedIds = normalizeExcludedIds(draft.excludedIds?.filter((item) => item !== id));
+  const unsortedIds = normalizeUnsortedIds([...(draft.unsortedIds ?? []), id]);
+  const track = draft.tracks.find((item) => item.id === id);
+  if (track?.role === "safety") {
+    return {
+      ...draft,
+      openerId,
+      closerId,
+      pinnedIds,
+      excludedIds,
+      unsortedIds,
+      tracks: draft.tracks.map((item) =>
+        item.id === id ? { ...item, role: "groove" as const, why: "" } : item,
+      ),
+    };
+  }
+  return { ...draft, openerId, closerId, pinnedIds, excludedIds, unsortedIds };
+}
+
+/**
+ * Lift an exclude made from the player. Clears the ban and, if the track was
+ * parked as an alternative, puts it back in the performance at the same row.
+ */
+export function restoreExcludedTrack(draft: SetDraft, trackId: string): SetDraft {
+  const id = trackId.trim();
+  if (!id) return draft;
+  const excludedIds = normalizeExcludedIds(draft.excludedIds?.filter((item) => item !== id));
+  const track = draft.tracks.find((item) => item.id === id);
+  if (!track || track.role !== "safety") return { ...draft, excludedIds };
+  return {
+    ...draft,
+    excludedIds,
+    tracks: draft.tracks.map((item) =>
+      item.id === id ? { ...item, role: "groove" as const, why: "" } : item,
+    ),
+  };
+}
+
+/** Remove a track from the set. No alternative row, no leftover pin or ban. */
+export function deleteTrackFromSet(draft: SetDraft, trackId: string): SetDraft {
+  const id = trackId.trim();
+  if (!id || !draft.tracks.some((track) => track.id === id)) return draft;
+  const openerId = draft.openerId === id ? null : draft.openerId ?? null;
+  const closerId = draft.closerId === id ? null : draft.closerId ?? null;
+  return {
+    ...draft,
+    openerId,
+    closerId,
+    pinnedIds: withoutEndPins(
+      draft.pinnedIds?.filter((item) => item !== id),
+      openerId,
+      closerId,
+    ),
+    excludedIds: normalizeExcludedIds(draft.excludedIds?.filter((item) => item !== id)),
+    unsortedIds: normalizeUnsortedIds(draft.unsortedIds?.filter((item) => item !== id)),
+    tracks: draft.tracks.filter((track) => track.id !== id),
+  };
 }

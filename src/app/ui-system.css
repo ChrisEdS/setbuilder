@@ -1366,6 +1366,44 @@ html[data-frame="mac"] .set-shell .hero-copy {
   font-size: 0.94rem;
 }
 
+.set-shell .set-undo.set-undo-compact {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.set-shell .set-undo-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem 1rem;
+}
+
+.set-shell .set-undo-head .set-undo-title {
+  flex: 1 1 16rem;
+}
+
+.set-shell .set-undo-head .stick-reload-actions {
+  flex: 0 0 auto;
+}
+
+.set-shell .set-undo-more {
+  margin-top: 0.35rem;
+}
+
+.set-shell .set-undo-more summary {
+  cursor: pointer;
+  color: var(--ui-muted);
+  font-size: 0.86rem;
+}
+
+.set-shell .set-undo-more .set-undo-list {
+  max-height: 11rem;
+  margin-top: 0.4rem;
+  overflow: auto;
+}
+
 @media (max-width: 640px) {
   .set-shell .set-undo {
     grid-template-columns: minmax(0, 1fr);
@@ -1833,7 +1871,7 @@ html[data-frame="mac"] .set-shell .hero-copy {
 .preview-player .preview-join-card {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  gap: 0.28rem;
   min-width: 0;
   margin: 0;
   padding: 0.35rem 0.45rem;
@@ -1843,12 +1881,95 @@ html[data-frame="mac"] .set-shell .hero-copy {
   color: inherit;
   font: inherit;
   text-align: left;
+}
+
+.preview-player .preview-join-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
   cursor: pointer;
+}
+
+.preview-player .preview-join-main:disabled {
+  cursor: default;
 }
 
 .preview-player .preview-join-card:disabled {
   cursor: default;
   opacity: 1;
+}
+
+.preview-player .preview-marks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  margin-top: 0.15rem;
+}
+
+.preview-player .preview-marks span {
+  color: #d7d7d7;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.preview-player .preview-marks span.is-out {
+  color: #ffb4b4;
+}
+
+.preview-player .preview-marks span.is-free {
+  color: #f0d48a;
+}
+
+.preview-player .preview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  margin-top: 0.35rem;
+}
+
+.preview-player .preview-join-card .preview-actions {
+  margin-top: 0;
+}
+
+.preview-player .preview-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 0.4rem;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+}
+
+.preview-player .preview-actions button[aria-pressed="true"] {
+  border-color: #fff;
+  background: #fff;
+  color: #121212;
+}
+
+.preview-player .preview-actions button.is-danger {
+  color: #ffb4b4;
+}
+
+.preview-player .preview-actions .action-icon {
+  width: 0.95rem;
+  height: 0.95rem;
 }
 
 .preview-player .preview-join-card.is-now {
