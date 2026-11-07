@@ -673,11 +673,17 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 .set-shell .timeline-tools {
-  display: grid !important;
-  grid-auto-flow: column;
-  grid-auto-columns: var(--ui-control-height);
-  justify-content: end;
+  /* Wrap inside the controls column. A single icon-sized grid track
+     overflowed the title (Comfortable) or the set card (Details open). */
+  display: flex !important;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   align-items: center;
+  align-content: center;
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+  height: auto;
   gap: 0.375rem !important;
 }
 
@@ -811,8 +817,9 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 .set-shell .manual-row.is-compact-open .manual-controls {
-  /* One-line tools (icons + Zuklappen + delete). Shrinking to 0 wraps the tail off. */
-  min-width: max-content;
+  /* Stay inside the row. max-content pushed Zuklappen and the bin past the card. */
+  min-width: 0;
+  max-width: 100%;
 }
 
 .set-shell .manual-row.is-compact .manual-select {
@@ -888,10 +895,13 @@ html[data-frame="mac"] .set-shell .hero-copy {
   min-width: max-content;
 }
 
-/* Expanded compact: Zuklappen stays on the icon row. Wrap only in the narrow stack. */
+/* Expanded compact: icons wrap inside the card. Zuklappen + bin stay one unit. */
 .set-shell .manual-list.is-compact .manual-row.is-compact-open .timeline-tools {
-  flex-wrap: nowrap !important;
-  min-width: max-content;
+  flex-wrap: wrap !important;
+  justify-content: flex-end;
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .set-shell .manual-list.is-compact .timeline-tools-tail {
@@ -1746,7 +1756,8 @@ html[data-frame="mac"] .set-shell .hero-copy {
   bottom: var(--player-bottom, 1rem) !important;
   width: var(--player-w, min(32rem, calc(100vw - 1.5rem))) !important;
   max-width: calc(100vw - 1.5rem) !important;
-  height: auto !important;
+  height: fit-content !important;
+  max-height: calc(100vh - 1rem) !important;
   z-index: 130 !important;
   transform: none !important;
   margin: 0 !important;
@@ -1764,7 +1775,7 @@ html[data-frame="mac"] .set-shell .hero-copy {
   flex-direction: column;
   gap: 0;
   width: 100% !important;
-  height: var(--player-h, auto);
+  height: var(--player-h, fit-content);
   max-height: calc(100vh - 1rem);
   min-height: 0;
   box-sizing: border-box;
@@ -1782,7 +1793,7 @@ html[data-frame="mac"] .set-shell .hero-copy {
    faded row cannot leave an empty band. The saved height returns
    when Light is turned off. */
 .preview-player.is-light .preview-dock {
-  height: auto;
+  height: fit-content;
   min-height: 0;
 }
 
@@ -1812,9 +1823,19 @@ html[data-frame="mac"] .set-shell .hero-copy {
 .preview-player .preview-now {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.55rem;
-  align-items: center;
+  gap: 0.45rem 0.75rem;
+  align-items: start;
   min-width: 0;
+}
+
+.preview-player .preview-chrome {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.4rem;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .preview-player .preview-drag {
@@ -1986,8 +2007,10 @@ html[data-frame="mac"] .set-shell .hero-copy {
 .preview-player .preview-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.2rem;
-  margin-top: 0.35rem;
+  justify-content: flex-end;
+  gap: 0.22rem;
+  margin-top: 0;
+  max-width: 100%;
 }
 
 .preview-player .preview-join-card .preview-actions {

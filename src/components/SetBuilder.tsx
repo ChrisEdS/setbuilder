@@ -49,6 +49,7 @@ import {
   requestPreviewResume,
   subscribePreviewTransport,
 } from "@/lib/preview-transport";
+import { scrollPlayingSetRow } from "@/lib/scroll-playing-row";
 import { PlaceInSetMenu } from "@/components/PlaceInSetMenu";
 import { ReplaceMenu } from "@/components/ReplaceMenu";
 import { SetGuideDrawer } from "@/components/SetGuideDrawer";
@@ -513,6 +514,18 @@ export function SetBuilder() {
     getPreviewTransportSnapshot,
     getPreviewTransportSnapshot,
   );
+  const playingTrackId = previewTransport.playing ? previewTransport.trackId : null;
+  const scrolledPlayingId = useRef<string | null>(null);
+  useEffect(() => {
+    // Only the transition to a new heard track. Pause, resume, and stop do not scroll.
+    if (!playingTrackId || scrolledPlayingId.current === playingTrackId) return;
+    const id = playingTrackId;
+    const frame = requestAnimationFrame(() => {
+      scrolledPlayingId.current = id;
+      scrollPlayingSetRow(id);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [playingTrackId]);
   const [libraryPreview, setLibraryPreview] = useState<SetTrack | null>(null);
   const [libraryRows, setLibraryRows] = useState<LibraryRow[]>([]);
   const [stickSets, setStickSets] = useState<RekordboxStickSet[]>([]);
@@ -4544,6 +4557,7 @@ export function SetBuilder() {
                 <li
                   key={`${track.role}-${track.id}`}
                   id={`track-${track.id}`}
+                  data-set-track={track.id}
                   className={[
                     "manual-row",
                     rowCompact ? "is-compact" : "",

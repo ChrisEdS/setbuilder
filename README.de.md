@@ -2,23 +2,26 @@
 
 **Deutsch** · [English](README.md)
 
-**Version 5.0.11**
+**Version 5.0.12**
 
 SETBUILDER baut ein DJ-Set aus einem rekordbox-USB-Stick. Du lädst eine Playlist oder eine History, legst die Nacht auf den Slot und prüfst Key, BPM und Energie. Danach schreibst du das Set zurück und hörst die Übergänge vor dem Gig. Die Oberfläche ist Deutsch und Englisch.
 
 Anleitung mit Screenshots: [docs/GUIDE.de.md](docs/GUIDE.de.md)
 
-## Was 5.0 geändert hat
+## Was du mitnimmst
 
-Der Player ist ein Deck im Rekordbox-Stil.
-
-Die Wellenform nutzt die volle Breite. Der Zoom folgt der Wiedergabe, das Mausrad zoomt. Ein Klick sucht, die Wiedergabe läuft weiter. Ein Ziehen pausiert zum Schieben. Die Leertaste setzt fort. Die Pfeiltasten springen einen Takt und landen auf einem Downbeat.
-
-Das Beatgrid auf der Welle startet als das, das rekordbox schon angelegt hat. Analyse ersetzt es aus der Audiodatei, und −5, +5 und 1 schieben es weiter. Fehlt ein Grid, sagt das Deck das.
-
-5.0.1 ergänzt Quantize, das Verschieben des Beatgrids und die Rekordbox-Phrasenbänder, plus eine aktuelle Anleitung. 5.0.2 macht Set-Cues auf der Welle sichtbar und ergänzt Tooltips an den Deck-Bedienelementen. 5.0.3 ergänzt eine kleinere Wellenform, Struktur-Cues mit Zurück, Platz vor dem ersten Downbeat und einen Playhead, der mitläuft. 5.0.4 findet das Beatgrid, das schon beim Track liegt, zeichnet dünnere leisere Grid-Linien, die sich ausblenden lassen, und ein Cue-Klick spielt, ohne den Cue zu verschieben. 5.0.5 zeigt einen Hinweis, solange das Beatgrid noch gelesen wird, zeichnet deutlichere Phrasenbänder und hält geplanten Übergang, Länge und Set-Notiz in einer Zeile. 5.0.6 zieht das Player-Fenster mit Light zusammen, ergänzt Schließen, Einklappen und Vergrößern, zeigt die Längenvorgaben vollständig und lässt den Zoom am Anfang der Welle heranzoomen. 5.0.7 nimmt die Fensterknöpfe wieder weg. Der Player schließt nur sich selbst, über das × neben den Sprungtasten. 5.0.8 behält dieses Schließen und bringt den Desktop-Build wieder durch die Typprüfung. 5.0.9 zoomt die Welle bis 128× und liest nur das Beatgrid, nicht die ganze Analyse-Datei. 5.0.10 setzt die laufende Zeit größer in die Leiste und trennt Ansicht, Cues und Grid. 5.0.11 analysiert auf Knopfdruck ein Beatgrid aus der Audiodatei und ersetzt das, das schon beim Track liegt.
-
-Hot Cues A–H kommen mit dem Track. Ein neuer Cue rastet auf den nächsten Downbeat ein, wenn ein Grid da ist, und wird sofort auf den Stick geschrieben. Cues, die schon als Memory Cues liegen, bleiben. Liegt für den Track noch keine Analyse auf dem Stick, bleiben die Cues im Set. Der Player sieht sie dann noch nicht.
+- 🎚️ **Eine Nacht mit Form.** Open, Lift, Peak, Release. Du siehst, wo noch Luft ist und wo es schon voll ist.
+- ⏱️ **Die Nacht auf den Slot.** Zu lang, sie wird kürzer. Zu kurz füllt sie aus Alternativen und der geladenen Playlist.
+- 🔑 **Keys, die miteinander reden.** Camelot entlang des Sets. Ein Clash fällt auf, solange du noch Zeit hast.
+- ⚡ **Energie, die zum Song gehört.** Aus der Datei gelesen, gemessen oder von dir gesetzt.
+- 📌 **Pins, die im Set bleiben.** Opener und Closer halten die Enden.
+- 🛟 **Plan B in der Tasche.** Rollen und Alternativen, wenn der Floor dreht.
+- 🎧 **Den Übergang vorher hören.** Vorher, dieser Track, der nächste — dieselbe Länge wie im Set. Die Liste folgt dem Track, der spielt.
+- 🌊 **Eine Welle über die volle Breite.** Der Zoom folgt der Wiedergabe, das Mausrad zoomt. Ein Klick sucht, die Wiedergabe läuft weiter. Ein Ziehen pausiert zum Schieben. Die Leertaste setzt fort. Die Pfeiltasten springen einen Takt und landen auf einem Downbeat.
+- 🎼 **Das rekordbox-Beatgrid.** Es startet als das, das rekordbox schon angelegt hat. Analyse ersetzt es auf Wunsch aus der Audiodatei, und −5, +5 und 1 schieben es weiter. Fehlt ein Grid, sagt das Deck das.
+- 🔖 **Hot Cues und Phrasenbänder.** Hot Cues A–H kommen mit dem Track. Ein neuer Cue rastet auf den nächsten Downbeat ein, wenn ein Grid da ist, und wird sofort auf den Stick geschrieben. Cues, die schon als Memory Cues liegen, bleiben. Die Phrasenbänder von rekordbox liegen auf der Welle. Liegt für den Track noch keine Analyse auf dem Stick, bleiben die Cues im Set. Der Player sieht sie dann noch nicht.
+- 💡 **Light.** Eine kleinere Wellenform. In der Leiste bleibt die laufende Zeit groß, und Ansicht, Cues und Grid bleiben getrennt.
+- 🎒 **Fertig, wenn es sitzt.** Der Stick für den Player, der Zettel für die Kabine, die Datei für den Rechner.
 
 ## Der Stick
 

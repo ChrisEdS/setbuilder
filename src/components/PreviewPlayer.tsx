@@ -1079,6 +1079,7 @@ function PreviewDock({
               {actions && inSet ? <TrackMarks id={track.id} actions={actions} /> : null}
             </div>
           </div>
+          <div className="preview-chrome">
           <div className="preview-transport">
             <Tip text={t("crates.player.prevTip")} disabled={!prev}>
               <button
@@ -1129,10 +1130,11 @@ function PreviewDock({
               </button>
             </Tip>
           </div>
+          {actions && inSet ? (
+            <TrackActions id={track.id} name={track.name} actions={actions} />
+          ) : null}
         </div>
-        {actions && inSet && !rehearsal ? (
-          <TrackActions id={track.id} name={track.name} actions={actions} />
-        ) : null}
+        </div>
 
         {src || (track.durationMs ?? 0) > 0 ? (
           <div className="preview-seek">
@@ -1291,7 +1293,7 @@ function PreviewDock({
                       ) : null}
                       {item && actions ? <TrackMarks id={item.id} actions={actions} /> : null}
                     </button>
-                    {item && actions ? (
+                    {item && actions && role !== "now" ? (
                       <TrackActions id={item.id} name={item.name} actions={actions} />
                     ) : null}
                   </div>
@@ -1388,6 +1390,11 @@ export function PreviewPlayer({
   const [place, setPlace] = useState<PlayerPlace | null>(null);
   const [width, setWidth] = useState<number | null>(null);
   const [height, setHeight] = useState<number | null>(null);
+  const [heightFor, setHeightFor] = useState(currentId);
+  if (currentId !== heightFor) {
+    setHeightFor(currentId);
+    setHeight(null);
+  }
   const track = tracks.find((item) => item.id === currentId) ?? null;
   if (!isClient || !track) return null;
 

@@ -2,23 +2,26 @@
 
 [Deutsch](README.de.md) · **English**
 
-**Version 5.0.11**
+**Version 5.0.12**
 
 SETBUILDER builds a DJ set from a rekordbox USB stick. Load a playlist or a history, fit the night to the slot, and check key, BPM, and energy. Then write the set back and hear the joins before the gig. The interface is German and English.
 
 Walkthrough with screenshots: [docs/GUIDE.md](docs/GUIDE.md)
 
-## What 5.0 changed
+## What you take with you
 
-The player is a Rekordbox-style deck.
-
-The waveform uses the full width. Zoom follows playback, and the mouse wheel zooms. A click seeks while playback continues. A drag pauses so you can scrub. Space resumes. The arrow keys move one bar and land on a downbeat.
-
-The beatgrid on the wave starts as the one rekordbox already made. Analyze replaces it from the audio, and −5, +5, and 1 still nudge it. If a track has no grid, the deck says so.
-
-5.0.1 adds quantize, nudging the beatgrid, and the rekordbox phrase bands, plus a current guide. 5.0.2 makes set cues visible on the wave and adds tooltips on the deck controls. 5.0.3 adds a smaller waveform, structure cues you can undo, room before the first downbeat, and a playhead that keeps up. 5.0.4 finds the beatgrid already stored with the track, draws thinner quieter grid lines you can hide, and a cue click plays without moving the cue. 5.0.5 shows a note while the beatgrid is still loading, draws clearer phrase bands, and keeps the planned transition, length, and set note on one row. 5.0.6 shrinks the player with Light, adds close, minimize, and zoom, shows the full length presets, and keeps a zoomed view at the start of the wave. 5.0.7 drops those window buttons. The player closes only itself, with the × next to the skip buttons. 5.0.8 keeps that close button and lets the desktop build typecheck again. 5.0.9 lets the wave zoom to 128× and reads only the beatgrid instead of the whole analysis file. 5.0.10 makes the elapsed time larger and separates view, cues, and grid in the deck bar. 5.0.11 analyzes a beatgrid from the audio on request and replaces the one already stored with the track.
-
-Hot cues A–H load with the track. A new cue snaps to the nearest downbeat when a grid is there, and it is written to the stick straight away. Cues already stored as memory cues stay as they are. If the stick has no analysis for that track yet, the cues stay in the set and the player does not see them yet.
+- 🎚️ **A night with a shape.** Open, lift, peak, release. You see where there is still air and where it is already full.
+- ⏱️ **The night fitted to the slot.** Too long, it cuts. Too short, it fills from alternatives and the playlist you loaded.
+- 🔑 **Keys that talk to each other.** Camelot along the set. A clash shows up while you still have time.
+- ⚡ **Energy that belongs to the song.** Read from the file, measured, or set by you.
+- 📌 **Pins that stay in the set.** Opener and closer hold the ends.
+- 🛟 **Plan B in your pocket.** Roles and alternatives for when the floor turns.
+- 🎧 **Hear the handoff first.** Previous, this track, next — the same lengths as the set. The list follows the track that is playing.
+- 🌊 **A wave across the full width.** Zoom follows playback, and the mouse wheel zooms. A click seeks while playback continues. A drag pauses so you can scrub. Space resumes. The arrow keys move one bar and land on a downbeat.
+- 🎼 **The rekordbox beatgrid.** It starts as the one rekordbox already made. Analyze replaces it from the audio on request, and −5, +5, and 1 nudge it. If a track has no grid, the deck says so.
+- 🔖 **Hot cues and phrase bands.** Hot cues A–H load with the track. A new cue snaps to the nearest downbeat when a grid is there, and it is written to the stick straight away. Cues already stored as memory cues stay as they are. Phrase bands from rekordbox sit on the wave. If the stick has no analysis for that track yet, the cues stay in the set and the player does not see them yet.
+- 💡 **Light.** A smaller waveform. In the deck bar the elapsed time stays large, and view, cues, and the grid stay apart.
+- 🎒 **Ready when it holds.** The stick for the player, the sheet for the booth, the file for the computer.
 
 ## The stick
 
