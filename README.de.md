@@ -2,72 +2,66 @@
 
 **Deutsch** · [English](README.md)
 
-[![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/ChrisEdS)
+**Version 5.0.1**
 
-**Version 5.0.0** · Raus aus der Playlist.
+SETBUILDER baut ein DJ-Set aus einem rekordbox-USB-Stick. Du lädst eine Playlist oder eine History, legst die Nacht auf den Slot und prüfst Key, BPM und Energie. Danach schreibst du das Set zurück und hörst die Übergänge vor dem Gig. Die Oberfläche ist Deutsch und Englisch.
 
-Der Player ist ein Deck. Die Wellenform nutzt die volle Breite, das Rekordbox-Beatgrid liegt darauf, und der Zoom folgt dem Playhead. Ein Klick spielt weiter, ein Griff hält an zum Schieben, die Leertaste setzt fort, und die Pfeiltasten springen einen Takt. Acht Hot Cues, A–H, rasten auf den Downbeat ein und werden in die bestehende Analyse-Datei auf dem Stick geschrieben. Das ist eine Hauptversion.
+Anleitung mit Screenshots: [docs/GUIDE.de.md](docs/GUIDE.de.md)
 
-Der Stick ist das Material. Du ziehst den Bogen, setzt den Anschluss und hörst, ob er trägt.
+## Was 5.0 geändert hat
 
-Vor dem Gig ist es still. SETBUILDER ist dieser Raum. Du kommst mit einem rekordbox-Stick und gehst mit einer Nacht, die du spielen willst: ein Bogen, Keys, die sich finden, Energie, die steigt und fällt, und ein Plan B, wenn der Floor dreht.
+5.0.1 ist derselbe Player. Der Desktop-Build von 5.0.0 blieb an einem Lint-Fehler im Deck hängen, und dieses Release räumt ihn ab.
 
-## Was du mitnimmst
+Der Player ist ein Deck im Rekordbox-Stil.
 
-- 🎚️ **Eine Nacht mit Form.** Open, Lift, Peak, Release. Du siehst, wo noch Luft ist und wo es schon voll ist.
-- ⏱️ **Die Nacht auf den Slot.** Zu lang, sie wird kürzer. Zu kurz legt **Mit Matches füllen** Tracks nach, die zu Key, BPM und Energie passen — zuerst Alternativen, dann die geladene Playlist. Die Slot-Dauer im Brief stößt denselben Lauf an wie **Auf Slot setzen**. Sortieren holt die übrigen Alternativen zurück in die Nacht. Ein Song, den du rausmarkiert hast, bleibt draußen. Das Rückgängig-Banner nennt Track und Rückplatz.
-- 🔑 **Keys, die miteinander reden.** Camelot entlang des Sets. Ein Clash fällt auf, solange du noch Zeit hast. **Perfekt · nur Pins** sortiert nur die Mittel-Pins untereinander; der Rest bleibt in den Lücken.
-- ⚡ **Energie, die zum Song gehört.** Aus der Datei gelesen, gemessen oder von dir gesetzt. Sie steht am Track, sobald sie fest ist, und auf dem Zettel und im kopierten Text, wenn du sie kennst.
-- 📌 **Pins, die im Set bleiben.** Opener und Closer halten die Enden. Mittel-Pins überstehen Auf Slot setzen und Andere Songs und wandern beim Sortieren mit — außer bei Perfekt · nur Pins.
-- 🚫 **Ein Song kann die Nacht aussetzen.** Markier ihn raus aus dem Set. Er bleibt bei den Alternativen. Auf Slot setzen und Andere Songs lassen ihn dort. Pin und Raus lösen einander.
-- 🔁 **Tauschen aus derselben Playlist.** Songs aus dem Playlist-Pool, die an dieser Stelle zu Key, BPM und Energie passen — getrennt vom allgemeinen Ersatz.
-- 🎛️ **Jeder Anschluss mit eigener Länge.** Cut, Blend, Echo-out. Die Uhr des Slots folgt dem, was du an den Übergang schreibst. „—“ nimmt die Blend-Zeit aus dem Brief.
-- 🎲 **Eine andere Nacht aus derselben Kiste.** Andere Songs. Oder die Playlist, die Collection, die History, sobald sie da ist. Nach dem Laden einer Stick-Playlist bleibt **Aus der Playlist** am Set verfügbar.
-- 🛟 **Plan B in der Tasche.** Rollen und Alternativen, wenn der Floor dreht. **Rollen verteilen**, Alle auf/zu und **Alternativen groß** sitzen neben **Rollen kurz erklärt**. Alternativen groß gibt der Spalte den Raum; Ersatz und Plan B liegen neben der Karte.
-- 🎧 **Den Übergang vorher hören.** Vorhören aus Setliste, Tauschen und Key-Verlauf. Vorher, dieser Track, der nächste — dieselbe Länge wie im Set.
-- 📋 **Kompakt oder Comfortabel.** In der Setliste wählst du die Zeilendichte. Kompakt hält Play, Pin, Tauschen und Entfernen in einer Zeile. **Details** öffnet nur Notiz, Key, BPM, Energie und Blend; **Zuklappen** oder erneut **Kompakt** macht die Zeile wieder klein.
-- 🔍 **Nur noch, was passt.** Key, BPM und Energie holen die Bibliothek heran. Passt zu reiht, was hinter einem gewählten Track tragen kann, und der Song, den du hinzufügst, landet direkt dahinter.
-- 📝 **Ein Satz für die Phase.** Auf dem Bogen, wenn du ihn brauchst. Treibend, 128. Er geht mit auf den Zettel für die Kabine.
-- 🎒 **Fertig, wenn es sitzt.** Erst die Checkliste. Wenn die Dateien nicht in dieser Sitzung sind, wähl den Stick-Ordner direkt dort noch einmal. Dann der Stick für den Player, der Zettel für die Kabine, die Datei für den Rechner. Oder das Set bleibt in SETBUILDER.
+Die Wellenform nutzt die volle Breite. Der Zoom folgt der Wiedergabe, das Mausrad zoomt. Ein Klick sucht, die Wiedergabe läuft weiter. Ein Ziehen pausiert zum Schieben. Die Leertaste setzt fort. Die Pfeiltasten springen einen Takt und landen auf einem Downbeat.
 
-## Vier Schritte
+Das Beatgrid auf der Welle ist das Rekordbox-Grid, nur gelesen. Es ist der PQTZ-Tag in der bestehenden ANLZ-Datei. SETBUILDER findet die Datei über den Audio-Pfad, der darin steht, unter `PIONEER/USBANLZ`. Dieser Ordnername ist nicht die Track-ID in `export.pdb`. Das Grid wird nicht neu geschrieben. Fehlt ein Grid, sagt das Deck das.
 
-1. 📝 **Brief** — Titel, die Minuten des Slots, wie dicht die Übergänge sein sollen. Die Beispiele unter Set-Info sind Platzhalter. Den Slot länger oder kürzer machen — sobald die Minuten stehen, läuft derselbe Fit wie **Auf Slot setzen**.
-2. 🔌 **Laden** — Stick verbinden (ein erinnerter Stick bringt Bibliothek und Playlists zurück, solange der Zugriff gilt). Eine Collection darf die Keys nachreichen.
-3. 🎛️ **Bauen** — Playlist, eigene Songs oder beides. Eng die Kiste ein, nutz Passt zu, wenn der nächste Song direkt hinter einem gewählten landen soll, und setz Phase, Rolle und jeden Anschluss. Tauschen greift in denselben Playlist-Pool.
-4. 🎒 **Exportieren** — Stick für den Player, Zettel für die Kabine, Datei für zu Hause. Bekannte Energie steht auf dem Zettel und im kopierten Text.
+Hot Cues A–H kommen aus derselben ANLZ-Datei. Ein neuer Cue rastet auf den nächsten Downbeat ein, wenn ein Grid da ist. Zurückgeschrieben wird in die bestehende Datei, und nur der Hot-Cue-Tag ändert sich. Memory Cues bleiben. Liegt für den Track keine Analyse-Datei auf dem Stick, bleiben die Cues im Set. Der Player sieht sie dann noch nicht.
 
-📖 **Anleitung mit Screenshots:** [docs/GUIDE.de.md](docs/GUIDE.de.md)
+## Der Stick
 
-> Spiel den Stick vor dem Gig am echten Player. SETBUILDER legt ein Backup ab, die Nacht bleibt deine.
+Ein Stick ist ein rekordbox-USB-Export, wie ChrisleBeat oder LE_BACKUP: auf dem Volume liegen `PIONEER/rekordbox/export.pdb`, die Audio-Dateien und `PIONEER/USBANLZ`.
 
-## Download
+Stick verbinden (ein erinnerter Stick kommt zurück, solange der Zugriff gilt). Playlist, History oder die Collection für die Keys laden. Im Brief setzt du die Slot-Minuten und die mittlere Blend-Zeit. Im Set legst du den Bogen, die Übergänge, Pins und Alternativen, und du kannst die Nacht auf den Slot setzen. **Auf Stick schreiben** legt das Set als Playlist in `export.pdb` ab und behält eine Sicherung. **Für Player vorbereiten** legt eine ältere Player-Bibliothek beiseite, damit der Player diese Playlists zeigt. Auswerfen, dann den Stick vor dem Gig am echten Player spielen.
 
-Die App gibt es für Mac, Windows und Linux. Hol sie dir unter [GitHub Releases](https://github.com/ChrisEdS/setbuilder/releases).
+Für die Kabine gibt es ein PDF und kopierten Text. Für den Rechner rekordbox-XML und M3U.
 
-Auf dem Mac braucht ein unsignierter Download manchmal einmal das hier:
+rekordbox allein braucht kein Konto. Spotify und Tidal sind optional. Die Weiterleitung ist `http://127.0.0.1:4317/api/auth/callback` (Tidal: `…/api/auth/tidal/callback`). Keys trägst du unter **Einstellungen** ein oder in `.env.local` ([`.env.example`](.env.example)).
+
+## Starten
+
+Builds für Mac, Windows und Linux liegen unter [GitHub Releases](https://github.com/ChrisEdS/setbuilder/releases). Ein Tag `v*` baut sie in GitHub Actions mit Node 22: macOS arm64 und x64 (`.dmg` und `.zip`), Windows x64 (NSIS), Linux x64 (AppImage und `.deb`). Die Desktop-App hört auf Port **4317**.
+
+Ein unsignierter Mac-Download braucht manchmal einmal das hier:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/SETBUILDER.app
 ```
 
-<a id="setup"></a>
-
-## Für Entwickler
-
-rekordbox allein braucht kein Konto. Spotify und Tidal sind optional und nutzen eine Weiterleitung auf `http://127.0.0.1:4317/api/auth/callback` (Tidal: `…/api/auth/tidal/callback`). Keys trägst du unter **Einstellungen** ein oder in `.env.local` ([`.env.example`](.env.example)).
+Aus dem Repo, mit Node 22:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Die Desktop-App nutzt Port **4317**. Der Dev-Server nutzt [Port 4327](http://127.0.0.1:4327). Hinweise zum Paketieren stehen in [`desktop/README.md`](desktop/README.md). Die Oberfläche ist Deutsch und Englisch. Tests: `npm test`.
+Der Dev-Server ist [http://127.0.0.1:4327](http://127.0.0.1:4327). Tests: `npm test`.
 
-## Spenden
+Die Desktop-Hülle, aus dem Repo:
 
-SETBUILDER bleibt kostenlos und offen. Unterstützung über **[GitHub Sponsors @ChrisEdS](https://github.com/sponsors/ChrisEdS)**.
+```bash
+npm install
+cd desktop
+npm install
+npm start
+```
+
+Hinweise zum Paketieren: [`desktop/README.md`](desktop/README.md).
 
 ## Lizenz
 
 MIT, siehe [LICENSE](LICENSE). Die Energiemessung nutzt essentia.js (AGPL-3.0); siehe [THIRD_PARTY.md](THIRD_PARTY.md).
+
+Unterstützung: [GitHub Sponsors @ChrisEdS](https://github.com/sponsors/ChrisEdS).

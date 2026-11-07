@@ -2,7 +2,7 @@
 
 **Deutsch** · [English](GUIDE.md) · [README](../README.de.md)
 
-So bereitest du ein Set mit rekordbox vor: verbinden → bauen → exportieren. Screenshots von 4.5; der Text beschreibt **5.0.0** — ein Deck-Player mit Wellenform über die volle Breite, Rekordbox-Beatgrid, Cues auf dem Downbeat, Zoom der dem Playhead folgt, Griff zum Schieben, Leertaste und Takt-Pfeilen. Hot Cues A–H werden in die bestehende Analyse-Datei auf dem Stick geschrieben. Das ist eine Hauptversion. Set-Werkzeuge in Gruppen, **Mit Matches füllen**, Plan-B-Hilfe und **Alternativen groß** neben der Karte bleiben.
+So bereitest du ein Set mit rekordbox vor: verbinden → bauen → exportieren. Screenshots von 4.5; der Text beschreibt **5.0.1** — ein Deck-Player mit Wellenform über die volle Breite, Rekordbox-Beatgrid, Cues auf dem Downbeat, Zoom der dem Playhead folgt, Griff zum Schieben, Leertaste und Takt-Pfeilen. Hot Cues A–H werden in die bestehende Analyse-Datei auf dem Stick geschrieben. Das ist eine Hauptversion. Set-Werkzeuge in Gruppen, **Mit Matches füllen**, Plan-B-Hilfe und **Alternativen groß** neben der Karte bleiben.
 
 Die ausgelieferte App ist die Desktop-App (Port **4317**). Browser-Entwicklung: Port **4327**. Stick-Schreiben, Player und Streaming-Konten sind weiter ungeprüft.
 
