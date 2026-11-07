@@ -484,7 +484,8 @@ export function WaveformDeck({
       const inside = play >= startNow + windowSpan * 0.12 && play <= startNow + windowSpan * 0.88;
       if (inside) return;
       const pad = padRef.current;
-      const start = Math.min(Math.max(-pad, play - windowSpan / 2), Math.max(-pad, 1 - windowSpan));
+      const centered = Math.min(Math.max(-pad, play - windowSpan / 2), Math.max(-pad, 1 - windowSpan));
+      const start = fitLead(centered, windowSpan, play, -pad, firstRef.current);
       if (Math.abs(start - startNow) < 0.0004) return;
       viewRef.current = start;
       setViewStart(start);
@@ -606,7 +607,8 @@ export function WaveformDeck({
     if (zoomRef.current > 1) {
       const windowSpan = 1 / zoomRef.current;
       const pad = padRef.current;
-      const start = Math.min(Math.max(-pad, ratio - windowSpan / 2), Math.max(-pad, 1 - windowSpan));
+      const centered = Math.min(Math.max(-pad, ratio - windowSpan / 2), Math.max(-pad, 1 - windowSpan));
+      const start = fitLead(centered, windowSpan, ratio, -pad, firstRef.current);
       viewRef.current = start;
       setViewStart(start);
     }

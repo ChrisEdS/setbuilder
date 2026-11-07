@@ -27,14 +27,28 @@ export function trackLead(beats: readonly { timeMs: number; beat: number }[], bp
   return { pad: Math.max(0, bar * WAVE_LEAD_BARS - first), first };
 }
 
+/** Share of a zoomed window left in front of the downbeat when the anchor sits on it. */
+const WAVE_LEAD_MARGIN = 0.12;
+
 /**
- * A window whose left edge is still on the first downbeat, or before it, keeps the
- * whole lead. A view further into the track is left where it is.
+ * A zoomed window keeps the span it was given. It is not rewound to the start
+ * of the lead. Lead before the first downbeat shows only for the slice already
+ * in frame. When the anchor is on that downbeat and the slice would hide it
+ * against the right edge, only a short margin of lead stays in view. A window
+ * past the downbeat is left alone. Scrolling can still reach the rest of the lead.
  */
 export function fitLead(start: number, span: number, anchorTime: number, origin: number, first: number): number {
-  if (!(span > 0) || start > first || first > start + span) return start;
-  if (anchorTime < origin || anchorTime > origin + span) return start;
-  return origin;
+  if (!(span > 0) || !Number.isFinite(start)) return start;
+  const earliest = Number.isFinite(origin) ? origin : start;
+  if (!Number.isFinite(first) || start > first || first > start + span) return start;
+  if (!Number.isFinite(anchorTime)) return Math.max(earliest, start);
+  const next = Math.max(earliest, start);
+  const onDownbeat = Math.abs(anchorTime - first) <= Math.max(span * 0.02, 1e-9);
+  if (!onDownbeat || !(next < first)) return next;
+  const room = Math.max(0, first - earliest);
+  const margin = Math.min(span * WAVE_LEAD_MARGIN, room);
+  const readable = first - margin;
+  return next < readable ? readable : next;
 }
 
 /**

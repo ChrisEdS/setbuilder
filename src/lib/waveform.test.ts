@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { fitLead, trackLead, waveformBands, waveformPeaks, waveformWindow, zoomAround } from "./waveform.ts";
+import { fitLead, trackLead, waveformBands, waveformPeaks, waveformWindow, zoomAround, zoomWindow } from "./waveform.ts";
 
 test("peaks follow the body and the loudest sample in each bucket", () => {
   const samples = new Float32Array(8);
@@ -39,12 +39,33 @@ test("the start of the wave keeps three bars before the first downbeat", () => {
   const lead = trackLead(beats, "120");
   assert.equal(lead.first, 0);
   assert.equal(lead.pad, 6);
-  const full = waveformWindow(1, 0, lead.pad / 180);
+  const pad = lead.pad / 180;
+  const full = waveformWindow(1, 0, pad);
   assert.ok(full.start < 0);
   assert.ok(full.span > 1);
-  const zoomed = fitLead(0, 0.25, 0, -lead.pad / 180, 0);
-  assert.equal(zoomed, -lead.pad / 180);
-  assert.equal(fitLead(0.4, 0.25, 0.5, -lead.pad / 180, 0), 0.4);
+  const origin = -pad;
+  const zoomed = fitLead(0, 0.25, 0, origin, 0);
+  assert.equal(zoomed, 0);
+  const anchor = (0 - full.start) / full.span;
+  const nextSpan = 1 / 16;
+  const proposed = zoomWindow(full.start, full.span, anchor, nextSpan, origin);
+  const close = fitLead(proposed, nextSpan, 0, origin, 0);
+  assert.equal(close, proposed);
+  assert.ok(close > origin);
+  assert.ok(-close < nextSpan * 0.25);
+  assert.equal(waveformWindow(16, close, pad).span, nextSpan);
+  const parked = fitLead(origin, nextSpan, 0, origin, 0);
+  assert.ok(parked > origin);
+  assert.ok(parked < 0);
+  assert.ok((0 - parked) / nextSpan < 0.5);
+  const centered = Math.max(origin, -nextSpan / 2);
+  const followed = fitLead(centered, nextSpan, 0, origin, 0);
+  assert.ok((0 - followed) / nextSpan < 0.5);
+  assert.equal(fitLead(origin, nextSpan, origin / 2, origin, 0), origin);
+  const scrolled = waveformWindow(16, origin, pad);
+  assert.equal(scrolled.start, origin);
+  assert.equal(scrolled.span, nextSpan);
+  assert.equal(fitLead(0.4, 0.25, 0.5, origin, 0), 0.4);
 });
 
 test("three bands keep a slow body and a spike in the top", () => {

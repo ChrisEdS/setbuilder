@@ -7114,10 +7114,6 @@ body {
   height: 42px;
 }
 
-.overlap-field datalist {
-  display: none;
-}
-
 .manual-extra input.manual-overlap {
   box-sizing: border-box;
   width: 4.5rem !important;

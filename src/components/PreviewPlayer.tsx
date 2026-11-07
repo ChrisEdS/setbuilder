@@ -287,6 +287,27 @@ function clampPlace(x: number, y: number, width: number, height: number): Player
   };
 }
 
+function WindowGlyph({ kind }: { kind: "close" | "min" | "zoom" | "restore" }) {
+  if (kind === "restore") {
+    return (
+      <svg className="preview-light-glyph" viewBox="0 0 12 12" aria-hidden="true">
+        <rect x="2.2" y="2.2" width="7.6" height="7.6" rx="1.2" fill="none" stroke="currentColor" strokeWidth="1.4" />
+      </svg>
+    );
+  }
+  const d =
+    kind === "close"
+      ? "M3.1 3.1 L8.9 8.9 M8.9 3.1 L3.1 8.9"
+      : kind === "min"
+        ? "M2.6 6 H9.4"
+        : "M6 2.6 V9.4 M2.6 6 H9.4";
+  return (
+    <svg className="preview-light-glyph" viewBox="0 0 12 12" aria-hidden="true">
+      <path d={d} fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function initialAudio(filePath: string, fileBase: string, title: string): {
   src: string | null;
   issue: LocalIssue;
@@ -311,6 +332,10 @@ function PreviewDock({
   onHeight,
   onChange,
   onClose,
+  minimized,
+  zoomed,
+  onToggleMinimized,
+  onToggleZoomed,
   onStickMediaLost,
   rehearsal,
   actions,
@@ -328,6 +353,10 @@ function PreviewDock({
   onHeight: (height: number) => void;
   onChange: (id: string) => void;
   onClose: () => void;
+  minimized: boolean;
+  zoomed: boolean;
+  onToggleMinimized: () => void;
+  onToggleZoomed: () => void;
   onStickMediaLost?: () => void;
   rehearsal?: Rehearsal | null;
   actions?: PlayerTrackActions | null;
@@ -687,7 +716,7 @@ function PreviewDock({
     const card = cardRef.current;
     if (!card) return;
     function fit() {
-      if (!place || !card) return;
+      if (zoomed || !place || !card) return;
       const rect = card.getBoundingClientRect();
       const next = clampPlace(place.x, place.y, rect.width, rect.height);
       if (next.x !== place.x || next.y !== place.y) onPlace(next);
@@ -700,7 +729,7 @@ function PreviewDock({
       observer.disconnect();
       window.removeEventListener("resize", fit);
     };
-  }, [place, onPlace]);
+  }, [place, onPlace, zoomed]);
 
   const embed = playerEmbed(track);
   const hasStickLabel = Boolean(filePath) && (Boolean(src) || localIssue != null);
@@ -719,7 +748,7 @@ function PreviewDock({
     : null;
 
   function onDragStart(event: ReactPointerEvent<HTMLDivElement>) {
-    if (event.button !== 0) return;
+    if (zoomed || event.button !== 0) return;
     const card = cardRef.current;
     if (!card) return;
     const rect = card.getBoundingClientRect();
@@ -754,7 +783,7 @@ function PreviewDock({
   }
 
   function onResizeStart(event: ReactPointerEvent<HTMLDivElement>) {
-    if (event.button !== 0) return;
+    if (zoomed || minimized || event.button !== 0) return;
     const card = cardRef.current;
     if (!card) return;
     resizeRef.current = {
@@ -784,7 +813,7 @@ function PreviewDock({
   }
 
   function onResizeYStart(event: ReactPointerEvent<HTMLDivElement>) {
-    if (event.button !== 0) return;
+    if (zoomed || minimized || event.button !== 0) return;
     const card = cardRef.current;
     if (!card) return;
     const rect = card.getBoundingClientRect();
@@ -856,6 +885,7 @@ function PreviewDock({
       const tag = target.tagName;
       if (tag === "TEXTAREA" || tag === "SELECT") return true;
       if (target.getAttribute("role") === "slider") return true;
+      if (target instanceof HTMLButtonElement) return true;
       if (target instanceof HTMLInputElement) {
         const type = target.type;
         return type !== "button" && type !== "checkbox" && type !== "radio" && type !== "file";
@@ -920,26 +950,68 @@ function PreviewDock({
     ...(height ? { "--player-h": `${height}px` } : {}),
   } as CSSProperties;
 
+  const closeLabel = t("crates.player.windowClose");
+  const minimizeLabel = minimized
+    ? t("crates.player.windowRestore")
+    : t("crates.player.windowMinimize");
+  const zoomLabel = zoomed ? t("crates.player.windowRestore") : t("crates.player.windowZoom");
+  const restoreLabel = t("crates.player.windowRestore");
+
   return (
     <aside
       ref={cardRef}
-      className={dragging ? "preview-player is-dragging" : "preview-player"}
+      className={[
+        "preview-player",
+        dragging ? "is-dragging" : "",
+        minimized ? "is-minimized" : "",
+        zoomed ? "is-zoomed" : "",
+        light ? "is-light" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
       style={placed}
       aria-label={t("crates.player.ariaLabel")}
     >
       <div className="preview-dock">
         <div className="preview-body">
-        <Tip className="preview-close-slot" text={t("crates.player.closeTip")} end>
-          <button
-            type="button"
-            className="preview-close"
-            onClick={onClose}
-            aria-label={t("crates.player.close")}
-          >
-            ✕
-          </button>
-        </Tip>
         <div className="preview-now">
+          <div className="preview-traffic">
+            <Tip text={closeLabel}>
+              <button
+                type="button"
+                className="preview-light"
+                data-kind="close"
+                onClick={onClose}
+                aria-label={closeLabel}
+              >
+                <WindowGlyph kind="close" />
+              </button>
+            </Tip>
+            <Tip text={minimizeLabel}>
+              <button
+                type="button"
+                className="preview-light"
+                data-kind="min"
+                aria-pressed={minimized}
+                onClick={onToggleMinimized}
+                aria-label={minimizeLabel}
+              >
+                <WindowGlyph kind="min" />
+              </button>
+            </Tip>
+            <Tip text={zoomLabel}>
+              <button
+                type="button"
+                className="preview-light"
+                data-kind="zoom"
+                aria-pressed={zoomed}
+                onClick={onToggleZoomed}
+                aria-label={zoomLabel}
+              >
+                <WindowGlyph kind="zoom" />
+              </button>
+            </Tip>
+          </div>
           <div
             className="preview-drag"
             onPointerDown={onDragStart}
@@ -973,6 +1045,19 @@ function PreviewDock({
             </div>
           </div>
           <div className="preview-transport">
+            {minimized ? (
+              <Tip text={restoreLabel}>
+                <button
+                  type="button"
+                  className="preview-restore"
+                  onClick={onToggleMinimized}
+                  aria-label={restoreLabel}
+                >
+                  <WindowGlyph kind="restore" />
+                </button>
+              </Tip>
+            ) : (
+              <>
             <Tip text={t("crates.player.prevTip")} disabled={!prev}>
               <button
                 type="button"
@@ -1011,6 +1096,8 @@ function PreviewDock({
                 ›
               </button>
             </Tip>
+              </>
+            )}
           </div>
         </div>
         {actions && inSet && !rehearsal ? (
@@ -1260,6 +1347,8 @@ export function PreviewPlayer({
   const [place, setPlace] = useState<PlayerPlace | null>(null);
   const [width, setWidth] = useState<number | null>(null);
   const [height, setHeight] = useState<number | null>(null);
+  const [minimized, setMinimized] = useState(false);
+  const [zoomed, setZoomed] = useState(false);
   const track = tracks.find((item) => item.id === currentId) ?? null;
   if (!isClient || !track) return null;
 
@@ -1278,6 +1367,10 @@ export function PreviewPlayer({
       onHeight={setHeight}
       onChange={onChange}
       onClose={onClose}
+      minimized={minimized}
+      zoomed={zoomed}
+      onToggleMinimized={() => setMinimized((open) => !open)}
+      onToggleZoomed={() => setZoomed((open) => !open)}
       onStickMediaLost={onStickMediaLost}
       rehearsal={rehearsal}
       actions={actions}
