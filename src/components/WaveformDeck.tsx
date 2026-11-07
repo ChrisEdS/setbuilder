@@ -97,28 +97,28 @@ const STRUCTURE_KEY: Record<StructureCueLabel, MessageKey> = {
   outro: "crates.player.structure.outro",
 };
 
-/** Muted ribbon so hot-cue flags stay the saturated marks. */
+/** Flat phrase ribbon. Each name is one color, clearer than the wave and quieter than the saturated A–H cue flags. */
 const PHRASE_COLOR: Record<PhraseName, string> = {
-  intro: "#6d8499",
-  intro1: "#6d8499",
-  intro2: "#849aaf",
-  up1: "#a07c56",
-  up2: "#8b6844",
-  up3: "#b08d62",
-  down: "#8d8668",
-  chorus: "#946878",
-  chorus1: "#a6808e",
-  chorus2: "#7a5564",
-  outro: "#6e6a90",
-  outro1: "#847ea6",
-  outro2: "#565278",
-  verse1: "#5d7564",
-  verse2: "#4c6456",
-  verse3: "#3e5246",
-  verse4: "#769482",
-  verse5: "#35483c",
-  verse6: "#8aa894",
-  bridge: "#74667e",
+  intro: "#3e76b3",
+  intro1: "#326394",
+  intro2: "#5c94c8",
+  up1: "#c47a3c",
+  up2: "#a8642c",
+  up3: "#d4965e",
+  down: "#9eb33a",
+  chorus: "#c44e76",
+  chorus1: "#d47894",
+  chorus2: "#a43c60",
+  outro: "#6e59b2",
+  outro1: "#8a78c4",
+  outro2: "#6454a4",
+  verse1: "#4a9a6c",
+  verse2: "#3d8860",
+  verse3: "#347854",
+  verse4: "#62b084",
+  verse5: "#2c6848",
+  verse6: "#7ec49e",
+  bridge: "#3c8498",
 };
 
 /** Share of the deck given to the beat-grid lane. Cue flags sit just under it. */
@@ -254,6 +254,7 @@ export function WaveformDeck({
   bpm,
   fallback,
   gridNote,
+  gridReadingNote,
   cues,
   cueSession,
   quantize,
@@ -284,6 +285,8 @@ export function WaveformDeck({
   /** Faint BPM sketch only after the analysis file was checked and had no grid. */
   fallback: boolean;
   gridNote: string | null;
+  /** Shown while this track's beatgrid read is still running, including in light mode. */
+  gridReadingNote: string | null;
   cues: TrackCue[];
   cueSession: string;
   quantize: boolean;
@@ -968,6 +971,7 @@ export function WaveformDeck({
       </div>
       )}
       {structureNote ? <p className="preview-cue-note">{structureNote}</p> : null}
+      {gridReadingNote ? <p className="preview-cue-note">{gridReadingNote}</p> : null}
       {!light && gridNote ? <p className="preview-cue-note">{gridNote}</p> : null}
       {!light && phraseNote ? <p className="preview-cue-note">{phraseNote}</p> : null}
       {notice ? <p className="preview-cue-note">{notice}</p> : null}

@@ -345,6 +345,7 @@ function PreviewDock({
   const [cueNotice, setCueNotice] = useState<string | null>(null);
   const [fileBeats, setFileBeats] = useState<AnlzBeat[] | null>(null);
   const [gridMissing, setGridMissing] = useState(false);
+  const [gridReading, setGridReading] = useState(false);
   const [phrases, setPhrases] = useState<AnlzPhrase[] | null>(null);
   const [phrasesMissing, setPhrasesMissing] = useState(false);
   const [quantize, setQuantize] = useState(true);
@@ -403,6 +404,7 @@ function PreviewDock({
     setGridRequestSeen(gridRequest);
     setFileBeats(null);
     setGridMissing(false);
+    setGridReading(false);
     setPhrases(null);
     setPhrasesMissing(false);
     setGridNotice(null);
@@ -410,80 +412,90 @@ function PreviewDock({
   useEffect(() => {
     const pdbId = rekordboxTrackId({ id: trackKey, uri: trackUri }) ?? 0;
     let cancel = false;
+    // A read that finishes in this turn never paints the note. A real wait does.
+    const showTimer = window.setTimeout(() => {
+      if (!cancel) setGridReading(true);
+    }, 0);
     void (async () => {
-      const roots: DirLike[] = [];
-      const volume = savedVolumeHandle();
-      if (volume) roots.push(volume);
       try {
-        const persisted = await loadPersistedStickHandle();
-        if (
-          persisted &&
-          persisted !== volume &&
-          !cancel &&
-          (await stickPermission(persisted, "read", false))
-        ) {
-          roots.push(persisted);
-        }
-      } catch {
-        /* the saved volume is still tried above */
-      }
-      let found: AnlzBeat[] | null = null;
-      let root: DirLike | null = null;
-      let sawFile = false;
-      for (const candidate of roots) {
-        if (cancel) return;
+        const roots: DirLike[] = [];
+        const volume = savedVolumeHandle();
+        if (volume) roots.push(volume);
         try {
-          const beats = await readStickBeatGrid(candidate, pdbId, filePath);
-          sawFile = true;
-          if (beats?.length) {
-            found = beats;
-            root = candidate;
-            break;
+          const persisted = await loadPersistedStickHandle();
+          if (
+            persisted &&
+            persisted !== volume &&
+            !cancel &&
+            (await stickPermission(persisted, "read", false))
+          ) {
+            roots.push(persisted);
           }
         } catch {
-          /* this folder could not be read; try the next one */
+          /* the saved volume is still tried above */
         }
-      }
-      if ((!found || found.length === 0) && !cancel) {
-        try {
-          const remembered = await readRememberedBeatGrid(pdbId, filePath);
-          if (remembered?.length) {
-            found = remembered;
+        let found: AnlzBeat[] | null = null;
+        let root: DirLike | null = null;
+        let sawFile = false;
+        for (const candidate of roots) {
+          if (cancel) return;
+          try {
+            const beats = await readStickBeatGrid(candidate, pdbId, filePath);
             sawFile = true;
-          } else if (listRememberedAnalysisFiles().length > 0) {
-            sawFile = true;
+            if (beats?.length) {
+              found = beats;
+              root = candidate;
+              break;
+            }
+          } catch {
+            /* this folder could not be read; try the next one */
           }
-        } catch {
-          /* remembered files are unreadable */
         }
-      }
-      if (cancel) return;
-      if (found?.length) {
-        let phraseList = null as AnlzPhrase[] | null;
-        try {
-          if (root && !cancel) phraseList = await readStickPhrases(root, pdbId, found, filePath);
-          if ((!phraseList || phraseList.length === 0) && !cancel) {
-            phraseList = await readRememberedPhrases(pdbId, found, filePath);
+        if ((!found || found.length === 0) && !cancel) {
+          try {
+            const remembered = await readRememberedBeatGrid(pdbId, filePath);
+            if (remembered?.length) {
+              found = remembered;
+              sawFile = true;
+            } else if (listRememberedAnalysisFiles().length > 0) {
+              sawFile = true;
+            }
+          } catch {
+            /* remembered files are unreadable */
           }
-        } catch {
-          phraseList = null;
         }
         if (cancel) return;
-        setFileBeats(found);
-        setGridMissing(false);
-        setPhrases(phraseList);
-        setPhrasesMissing(!phraseList?.length);
-        return;
+        if (found?.length) {
+          let phraseList = null as AnlzPhrase[] | null;
+          try {
+            if (root && !cancel) phraseList = await readStickPhrases(root, pdbId, found, filePath);
+            if ((!phraseList || phraseList.length === 0) && !cancel) {
+              phraseList = await readRememberedPhrases(pdbId, found, filePath);
+            }
+          } catch {
+            phraseList = null;
+          }
+          if (cancel) return;
+          setFileBeats(found);
+          setGridMissing(false);
+          setPhrases(phraseList);
+          setPhrasesMissing(!phraseList?.length);
+          return;
+        }
+        // A failed read is not the same as a file with no PQTZ tag.
+        if (!sawFile) return;
+        setFileBeats(null);
+        setGridMissing(true);
+        setPhrases(null);
+        setPhrasesMissing(false);
+      } finally {
+        window.clearTimeout(showTimer);
+        if (!cancel) setGridReading(false);
       }
-      // A failed read is not the same as a file with no PQTZ tag.
-      if (!sawFile) return;
-      setFileBeats(null);
-      setGridMissing(true);
-      setPhrases(null);
-      setPhrasesMissing(false);
     })();
     return () => {
       cancel = true;
+      window.clearTimeout(showTimer);
     };
   }, [trackKey, trackUri, stickEpoch, stickHandleEpoch, filePath]);
   useEffect(() => {
@@ -1042,6 +1054,7 @@ function PreviewDock({
               bpm={track.bpm || ""}
               fallback={gridMissing}
               gridNote={gridMissing ? t("crates.player.gridMissing") : null}
+              gridReadingNote={gridReading && !gridMissing ? t("crates.player.gridReading") : null}
               cues={track.cues ?? []}
               cueSession={track.id}
               quantize={quantize}
@@ -1177,6 +1190,8 @@ function PreviewDock({
                     </option>
                   ))}
                 </select>
+              </label>
+              <label className="preview-length">
                 <span>{t("crates.player.length")}</span>
                 <OverlapField
                   className="preview-overlap"
@@ -1189,17 +1204,18 @@ function PreviewDock({
                   onCommit={(ms) => rehearsal.onOverlap(track.id, ms)}
                 />
               </label>
+              <label className="preview-note-field">
+                <span>{t("crates.player.note")}</span>
+                <input
+                  className="preview-note"
+                  type="text"
+                  value={track.comment || ""}
+                  placeholder={t("crates.player.notePlaceholder")}
+                  title={t("crates.player.note")}
+                  onChange={(event) => rehearsal.onNote(track.id, event.currentTarget.value)}
+                />
+              </label>
             </div>
-            <label className="preview-note-field">
-              <span>{t("crates.player.note")}</span>
-              <input
-                className="preview-note"
-                type="text"
-                value={track.comment || ""}
-                placeholder={t("crates.player.notePlaceholder")}
-                onChange={(event) => rehearsal.onNote(track.id, event.currentTarget.value)}
-              />
-            </label>
           </div>
         ) : null}
         </div>
