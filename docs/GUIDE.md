@@ -2,7 +2,7 @@
 
 [Deutsch](GUIDE.de.md) · **English** · [README](../README.md)
 
-How to prepare a set with rekordbox: connect → build → export. Screenshots are from 4.5; the words describe **5.0.1** — a deck player with a full-width waveform, the Rekordbox beatgrid, cues that snap to the downbeat, zoom that follows the playhead, grab-to-scrub, space, and bar arrows. Hot cues A–H are written to the stick’s existing analysis file. This is a major version. Grouped set tools, **Fill with matches**, Plan B help, and **Wide alternatives** beside the card stay as they were.
+How to prepare a set with rekordbox: connect → build → export. Screenshots are from 4.5; the words describe **5.0.0** — a deck player with a full-width waveform, the Rekordbox beatgrid, cues that snap to the downbeat, zoom that follows the playhead, grab-to-scrub, space, and bar arrows. Hot cues A–H are written to the stick’s existing analysis file. This is a major version. Grouped set tools, **Fill with matches**, Plan B help, and **Wide alternatives** beside the card stay as they were.
 
 The shipping client is the desktop app (port **4317**). Browser development uses port **4327**. Stick write, players, and streaming accounts are still unverified.
 
