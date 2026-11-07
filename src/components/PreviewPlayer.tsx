@@ -336,6 +336,7 @@ function PreviewDock({
   const [phrases, setPhrases] = useState<AnlzPhrase[] | null>(null);
   const [phrasesMissing, setPhrasesMissing] = useState(false);
   const [quantize, setQuantize] = useState(true);
+  const [light, setLight] = useState(false);
   const [gridNotice, setGridNotice] = useState<string | null>(null);
   const beatsRef = useRef<AnlzBeat[] | null>(null);
   const phrasesRef = useRef<AnlzPhrase[] | null>(null);
@@ -956,12 +957,15 @@ function PreviewDock({
                 src={src}
                 preload="auto"
                 onPlay={() => setPlaying(true)}
-                onPause={() => setPlaying(false)}
-                onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime ?? 0)}
+                onPause={() => {
+                  setPlaying(false);
+                  setCurrentTime(audioRef.current?.currentTime ?? 0);
+                }}
                 onLoadedMetadata={() => setDuration(audioRef.current?.duration ?? 0)}
                 onDurationChange={() => setDuration(audioRef.current?.duration ?? 0)}
                 onEnded={() => {
                   setPlaying(false);
+                  setCurrentTime(audioRef.current?.currentTime ?? 0);
                   if (next) onChange(next.id);
                 }}
                 onError={() => {
@@ -976,14 +980,19 @@ function PreviewDock({
               currentTime={currentTime}
               duration={duration || (track.durationMs ?? 0) / 1000}
               playing={playing}
+              mediaRef={audioRef}
               beats={fileBeats}
               bpm={track.bpm || ""}
               fallback={gridMissing}
               gridNote={gridMissing ? t("crates.player.gridMissing") : null}
               cues={track.cues ?? []}
+              cueSession={track.id}
               quantize={quantize}
               onQuantize={setQuantize}
+              light={light}
+              onLight={setLight}
               phrases={phrases}
+              phrasesReady={gridMissing || phrasesMissing || phrases !== null}
               phraseNote={phrasesMissing ? t("crates.player.phrasesMissing") : null}
               onShiftGrid={shiftGrid}
               notice={gridNotice ?? cueNotice}

@@ -13,7 +13,10 @@ import {
   shiftAnlzGrid,
   shiftBeatTimes,
   snapCueTime,
+  structureCues,
   writeAnlzHotCues,
+  type AnlzPhrase,
+  type PhraseName,
 } from "./anlz-cues.ts";
 
 function ascii(value: string): Uint8Array {
@@ -202,6 +205,55 @@ test("a bpm fallback starts at zero and counts four beats to the bar", () => {
     { timeMs: 1500, beat: 4 },
     { timeMs: 2000, beat: 1 },
   ]);
+});
+
+function phrase(name: PhraseName, timeMs: number, endMs: number): AnlzPhrase {
+  return { beat: 1, endBeat: 2, timeMs, endMs, name };
+}
+
+test("structure cues follow the song places and skip a point in the same bar", () => {
+  const beats = beatsFromBpm(120, 50_000);
+  const song = [
+    phrase("intro", 0, 4000),
+    phrase("verse1", 8000, 16_000),
+    phrase("chorus", 16_000, 24_000),
+    phrase("down", 32_000, 40_000),
+    phrase("chorus2", 40_000, 48_000),
+    phrase("outro", 48_000, 50_000),
+  ];
+  assert.deepEqual(
+    structureCues(song, beats, true).map((cue) => [cue.slot, cue.timeMs, cue.label]),
+    [
+      [0, 0, "start"],
+      [1, 4000, "entry"],
+      [2, 8000, "verse"],
+      [3, 16_000, "drop"],
+      [4, 24_000, "dropEnd"],
+      [5, 40_000, "drop2"],
+      [6, 32_000, "break"],
+      [7, 48_000, "outro"],
+    ],
+  );
+  const tight = [
+    phrase("intro", 0, 4000),
+    phrase("verse1", 4000, 8000),
+    phrase("chorus", 16_000, 24_000),
+  ];
+  const collapsed = structureCues(tight, beats, true);
+  assert.equal(collapsed.find((cue) => cue.label === "verse"), undefined);
+  assert.equal(collapsed.find((cue) => cue.label === "entry")?.timeMs, 4000);
+  const offGrid = [phrase("intro", 0, 4100), phrase("chorus", 16_100, 24_000)];
+  const snapped = structureCues(offGrid, beats, true);
+  assert.equal(snapped.find((cue) => cue.label === "entry")?.timeMs, 4000);
+  assert.equal(snapped.find((cue) => cue.label === "drop")?.timeMs, 16_000);
+  const faster = [
+    ...beatsFromBpm(120, 8000),
+    ...beatsFromBpm(160, 8000).map((beat) => ({ beat: beat.beat, timeMs: beat.timeMs + 8000 })),
+  ];
+  const late = [phrase("chorus", 8000, 9600), phrase("chorus2", 11_200, 14_000)];
+  assert.equal(structureCues(late, faster, false).find((cue) => cue.label === "drop2")?.timeMs, 11_200);
+  assert.deepEqual(structureCues([], beats, true), []);
+  assert.deepEqual(structureCues(null, beats, true), []);
 });
 
 test("quantize off keeps the cue time and on snaps to the downbeat", () => {

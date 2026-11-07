@@ -217,6 +217,86 @@ export function snapCueTime(timeMs: number, beats: readonly AnlzBeat[], quantize
   return nearestDownbeat(timeMs, beats);
 }
 
+export type StructureCueLabel = "start" | "entry" | "verse" | "drop" | "dropEnd" | "drop2" | "break" | "outro";
+
+export type StructureCue = {
+  slot: number;
+  timeMs: number;
+  label: StructureCueLabel;
+};
+
+function phraseRole(name: PhraseName): "intro" | "verse" | "up" | "down" | "chorus" | "outro" | "other" {
+  if (name.startsWith("intro")) return "intro";
+  if (name.startsWith("verse")) return "verse";
+  if (name.startsWith("up")) return "up";
+  if (name === "down") return "down";
+  if (name.startsWith("chorus")) return "chorus";
+  if (name.startsWith("outro")) return "outro";
+  return "other";
+}
+
+/** Length of the bar that contains this time. Falls back to four beat steps. */
+function barSpanMs(timeMs: number, beats: readonly AnlzBeat[]): number {
+  let previous = -1;
+  let gap = 0;
+  for (let index = 0; index < beats.length; index += 1) {
+    const beat = beats[index];
+    if (!beat || beat.beat !== 1) continue;
+    if (previous >= 0) {
+      gap = beat.timeMs - previous;
+      if (beat.timeMs > timeMs) return Math.max(1, gap);
+    }
+    previous = beat.timeMs;
+  }
+  if (gap > 0) return gap;
+  if (beats.length >= 2) return Math.max(1, ((beats[1]?.timeMs ?? 0) - (beats[0]?.timeMs ?? 0)) * 4);
+  return 1;
+}
+
+/**
+ * Hot cues for the song places from the Native Instruments cue guide:
+ * start, mix-in, verse, drop, end of that drop, second drop, breakdown, outro.
+ * A later point closer than one bar to an earlier one is left empty.
+ * No phrases means no cues.
+ */
+export function structureCues(
+  phrases: readonly AnlzPhrase[] | null | undefined,
+  beats: readonly AnlzBeat[],
+  quantize: boolean,
+): StructureCue[] {
+  if (!phrases?.length) return [];
+  const intro = phrases.find((phrase) => phraseRole(phrase.name) === "intro");
+  const verse = phrases.find((phrase) => phraseRole(phrase.name) === "verse");
+  const up = phrases.find((phrase) => phraseRole(phrase.name) === "up");
+  const choruses = phrases.filter((phrase) => phraseRole(phrase.name) === "chorus");
+  const down = phrases.find((phrase) => phraseRole(phrase.name) === "down");
+  const outro = phrases.find((phrase) => phraseRole(phrase.name) === "outro");
+  const entry = intro ? intro.endMs : verse ? verse.timeMs : up ? up.timeMs : null;
+  const verseTime = verse && verse.timeMs !== entry ? verse.timeMs : null;
+  const firstChorus = choruses[0];
+  const secondChorus = choruses[1];
+  const start = beats.find((beat) => beat.beat === 1)?.timeMs ?? null;
+  const wanted: Array<[number, number | null, StructureCueLabel]> = [
+    [0, start, "start"],
+    [1, entry, "entry"],
+    [2, verseTime, "verse"],
+    [3, firstChorus?.timeMs ?? null, "drop"],
+    [4, firstChorus?.endMs ?? null, "dropEnd"],
+    [5, secondChorus?.timeMs ?? null, "drop2"],
+    [6, down?.timeMs ?? null, "break"],
+    [7, outro?.timeMs ?? null, "outro"],
+  ];
+  const placed: StructureCue[] = [];
+  for (const [slot, timeMs, label] of wanted) {
+    if (timeMs == null || !Number.isFinite(timeMs)) continue;
+    const time = snapCueTime(Math.round(timeMs), beats, quantize);
+    const crowded = placed.some((cue) => Math.abs(cue.timeMs - time) < barSpanMs(Math.min(cue.timeMs, time), beats));
+    if (crowded) continue;
+    placed.push({ slot, timeMs: time, label });
+  }
+  return placed;
+}
+
 export const GRID_NUDGE_MS = 5;
 
 /**

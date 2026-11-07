@@ -2195,11 +2195,19 @@ html[data-frame="mac"] .set-shell .hero-copy {
 
 .preview-player .preview-wave-tools {
   display: flex;
-  flex-wrap: nowrap;
-  gap: 0.28rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem 0.7rem;
   width: 100%;
   min-width: 0;
-  overflow-x: auto;
+}
+
+.preview-player .preview-tool-group {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 0.28rem;
+  min-width: 0;
 }
 
 .preview-player .preview-wave-tools button {
@@ -2215,6 +2223,7 @@ html[data-frame="mac"] .set-shell .hero-copy {
   font-size: 0.68rem;
   font-variant-numeric: tabular-nums;
   line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -2287,6 +2296,14 @@ html[data-frame="mac"] .set-shell .hero-copy {
 
 .preview-player .preview-wave-stage.is-zoomed {
   cursor: grab;
+}
+
+.preview-player .preview-wave-stage.is-light {
+  height: 3.75rem;
+}
+
+.preview-player .preview-wave-stage.is-light::before {
+  content: none;
 }
 
 .preview-player .preview-wave-stage::before {

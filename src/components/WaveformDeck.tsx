@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
 import { Tip } from "@/components/Hint";
 import { useI18n } from "@/lib/i18n/react";
 import {
   beatsFromBpm,
   GRID_NUDGE_MS,
   snapCueTime,
+  structureCues,
   type AnlzBeat,
+  type StructureCueLabel,
   type AnlzPhrase,
   type PhraseName,
 } from "@/lib/anlz-cues";
@@ -15,7 +17,10 @@ import type { MessageKey } from "@/lib/i18n/core";
 import { CUE_SLOT_COUNT, cueColor, cueLetter, type TrackCue } from "@/lib/set";
 import {
   waveformBands,
-  zoomAround,
+  fitLead,
+  trackLead,
+  waveformWindow,
+  zoomWindow,
   WAVE_ZOOM_MAX,
   WAVE_ZOOM_MIN,
   type WaveformBands,
@@ -79,6 +84,17 @@ const PHRASE_KEY: Record<PhraseName, MessageKey> = {
   verse5: "crates.player.phrase.verse5",
   verse6: "crates.player.phrase.verse6",
   bridge: "crates.player.phrase.bridge",
+};
+
+const STRUCTURE_KEY: Record<StructureCueLabel, MessageKey> = {
+  start: "crates.player.structure.start",
+  entry: "crates.player.structure.entry",
+  verse: "crates.player.structure.verse",
+  drop: "crates.player.structure.drop",
+  dropEnd: "crates.player.structure.dropEnd",
+  drop2: "crates.player.structure.drop2",
+  break: "crates.player.structure.break",
+  outro: "crates.player.structure.outro",
 };
 
 /** Muted ribbon so hot-cue flags stay the saturated marks. */
@@ -148,7 +164,7 @@ function drawBands(
     let low = 0;
     let body = 0;
     let high = 0;
-    for (let index = start; index < end && index < count; index += 1) {
+    for (let index = Math.max(0, start); index < end && index < count; index += 1) {
       low = Math.max(low, bands.low[index] ?? 0);
       body = Math.max(body, bands.mid[index] ?? 0);
       high = Math.max(high, bands.high[index] ?? 0);
@@ -239,14 +255,19 @@ export function WaveformDeck({
   currentTime,
   duration,
   playing,
+  mediaRef,
   beats,
   bpm,
   fallback,
   gridNote,
   cues,
+  cueSession,
   quantize,
   onQuantize,
+  light,
+  onLight,
   phrases,
+  phrasesReady,
   phraseNote,
   onShiftGrid,
   onSeek,
@@ -259,6 +280,8 @@ export function WaveformDeck({
   currentTime: number;
   duration: number;
   playing: boolean;
+  /** Live file playback. The playhead reads this while the track is running. */
+  mediaRef: RefObject<HTMLAudioElement | null>;
   /** Rekordbox PQTZ times. Null when that grid is not loaded. */
   beats: readonly AnlzBeat[] | null;
   bpm: string;
@@ -266,9 +289,14 @@ export function WaveformDeck({
   fallback: boolean;
   gridNote: string | null;
   cues: TrackCue[];
+  cueSession: string;
   quantize: boolean;
   onQuantize: (on: boolean) => void;
+  light: boolean;
+  onLight: (on: boolean) => void;
   phrases: readonly AnlzPhrase[] | null;
+  /** False while the phrase read for this track is still running. */
+  phrasesReady: boolean;
   phraseNote: string | null;
   onShiftGrid: (deltaMs: number) => void;
   onSeek: (seconds: number) => void;
@@ -281,6 +309,9 @@ export function WaveformDeck({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overviewRef = useRef<HTMLCanvasElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+  const elapsedRef = useRef<HTMLSpanElement>(null);
+  const playheadRef = useRef<HTMLSpanElement>(null);
+  const overviewPlayRef = useRef<HTMLSpanElement>(null);
   const [bands, setBands] = useState<WaveformBands | null>(null);
   const [zoom, setZoom] = useState(1);
   const [viewStart, setViewStart] = useState(0);
@@ -293,15 +324,25 @@ export function WaveformDeck({
   }
   const [drag, setDrag] = useState<{ slot: number; timeMs: number } | null>(null);
   const [editing, setEditing] = useState<number | null>(null);
-  const [hold, setHold] = useState(false);
+  const [cueUndo, setCueUndo] = useState<TrackCue[] | null>(null);
+  const [structureNote, setStructureNote] = useState<string | null>(null);
+  const [undoSession, setUndoSession] = useState(cueSession);
+  if (cueSession !== undoSession) {
+    setUndoSession(cueSession);
+    setCueUndo(null);
+    setStructureNote(null);
+  }
   const dragRef = useRef<{ slot: number; timeMs: number } | null>(null);
   const dragMoved = useRef(false);
   const playTimer = useRef<number | null>(null);
   const grabRef = useRef<{ x: number; time: number; playRatio: number; moved: boolean } | null>(null);
   const zoomRef = useRef(1);
   const viewRef = useRef(0);
+  const padRef = useRef(0);
+  const firstRef = useRef(0);
   const playingRef = useRef(playing);
   const holdRef = useRef(false);
+  const lightRef = useRef(light);
   const gridRef = useRef<{ marks: readonly AnlzBeat[]; fromFile: boolean; quantize: boolean }>({
     marks: [],
     fromFile: false,
@@ -319,12 +360,16 @@ export function WaveformDeck({
   );
   useEffect(() => {
     spanRef.current = span;
-    timeRef.current = currentTime;
+    if (!playing) timeRef.current = currentTime;
     zoomRef.current = zoom;
     viewRef.current = viewStart;
+    const lead = trackLead(drawn, bpm);
+    padRef.current = span > 0 ? lead.pad / span : 0;
+    firstRef.current = span > 0 ? lead.first / span : 0;
     gridRef.current = { marks: gridMarks, fromFile, quantize };
     drawRef.current = { marks: drawn, fromFile };
-  }, [span, currentTime, zoom, viewStart, gridMarks, fromFile, quantize, drawn]);
+    lightRef.current = light;
+  }, [span, currentTime, playing, zoom, viewStart, gridMarks, fromFile, quantize, drawn, bpm, light]);
 
   function playCue(seconds: number) {
     if (playTimer.current) window.clearTimeout(playTimer.current);
@@ -361,11 +406,15 @@ export function WaveformDeck({
     const stage = stageRef.current;
     if (!canvas || !stage) return;
     const paint = () => {
-      const start = viewRef.current;
-      const spanView = 1 / zoomRef.current;
-      drawBands(canvas, bands, start, spanView, true);
-      drawBeatMarks(canvas, drawRef.current.marks, spanRef.current, start, spanView, drawRef.current.fromFile, true);
-      if (overview) {
+      const win = waveformWindow(zoomRef.current, viewRef.current, padRef.current);
+      const start = win.start;
+      const spanView = win.span;
+      const grid = !light;
+      drawBands(canvas, bands, start, spanView, grid);
+      if (grid) {
+        drawBeatMarks(canvas, drawRef.current.marks, spanRef.current, start, spanView, drawRef.current.fromFile, true);
+      }
+      if (overview && grid) {
         drawBands(overview, bands, 0, 1, false);
         drawBeatMarks(overview, drawRef.current.marks, spanRef.current, 0, 1, drawRef.current.fromFile, false);
       }
@@ -375,7 +424,7 @@ export function WaveformDeck({
     observer.observe(stage);
     if (overview?.parentElement) observer.observe(overview.parentElement);
     return () => observer.disconnect();
-  }, [bands, zoom, viewStart, beats, bpm, duration, fallback]);
+  }, [bands, zoom, viewStart, beats, bpm, duration, fallback, light]);
 
   useEffect(() => {
     playingRef.current = playing;
@@ -386,54 +435,134 @@ export function WaveformDeck({
     if (!stage) return;
     function onWheel(event: WheelEvent) {
       event.preventDefault();
+      if (lightRef.current) return;
       const rect = stage!.getBoundingClientRect();
       if (rect.width <= 0) return;
       const zoomNow = zoomRef.current;
       const factor = Math.exp(-event.deltaY * 0.0016);
-      let start = viewRef.current;
+      const pad = padRef.current;
+      const shown = waveformWindow(zoomNow, viewRef.current, pad);
+      let start = shown.start;
+      const spanView = shown.span;
       let anchor = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
       if (playingRef.current && spanRef.current > 0) {
         const play = timeRef.current / spanRef.current;
-        const windowSpan = 1 / zoomNow;
-        start = Math.min(Math.max(0, play - windowSpan / 2), 1 - windowSpan);
+        start = Math.min(Math.max(-pad, play - spanView / 2), Math.max(-pad, 1 - spanView));
         anchor = 0.5;
       }
-      const next = zoomAround(start, zoomNow, anchor, zoomNow * factor);
-      zoomRef.current = next.zoom;
-      viewRef.current = next.start;
-      setZoom(next.zoom);
-      setViewStart(next.start);
+      const nextZoom = Math.min(WAVE_ZOOM_MAX, Math.max(WAVE_ZOOM_MIN, zoomNow * factor));
+      const nextSpan = 1 / nextZoom;
+      const anchorTime = start + anchor * spanView;
+      const nextStart = nextZoom <= 1 ? 0 : fitLead(zoomWindow(start, spanView, anchor, nextSpan, -pad), nextSpan, anchorTime, -pad, firstRef.current);
+      zoomRef.current = nextZoom;
+      viewRef.current = nextStart;
+      setZoom(nextZoom);
+      setViewStart(nextStart);
     }
     stage.addEventListener("wheel", onWheel, { passive: false });
     return () => stage.removeEventListener("wheel", onWheel);
   }, [src]);
 
-  useEffect(() => {
-    if (holdRef.current || zoom <= 1 || span <= 0) return;
-    const play = currentTime / span;
-    const windowSpan = 1 / zoom;
-    const startNow = viewRef.current;
-    const inside = play >= startNow + windowSpan * 0.12 && play <= startNow + windowSpan * 0.88;
-    if (!playing && inside) return;
-    const start = Math.min(Math.max(0, play - windowSpan / 2), 1 - windowSpan);
-    if (Math.abs(start - startNow) < 0.0004) return;
-    viewRef.current = start;
-    setViewStart(start);
-  }, [playing, hold, zoom, currentTime, span]);
+  const lead = trackLead(drawn, bpm);
+  const padRatio = span > 0 ? lead.pad / span : 0;
+  const firstRatio = span > 0 ? lead.first / span : 0;
 
-  const viewSpan = 1 / zoom;
+  useLayoutEffect(() => {
+    function paintClock(seconds: number) {
+      const durationSpan = spanRef.current;
+      const winNow = waveformWindow(zoomRef.current, viewRef.current, padRef.current);
+      const left = durationSpan <= 0 ? 0 : ((seconds / durationSpan - winNow.start) / winNow.span) * 100;
+      if (playheadRef.current) playheadRef.current.style.left = `${left}%`;
+      if (overviewPlayRef.current) {
+        overviewPlayRef.current.style.left = durationSpan > 0 ? `${(seconds / durationSpan) * 100}%` : "0%";
+      }
+      if (elapsedRef.current) elapsedRef.current.textContent = formatTime(seconds);
+    }
+    function follow(seconds: number) {
+      if (holdRef.current || zoomRef.current <= 1 || spanRef.current <= 0) return;
+      const play = seconds / spanRef.current;
+      const windowSpan = 1 / zoomRef.current;
+      const startNow = viewRef.current;
+      const inside = play >= startNow + windowSpan * 0.12 && play <= startNow + windowSpan * 0.88;
+      if (inside) return;
+      const pad = padRef.current;
+      const start = Math.min(Math.max(-pad, play - windowSpan / 2), Math.max(-pad, 1 - windowSpan));
+      if (Math.abs(start - startNow) < 0.0004) return;
+      viewRef.current = start;
+      setViewStart(start);
+    }
+    if (!playing) {
+      timeRef.current = currentTime;
+      paintClock(currentTime);
+      follow(currentTime);
+      return;
+    }
+    let frame = 0;
+    let stopped = false;
+    const tick = () => {
+      if (stopped) return;
+      const node = mediaRef.current;
+      const time = node && Number.isFinite(node.currentTime) ? node.currentTime : timeRef.current;
+      timeRef.current = time;
+      paintClock(time);
+      follow(time);
+      frame = requestAnimationFrame(tick);
+    };
+    tick();
+    return () => {
+      stopped = true;
+      cancelAnimationFrame(frame);
+    };
+  }, [playing, currentTime, viewStart, zoom, span, padRatio, light, mediaRef]);
+
+  useEffect(() => {
+    function typing(target: EventTarget | null): boolean {
+      if (!(target instanceof HTMLElement)) return false;
+      if (target.isContentEditable) return true;
+      const tag = target.tagName;
+      if (tag === "TEXTAREA" || tag === "SELECT") return true;
+      if (target instanceof HTMLInputElement) {
+        const type = target.type;
+        return type !== "button" && type !== "checkbox" && type !== "radio" && type !== "file";
+      }
+      return false;
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.altKey || event.metaKey || event.ctrlKey || event.shiftKey || event.repeat) return;
+      if (typing(event.target)) return;
+      const raw = event.code.startsWith("Digit") ? event.code.slice(5) : event.code.startsWith("Numpad") ? event.code.slice(6) : "";
+      const number = Number(raw);
+      if (!raw || number < 1 || number > CUE_SLOT_COUNT) return;
+      event.preventDefault();
+      const slot = number - 1;
+      const existing = cues.find((cue) => cue.slot === slot);
+      if (existing) {
+        onPlay(existing.timeMs / 1000);
+        return;
+      }
+      if (spanRef.current <= 0) return;
+      setStructureNote(null);
+      const timeMs = snapCueTime(Math.round(timeRef.current * 1000), gridRef.current.marks, gridRef.current.quantize);
+      onCues([...cues, { slot, timeMs, name: cueLetter(slot) }]);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [cues, onCues, onPlay]);
+
+  const win = waveformWindow(zoom, viewStart, padRatio);
   const shown = drag ? cues.map((cue) => (cue.slot === drag.slot ? { ...cue, timeMs: drag.timeMs } : cue)) : cues;
 
   function timeAt(clientX: number): number {
     const rect = stageRef.current?.getBoundingClientRect();
     if (!rect || rect.width <= 0 || span <= 0) return 0;
     const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
-    return (viewRef.current + ratio / zoomRef.current) * span;
+    const visible = waveformWindow(zoomRef.current, viewRef.current, padRef.current);
+    return Math.min(span, Math.max(0, (visible.start + ratio * visible.span) * span));
   }
 
   function place(seconds: number): number {
     if (span <= 0) return 0;
-    return ((seconds / span - viewStart) / viewSpan) * 100;
+    return ((seconds / span - win.start) / win.span) * 100;
   }
 
   function phraseBox(phrase: AnlzPhrase, zoomed: boolean): { left: string; width: string } | null {
@@ -441,30 +570,34 @@ export function WaveformDeck({
     const start = phrase.timeMs / 1000 / span;
     const end = phrase.endMs / 1000 / span;
     if (!zoomed) return { left: `${start * 100}%`, width: `${Math.max(0.3, (end - start) * 100)}%` };
-    const left = (start - viewStart) / viewSpan;
-    const right = (end - viewStart) / viewSpan;
+    const left = (start - win.start) / win.span;
+    const right = (end - win.start) / win.span;
     if (right <= 0 || left >= 1) return null;
     const clamped = Math.max(0, left);
     return { left: `${clamped * 100}%`, width: `${(Math.min(1, right) - clamped) * 100}%` };
   }
 
   function changeZoom(factor: number) {
-    let start = viewStart;
+    const shown = waveformWindow(zoom, viewStart, padRatio);
+    let start = shown.start;
     let anchor = 0.5;
     if (span > 0) {
-      const play = currentTime / span;
+      const play = timeRef.current / span;
       if (playing) {
-        start = Math.min(Math.max(0, play - viewSpan / 2), 1 - viewSpan);
+        start = Math.min(Math.max(-padRatio, play - shown.span / 2), Math.max(-padRatio, 1 - shown.span));
       } else {
-        const inside = play >= viewStart && play <= viewStart + viewSpan;
-        anchor = inside ? (play - viewStart) / viewSpan : 0.5;
+        const inside = play >= shown.start && play <= shown.start + shown.span;
+        anchor = inside ? (play - shown.start) / shown.span : 0.5;
       }
     }
-    const next = zoomAround(start, zoom, anchor, zoom * factor);
-    zoomRef.current = next.zoom;
-    viewRef.current = next.start;
-    setZoom(next.zoom);
-    setViewStart(next.start);
+    const nextZoom = Math.min(WAVE_ZOOM_MAX, Math.max(WAVE_ZOOM_MIN, zoom * factor));
+    const nextSpan = 1 / nextZoom;
+    const anchorTime = start + anchor * shown.span;
+    const nextStart = nextZoom <= 1 ? 0 : fitLead(zoomWindow(start, shown.span, anchor, nextSpan, -padRatio), nextSpan, anchorTime, -padRatio, firstRatio);
+    zoomRef.current = nextZoom;
+    viewRef.current = nextStart;
+    setZoom(nextZoom);
+    setViewStart(nextStart);
   }
 
   function seekOverview(clientX: number) {
@@ -474,10 +607,15 @@ export function WaveformDeck({
     onSeek(ratio * span);
     if (zoomRef.current > 1) {
       const windowSpan = 1 / zoomRef.current;
-      const start = Math.min(Math.max(0, ratio - windowSpan / 2), 1 - windowSpan);
+      const pad = padRef.current;
+      const start = Math.min(Math.max(-pad, ratio - windowSpan / 2), Math.max(-pad, 1 - windowSpan));
       viewRef.current = start;
       setViewStart(start);
     }
+  }
+
+  function forgetStructureNote() {
+    if (structureNote) setStructureNote(null);
   }
 
   function setPad(slot: number) {
@@ -486,89 +624,153 @@ export function WaveformDeck({
       playCue(existing.timeMs / 1000);
       return;
     }
+    forgetStructureNote();
     if (span <= 0) return;
-    const timeMs = snapCueTime(Math.round(currentTime * 1000), gridMarks, quantize);
+    const timeMs = snapCueTime(Math.round(timeRef.current * 1000), gridMarks, quantize);
     onCues([...cues, { slot, timeMs, name: cueLetter(slot) }]);
   }
 
   function rename(slot: number, name: string) {
+    forgetStructureNote();
     onCues(cues.map((cue) => (cue.slot === slot ? { ...cue, name: name.slice(0, 24) } : cue)));
   }
 
   function remove(slot: number) {
+    forgetStructureNote();
     onCues(cues.filter((cue) => cue.slot !== slot));
+  }
+
+  function placeStructure() {
+    if (!phrasesReady) return;
+    const next = structureCues(phrases, gridMarks, quantize);
+    if (!next.length) {
+      const alreadyExplained = !light && Boolean(phraseNote || gridNote);
+      if (!alreadyExplained) setStructureNote(t("crates.player.structureMissing"));
+      return;
+    }
+    const named = next.map((cue) => ({ slot: cue.slot, timeMs: cue.timeMs, name: t(STRUCTURE_KEY[cue.label]) }));
+    if (named.length === cues.length && named.every((cue) => cues.some((item) => item.slot === cue.slot && item.timeMs === cue.timeMs && item.name === cue.name))) {
+      return;
+    }
+    setCueUndo((current) => current ?? cues.map((cue) => ({ ...cue })));
+    setStructureNote(null);
+    onCues(named);
+  }
+
+  function undoStructure() {
+    if (!cueUndo) return;
+    onCues(cueUndo.map((cue) => ({ ...cue })));
+    setCueUndo(null);
+    setStructureNote(null);
+  }
+
+  function toggleLight() {
+    const next = !light;
+    if (next) {
+      zoomRef.current = 1;
+      viewRef.current = 0;
+      setZoom(1);
+      setViewStart(0);
+    }
+    onLight(next);
   }
 
   const playhead = place(currentTime);
   const zoomLabel = zoom < 1.2 ? "1×" : `${Math.round(zoom)}×`;
-  const windowLeft = viewStart * 100;
-  const windowWidth = viewSpan * 100;
+  const windowLeft = Math.max(0, win.start) * 100;
+  const windowWidth = (Math.min(1, win.start + win.span) - Math.max(0, win.start)) * 100;
   const overviewPlay = span > 0 ? (currentTime / span) * 100 : 0;
 
   return (
     <div className="preview-wave">
       <div className="preview-wave-times">
-        <span>{formatTime(currentTime)}</span>
-        <span className="preview-wave-zoom">
-          <Tip as="span" text={t("crates.player.zoomOut")} disabled={zoom <= WAVE_ZOOM_MIN}>
-            <button type="button" aria-label={t("crates.player.zoomOut")} disabled={zoom <= WAVE_ZOOM_MIN} onClick={() => changeZoom(0.5)}>
-              −
-            </button>
-          </Tip>
-          <Tip as="span" text={t("crates.player.zoomReset")} disabled={zoom <= WAVE_ZOOM_MIN}>
-            <button
-              type="button"
-              aria-label={t("crates.player.zoomReset")}
-              disabled={zoom <= WAVE_ZOOM_MIN}
-              onClick={() => {
-                zoomRef.current = 1;
-                viewRef.current = 0;
-                setZoom(1);
-                setViewStart(0);
-              }}
-            >
-              {zoomLabel}
-            </button>
-          </Tip>
-          <Tip as="span" text={t("crates.player.zoomIn")} disabled={zoom >= WAVE_ZOOM_MAX}>
-            <button type="button" aria-label={t("crates.player.zoomIn")} disabled={zoom >= WAVE_ZOOM_MAX} onClick={() => changeZoom(2)}>
-              +
-            </button>
-          </Tip>
-        </span>
+        <span ref={elapsedRef}>{formatTime(currentTime)}</span>
         <span>{formatTime(span)}</span>
       </div>
       <div className="preview-wave-tools">
-        <Tip text={t("crates.player.quantize")}>
-          <button type="button" aria-pressed={quantize} aria-label={t("crates.player.quantize")} onClick={() => onQuantize(!quantize)}>
-            Q
-          </button>
-        </Tip>
-        <Tip text={t("crates.player.gridEarlier")} disabled={!fromFile}>
-          <button type="button" aria-label={t("crates.player.gridEarlier")} disabled={!fromFile} onClick={() => onShiftGrid(-GRID_NUDGE_MS)}>
-            −5
-          </button>
-        </Tip>
-        <Tip text={t("crates.player.gridLater")} disabled={!fromFile}>
-          <button type="button" aria-label={t("crates.player.gridLater")} disabled={!fromFile} onClick={() => onShiftGrid(GRID_NUDGE_MS)}>
-            +5
-          </button>
-        </Tip>
-        <Tip text={t("crates.player.gridToPlayhead")} disabled={!fromFile}>
-          <button
-            type="button"
-            aria-label={t("crates.player.gridToPlayhead")}
-            disabled={!fromFile}
-            onClick={() => {
-              const marks = gridRef.current.marks;
-              const playMs = Math.round(timeRef.current * 1000);
-              onShiftGrid(playMs - snapCueTime(playMs, marks, true));
-            }}
-          >
-            1
-          </button>
-        </Tip>
+        <div className="preview-tool-group">
+          <Tip text={t("crates.player.lightTip")}>
+            <button type="button" aria-pressed={light} aria-label={t("crates.player.light")} onClick={toggleLight}>
+              {t("crates.player.light")}
+            </button>
+          </Tip>
+          {light ? null : (
+            <>
+              <Tip text={t("crates.player.zoomOut")} disabled={zoom <= WAVE_ZOOM_MIN}>
+                <button type="button" aria-label={t("crates.player.zoomOut")} disabled={zoom <= WAVE_ZOOM_MIN} onClick={() => changeZoom(0.5)}>
+                  −
+                </button>
+              </Tip>
+              <Tip text={t("crates.player.zoomReset")} disabled={zoom <= WAVE_ZOOM_MIN}>
+                <button
+                  type="button"
+                  aria-label={t("crates.player.zoomReset")}
+                  disabled={zoom <= WAVE_ZOOM_MIN}
+                  onClick={() => {
+                    zoomRef.current = 1;
+                    viewRef.current = 0;
+                    setZoom(1);
+                    setViewStart(0);
+                  }}
+                >
+                  {zoomLabel}
+                </button>
+              </Tip>
+              <Tip text={t("crates.player.zoomIn")} disabled={zoom >= WAVE_ZOOM_MAX}>
+                <button type="button" aria-label={t("crates.player.zoomIn")} disabled={zoom >= WAVE_ZOOM_MAX} onClick={() => changeZoom(2)}>
+                  +
+                </button>
+              </Tip>
+            </>
+          )}
+        </div>
+        <div className="preview-tool-group">
+          <Tip text={t("crates.player.structureTip")} disabled={!phrasesReady}>
+            <button type="button" aria-label={t("crates.player.structure")} disabled={!phrasesReady} onClick={placeStructure}>
+              {t("crates.player.structure")}
+            </button>
+          </Tip>
+          <Tip text={t("crates.player.structureUndoTip")} disabled={!cueUndo}>
+            <button type="button" aria-label={t("crates.player.structureUndo")} disabled={!cueUndo} onClick={undoStructure}>
+              {t("crates.player.structureUndo")}
+            </button>
+          </Tip>
+        </div>
+        {light ? null : (
+          <div className="preview-tool-group">
+            <Tip text={t("crates.player.quantize")}>
+              <button type="button" aria-pressed={quantize} aria-label={t("crates.player.quantize")} onClick={() => onQuantize(!quantize)}>
+                Q
+              </button>
+            </Tip>
+            <Tip text={t("crates.player.gridEarlier")} disabled={!fromFile}>
+              <button type="button" aria-label={t("crates.player.gridEarlier")} disabled={!fromFile} onClick={() => onShiftGrid(-GRID_NUDGE_MS)}>
+                −5
+              </button>
+            </Tip>
+            <Tip text={t("crates.player.gridLater")} disabled={!fromFile}>
+              <button type="button" aria-label={t("crates.player.gridLater")} disabled={!fromFile} onClick={() => onShiftGrid(GRID_NUDGE_MS)}>
+                +5
+              </button>
+            </Tip>
+            <Tip text={t("crates.player.gridToPlayhead")} disabled={!fromFile}>
+              <button
+                type="button"
+                aria-label={t("crates.player.gridToPlayhead")}
+                disabled={!fromFile}
+                onClick={() => {
+                  const marks = gridRef.current.marks;
+                  const playMs = Math.round(timeRef.current * 1000);
+                  onShiftGrid(playMs - snapCueTime(playMs, marks, true));
+                }}
+              >
+                1
+              </button>
+            </Tip>
+          </div>
+        )}
       </div>
+      {light ? null : (
       <div
         className="preview-wave-overview"
         onPointerDown={(event) => {
@@ -585,26 +787,30 @@ export function WaveformDeck({
               className="preview-phrase"
               title={t(PHRASE_KEY[phrase.name])}
               style={{ ...box, background: PHRASE_COLOR[phrase.name] }}
-              onPointerDown={(event) => event.stopPropagation()}
+              onPointerDown={(event) => {
+                event.stopPropagation();
+                onPlay(phrase.timeMs / 1000);
+              }}
             />
           );
         })}
         {zoom > 1.05 ? (
           <span className="preview-wave-window" style={{ left: `${windowLeft}%`, width: `${windowWidth}%` }} />
         ) : null}
-        <span className="preview-playhead" style={{ left: `${overviewPlay}%` }} />
+        <span ref={overviewPlayRef} className="preview-playhead" style={{ left: `${overviewPlay}%` }} />
       </div>
+      )}
       <div
         ref={stageRef}
-        className={zoom > 1 ? "preview-wave-stage is-zoomed" : "preview-wave-stage"}
-        style={{ "--wave-lane": `${WAVE_LANE * 100}%` } as CSSProperties}
-        title={t("crates.player.zoomWheel")}
+        className={["preview-wave-stage", zoom > 1 && !light ? "is-zoomed" : "", light ? "is-light" : ""].filter(Boolean).join(" ")}
+        style={{ "--wave-lane": light ? "0%" : `${WAVE_LANE * 100}%` } as CSSProperties}
+        title={light ? undefined : t("crates.player.zoomWheel")}
         onPointerDown={(event) => {
           if ((event.target as HTMLElement).closest(".preview-cue-mark")) return;
           holdRef.current = true;
-          setHold(true);
-          const playRatio = span > 0 ? (currentTime / span - viewRef.current) * zoomRef.current : 0.5;
-          grabRef.current = { x: event.clientX, time: currentTime, playRatio, moved: false };
+          const visible = waveformWindow(zoomRef.current, viewRef.current, padRef.current);
+          const playRatio = span > 0 && visible.span > 0 ? (timeRef.current / span - visible.start) / visible.span : 0.5;
+          grabRef.current = { x: event.clientX, time: timeRef.current, playRatio, moved: false };
           event.currentTarget.setPointerCapture(event.pointerId);
         }}
         onPointerMove={(event) => {
@@ -618,12 +824,14 @@ export function WaveformDeck({
           if (!grab.moved) return;
           const rect = stageRef.current?.getBoundingClientRect();
           if (!rect || rect.width <= 0) return;
-          const visible = span / zoomRef.current;
+          const visibleWindow = waveformWindow(zoomRef.current, viewRef.current, padRef.current);
+          const visible = visibleWindow.span * span;
           const nextTime = Math.min(span, Math.max(0, grab.time - (dx / rect.width) * visible));
           if (zoomRef.current > 1) {
-            const start = nextTime / span - grab.playRatio / zoomRef.current;
-            const limit = 1 - 1 / zoomRef.current;
-            const clamped = Math.min(Math.max(0, start), limit);
+            const pad = padRef.current;
+            const start = nextTime / span - grab.playRatio * visibleWindow.span;
+            const limit = Math.max(-pad, 1 - 1 / zoomRef.current);
+            const clamped = Math.min(Math.max(-pad, start), limit);
             viewRef.current = clamped;
             setViewStart(clamped);
           }
@@ -633,18 +841,18 @@ export function WaveformDeck({
           const grab = grabRef.current;
           grabRef.current = null;
           holdRef.current = false;
-          setHold(false);
           if (!grab || grab.moved) return;
           onSeek(timeAt(event.clientX));
         }}
         onPointerCancel={() => {
           grabRef.current = null;
           holdRef.current = false;
-          setHold(false);
         }}
       >
         <canvas ref={canvasRef} aria-label={t("crates.player.seek")} />
-        {phrases?.map((phrase) => {
+        {light
+          ? null
+          : phrases?.map((phrase) => {
           const box = phraseBox(phrase, true);
           if (!box) return null;
           return (
@@ -653,11 +861,14 @@ export function WaveformDeck({
               className="preview-phrase"
               title={t(PHRASE_KEY[phrase.name])}
               style={{ ...box, background: PHRASE_COLOR[phrase.name] }}
-              onPointerDown={(event) => event.stopPropagation()}
+              onPointerDown={(event) => {
+                event.stopPropagation();
+                onPlay(phrase.timeMs / 1000);
+              }}
             />
           );
         })}
-        <span className="preview-playhead" style={{ left: `${playhead}%` }} />
+        <span ref={playheadRef} className="preview-playhead" style={{ left: `${playhead}%` }} />
         {shown.map((cue) => (
           <button
             key={cue.slot}
@@ -687,7 +898,10 @@ export function WaveformDeck({
               const timeMs = snapCueTime(Math.round(timeAt(event.clientX) * 1000), gridMarks, quantize);
               dragRef.current = null;
               setDrag(null);
-              if (dragMoved.current) onCues(cues.map((item) => (item.slot === cue.slot ? { ...item, timeMs } : item)));
+              if (dragMoved.current) {
+                forgetStructureNote();
+                onCues(cues.map((item) => (item.slot === cue.slot ? { ...item, timeMs } : item)));
+              }
               else onPlay(cue.timeMs / 1000);
             }}
           >
@@ -698,6 +912,7 @@ export function WaveformDeck({
           </button>
         ))}
       </div>
+      {light ? null : (
       <div className="preview-cue-row" role="group" aria-label={t("crates.player.cueName", { letter: "A–H" })}>
         {Array.from({ length: CUE_SLOT_COUNT }, (_, slot) => {
           const cue = cues.find((item) => item.slot === slot);
@@ -756,8 +971,10 @@ export function WaveformDeck({
           );
         })}
       </div>
-      {gridNote ? <p className="preview-cue-note">{gridNote}</p> : null}
-      {phraseNote ? <p className="preview-cue-note">{phraseNote}</p> : null}
+      )}
+      {structureNote ? <p className="preview-cue-note">{structureNote}</p> : null}
+      {!light && gridNote ? <p className="preview-cue-note">{gridNote}</p> : null}
+      {!light && phraseNote ? <p className="preview-cue-note">{phraseNote}</p> : null}
       {notice ? <p className="preview-cue-note">{notice}</p> : null}
     </div>
   );

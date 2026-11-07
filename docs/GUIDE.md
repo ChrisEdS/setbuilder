@@ -2,7 +2,7 @@
 
 [Deutsch](GUIDE.de.md) · **English** · [README](../README.md)
 
-**5.0.2.** The pictures are the English interface in Chrome. **DE** / **EN** at the top right switches the labels. The German guide is the same steps.
+**5.0.3.** The pictures are the English interface in Chrome. **DE** / **EN** at the top right switches the labels. The German guide is the same steps.
 
 Connect the stick, build the set, hear it on the deck, take it with you. The shipping client is the desktop app (port **4317**). In the browser: port **4327**.
 

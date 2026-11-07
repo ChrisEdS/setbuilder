@@ -1,10 +1,63 @@
 export const WAVE_ZOOM_MIN = 1;
 export const WAVE_ZOOM_MAX = 64;
 
+/** Bars of empty view before the first downbeat, so beat 1 can be lined up. */
+export const WAVE_LEAD_BARS = 3;
+
+/** Seconds before time 0, and the first downbeat. The downbeat then sits WAVE_LEAD_BARS in. */
+export function trackLead(beats: readonly { timeMs: number; beat: number }[], bpm: string): { pad: number; first: number } {
+  let bar = 2;
+  let first = 0;
+  let seen = false;
+  for (let index = 0; index < beats.length; index += 1) {
+    const beat = beats[index];
+    if (!beat || beat.beat !== 1) continue;
+    if (!seen) {
+      first = beat.timeMs / 1000;
+      seen = true;
+      continue;
+    }
+    bar = Math.max(0.4, beat.timeMs / 1000 - first);
+    break;
+  }
+  if (!seen) {
+    const tempo = Number.parseFloat(bpm);
+    if (tempo >= 40 && tempo <= 240) bar = 240 / tempo;
+  }
+  return { pad: Math.max(0, bar * WAVE_LEAD_BARS - first), first };
+}
+
 /**
- * Zoom the visible window while keeping the time under `anchor` (0–1 across the
- * current window) fixed. The window always stays inside the track.
+ * A window whose left edge is still on the first downbeat, or before it, keeps the
+ * whole lead. A view further into the track is left where it is.
  */
+export function fitLead(start: number, span: number, anchorTime: number, origin: number, first: number): number {
+  if (!(span > 0) || start > first || first > start + span) return start;
+  if (anchorTime < origin || anchorTime > origin + span) return start;
+  return origin;
+}
+
+/**
+ * Visible fraction of the track. Zoom 1 shows the whole track plus the lead
+ * before time 0. A closer view can scroll back to that lead, and no further.
+ */
+export function waveformWindow(zoom: number, viewStart: number, pad: number): { start: number; span: number } {
+  const lead = Number.isFinite(pad) && pad > 0 ? pad : 0;
+  if (zoom <= WAVE_ZOOM_MIN) return { start: -lead, span: 1 + lead };
+  const span = 1 / Math.min(WAVE_ZOOM_MAX, zoom);
+  const limit = Math.max(-lead, 1 - span);
+  return { start: Math.min(Math.max(-lead, viewStart), limit), span };
+}
+
+/** Next left edge. `minStart` may be negative so the lead before time 0 stays reachable. */
+export function zoomWindow(start: number, span: number, anchor: number, nextSpan: number, minStart: number): number {
+  const clampedAnchor = Math.min(1, Math.max(0, anchor));
+  const time = start + clampedAnchor * span;
+  const next = time - clampedAnchor * nextSpan;
+  const limit = Math.max(minStart, 1 - nextSpan);
+  return Math.min(Math.max(minStart, next), limit);
+}
+
 export function zoomAround(
   start: number,
   zoom: number,
