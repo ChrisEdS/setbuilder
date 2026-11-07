@@ -243,8 +243,10 @@ export function RekordboxStick({
   const softReconnectImpl = useRef<() => Promise<boolean>>(async () => false);
   const onSetsRef = useRef(onSets);
   const onIndexedRef = useRef(onIndexed);
-  onSetsRef.current = onSets;
-  onIndexedRef.current = onIndexed;
+  useEffect(() => {
+    onSetsRef.current = onSets;
+    onIndexedRef.current = onIndexed;
+  });
 
   function publishSets(next: RekordboxStickSet[]) {
     onSetsRef.current?.(next);
@@ -275,6 +277,31 @@ export function RekordboxStick({
       setHealth(null);
     } finally {
       setCheckingHealth(false);
+    }
+  }
+
+  async function applyHandle(handle: DirLike) {
+    // Read inside the queue (deduped). Apply UI after await so every caller
+    // — mount restore, soft reconnect, remount — hydrates its own state.
+    // (Updates inside the worker only ran for the first enqueuer's closure.)
+    const read = await enqueueWork(() => readStickFromHandle(handle), {
+      operation: "stick-read",
+      key: handle.name || "persisted-stick",
+      label: t("builder.work.stickReconnect"),
+      target: handle.name,
+    });
+    setHealthRoot(handle);
+    setHadStickThisSession(true);
+    setHealthFiles(null);
+    setRememberedStick(true);
+    setLabel(read.label);
+    publishSets(read.sets);
+    onIndexedRef.current?.(stickLibraryRows(read.library, read.sets));
+    if (!read.sets.length) setError({ kind: "noSets" });
+    try {
+      setHealth(await inspectStick(handle, pdbSummaryOf(read.library.length, read.sets)));
+    } catch {
+      setHealth(null);
     }
   }
 
@@ -344,31 +371,6 @@ export function RekordboxStick({
   function cancelLoad() {
     beginLoad();
     setPhase("idle");
-  }
-
-  async function applyHandle(handle: DirLike) {
-    // Read inside the queue (deduped). Apply UI after await so every caller
-    // — mount restore, soft reconnect, remount — hydrates its own state.
-    // (Updates inside the worker only ran for the first enqueuer's closure.)
-    const read = await enqueueWork(() => readStickFromHandle(handle), {
-      operation: "stick-read",
-      key: handle.name || "persisted-stick",
-      label: t("builder.work.stickReconnect"),
-      target: handle.name,
-    });
-    setHealthRoot(handle);
-    setHadStickThisSession(true);
-    setHealthFiles(null);
-    setRememberedStick(true);
-    setLabel(read.label);
-    publishSets(read.sets);
-    onIndexedRef.current?.(stickLibraryRows(read.library, read.sets));
-    if (!read.sets.length) setError({ kind: "noSets" });
-    try {
-      setHealth(await inspectStick(handle, pdbSummaryOf(read.library.length, read.sets)));
-    } catch {
-      setHealth(null);
-    }
   }
 
   /**
@@ -504,11 +506,12 @@ export function RekordboxStick({
     }
   }
 
-  chooseImpl.current = () => {
-    void chooseFolder();
-  };
-
-  softReconnectImpl.current = () => trySoftReconnect();
+  useEffect(() => {
+    chooseImpl.current = () => {
+      void chooseFolder();
+    };
+    softReconnectImpl.current = () => trySoftReconnect();
+  });
 
   useEffect(() => {
     if (!chooseStickRef) return;
