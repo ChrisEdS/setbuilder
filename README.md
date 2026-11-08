@@ -20,6 +20,7 @@ Walkthrough with screenshots: [docs/GUIDE.md](docs/GUIDE.md)
 - 🎧 **Hear the handoff first.** Previous, this track, next — the same lengths as the set. The list follows the track that is playing and keeps that row visible beside the player.
 - 🌊 **A wave across the full width.** Zoom follows playback, and the mouse wheel zooms. A click seeks while playback continues. A drag pauses so you can scrub. Space resumes. The arrow keys move one bar and land on a downbeat.
 - 🎼 **The rekordbox beatgrid.** The playlist grid is read in the background before the player opens, and the first read shows its progress. It starts as the one rekordbox already made. Analyze replaces it from the audio on request, and −5, +5, and 1 nudge it. If a track has no grid, the deck says so.
+- 🥁 **The first downbeat on the playhead.** It sets the first downbeat there and keeps the beat spacing. With no Rekordbox grid it does nothing.
 - 🔖 **Hot cues and phrase bands.** Hot cues A–H load with the track. A new cue snaps to the nearest downbeat when a grid is there, and it is written to the stick straight away. Cues already stored as memory cues stay as they are. Phrase bands from rekordbox sit on the wave. If the stick has no analysis for that track yet, the cues stay in the set and the player does not see them yet.
 - 💡 **Light.** A smaller waveform. In the deck bar the elapsed time stays large, and view, cues, and the grid stay apart.
 - 🎒 **Ready when it holds.** The stick for the player, the sheet for the booth, the file for the computer.

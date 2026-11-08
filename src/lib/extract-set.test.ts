@@ -11,7 +11,16 @@ import {
   reshuffleDraftFromPool,
 } from "./extract-set.ts";
 import { tEn } from "./i18n/core.ts";
-import { DEFAULT_SET, playedDurationMs, playedTotalMs, trackPlayedMs } from "./set.ts";
+import {
+  DEFAULT_SET,
+  overlapTakenMs,
+  overlapTotalMs,
+  playedDurationMs,
+  playedTotalMs,
+  playingOverSlot,
+  slotTargetMs,
+  trackPlayedMs,
+} from "./set.ts";
 import type { SetTrack, SourcePoolTrack } from "./set.ts";
 import type { SpotifyTrack } from "./spotify.ts";
 
@@ -39,6 +48,50 @@ test("an explicit overlap is the length the clock subtracts", () => {
   );
   assert.equal(trackPlayedMs({ durationMs: file, transition: "unset" }, 120_000), 4 * 60_000);
   assert.equal(trackPlayedMs({ durationMs: file, transition: "cut" }, 120_000), file);
+});
+
+test("playing time plus the overlap taken off equals the files", () => {
+  const file = 6 * 60_000;
+  const planned = [
+    { durationMs: file, transition: "long-blend" as const },
+    { durationMs: file, transition: "echo-out" as const },
+    { durationMs: 20_000, transition: "unset" as const, overlapMs: 90_000 },
+  ];
+  const playing = planned.reduce((sum, track) => sum + trackPlayedMs(track, 120_000), 0);
+  const overlap = planned.reduce((sum, track) => sum + overlapTakenMs(track, 120_000), 0);
+  const files = planned.reduce((sum, track) => sum + track.durationMs, 0);
+  assert.equal(playing + overlap, files);
+  assert.equal(overlapTakenMs(planned[0], 120_000), 60_000);
+  assert.equal(overlapTakenMs(planned[1], 120_000), 8_000);
+  // A 20s file keeps all 20s, so the 1:30 plan does not come off the clock.
+  assert.equal(overlapTakenMs(planned[2], 120_000), 0);
+  assert.equal(overlapTotalMs(planned, 120_000), 68_000);
+});
+
+test("too long compares playing time with the slot, not the overlap", () => {
+  const slot = slotTargetMs(60);
+  assert.equal(slot, 60 * 60_000);
+  const fitting = Array.from({ length: 10 }, () => ({
+    durationMs: 8 * 60_000,
+    transition: "unset" as const,
+    role: "groove" as const,
+  }));
+  // 2:00 blend off each file: 60:00 playing, 80:00 of audio, 20:00 overlap.
+  assert.equal(playedTotalMs(fitting, 120_000), slot);
+  assert.equal(overlapTotalMs(fitting, 120_000), 20 * 60_000);
+  assert.equal(playingOverSlot(playedTotalMs(fitting, 120_000), slot), false);
+  assert.equal(playingOverSlot(80 * 60_000, slot), true);
+
+  const over = Array.from({ length: 10 }, () => ({
+    durationMs: 8 * 60_000,
+    transition: "long-blend" as const,
+    role: "groove" as const,
+  }));
+  // 1:00 off each file: 70:00 playing, 10:00 overlap. The overlap fits; the playing time does not.
+  assert.equal(playedTotalMs(over, 120_000), 70 * 60_000);
+  assert.equal(overlapTotalMs(over, 120_000), 10 * 60_000);
+  assert.equal(playingOverSlot(playedTotalMs(over, 120_000), slot), true);
+  assert.equal(playingOverSlot(overlapTotalMs(over, 120_000), slot), false);
 });
 
 test("a planned transition replaces the average blend on that track", () => {

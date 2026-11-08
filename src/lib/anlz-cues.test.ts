@@ -12,6 +12,7 @@ import {
   readAnlzPhrases,
   anchorAnlzGrid,
   replaceAnlzBeatGrid,
+  placeFirstDownbeat,
   shiftAnlzGrid,
   shiftBeatTimes,
   snapCueTime,
@@ -284,6 +285,24 @@ test("quantize off keeps the cue time and on snaps to the downbeat", () => {
   const grid = beatsFromBpm(120, 4000);
   assert.equal(snapCueTime(1100, grid, false), 1100);
   assert.equal(snapCueTime(1100, grid, true), 2000);
+});
+
+test("a manual downbeat moves beat 1 onto the given time and keeps the beat spacing", () => {
+  const grid = [
+    { timeMs: 200, beat: 4 },
+    { timeMs: 700, beat: 1 },
+    { timeMs: 1200, beat: 2 },
+    { timeMs: 1700, beat: 3 },
+  ];
+  assert.deepEqual(placeFirstDownbeat(grid, 2500), [
+    { timeMs: 2000, beat: 4 },
+    { timeMs: 2500, beat: 1 },
+    { timeMs: 3000, beat: 2 },
+    { timeMs: 3500, beat: 3 },
+  ]);
+  assert.equal(grid[1]?.timeMs, 700);
+  assert.equal(placeFirstDownbeat(grid, 100), null);
+  assert.equal(placeFirstDownbeat([], 1000), null);
 });
 
 test("a grid shift adds the same delta and refuses a step before zero", () => {

@@ -391,6 +391,18 @@ export function shiftBeatTimes(beats: readonly AnlzBeat[], deltaMs: number): Anl
   return beats.map((beat) => ({ beat: beat.beat, timeMs: beat.timeMs + delta }));
 }
 
+/**
+ * Shift the stored grid so its first downbeat sits on this time.
+ * Beat numbers and the gaps stay. A step before 0 is refused.
+ */
+export function placeFirstDownbeat(beats: readonly AnlzBeat[], timeMs: number): AnlzBeat[] | null {
+  if (!Number.isFinite(timeMs)) return null;
+  const target = Math.round(timeMs);
+  const first = beats.find((beat) => beat.beat === 1);
+  if (!first || target < 0) return null;
+  return shiftBeatTimes(beats, target - first.timeMs);
+}
+
 const PHRASE_MASK = [0xcb, 0xe1, 0xee, 0xfa, 0xe5, 0xee, 0xad, 0xee, 0xe9, 0xd2, 0xe9, 0xeb, 0xe1, 0xe9, 0xf3, 0xe8, 0xe9, 0xf4, 0xe1];
 
 export type PhraseName =

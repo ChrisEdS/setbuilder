@@ -203,8 +203,10 @@ import {
   transitionOverlapPatch,
   phaseDurationMs,
   phaseWindowLabel,
+  overlapTotalMs,
   playedTotalMs,
-  trackPlayedMs,
+  playingOverSlot,
+  slotTargetMs,
   setPositionById,
   trackCount,
 } from "@/lib/set";
@@ -1294,7 +1296,7 @@ export function SetBuilder() {
   const filledMs = playedTotalMs(draft.tracks, blendMs);
   const plannedJoins = mainTracks.some((track) => track.transition && track.transition !== "unset");
   const mixLabel = plannedJoins ? t("builder.list.mixPlanned") : formatDuration(blendMs);
-  const targetMs = draft.durationMinutes * 60_000;
+  const targetMs = slotTargetMs(draft.durationMinutes);
   const activeGuide = arcGuideFor(t).find((item) => item.phase === activePhase);
 
   const visibleTimeline = useMemo(() => {
@@ -4472,17 +4474,9 @@ export function SetBuilder() {
                   const listStatus =
                     roleFilter === "all"
                       ? (() => {
-                          const playingMs = visibleTimeline.reduce(
-                            (sum, track) => sum + trackPlayedMs(track, blendMs),
-                            0,
-                          );
-                          const overMs = visibleTimeline.reduce(
-                            (sum, track) =>
-                              sum +
-                              Math.max(0, track.durationMs - trackPlayedMs(track, blendMs)),
-                            0,
-                          );
-                          const tooLong = filledMs > targetMs * 1.05;
+                          const playingMs = playedTotalMs(visibleTimeline, blendMs);
+                          const overMs = overlapTotalMs(visibleTimeline, blendMs);
+                          const tooLong = playingOverSlot(playingMs, targetMs);
                           const withBlend = overMs >= 1000;
                           return t(
                             tooLong

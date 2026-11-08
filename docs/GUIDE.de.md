@@ -44,6 +44,8 @@ Der Player ist die Karte über der Setliste. An der rechten Kante breiter ziehen
 
 **Q** quantisiert. Ein Hot Cue **A–H** landet dann auf dem nächsten Downbeat des Rekordbox-Beatgrids. Aus macht **Q** die Zeit, die du gesetzt hast. **−5** und **+5** schieben das Grid um 5 ms. **1** legt den nächsten Downbeat auf den Playhead. Phrasenbänder kommen aus der rekordbox-Analyse und wandern mit, wenn du das Grid schiebst. Cues und die Verschiebung bleiben im Player. Der CDJ sieht sie erst, wenn sie in der Analyse-Datei auf dem Stick stehen.
 
+- 🥁 **Der erste Downbeat auf dem Playhead.** Er setzt den ersten Downbeat dort und behält den Abstand der Beats. Ohne Rekordbox-Grid tut er nichts.
+
 Im Bild: Nefertiti (Futuro Pelo), Wellenform, Zoom 2×, **Q**, **−5**, **+5**, **1**, Pads A–H. Darunter steht „Kein Rekordbox-Beatgrid für diesen Track.“ Bei den Tracks, die hier aus dem Set geöffnet wurden, hat der Player kein Grid gezeichnet — also auch keine Phrasenbänder und keinen gesetzten Cue. Die Knöpfe sind dieselben, sobald die Analyse-Datei zum Track passt.
 
 ## 4. Mitnehmen

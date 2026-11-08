@@ -44,6 +44,8 @@ The player is the card over the setlist. Drag the right edge wider and the botto
 
 **Q** quantizes. A hot cue **A–H** then lands on the next downbeat of the Rekordbox beatgrid. With **Q** off, the cue keeps the time you set. **−5** and **+5** nudge the grid by 5 ms. **1** moves the nearest downbeat onto the playhead. Phrase color bands come from the rekordbox analysis and follow the grid when you nudge it. Cues and the nudge stay in the player. The CDJ sees them once they are in the analysis file on the stick.
 
+- 🥁 **The first downbeat on the playhead.** It sets the first downbeat there and keeps the beat spacing. With no Rekordbox grid it does nothing.
+
 In the picture: Nefertiti (Futuro Pelo), the waveform, zoom 2×, **Q**, **−5**, **+5**, **1**, pads A–H. Under that it says “No Rekordbox beatgrid for this track.” On the tracks opened from this set, the player drew no grid, so no phrase bands and no placed cue either. The same buttons apply once the analysis file matches the track.
 
 ## 4. Take it with you

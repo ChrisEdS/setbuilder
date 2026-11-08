@@ -375,11 +375,11 @@ const de = {
   "builder.list.headAll":
     "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit / {minutes}:00 Slot",
   "builder.list.headAllBlend":
-    "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit · {over} Überlänge / {minutes}:00 Slot",
+    "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit · {over} Überlappung / {minutes}:00 Slot",
   "builder.list.headAllLong":
     "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit / {minutes}:00 Slot · zu lang",
   "builder.list.headAllLongBlend":
-    "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit · {over} Überlänge / {minutes}:00 Slot · zu lang",
+    "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit · {over} Überlappung / {minutes}:00 Slot · zu lang",
   "builder.list.mixPlanned": "nach Plan",
   "builder.list.headRole": "{role} · {tracks} · {duration}",
   "builder.list.details": "Details",

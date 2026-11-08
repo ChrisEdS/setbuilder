@@ -612,6 +612,38 @@ export function playedTotalMs(tracks: SetTrack[], blendMs = BLEND_MS): number {
   return performanceTracks(tracks).reduce((sum, track) => sum + trackPlayedMs(track, blendMs), 0);
 }
 
+/**
+ * Overlap the clock actually takes off one file.
+ * The 30s floor can keep more of a short file than the planned blend, so this
+ * is the planned overlap only up to the time that really leaves the playing total.
+ */
+export function overlapTakenMs(
+  track: Pick<SetTrack, "durationMs" | "transition" | "overlapMs">,
+  blendMs = BLEND_MS,
+): number {
+  const duration = track.durationMs > 0 ? track.durationMs : 0;
+  return Math.max(0, duration - trackPlayedMs(track, blendMs));
+}
+
+/** Planned blend overlap across the performance, the part that comes off playing time. */
+export function overlapTotalMs(tracks: SetTrack[], blendMs = BLEND_MS): number {
+  return performanceTracks(tracks).reduce((sum, track) => sum + overlapTakenMs(track, blendMs), 0);
+}
+
+/** Brief length. The slot control is minutes. */
+export function slotTargetMs(durationMinutes: number): number {
+  const minutes = Number.isFinite(durationMinutes) ? durationMinutes : 0;
+  return Math.max(0, minutes) * 60_000;
+}
+
+/**
+ * Playing time against the slot, with the same 5% band Fit to slot leaves alone.
+ * The overlap is already inside the playing time; it is not compared to the slot.
+ */
+export function playingOverSlot(playingMs: number, slotMs: number): boolean {
+  return playingMs > slotMs * 1.05;
+}
+
 export function phaseDurationMs(
   tracks: SetTrack[],
   phase: SetPhaseId,

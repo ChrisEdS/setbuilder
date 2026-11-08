@@ -6,6 +6,7 @@ import { useI18n } from "@/lib/i18n/react";
 import {
   beatsFromBpm,
   GRID_NUDGE_MS,
+  placeFirstDownbeat,
   snapCueTime,
   structureCues,
   type AnlzBeat,
@@ -789,6 +790,24 @@ export function WaveformDeck({
                 }}
               >
                 1
+              </button>
+            </Tip>
+            <Tip text={t("crates.player.gridDownbeatTip")} disabled={!fromFile}>
+              <button
+                type="button"
+                aria-label={t("crates.player.gridDownbeat")}
+                disabled={!fromFile}
+                onClick={() => {
+                  const marks = gridRef.current.marks;
+                  const playMs = Math.round(timeRef.current * 1000);
+                  const next = placeFirstDownbeat(marks, playMs);
+                  const first = marks[0];
+                  const moved = next?.[0];
+                  if (!first || !moved) return;
+                  onShiftGrid(moved.timeMs - first.timeMs);
+                }}
+              >
+                {t("crates.player.gridDownbeat")}
               </button>
             </Tip>
           </div>
