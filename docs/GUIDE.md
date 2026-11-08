@@ -12,7 +12,7 @@ Connect the stick, build the set, hear it on the deck, take it with you. The shi
 
 ![Rekordbox stick and playlists](screenshots/en/01-stick-library.png)
 
-Plug the stick in. SETBUILDER reads playlists and history from `export.pdb`, including the hidden `PIONEER` or `.PIONEER` folder. Under **Build set**, **Start with a playlist** lists them. Each playlist is one line. A long name shortens at the end, the green count stays beside the name, and **Load as set** sits in the row. **Load as set** takes a playlist into the set. Order, key and BPM stay. Files from the stick play in the player.
+Plug the stick in. SETBUILDER reads playlists and history from `export.pdb`, including the hidden `PIONEER` or `.PIONEER` folder. Under **Build set**, **Start with a playlist** lists them. **Load as set** takes a playlist into the set. Order, key and BPM stay. Files from the stick play in the player.
 
 If the folder dialog hangs, pick **export.pdb** (`PIONEER/rekordbox/export.pdb`). Do not select the whole USB with every music file; that can stall. **Change stick** when another volume is mounted.
 
@@ -34,7 +34,7 @@ The brief is at the top. **Title**, **Slot duration (min)** and **Blend time (av
 
 The setlist shows phase, role and the join from the previous track. **Setlist**, **Roles** and **Arc** switch the view. **Comfortable** shows the icon row; **Compact** keeps it tight. Change the order with the grip or the arrows. **Keep** leaves a track in the set while sorting may move it. **Pin here** holds the exact slot. Play opens the player, and the playing row stays visible beside it. **Fit to slot** cuts when the set runs over the slot. **Fill with matches** adds tracks that fit when it is short.
 
-The library closes to the title and the track count, and opens again. Its track rows stay one line, with a smaller play button and a smaller **+ Add to set**. Under **When adding**, **Phase** and **Role** stay. **Add after** is **Auto**, a chosen song in the set, or **End of the set**. **Auto** places the new track after the best match in the same phase (key, BPM, energy). If nothing in that phase fits, the track goes on the end.
+Under **When adding**, you choose where the next song comes in: after a song you name, at the end, or **Auto**. **Auto** puts it after the song in that phase it best follows — key, BPM, energy. **Phase** and **Role** stay what you set.
 
 ## 3. Hear it on the deck
 

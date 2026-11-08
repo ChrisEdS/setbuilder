@@ -14,10 +14,7 @@ Walkthrough with screenshots: [docs/GUIDE.md](docs/GUIDE.md)
 - ⏱️ **The night fitted to the slot.** Too long, it cuts. Too short, it fills from alternatives and the playlist you loaded.
 - 🔑 **Keys that talk to each other.** Camelot along the set. A clash shows up while you still have time.
 - ⚡ **Energy that belongs to the song.** Read from the file, measured, or set by you.
-- ➕ **Add after.** Auto, a chosen song in the set, or the end of the set. Auto places the new track after the best match in the same phase (key, BPM, energy). If nothing in that phase fits, it goes on the end. Phase and Role stay the choices in When adding.
-- 📚 **The library closes.** It closes to the title and the track count, and opens again.
-- 📋 **Playlists on one line.** A long name shortens at the end. The green count stays beside the name, and Load as set sits in the row.
-- 🎵 **Library tracks on one line.** A smaller play button and a smaller Add to set.
+- ➕ **Where the next song comes in.** After a song you name, at the end, or Auto. Auto puts it after the song in that phase it best follows — key, BPM, energy — and phase and role stay what you set when adding.
 - 📌 **Keep it, or pin the slot.** A kept track stays in the set while sorting may move it. A pin holds the exact slot. Opener and closer hold the ends.
 - 🛟 **Plan B in your pocket.** Roles and alternatives for when the floor turns.
 - 🎧 **Hear the handoff first.** Previous, this track, next — the same lengths as the set. The list follows the track that is playing and keeps that row visible beside the player.
