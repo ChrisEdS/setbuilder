@@ -915,12 +915,12 @@ export function WaveformDeck({
             </button>
           </Tip>
           <Tip text={t("crates.player.gridHalfTip")} disabled={!fromFile}>
-            <button type="button" aria-label={t("crates.player.gridHalf")} disabled={!fromFile} onClick={() => applyTempo(0.5)}>
+            <button type="button" className="preview-grid-tempo" aria-label={t("crates.player.gridHalf")} disabled={!fromFile} onClick={() => applyTempo(0.5)}>
               ½
             </button>
           </Tip>
           <Tip text={t("crates.player.gridDoubleTip")} disabled={!fromFile}>
-            <button type="button" aria-label={t("crates.player.gridDouble")} disabled={!fromFile} onClick={() => applyTempo(2)}>
+            <button type="button" className="preview-grid-tempo" aria-label={t("crates.player.gridDouble")} disabled={!fromFile} onClick={() => applyTempo(2)}>
               2×
             </button>
           </Tip>
