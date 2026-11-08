@@ -502,14 +502,32 @@ async function commitBytes(file: FileLike, next: Uint8Array): Promise<"written" 
   return "written";
 }
 
+/** Result of a stick beatgrid read. `located` means USBANLZ had a matching ANLZ file. */
+export type StickBeatGridRead = {
+  beats: AnlzBeat[] | null;
+  located: boolean;
+};
+
+/**
+ * Read the stored beat grid and whether the analysis file was found.
+ * `located: false` is a path/index miss — not the same as a file with no PQTZ tag.
+ */
+export async function readStickBeatGridDetail(
+  root: DirLike,
+  trackId: number,
+  filePath = "",
+): Promise<StickBeatGridRead> {
+  const located = await locateAnalysis(root, trackId, filePath);
+  if (!located) return { beats: null, located: false };
+  const dat = await maybeFile(located.dir, located.datName);
+  if (!dat) return { beats: null, located: true };
+  const bytes = await readGridBuffer(await dat.getFile());
+  return { beats: bytes ? readAnlzBeatGrid(bytes) : null, located: true };
+}
+
 /** Read the stored beat grid. Null when this track has no analysis file or no grid tag. */
 export async function readStickBeatGrid(root: DirLike, trackId: number, filePath = ""): Promise<AnlzBeat[] | null> {
-  const located = await locateAnalysis(root, trackId, filePath);
-  if (!located) return null;
-  const dat = await maybeFile(located.dir, located.datName);
-  if (!dat) return null;
-  const bytes = await readGridBuffer(await dat.getFile());
-  return bytes ? readAnlzBeatGrid(bytes) : null;
+  return (await readStickBeatGridDetail(root, trackId, filePath)).beats;
 }
 
 /** Phrases from the exported PSSI tag. Null when the file has none, or the mask does not read as phrases. */

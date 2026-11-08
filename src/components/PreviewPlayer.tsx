@@ -21,7 +21,6 @@ import { playerNeighbors } from "@/lib/player-queue";
 import {
   getStickFilesEpoch,
   isPlayableStickAudio,
-  listRememberedAnalysisFiles,
   lookupStickAudio,
   stickAudioBaseName,
   subscribeStickFiles,
@@ -40,7 +39,7 @@ import {
   readRememberedBeatGrid,
   readRememberedHotCues,
   readRememberedPhrases,
-  readStickBeatGrid,
+  readStickBeatGridDetail,
   readStickHotCues,
   readStickPhrases,
   rekordboxTrackId,
@@ -490,16 +489,18 @@ function PreviewDock({
         }
         let found: AnlzBeat[] | null = null;
         let root: DirLike | null = null;
+        // Only true when USBANLZ (or remembered ANLZ) matched this track.
+        // A path miss must not paint "No Rekordbox beatgrid".
         let sawFile = false;
         for (const candidate of roots) {
           if (cancel) return;
           active = candidate;
           showWalk();
           try {
-            const beats = await readStickBeatGrid(candidate, pdbId, filePath);
-            sawFile = true;
-            if (beats?.length) {
-              found = beats;
+            const read = await readStickBeatGridDetail(candidate, pdbId, filePath);
+            if (read.located) sawFile = true;
+            if (read.beats?.length) {
+              found = read.beats;
               root = candidate;
               break;
             }
@@ -512,8 +513,6 @@ function PreviewDock({
             const remembered = await readRememberedBeatGrid(pdbId, filePath);
             if (remembered?.length) {
               found = remembered;
-              sawFile = true;
-            } else if (listRememberedAnalysisFiles().length > 0) {
               sawFile = true;
             }
           } catch {
@@ -538,7 +537,7 @@ function PreviewDock({
           setPhrasesMissing(!phraseList?.length);
           return;
         }
-        // A failed read is not the same as a file with no PQTZ tag.
+        // A path miss is not the same as a file with no PQTZ tag.
         if (!sawFile) return;
         setFileBeats(null);
         setGridMissing(true);

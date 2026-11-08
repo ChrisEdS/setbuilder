@@ -38,6 +38,7 @@ import {
   clearSavedVolumeName,
   localStickVolume,
   readSavedVolumeName,
+  savedVolumeHandle,
   saveVolumeName,
   type PioneerVolumeInfo,
 } from "@/lib/stick-volume-client";
@@ -311,7 +312,8 @@ export function RekordboxStick({
       const saved = readSavedVolumeName();
       if (saved) {
         try {
-          const handle = localStickVolume(saved);
+          // Same DirLike the player caches on — WeakMap index must be shared.
+          const handle = savedVolumeHandle() ?? localStickVolume(saved);
           try {
             await rememberStickHandle(handle);
           } catch {
@@ -461,10 +463,11 @@ export function RekordboxStick({
     setPhase("reading");
     setError(null);
     try {
-      const handle = localStickVolume(name);
+      saveVolumeName(name);
+      // Prefer the cached volume DirLike so preload + player share the analysis index.
+      const handle = savedVolumeHandle() ?? localStickVolume(name);
       await applyHandle(handle);
       if (!stillCurrent(token)) return;
-      saveVolumeName(name);
       try {
         await rememberStickHandle(handle);
       } catch {

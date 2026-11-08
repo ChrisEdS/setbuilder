@@ -9,6 +9,7 @@ import {
   indexWalkPercent,
   preloadStickAnalysisIndex,
   readStickBeatGrid,
+  readStickBeatGridDetail,
   readStickHotCues,
   rekordboxTrackId,
   saveStickAnalyzedGrid,
@@ -238,6 +239,27 @@ test("a later analysis file in the same folder is the grid when its path is this
   assert.equal(beats?.[0]?.timeMs, 4242);
   const otherBeats = await readStickBeatGrid(root, 1676, other);
   assert.equal(otherBeats?.[0]?.timeMs, 1517);
+});
+
+test("a path miss is not reported as a located analysis file", async () => {
+  const path = "/Contents/Bless You/Gotta Move/Bless You - Gotta Move.mp3";
+  const dat = new MemoryFile("ANLZ0000.DAT", fileWith([pathTag(path), beatTag()]));
+  const root = new MemoryDir("LE_BACKUP");
+  const pioneer = new MemoryDir("PIONEER");
+  const library = new MemoryDir("USBANLZ");
+  const group = new MemoryDir("P009");
+  const track = new MemoryDir("0000091A");
+  track.files.set(dat.name, dat);
+  group.dirs.set(track.name, track);
+  library.dirs.set(group.name, group);
+  pioneer.dirs.set(library.name, library);
+  root.dirs.set(pioneer.name, pioneer);
+  const hit = await readStickBeatGridDetail(root, 99, path);
+  assert.equal(hit.located, true);
+  assert.equal(hit.beats?.[0]?.timeMs, 1517);
+  const miss = await readStickBeatGridDetail(root, 99, "/Contents/Missing/Track.mp3");
+  assert.equal(miss.located, false);
+  assert.equal(miss.beats, null);
 });
 
 test("USBANLZ directly under the chosen folder still matches the track path", async () => {
