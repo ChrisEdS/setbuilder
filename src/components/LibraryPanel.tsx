@@ -21,7 +21,7 @@ import { parseRekordboxFile } from "@/lib/rekordbox";
 import { enqueueWork } from "@/lib/work-queue";
 import { CAMELOT_CODES } from "@/lib/harmonic";
 import { boundOf, matchesLibraryFilter } from "@/lib/library-filter";
-import { rankFitsAfter } from "@/lib/replace-track";
+import { bestFollowId, rankFitsAfter } from "@/lib/replace-track";
 import { Tip } from "@/components/Hint";
 import { RekordboxStick, type StickStatusSlice } from "@/components/RekordboxStick";
 import { StickReloadBanner } from "@/components/StickReloadBanner";
@@ -126,21 +126,32 @@ export function LibraryBrowser({
 }: {
   draft: SetDraft;
   rows: LibraryRow[];
-  /** side is before/after the selected or playing set row. Without one, the track goes on the end. */
-  onAddTrack?: (track: SetTrack, place?: { side: "before" | "after" }) => void;
+  /** afterId is the set song the new track follows. auto uses the fit algorithm. Without one, it goes on the end. */
+  onAddTrack?: (track: SetTrack, place?: { afterId: string | null } | { auto: true }) => void;
   onPlayTrack?: (track: SetTrack) => void;
   playingId?: string | null;
 }) {
   const { t } = useI18n();
   const [fitTo, setFitTo] = useState("");
-  const [insertSide, setInsertSide] = useState<"before" | "after">(() => {
-    if (typeof window === "undefined") return "after";
-    const stored = sessionStorage.getItem("setbuilder-add-place");
-    return stored === "before" || stored === "after" ? stored : "after";
+  const [addAfterChoice, setAddAfterChoice] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return sessionStorage.getItem("setbuilder-add-after");
   });
-  function chooseInsertSide(side: "before" | "after") {
-    setInsertSide(side);
-    sessionStorage.setItem("setbuilder-add-place", side);
+  const setSongs = performanceTracks(draft.tracks);
+  const songInSet = (id: string | null | undefined) =>
+    Boolean(id && setSongs.some((track) => track.id === id));
+  const addAfterId =
+    addAfterChoice === "end"
+      ? ""
+      : addAfterChoice === "auto" || addAfterChoice == null
+        ? "auto"
+        : songInSet(addAfterChoice)
+          ? addAfterChoice
+          : "auto";
+  function chooseAddAfter(value: string) {
+    const stored = value === "" ? "end" : value;
+    setAddAfterChoice(stored);
+    sessionStorage.setItem("setbuilder-add-after", stored);
   }
   const [fitPageState, setFitPageState] = useState<{
     page: number;
@@ -413,6 +424,25 @@ export function LibraryBrowser({
                 ))}
               </select>
             </label>
+            <label>
+              {t("library.add.afterSong")}
+              <select
+                value={addAfterId}
+                aria-label={t("library.add.afterSong")}
+                onChange={(event) => chooseAddAfter(event.target.value)}
+              >
+                <option value="auto">{t("library.add.auto")}</option>
+                <option value="">{t("library.add.atEnd")}</option>
+                {setSongs.map((track, index) => (
+                  <option key={track.id} value={track.id}>
+                    {index + 1}. {track.name}
+                    {track.keyCamelot || track.bpm
+                      ? ` (${[track.keyCamelot, track.bpm].filter(Boolean).join(" · ")})`
+                      : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
             </div>
           </div>
           ) : null}
@@ -462,9 +492,9 @@ export function LibraryBrowser({
                     className="btn ghost lib-add"
                     disabled={already}
                     onClick={() =>
-                      onAddTrack(libraryTrackToSetTrack(row, addPhase, addRole, t), {
-                        side: insertSide,
-                      })
+                      onAddTrack(libraryTrackToSetTrack(row, addPhase, addRole, t),
+                        addAfterId === "auto" ? { auto: true } : { afterId: addAfterId || null },
+                      )
                     }
                   >
                     {already ? t("library.row.inSet") : t("library.row.add")}
@@ -508,29 +538,6 @@ export function LibraryBrowser({
                 total: rankedLibrary.length,
               })}
             </span>
-          </div>
-        ) : null}
-        {onAddTrack ? (
-          <div className="library-insert" role="group" aria-label={t("library.add.place")}>
-            <span>{t("library.add.place")}</span>
-            <Tip text={t("library.add.placeTip")}>
-              <button
-                type="button"
-                aria-pressed={insertSide === "before"}
-                onClick={() => chooseInsertSide("before")}
-              >
-                {t("library.add.before")}
-              </button>
-            </Tip>
-            <Tip text={t("library.add.placeTip")} end>
-              <button
-                type="button"
-                aria-pressed={insertSide === "after"}
-                onClick={() => chooseInsertSide("after")}
-              >
-                {t("library.add.after")}
-              </button>
-            </Tip>
           </div>
         ) : null}
       </div>

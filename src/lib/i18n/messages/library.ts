@@ -90,6 +90,9 @@ const de = {
   "library.add.place": "Hinzufügen",
   "library.add.before": "Davor",
   "library.add.after": "Danach",
+  "library.add.afterSong": "Hinzufügen danach",
+  "library.add.auto": "Automatisch",
+  "library.add.atEnd": "Ende des Sets",
   "library.add.placeTip":
     "Davor oder danach am gewählten Track, sonst am Track der spielt. Ohne beides ans Ende des Sets.",
   "library.add.allTracks": "Alle Tracks",
@@ -485,6 +488,9 @@ const en: Record<keyof typeof de, string> = {
   "library.add.place": "Add",
   "library.add.before": "Before",
   "library.add.after": "After",
+  "library.add.afterSong": "Add after",
+  "library.add.auto": "Auto",
+  "library.add.atEnd": "End of the set",
   "library.add.placeTip":
     "Before or after the selected track, or the one that is playing. With neither, at the end of the set.",
   "library.add.allTracks": "All tracks",

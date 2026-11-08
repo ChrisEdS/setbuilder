@@ -14,6 +14,10 @@ Anleitung mit Screenshots: [docs/GUIDE.de.md](docs/GUIDE.de.md)
 - ⏱️ **Die Nacht auf den Slot.** Zu lang, sie wird kürzer. Zu kurz füllt sie aus Alternativen und der geladenen Playlist.
 - 🔑 **Keys, die miteinander reden.** Camelot entlang des Sets. Ein Clash fällt auf, solange du noch Zeit hast.
 - ⚡ **Energie, die zum Song gehört.** Aus der Datei gelesen, gemessen oder von dir gesetzt.
+- ➕ **Hinzufügen danach.** Automatisch, ein gewählter Song im Set oder das Ende des Sets. Automatisch legt den neuen Track hinter die beste Übereinstimmung in derselben Phase (Key, BPM, Energie). Passt in der Phase nichts, geht er ans Ende. Phase und Rolle bleiben die Wahl unter Beim Hinzufügen.
+- 📚 **Die Bibliothek schließt.** Sie schließt auf den Titel und die Trackzahl und öffnet sich wieder.
+- 📋 **Playlists in einer Zeile.** Ein langer Name kürzt sich am Ende. Die grüne Zahl bleibt neben dem Namen, und Als Set laden sitzt in der Zeile.
+- 🎵 **Bibliothekstracks in einer Zeile.** Ein kleinerer Abspielen-Knopf und ein kleineres Ins Set.
 - 📌 **Behalten, oder den Slot pinnen.** Ein behaltener Track bleibt im Set, Sortieren darf ihn verschieben. Ein Pin hält genau diesen Slot. Opener und Closer halten die Enden.
 - 🛟 **Plan B in der Tasche.** Rollen und Alternativen, wenn der Floor dreht.
 - 🎧 **Den Übergang vorher hören.** Vorher, dieser Track, der nächste — dieselbe Länge wie im Set. Die Liste folgt dem Track, der spielt, und hält diese Zeile neben dem Player sichtbar.

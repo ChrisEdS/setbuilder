@@ -3,7 +3,7 @@ import test from "node:test";
 import { buildM3u, buildRekordboxXml } from "./export-booth.ts";
 import { tEn } from "./i18n/core.ts";
 import { pickStreamingMatch } from "./match-link.ts";
-import { rankFitsAfter, rankReplacements, replacementOrigin, swapIntoSlot } from "./replace-track.ts";
+import { bestFollowId, rankFitsAfter, rankReplacements, replacementOrigin, swapIntoSlot } from "./replace-track.ts";
 import { artistLine, type SetDraft, type SetTrack } from "./set.ts";
 import { matchStickFile } from "./stick-audio.ts";
 
@@ -119,6 +119,38 @@ test("replacement ranking prefers the closer key and bpm", () => {
   assert.equal(swapped[1]?.id, "close");
   assert.equal(swapped[1]?.role, "groove");
   assert.equal(swapped.find((item) => item.id === "slot")?.role, "safety");
+});
+
+test("auto insert follows the best in-phase neighbor and leaves everyone else", () => {
+  const tracks = [
+    track({ id: "open", name: "Open", phase: "open", keyCamelot: "8A", bpm: "120", energyLevel: 4 }),
+    track({ id: "good", name: "Good", phase: "lift", keyCamelot: "8A", bpm: "122", energyLevel: 6 }),
+    track({ id: "far", name: "Far", phase: "lift", keyCamelot: "1B", bpm: "150", energyLevel: 6 }),
+    track({ id: "pin", name: "Pin", phase: "lift", keyCamelot: "8A", bpm: "140", energyLevel: 6 }),
+  ];
+  assert.equal(
+    bestFollowId(tracks, {
+      name: "Next",
+      artists: ["Bea"],
+      keyCamelot: "9A",
+      bpm: "124",
+      energyLevel: 6,
+      phase: "lift",
+    }),
+    "good",
+  );
+  assert.equal(
+    bestFollowId(tracks, {
+      name: "Nowhere",
+      artists: ["Bea"],
+      keyCamelot: "3A",
+      bpm: "90",
+      energyLevel: 2,
+      phase: "peak",
+    }),
+    null,
+  );
+  assert.deepEqual(tracks.map((item) => item.id), ["open", "good", "far", "pin"]);
 });
 
 test("fits-after uses the same key and bpm window as Passt zu", () => {

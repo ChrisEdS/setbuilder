@@ -596,7 +596,7 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 .set-shell .library-browser-head:has(.library-refine) .library-add-group {
-  grid-column: 1 / 4;
+  grid-column: 1 / 5;
   display: grid;
   grid-template-columns: subgrid;
   align-items: end;
@@ -606,13 +606,60 @@ html[data-frame="mac"] .set-shell .hero-copy {
 
 .set-shell .library-browser-head:has(.library-refine) .library-add-group > span {
   grid-column: 1;
-  align-self: start;
+  align-self: end;
   margin: 0;
   color: var(--ui-muted, #b3b3b3);
   font-size: 0.72rem;
   font-weight: 600;
   line-height: 1.25;
   letter-spacing: 0.02em;
+}
+
+.set-shell .library-browser-head:has(.library-refine) .library-add-group > label:nth-child(2) {
+  grid-column: 2;
+}
+
+.set-shell .library-browser-head:has(.library-refine) .library-add-group > label:nth-child(3) {
+  grid-column: 3;
+}
+
+.set-shell .library-browser-head:has(.library-refine) .library-add-group > label:nth-child(4) {
+  grid-column: 4;
+}
+
+.set-shell .library-refine > .tip {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.set-shell .library-refine > .library-add-fit {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.set-shell .library-refine > label:nth-of-type(2) {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.set-shell .library-refine > label:nth-of-type(3) {
+  grid-column: 4;
+  grid-row: 1;
+}
+
+.set-shell .library-refine > label:nth-of-type(4) {
+  grid-column: 5;
+  grid-row: 1;
+}
+
+.set-shell .library-refine > label:nth-of-type(5) {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.set-shell .library-refine > label:nth-of-type(6) {
+  grid-column: 2;
+  grid-row: 2;
 }
 
 .set-shell .library-browser-head:has(.library-refine) .library-add-bar label,
@@ -710,18 +757,27 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 .set-shell .library-tools-toggle {
-  display: inline-flex;
+  display: inline-flex !important;
   align-items: baseline;
   gap: 0.4rem 0.5rem;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  min-height: 0 !important;
+  height: auto !important;
+  width: auto !important;
   color: inherit;
   font: inherit;
   letter-spacing: inherit;
   cursor: pointer;
   text-align: left;
+}
+
+.set-shell .library-tools-toggle:focus:not(:focus-visible) {
+  outline: none !important;
 }
 
 .set-shell .library-tools-toggle::before {
@@ -730,31 +786,22 @@ html[data-frame="mac"] .set-shell .hero-copy {
   height: 0.55rem;
   border-right: 2px solid currentColor;
   border-bottom: 2px solid currentColor;
-  transform: rotate(-135deg);
+  transform: rotate(45deg);
   align-self: center;
   flex: 0 0 auto;
 }
 
 .set-shell .library-browser-head.is-tools-collapsed .library-tools-toggle::before {
-  transform: rotate(45deg);
+  transform: rotate(-45deg);
 }
 
-.set-shell .library-browser-head.is-tools-collapsed .library-browser-toolbar {
+.set-shell .library-browser-head.is-tools-collapsed .library-browser-toolbar,
+.set-shell .library-browser-head.is-tools-collapsed .library-playlist-pick,
+.set-shell .library-browser-head.is-tools-collapsed .library-refine,
+.set-shell .library-browser-head.is-tools-collapsed .library-add-bar,
+.set-shell .library-browser:has(> .library-browser-head.is-tools-collapsed) > .library-list,
+.set-shell .library-browser:has(> .library-browser-head.is-tools-collapsed) > .library-more {
   display: none !important;
-}
-
-.set-shell .library-browser-head.is-tools-collapsed .library-playlist-pick {
-  display: none !important;
-}
-
-@media (min-width: 901px) {
-  .set-shell .library-browser-head.is-tools-collapsed:has(.library-refine) .library-refine {
-    grid-row: 2;
-  }
-
-  .set-shell .library-browser-head.is-tools-collapsed:has(.library-refine) .library-add-bar {
-    grid-row: 3;
-  }
 }
 
 .set-shell .library-insert {
@@ -849,21 +896,27 @@ html[data-frame="mac"] .set-shell .hero-copy {
 .set-shell .manual-controls .manual-meta select {
   appearance: none !important;
   -webkit-appearance: none !important;
-  width: auto !important;
-  min-width: 8.25rem !important;
-  max-width: 11rem;
-  height: var(--ui-control-height) !important;
-  min-height: var(--ui-control-height) !important;
+  width: max-content !important;
+  min-width: 0 !important;
+  max-width: 9rem;
+  height: 2.125rem !important;
+  min-height: 2.125rem !important;
+  max-height: 2.125rem !important;
   padding-top: 0 !important;
-  padding-right: 2rem !important;
+  padding-right: 1.7rem !important;
   padding-bottom: 0 !important;
   padding-left: 0.75rem !important;
-  line-height: 1.2 !important;
+  border-radius: 999px !important;
+  background-color: #242424 !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
   text-overflow: ellipsis;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23b3b3b3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E") !important;
   background-repeat: no-repeat !important;
-  background-position: right 0.75rem center !important;
-  background-size: 1rem !important;
+  background-position: right 0.5rem center !important;
+  background-size: 0.85rem !important;
 }
 
 .set-shell .manual-meta .source-pill {
@@ -1108,6 +1161,12 @@ html[data-frame="mac"] .set-shell .hero-copy {
   grid-row: 1;
   justify-self: end;
   align-self: center;
+}
+
+.set-shell .manual-list.is-compact .manual-row.is-compact-open .manual-meta select {
+  height: 2rem !important;
+  min-height: 2rem !important;
+  max-height: 2rem !important;
 }
 
 .set-shell .manual-row.is-compact-open .timeline-tools {
@@ -1827,99 +1886,164 @@ html[data-frame="mac"] .set-shell .hero-copy {
   padding-block: var(--ui-space-2) !important;
 }
 
+.set-shell .stick-sets-fold .stick-sets-body,
+.set-shell .stick-sets-fold .library-list {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
 .set-shell .stick-sets-fold .library-list li {
-  display: flex !important;
-  align-items: center;
-  justify-content: flex-start;
-  gap: var(--ui-space-3);
-  min-height: 0;
-  padding-block: 0.3rem !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  grid-template-rows: auto !important;
+  align-items: center !important;
+  column-gap: 1rem;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: calc(2rem + 1.25rem) !important;
+  height: auto !important;
+  padding: 0.6rem 0 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-sizing: border-box;
+  overflow: visible;
 }
 
 .set-shell .stick-sets-fold .library-list li:first-child,
 .set-shell .stick-sets-fold .library-list li:last-child {
-  padding-block: 0.3rem !important;
+  padding-block: 0.6rem !important;
 }
 
 .set-shell .stick-sets-fold .library-list li > .stick-set-copy {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  column-gap: 0.6rem;
-  row-gap: 0;
-  min-width: 0;
-  flex: 1 1 auto;
-  align-self: center;
-}
-
-.set-shell .stick-sets-fold .library-list li > .stick-set-copy strong {
-  display: inline;
-  flex: 0 1 auto;
+  align-items: center;
+  gap: 0.15rem 0.85rem;
   min-width: 0;
   max-width: 100%;
 }
 
+.set-shell .stick-sets-fold .library-list li > .stick-set-copy strong {
+  flex: 0 1 auto;
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #fff !important;
+}
+
 .set-shell .stick-sets-fold .library-list li > .stick-set-copy em {
   flex: 0 0 auto;
-  align-self: center;
+  white-space: nowrap;
   line-height: 1.2;
 }
 
 .set-shell .stick-sets-fold .library-list li > .stick-set-copy span {
   flex: 1 0 100%;
-}
-
-/* Library tracks: key, BPM and energy sit with the title. The add button stays at the edge. */
-.set-shell .library-browser .library-list li {
-  display: flex !important;
-  align-items: center;
-  gap: 0.65rem;
-  min-height: 0;
-  padding-block: 0.22rem !important;
-}
-
-.set-shell .library-browser .library-list li:first-child,
-.set-shell .library-browser .library-list li:last-child {
-  padding-block: 0.22rem !important;
-}
-
-.set-shell .library-browser .library-list li > .library-row-copy {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  column-gap: 0.55rem;
-  row-gap: 0;
   min-width: 0;
-  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.set-shell .library-browser .library-list li > .library-row-copy strong {
-  display: inline;
-  flex: 0 1 auto;
+/* Library tracks: one line. Title, key, artist and the add button stay inside the row. */
+.set-shell .library-browser > .library-list {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100%;
   min-width: 0;
   max-width: 100%;
 }
 
-.set-shell .library-browser .library-list li > .library-row-copy em {
+.set-shell .library-browser > .library-list > li {
+  display: flex !important;
+  flex-flow: row nowrap !important;
+  align-items: center !important;
+  gap: 0.65rem;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  height: auto !important;
+  min-height: 2.25rem !important;
+  max-height: none !important;
+  padding: 0.28rem 0 !important;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.set-shell .library-browser > .library-list > li > .lib-play {
+  flex: 0 0 1.5rem;
+  width: 1.5rem !important;
+  height: 1.5rem !important;
+  min-width: 1.5rem !important;
+  min-height: 1.5rem !important;
+  padding: 0 !important;
+  font-size: 0.55rem;
+}
+
+.set-shell .library-browser > .library-list > li > .library-row-copy {
+  display: flex !important;
+  flex-flow: row nowrap !important;
+  align-items: center;
+  column-gap: 0.55rem;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.set-shell .library-browser > .library-list > li > .library-row-copy strong {
+  display: block;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.set-shell .library-browser > .library-list > li > .library-row-copy em {
   flex: 0 0 auto;
-  align-self: center;
+  white-space: nowrap;
 }
 
-.set-shell .library-browser .library-list li > .library-row-copy span {
-  flex: 1 0 100%;
+.set-shell .library-browser > .library-list > li > .library-row-copy span {
+  flex: 1 1 auto !important;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.set-shell .library-browser .library-list li > .lib-add {
+.set-shell .library-browser > .library-list > li > .lib-add {
   flex: 0 0 auto;
   margin-left: auto;
+  width: auto !important;
+  min-width: 0 !important;
+  height: 1.75rem !important;
+  min-height: 1.75rem !important;
+  max-height: 1.75rem !important;
+  padding: 0 0.55rem !important;
+  font-size: 0.75rem !important;
+  line-height: 1 !important;
 }
 
 .set-shell .stick-sets-fold .stick-set-load {
   width: auto !important;
   min-width: max-content !important;
-  height: var(--ui-control-height);
-  padding-inline: var(--ui-space-4) !important;
-  align-self: center;
+  max-width: none !important;
+  color: #fff !important;
+  height: 2rem !important;
+  min-height: 2rem !important;
+  max-height: 2rem !important;
+  padding: 0 0.75rem !important;
+  margin: 0 !important;
+  position: static !important;
+  align-self: center !important;
+  line-height: 1 !important;
 }
 
 .set-shell :is(.builder-note, .library-path, .why, .artists) {

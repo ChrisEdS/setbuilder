@@ -319,3 +319,43 @@ export function rankFitsAfter<
     .sort((a, b) => b.score - a.score)
     .map(({ row, text, score }) => ({ row, text, score }));
 }
+
+/**
+ * Where a new track belongs: the performance song in its phase that it best
+ * follows, using the same gates as “Fits after” (key, ±6 BPM, no energy jump).
+ * Null means nothing in that phase qualifies, so the caller appends.
+ */
+export function bestFollowId(
+  tracks: readonly SetTrack[],
+  incoming: Pick<SetTrack, "name" | "artists" | "keyCamelot" | "bpm" | "energyLevel" | "phase">,
+): string | null {
+  const row = {
+    artist: incoming.artists[0] ?? "",
+    title: incoming.name,
+    key: incoming.keyCamelot,
+    bpm: incoming.bpm,
+    energy: incoming.energyLevel,
+  };
+  let bestId: string | null = null;
+  let bestScore = -1;
+  for (const track of tracks) {
+    if (track.role === "safety" || track.phase !== incoming.phase) continue;
+    const ranked = rankFitsAfter(
+      [row],
+      {
+        name: track.name,
+        artists: track.artists,
+        keyCamelot: track.keyCamelot,
+        bpm: track.bpm,
+        energyLevel: track.energyLevel,
+      },
+      (raw) => raw,
+    );
+    const score = ranked[0]?.score ?? -1;
+    if (score > bestScore) {
+      bestScore = score;
+      bestId = track.id;
+    }
+  }
+  return bestId;
+}

@@ -134,8 +134,9 @@ export function StickSetList({
         }
       }
     }
-    const pathPart = set.path !== set.name ? ` · ${set.path}` : "";
-    return `${kindLabel(set)}${pathPart}`;
+    // The folder path usually ends with the playlist name. That repeat is not a subtitle.
+    if (!bothKinds) return "";
+    return kindLabel(set);
   }
 
   return (
@@ -190,7 +191,7 @@ export function StickSetList({
                       {trackCount(set.tracks.length, t)}
                       {ms ? ` · ${formatDuration(ms)}` : ""}
                     </em>
-                    <span>{setSubtitle(set)}</span>
+                    {setSubtitle(set) ? <span>{setSubtitle(set)}</span> : null}
                   </div>
                   <button
                     type="button"

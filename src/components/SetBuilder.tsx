@@ -143,7 +143,7 @@ import {
 } from "@/lib/export-booth";
 import { openSetPdfExport } from "@/lib/export-pdf";
 import { pickStreamingMatch } from "@/lib/match-link";
-import { swapIntoSlot } from "@/lib/replace-track";
+import { bestFollowId, swapIntoSlot } from "@/lib/replace-track";
 import { CAMELOT_CODES, mixJoin, relationHint, trackDetailsSummary } from "@/lib/harmonic";
 import {
   alternativesPulledIntoPerformance,
@@ -1713,7 +1713,7 @@ export function SetBuilder() {
     );
   }
 
-  function addLibraryTrack(incoming: SetTrack, place?: { side: "before" | "after" }) {
+  function addLibraryTrack(incoming: SetTrack, place?: { afterId: string | null } | { auto: true }) {
     // An Alternative whose energy contradicts the chosen phase goes to the phase it fits.
     const track =
       incoming.role === "safety"
@@ -1729,14 +1729,13 @@ export function SetBuilder() {
       setStatus(t("builder.status.alreadyInNamed", { name: track.name }));
       return;
     }
-    // Same rule as before: after the chosen set row, or on the end when there is none.
-    // The row is the selected one, otherwise the one that is playing.
-    const anchorId = place
-      ? [focusTrackId, playingTrackId].find(
-          (id) => Boolean(id && draft.tracks.some((item) => item.id === id)),
-        ) ?? null
-      : null;
-    const side = place?.side === "before" ? "before" : "after";
+    const auto = place != null && "auto" in place && place.auto;
+    const requestedId = place != null && "afterId" in place ? place.afterId : null;
+    const anchorId = auto
+      ? bestFollowId(draft.tracks, track)
+      : requestedId && draft.tracks.some((item) => item.id === requestedId)
+        ? requestedId
+        : null;
     setDraft((current) => {
       const fresh = uniqueIncomingDraftTracks(
         current.tracks.map((item) => item.id),
@@ -1747,13 +1746,13 @@ export function SetBuilder() {
       const at = current.tracks.findIndex((item) => item.id === anchorId);
       if (at < 0) return { ...current, tracks: [...current.tracks, ...fresh] };
       const tracks = current.tracks.slice();
-      tracks.splice(side === "before" ? at : at + 1, 0, ...fresh);
+      tracks.splice(at + 1, 0, ...fresh);
       return { ...current, tracks };
     });
     const anchor = anchorId ? draft.tracks.find((item) => item.id === anchorId) : null;
     setStatus(
       anchor
-        ? t(side === "before" ? "builder.status.addedBefore" : "builder.status.addedAfter", {
+        ? t("builder.status.addedAfter", {
             name: track.name,
             after: anchor.name,
             phase: phaseLabel(t, track.phase),
