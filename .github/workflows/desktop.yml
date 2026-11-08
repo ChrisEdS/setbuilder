@@ -40,6 +40,11 @@ jobs:
     name: ${{ matrix.os }} ${{ matrix.arch }}
     needs: quality
     runs-on: ${{ matrix.os }}
+    env:
+      # GitHub release downloads currently answer 504, including the checksum files.
+      # These mirrors host the same Electron and electron-builder archives.
+      ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+      ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
     strategy:
       fail-fast: false
       matrix:
