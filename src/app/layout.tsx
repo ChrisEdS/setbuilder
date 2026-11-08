@@ -1,22 +1,9 @@
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
-import { Manrope, Space_Grotesk } from "next/font/google";
 import { DesktopFrame } from "@/components/DesktopFrame";
 import { I18nProvider } from "@/lib/i18n/react";
 import "./globals.css";
 import "./ui-system.css";
-
-const display = Space_Grotesk({
-  variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-});
-
-const body = Manrope({
-  variable: "--font-body",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
 
 export const metadata: Metadata = {
   title: "SETBUILDER — DJ Set Prep",
@@ -35,8 +22,16 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
       lang="de"
-      className={`${display.variable} ${body.variable} h-full antialiased`}
+      className="h-full antialiased"
     >
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body className="min-h-full flex flex-col">
         <DesktopFrame />
         <I18nProvider>{children}</I18nProvider>

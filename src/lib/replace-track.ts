@@ -5,8 +5,10 @@ import {
   relationScore,
 } from "./harmonic";
 import { energyScore, energyStep, energyText } from "./energy";
+import { parseKeyValue } from "@/lib/key-import";
 import { tDe, type Translate } from "@/lib/i18n/core";
-import { artistLine, type SetTrack, type SourcePoolTrack } from "./set";
+import { bestPhaseFor } from "@/lib/plan-b";
+import { artistLine, type SetPhaseId, type SetTrack, type SourcePoolTrack } from "./set";
 
 export type ReplacementOption = {
   id: string;
@@ -328,6 +330,7 @@ export function rankFitsAfter<
 export function bestFollowId(
   tracks: readonly SetTrack[],
   incoming: Pick<SetTrack, "name" | "artists" | "keyCamelot" | "bpm" | "energyLevel" | "phase">,
+  opts?: { anyPhase?: boolean },
 ): string | null {
   const row = {
     artist: incoming.artists[0] ?? "",
@@ -339,7 +342,8 @@ export function bestFollowId(
   let bestId: string | null = null;
   let bestScore = -1;
   for (const track of tracks) {
-    if (track.role === "safety" || track.phase !== incoming.phase) continue;
+    if (track.role === "safety") continue;
+    if (!opts?.anyPhase && track.phase !== incoming.phase) continue;
     const ranked = rankFitsAfter(
       [row],
       {
@@ -349,7 +353,7 @@ export function bestFollowId(
         bpm: track.bpm,
         energyLevel: track.energyLevel,
       },
-      (raw) => raw,
+      (raw) => parseKeyValue(raw) || raw,
     );
     const score = ranked[0]?.score ?? -1;
     if (score > bestScore) {
@@ -358,4 +362,30 @@ export function bestFollowId(
     }
   }
   return bestId;
+}
+
+/**
+ * Auto place: pick the phase the track belongs to, then the song it best follows.
+ * Falls back across phases when that band has no fit. Null means append at the end.
+ */
+export function autoInsertAfter(
+  tracks: readonly SetTrack[],
+  incoming: Pick<SetTrack, "name" | "artists" | "keyCamelot" | "bpm" | "energyLevel" | "phase">,
+): { afterId: string; phase: SetPhaseId } | null {
+  const phase = bestPhaseFor(
+    {
+      phase: incoming.phase,
+      bpm: incoming.bpm,
+      keyCamelot: incoming.keyCamelot,
+      energyLevel: incoming.energyLevel,
+    },
+    tracks as SetTrack[],
+  );
+  const withPhase = { ...incoming, phase };
+  const samePhase = bestFollowId(tracks, withPhase);
+  if (samePhase) return { afterId: samePhase, phase };
+  const anyId = bestFollowId(tracks, withPhase, { anyPhase: true });
+  if (!anyId) return null;
+  const neighbor = tracks.find((track) => track.id === anyId);
+  return { afterId: anyId, phase: neighbor?.phase ?? phase };
 }

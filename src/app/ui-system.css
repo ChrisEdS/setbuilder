@@ -804,6 +804,12 @@ html[data-frame="mac"] .set-shell .hero-copy {
   display: none !important;
 }
 
+.set-shell .library-browser-head.is-tools-collapsed,
+.set-shell .library-panel .library-browser-head.is-tools-collapsed {
+  border-bottom: none !important;
+  padding-bottom: 0 !important;
+}
+
 .set-shell .library-insert {
   display: flex;
   align-items: center;

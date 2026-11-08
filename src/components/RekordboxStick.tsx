@@ -488,6 +488,11 @@ export function RekordboxStick({
     }
     // Soft path first: remembered handle + permission prompt, no OS picker.
     if (await trySoftReconnect()) return;
+    // One mounted Pioneer volume: use the desktop API — no OS folder picker.
+    if (volumes?.length === 1) {
+      await loadVolume(volumes[0]!.name);
+      return;
+    }
     if (!stickPicker()) {
       dirInput.current?.click();
       return;
@@ -699,8 +704,10 @@ export function RekordboxStick({
       </p>
     </>
   );
+  // Also show a single detected volume — hiding it made a mounted stick look
+  // disconnected (only Choose stick / export.pdb), so beatgrids never loaded.
   const volumeChooser =
-    volumes && volumes.length > 1 ? (
+    volumes && volumes.length >= 1 ? (
       <ul
         className="stick-volume-list"
         ref={volumeListRef}

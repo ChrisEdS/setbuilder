@@ -75,6 +75,10 @@ const de = {
   "exports.stickWrite.removeDenied": "Dieser Stick darf die Player-Library nicht beiseitelegen. Chrome, Edge oder die Desktop-App verwenden.",
   "exports.stickWrite.asideFailed": "exportLibrary.db konnte nicht beiseitegelegt werden. Die Sicherung liegt in SETBUILDER-Backup.",
   "exports.stickWrite.noAside": "Auf diesem Stick liegt keine beiseitegelegte Player-Library.",
+  "exports.stickWrite.libraryBusy":
+    "rekordbox hält die Player-Library noch offen. rekordbox schließen und erneut vorbereiten.",
+  "exports.stickWrite.prepareTimeout":
+    "Vorbereiten hat zu lange gedauert. Stick stecken lassen, rekordbox schließen, erneut versuchen.",
 } as const;
 
 const en: Record<keyof typeof de, string> = {
@@ -145,6 +149,10 @@ const en: Record<keyof typeof de, string> = {
   "exports.stickWrite.removeDenied": "This stick cannot set the player library aside. Use Chrome, Edge or the desktop app.",
   "exports.stickWrite.asideFailed": "exportLibrary.db could not be set aside. The backup is in SETBUILDER-Backup.",
   "exports.stickWrite.noAside": "There is no set-aside player library on this stick.",
+  "exports.stickWrite.libraryBusy":
+    "rekordbox still has the player library open. Quit rekordbox, then prepare again.",
+  "exports.stickWrite.prepareTimeout":
+    "Preparing took too long. Leave the stick in, quit rekordbox, then try again.",
 };
 
 export const exports_ = { de, en };

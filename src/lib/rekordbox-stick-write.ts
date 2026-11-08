@@ -70,6 +70,9 @@ export type StickPrepareProgress = {
 export type StickPrepareReporter = (progress: StickPrepareProgress) => void;
 
 const COPY_CHUNK = 4 * 1024 * 1024;
+/** USB + an open rekordbox handle can stall forever; fail instead of leaving Preparing stuck. */
+const PREPARE_STEP_MS = 45_000;
+const LIBRARY_SIDECARS = ["exportLibrary.db-wal", "exportLibrary.db-shm"] as const;
 
 function yieldToUi(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
@@ -140,6 +143,18 @@ function stickError(
   vars?: Record<string, string | number>,
 ) {
   return new PdbWriteError(key, vars, german);
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number, key: MessageKey, german: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  return Promise.race([
+    promise.finally(() => {
+      if (timer !== undefined) clearTimeout(timer);
+    }),
+    new Promise<T>((_, reject) => {
+      timer = setTimeout(() => reject(stickError(key, german)), ms);
+    }),
+  ]);
 }
 
 async function child(dir: DirLike, name: string): Promise<DirLike | null> {
@@ -726,6 +741,28 @@ export async function listLibraryAsides(root: DirLike): Promise<string[]> {
   return names;
 }
 
+async function latestLibraryAside(root: DirLike): Promise<string | null> {
+  const names = await listLibraryAsides(root);
+  return names.at(-1) ?? null;
+}
+
+/** Best-effort: drop SQLite WAL leftovers after the main OneLibrary file is gone. */
+async function clearLibrarySidecars(dir: DirLike): Promise<void> {
+  if (!dir.removeEntry) return;
+  for (const name of LIBRARY_SIDECARS) {
+    try {
+      await withTimeout(
+        dir.removeEntry(name),
+        5_000,
+        "exports.stickWrite.libraryBusy",
+        "rekordbox hält die Player-Library noch offen. rekordbox schließen und erneut vorbereiten.",
+      );
+    } catch {
+      /* wal/shm may stay locked; the main db is what players prefer */
+    }
+  }
+}
+
 /**
  * Newer players that prefer OneLibrary (exportLibrary.db) ignore SETBUILDER’s export.pdb.
  * We cannot write that encrypted file. Setting it aside (with a backup) makes
@@ -741,23 +778,46 @@ export async function prepareStickForPlayers(
   backupName: string | null;
 }> {
   report?.({ stage: "locate" });
-  const location = await findStickDatabase(root);
+  const location = await withTimeout(
+    findStickDatabase(root),
+    PREPARE_STEP_MS,
+    "exports.stickWrite.prepareTimeout",
+    "Die Player-Library wurde zu lange nicht gefunden. Stick stecken lassen, rekordbox schließen, erneut versuchen.",
+  );
   const lib = await file(location.dir, "exportLibrary.db");
-  if (!lib) return { aside: false, backupName: null };
+  if (!lib) {
+    const existing = await latestLibraryAside(root);
+    if (existing) {
+      await clearLibrarySidecars(location.dir);
+      report?.({ stage: "done" });
+      return { aside: true, backupName: existing };
+    }
+    return { aside: false, backupName: null };
+  }
   if (!location.dir.removeEntry) {
     throw stickError(
       "exports.stickWrite.removeDenied",
       "Dieser Stick darf die Player-Library nicht beiseitelegen. Chrome, Edge oder die Desktop-App verwenden.",
     );
   }
-  const sourceMeta = await lib.getFile();
+  const sourceMeta = await withTimeout(
+    lib.getFile(),
+    PREPARE_STEP_MS,
+    "exports.stickWrite.libraryBusy",
+    "rekordbox hält die Player-Library noch offen. rekordbox schließen und erneut vorbereiten.",
+  );
   const backupDir = await root.getDirectoryHandle(BACKUP_DIR, { create: true });
   const backupName = `exportLibrary-aside-${stamp(now)}.db`;
   const backup = await backupDir.getFileHandle(backupName, { create: true });
   report?.({ stage: "copy", bytesDone: 0, bytesTotal: sourceMeta.size });
-  const copied = await copyFileStreaming(lib, backup, (bytesDone, bytesTotal) => {
-    report?.({ stage: "copy", bytesDone, bytesTotal });
-  });
+  const copied = await withTimeout(
+    copyFileStreaming(lib, backup, (bytesDone, bytesTotal) => {
+      report?.({ stage: "copy", bytesDone, bytesTotal });
+    }),
+    Math.max(PREPARE_STEP_MS, Math.ceil(sourceMeta.size / (256 * 1024)) * 1000),
+    "exports.stickWrite.prepareTimeout",
+    "Das Kopieren der Player-Library hat zu lange gedauert. rekordbox schließen und erneut versuchen.",
+  );
   report?.({ stage: "verify", bytesDone: copied, bytesTotal: copied });
   const backupMeta = await backup.getFile();
   if (backupMeta.size !== copied || backupMeta.size !== sourceMeta.size) {
@@ -767,13 +827,24 @@ export async function prepareStickForPlayers(
     );
   }
   report?.({ stage: "remove" });
-  await location.dir.removeEntry("exportLibrary.db");
+  try {
+    await withTimeout(
+      location.dir.removeEntry("exportLibrary.db"),
+      PREPARE_STEP_MS,
+      "exports.stickWrite.libraryBusy",
+      "rekordbox hält die Player-Library noch offen. rekordbox schließen und erneut vorbereiten.",
+    );
+  } catch (error) {
+    // A timed-out unlink can still win on disk; treat a missing file as done.
+    if (await file(location.dir, "exportLibrary.db")) throw error;
+  }
   if (await file(location.dir, "exportLibrary.db")) {
     throw stickError(
       "exports.stickWrite.asideFailed",
       "exportLibrary.db konnte nicht beiseitegelegt werden. Die Sicherung liegt in SETBUILDER-Backup.",
     );
   }
+  await clearLibrarySidecars(location.dir);
   report?.({ stage: "done" });
   return { aside: true, backupName };
 }

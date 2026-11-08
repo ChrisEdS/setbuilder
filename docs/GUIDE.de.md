@@ -12,7 +12,7 @@ Stick verbinden, Set bauen, im Deck hören, mitnehmen. Die ausgelieferte App ist
 
 ![Rekordbox-Stick und Playlists](screenshots/de/01-stick-library.png)
 
-Stick anschließen. SETBUILDER liest Playlists und History aus `export.pdb`, auch im versteckten Ordner `PIONEER` oder `.PIONEER`. Unter **Set bauen** steht **Mit einer Playlist starten**. **Als Set laden** übernimmt eine Playlist ins Set. Reihenfolge, Key und BPM bleiben. Dateien vom Stick lassen sich im Player hören.
+Stick anschließen. Ein erkanntes Volume lädt ohne Ordner-Dialog. SETBUILDER liest Playlists und History aus `export.pdb`, auch im versteckten Ordner `PIONEER` oder `.PIONEER`. Unter **Set bauen** steht **Mit einer Playlist starten**. **Als Set laden** übernimmt eine Playlist ins Set. Reihenfolge, Key und BPM bleiben. Dateien vom Stick lassen sich im Player hören.
 
 Hängt der Ordner-Dialog: **export.pdb** wählen (`PIONEER/rekordbox/export.pdb`). Nicht den ganzen USB mit allen Musikdateien, das kann ewig dauern. **Anderer Stick**, wenn ein anderes Volume dran ist.
 
@@ -34,7 +34,7 @@ Oben der Brief. **Titel**, **Slot-Dauer (Min)** und **Blend-Zeit (Durchschnitt)*
 
 Die Setliste zeigt Phase, Rolle und den Anschluss zum Vorgänger. **Setliste**, **Rollen** und **Bogen** wechseln die Ansicht. **Comfortabel** zeigt die Icon-Zeile, **Kompakt** hält sie schmal. Die Reihenfolge änderst du am Griff oder mit den Pfeilen. **Behalten** lässt den Track im Set, Sortieren darf ihn verschieben. **Genau hier** hält den Slot. Play öffnet den Player, und die spielende Zeile bleibt daneben sichtbar. **Auf Slot setzen** kürzt, wenn das Set über dem Slot liegt. **Mit Matches füllen** legt passende Tracks nach, wenn es zu kurz ist.
 
-Unter **Beim Hinzufügen** wählst du, wo der nächste Song reinkommt: hinter einem Song, den du nennst, am Ende oder auf **Automatisch**. **Automatisch** setzt ihn hinter den Song dieser Phase, dem er am besten folgt — Key, BPM, Energie. **Phase** und **Rolle** bleiben, was du setzt.
+Unter **Beim Hinzufügen** wählst du, wo der nächste Song reinkommt: hinter einem Song, den du nennst, am Ende oder auf **Automatisch**. **Automatisch** setzt ihn hinter den Song, dem er am besten folgt — Key, BPM, Energie — zuerst in seiner Phase, dann überall, und nur ans Ende, wenn nichts passt. Der Status sagt, welchen Platz er hat.
 
 ## 3. Im Deck hören
 

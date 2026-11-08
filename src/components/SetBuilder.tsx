@@ -143,7 +143,7 @@ import {
 } from "@/lib/export-booth";
 import { openSetPdfExport } from "@/lib/export-pdf";
 import { pickStreamingMatch } from "@/lib/match-link";
-import { bestFollowId, swapIntoSlot } from "@/lib/replace-track";
+import { autoInsertAfter, swapIntoSlot } from "@/lib/replace-track";
 import { CAMELOT_CODES, mixJoin, relationHint, trackDetailsSummary } from "@/lib/harmonic";
 import {
   alternativesPulledIntoPerformance,
@@ -1612,6 +1612,7 @@ export function SetBuilder() {
     setStatus(
       t("builder.status.added", {
         name: track.name,
+        place: String(performanceTracks([...draft.tracks, next]).length),
         phase: phaseLabel(t, activePhase),
         role: roleLabel(t, activeRole),
       }),
@@ -1709,6 +1710,7 @@ export function SetBuilder() {
     setStatus(
       t("builder.status.added", {
         name,
+        place: String(performanceTracks(draft.tracks).length + 1),
         phase: phaseLabel(t, activePhase),
         role: roleLabel(t, activeRole),
       }),
@@ -1733,37 +1735,55 @@ export function SetBuilder() {
     }
     const auto = place != null && "auto" in place && place.auto;
     const requestedId = place != null && "afterId" in place ? place.afterId : null;
+    const autoPlace = auto ? autoInsertAfter(draft.tracks, track) : null;
+    const placed = autoPlace ? { ...track, phase: autoPlace.phase } : track;
     const anchorId = auto
-      ? bestFollowId(draft.tracks, track)
+      ? autoPlace?.afterId ?? null
       : requestedId && draft.tracks.some((item) => item.id === requestedId)
         ? requestedId
         : null;
+    const fresh = uniqueIncomingDraftTracks(
+      draft.tracks.map((item) => item.id),
+      [placed],
+    );
+    if (!fresh.length) {
+      setStatus(t("builder.status.alreadyInNamed", { name: track.name }));
+      return;
+    }
+    const at = anchorId ? draft.tracks.findIndex((item) => item.id === anchorId) : -1;
+    const nextTracks =
+      at >= 0
+        ? [...draft.tracks.slice(0, at + 1), ...fresh, ...draft.tracks.slice(at + 1)]
+        : [...draft.tracks, ...fresh];
+    const placeNo =
+      performanceTracks(nextTracks).findIndex((item) => item.id === fresh[0]?.id) + 1;
     setDraft((current) => {
-      const fresh = uniqueIncomingDraftTracks(
+      const again = uniqueIncomingDraftTracks(
         current.tracks.map((item) => item.id),
-        [track],
+        [placed],
       );
-      if (!fresh.length) return current;
-      if (!anchorId) return { ...current, tracks: [...current.tracks, ...fresh] };
-      const at = current.tracks.findIndex((item) => item.id === anchorId);
-      if (at < 0) return { ...current, tracks: [...current.tracks, ...fresh] };
+      if (!again.length) return current;
+      const here = anchorId ? current.tracks.findIndex((item) => item.id === anchorId) : -1;
+      if (here < 0) return { ...current, tracks: [...current.tracks, ...again] };
       const tracks = current.tracks.slice();
-      tracks.splice(at + 1, 0, ...fresh);
+      tracks.splice(here + 1, 0, ...again);
       return { ...current, tracks };
     });
-    const anchor = anchorId ? draft.tracks.find((item) => item.id === anchorId) : null;
+    const anchor = at >= 0 ? draft.tracks[at] : null;
     setStatus(
       anchor
         ? t("builder.status.addedAfter", {
-            name: track.name,
+            name: placed.name,
             after: anchor.name,
-            phase: phaseLabel(t, track.phase),
-            role: roleLabel(t, track.role),
+            place: String(placeNo),
+            phase: phaseLabel(t, placed.phase),
+            role: roleLabel(t, placed.role),
           })
         : t("builder.status.added", {
-            name: track.name,
-            phase: phaseLabel(t, track.phase),
-            role: roleLabel(t, track.role),
+            name: placed.name,
+            place: String(placeNo),
+            phase: phaseLabel(t, placed.phase),
+            role: roleLabel(t, placed.role),
           }),
     );
   }

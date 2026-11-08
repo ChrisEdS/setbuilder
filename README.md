@@ -14,7 +14,7 @@ Walkthrough with screenshots: [docs/GUIDE.md](docs/GUIDE.md)
 - ⏱️ **The night fitted to the slot.** Too long, it cuts. Too short, it fills from alternatives and the playlist you loaded.
 - 🔑 **Keys that talk to each other.** Camelot along the set. A clash shows up while you still have time.
 - ⚡ **Energy that belongs to the song.** Read from the file, measured, or set by you.
-- ➕ **Where the next song comes in.** After a song you name, at the end, or Auto. Auto puts it after the song in that phase it best follows — key, BPM, energy — and phase and role stay what you set when adding.
+- ➕ **Where the next song comes in.** After a song you name, at the end, or Auto. Auto puts it after the song it best follows — key, BPM, energy — in its phase first, then anywhere, and only at the end if nothing fits. The status says which place it took.
 - 📌 **Keep it, or pin the slot.** A kept track stays in the set while sorting may move it. A pin holds the exact slot. Opener and closer hold the ends.
 - 🛟 **Plan B in your pocket.** Roles and alternatives for when the floor turns.
 - 🎧 **Hear the handoff first.** Previous, this track, next — the same lengths as the set. The list follows the track that is playing and keeps that row visible beside the player.
@@ -27,7 +27,7 @@ Walkthrough with screenshots: [docs/GUIDE.md](docs/GUIDE.md)
 
 ## The stick
 
-Connect a rekordbox USB stick (a remembered stick comes back while access still holds). Load a playlist, the history, or the collection for keys. In the brief you set the slot in minutes and the average blend. On the set you place the arc, the joins, pins, and alternatives, and you can fit the night to the slot. **Write to stick** stores the set as a playlist and keeps a backup. **Prepare for player** moves an older player library aside so the player shows those playlists. Eject, then play the stick on the actual player before the gig.
+Connect a rekordbox USB stick (one recognized volume loads without a picker; a remembered stick comes back while access still holds). Load a playlist, the history, or the collection for keys. In the brief you set the slot in minutes and the average blend. On the set you place the arc, the joins, pins, and alternatives, and you can fit the night to the slot. **Write to stick** stores the set as a playlist and keeps a backup. **Prepare for player** moves an older player library aside so the player shows those playlists. Eject, then play the stick on the actual player before the gig.
 
 For the booth there is a PDF and copied text. For the computer there is rekordbox XML and M3U.
 

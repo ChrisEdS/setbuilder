@@ -111,7 +111,6 @@ export function GigReadyDialog({
       }}
     >
       <h2 id="gig-ready-title">{t("builder.ready.title")}</h2>
-      <p className="gig-ready-intro modal-info">{t("builder.ready.intro")}</p>
       <ul className="gig-ready-list" aria-label={t("builder.ready.title")}>
         {checks.map((check) => (
           <li

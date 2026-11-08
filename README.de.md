@@ -14,7 +14,7 @@ Anleitung mit Screenshots: [docs/GUIDE.de.md](docs/GUIDE.de.md)
 - ⏱️ **Die Nacht auf den Slot.** Zu lang, sie wird kürzer. Zu kurz füllt sie aus Alternativen und der geladenen Playlist.
 - 🔑 **Keys, die miteinander reden.** Camelot entlang des Sets. Ein Clash fällt auf, solange du noch Zeit hast.
 - ⚡ **Energie, die zum Song gehört.** Aus der Datei gelesen, gemessen oder von dir gesetzt.
-- ➕ **Wo der nächste Song reinkommt.** Hinter einem Song, den du nennst, am Ende oder auf Automatisch. Automatisch setzt ihn hinter den Song dieser Phase, dem er nach Key, BPM und Energie am besten folgt, und Phase und Rolle bleiben, was du beim Hinzufügen setzt.
+- ➕ **Wo der nächste Song reinkommt.** Hinter einem Song, den du nennst, am Ende oder auf Automatisch. Automatisch setzt ihn hinter den Song, dem er nach Key, BPM und Energie am besten folgt — zuerst in seiner Phase, dann überall, und nur ans Ende, wenn nichts passt. Der Status sagt, welchen Platz er hat.
 - 📌 **Behalten, oder den Slot pinnen.** Ein behaltener Track bleibt im Set, Sortieren darf ihn verschieben. Ein Pin hält genau diesen Slot. Opener und Closer halten die Enden.
 - 🛟 **Plan B in der Tasche.** Rollen und Alternativen, wenn der Floor dreht.
 - 🎧 **Den Übergang vorher hören.** Vorher, dieser Track, der nächste — dieselbe Länge wie im Set. Die Liste folgt dem Track, der spielt, und hält diese Zeile neben dem Player sichtbar.
@@ -27,7 +27,7 @@ Anleitung mit Screenshots: [docs/GUIDE.de.md](docs/GUIDE.de.md)
 
 ## Der Stick
 
-Einen rekordbox-USB-Stick verbinden (ein erinnerter Stick kommt zurück, solange der Zugriff gilt). Playlist, History oder die Collection für die Keys laden. Im Brief setzt du die Slot-Minuten und die mittlere Blend-Zeit. Im Set legst du den Bogen, die Übergänge, Pins und Alternativen, und du kannst die Nacht auf den Slot setzen. **Auf Stick schreiben** legt das Set als Playlist ab und behält eine Sicherung. **Für Player vorbereiten** legt eine ältere Player-Bibliothek beiseite, damit der Player diese Playlists zeigt. Auswerfen, dann den Stick vor dem Gig am echten Player spielen.
+Einen rekordbox-USB-Stick verbinden (ein erkanntes Volume lädt ohne Ordner-Dialog; ein erinnerter Stick kommt zurück, solange der Zugriff gilt). Playlist, History oder die Collection für die Keys laden. Im Brief setzt du die Slot-Minuten und die mittlere Blend-Zeit. Im Set legst du den Bogen, die Übergänge, Pins und Alternativen, und du kannst die Nacht auf den Slot setzen. **Auf Stick schreiben** legt das Set als Playlist ab und behält eine Sicherung. **Für Player vorbereiten** legt eine ältere Player-Bibliothek beiseite, damit der Player diese Playlists zeigt. Auswerfen, dann den Stick vor dem Gig am echten Player spielen.
 
 Für die Kabine gibt es ein PDF und kopierten Text. Für den Rechner rekordbox-XML und M3U.
 

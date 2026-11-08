@@ -3,7 +3,14 @@ import test from "node:test";
 import { buildM3u, buildRekordboxXml } from "./export-booth.ts";
 import { tEn } from "./i18n/core.ts";
 import { pickStreamingMatch } from "./match-link.ts";
-import { bestFollowId, rankFitsAfter, rankReplacements, replacementOrigin, swapIntoSlot } from "./replace-track.ts";
+import {
+  autoInsertAfter,
+  bestFollowId,
+  rankFitsAfter,
+  rankReplacements,
+  replacementOrigin,
+  swapIntoSlot,
+} from "./replace-track.ts";
 import { artistLine, type SetDraft, type SetTrack } from "./set.ts";
 import { matchStickFile } from "./stick-audio.ts";
 
@@ -141,6 +148,28 @@ test("auto insert follows the best in-phase neighbor and leaves everyone else", 
   );
   assert.equal(
     bestFollowId(tracks, {
+      name: "Nowhere",
+      artists: ["Bea"],
+      keyCamelot: "3A",
+      bpm: "90",
+      energyLevel: 2,
+      phase: "peak",
+    }),
+    null,
+  );
+  assert.deepEqual(
+    autoInsertAfter(tracks, {
+      name: "Next",
+      artists: ["Bea"],
+      keyCamelot: "9A",
+      bpm: "124",
+      energyLevel: 6,
+      phase: "open",
+    }),
+    { afterId: "good", phase: "lift" },
+  );
+  assert.equal(
+    autoInsertAfter(tracks, {
       name: "Nowhere",
       artists: ["Bea"],
       keyCamelot: "3A",

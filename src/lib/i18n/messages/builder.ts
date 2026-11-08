@@ -47,10 +47,12 @@ const de = {
     "Notizen zum Gig: Vibe, Venue, Slot, Publikum, Gear — Dauer und Blend-Zeit bleiben oben.",
 
   "builder.ready.title": "Vor dem Mitnehmen",
-  "builder.ready.intro": "Kurz prüfen, dann mitnehmen.",
+  "builder.ready.intro":
+    "Der Stick ist bereit. Nächster Schritt: mitnehmen — auswerfen und am echten Player hören, bevor der Gig beginnt.",
   "builder.ready.nextBlocked": "Nächster Schritt: Blocker beheben — oder Stick-Ordner erneut wählen.",
-  "builder.ready.nextOk": "Nächster Schritt: mitnehmen — oder zurück und Set anpassen.",
-  "builder.ready.continue": "Trotzdem mitnehmen",
+  "builder.ready.nextOk":
+    "Der Stick ist bereit. Nächster Schritt: mitnehmen — auswerfen und am echten Player hören, bevor der Gig beginnt.",
+  "builder.ready.continue": "Mitnehmen",
   "builder.ready.close": "Zurück",
   "builder.ready.block": "Hält diese Aktion auf",
   "builder.ready.filesBlock": "{count} Tracks ohne Datei in dieser Sitzung. Stick schreiben braucht die Dateien.",
@@ -620,9 +622,9 @@ const de = {
   "builder.app.bannerDismiss": "Später",
 
   // Status toasts
-  "builder.status.added": "+ {name} → {phase} / {role}",
-  "builder.status.addedBefore": "+ {name} vor {after} → {phase} / {role}",
-  "builder.status.addedAfter": "+ {name} hinter {after} → {phase} / {role}",
+  "builder.status.added": "+ {name} · Platz {place} → {phase} / {role}",
+  "builder.status.addedBefore": "+ {name} vor {after} · Platz {place} → {phase} / {role}",
+  "builder.status.addedAfter": "+ {name} hinter {after} · Platz {place} → {phase} / {role}",
   "builder.status.addedMany": "+ {tracks} → {phase} / {role}",
   "builder.status.alreadyIn": "Track ist schon im Set.",
   "builder.status.alreadyInNamed": "{name} ist schon im Set.",
@@ -846,10 +848,12 @@ const en: Record<keyof typeof de, string> = {
     "Notes for the gig: vibe, venue, slot, audience, gear — duration and blend time stay above.",
 
   "builder.ready.title": "Before you take it",
-  "builder.ready.intro": "A short check, then take it with you.",
+  "builder.ready.intro":
+    "The stick is ready. Next: take it with you — eject, then hear it on a real player before the gig.",
   "builder.ready.nextBlocked": "Next: fix the blockers — or choose the stick folder again.",
-  "builder.ready.nextOk": "Next: take it with you — or go back and adjust the set.",
-  "builder.ready.continue": "Take it anyway",
+  "builder.ready.nextOk":
+    "The stick is ready. Next: take it with you — eject, then hear it on a real player before the gig.",
+  "builder.ready.continue": "Take it",
   "builder.ready.close": "Back",
   "builder.ready.block": "Stops this action",
   "builder.ready.filesBlock": "{count} tracks have no file in this session. Writing the stick needs those files.",
@@ -1409,9 +1413,9 @@ const en: Record<keyof typeof de, string> = {
     "Restart to install. Your open set stays.",
   "builder.app.bannerDismiss": "Later",
 
-  "builder.status.added": "+ {name} → {phase} / {role}",
-  "builder.status.addedBefore": "+ {name} before {after} → {phase} / {role}",
-  "builder.status.addedAfter": "+ {name} after {after} → {phase} / {role}",
+  "builder.status.added": "+ {name} · place {place} → {phase} / {role}",
+  "builder.status.addedBefore": "+ {name} before {after} · place {place} → {phase} / {role}",
+  "builder.status.addedAfter": "+ {name} after {after} · place {place} → {phase} / {role}",
   "builder.status.addedMany": "+ {tracks} → {phase} / {role}",
   "builder.status.alreadyIn": "Track is already in the set.",
   "builder.status.alreadyInNamed": "{name} is already in the set.",

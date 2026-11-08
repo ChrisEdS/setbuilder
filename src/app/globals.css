@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
 :root {
+  --font-body: "Manrope";
+  --font-display: "Space Grotesk";
   /* Brand + Spotify-inspired dark shell */
   --mauve: #804a53;
   --mint: #d9edec;
@@ -8719,20 +8721,27 @@ details:not([open]) > .menu-panel {
   padding-top: 0.65rem;
   padding-left: 1.3rem;
   border-top: 1px solid var(--line);
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 .stick-strip-facts {
   display: grid;
   gap: 0.25rem 0.9rem;
   margin: 0;
+  min-width: 0;
+  max-width: 100%;
   font-size: 0.8rem;
   line-height: 1.4;
 }
 .stick-strip-facts > div {
   position: relative;
   display: grid;
-  grid-template-columns: 8.5rem minmax(0, 1fr);
+  grid-template-columns: max-content minmax(0, 1fr);
   align-items: baseline;
   gap: 0 0.6rem;
+  min-width: 0;
+  max-width: 100%;
   padding-left: 0.85rem;
 }
 /* Status dots only when the tone means something (ok / warn / bad). */
@@ -8761,20 +8770,37 @@ details:not([open]) > .menu-panel {
   opacity: 0.85;
 }
 .stick-strip-facts dt {
+  min-width: max-content;
+  overflow: visible;
   color: var(--muted);
+  white-space: nowrap;
 }
 .stick-strip-facts dd {
+  min-width: 0;
   margin: 0;
+  overflow: hidden;
   color: var(--ink);
-  overflow-wrap: break-word;
   line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stick-strip-facts dd:has(.stick-strip-fact-parts) {
+  text-overflow: unset;
+  white-space: normal;
 }
 .stick-strip-fact-parts {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.2rem 0.45rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.12rem;
+  min-width: 0;
+  overflow: hidden;
+  white-space: normal;
 }
 .stick-strip-fact-parts > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 .stick-strip-facts > div.is-mute dd {
@@ -9135,6 +9161,8 @@ details:not([open]) > .menu-panel {
   order: 2;
   width: 100%;
   min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .stick-head-cluster.is-ok .stick-strip-dot {

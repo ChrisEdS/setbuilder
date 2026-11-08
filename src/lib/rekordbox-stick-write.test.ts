@@ -429,3 +429,16 @@ test("prepareStickForPlayers does nothing when there is no OneLibrary", async ()
   const { root } = stick();
   assert.deepEqual(await prepareStickForPlayers(root), { aside: false, backupName: null });
 });
+
+test("prepareStickForPlayers treats an existing aside as already done", async () => {
+  const { root, rekordbox } = stick();
+  const backup = new MemDir(BACKUP_DIR);
+  backup.files.set(
+    "exportLibrary-aside-20261014-030000.db",
+    new MemFile("exportLibrary-aside-20261014-030000.db", {}),
+  );
+  root.dirs.set(BACKUP_DIR, backup);
+  assert.equal(rekordbox.files.has("exportLibrary.db"), false);
+  const done = await prepareStickForPlayers(root);
+  assert.deepEqual(done, { aside: true, backupName: "exportLibrary-aside-20261014-030000.db" });
+});

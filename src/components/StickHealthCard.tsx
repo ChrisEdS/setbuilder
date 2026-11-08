@@ -10,7 +10,11 @@ import {
   type StickAction,
   type StickHealth,
 } from "@/lib/stick-health";
+import { LocalizedError } from "@/lib/i18n/error";
 import type { StickPrepareProgress, StickPrepareReporter } from "@/lib/rekordbox-stick-write";
+
+/** Last-resort UI watchdog so Preparing cannot sit forever if a stick op never settles. */
+const PREPARE_UI_MS = 120_000;
 
 type Tone = "ok" | "warn" | "bad" | "mute";
 
@@ -356,17 +360,36 @@ export function StickHealthCard({
     const report: StickPrepareReporter = (progress) => {
       setBusyDetail(formatPrepareProgress(progress));
     };
+    let watchdog: ReturnType<typeof setTimeout> | undefined;
     try {
-      if (kind === "prepare") await onPrepare?.(report);
-      else if (kind === "restore") await onRestoreLibrary?.(report);
-      else if (kind === "repair") await onRepair?.();
-      else if (kind === "eject") {
-        await onEject?.();
-        setEjected(true);
-        setNoteOk(true);
-        setNote(null);
+      const work = async () => {
+        if (kind === "prepare") await onPrepare?.(report);
+        else if (kind === "restore") await onRestoreLibrary?.(report);
+        else if (kind === "repair") await onRepair?.();
+        else if (kind === "eject") {
+          await onEject?.();
+          setEjected(true);
+          setNoteOk(true);
+          setNote(null);
+          return "ejected" as const;
+        } else await openRekordbox();
+        return "ok" as const;
+      };
+      const result =
+        kind === "prepare" || kind === "restore"
+          ? await Promise.race([
+              work(),
+              new Promise<"timeout">((resolve) => {
+                watchdog = setTimeout(() => resolve("timeout"), PREPARE_UI_MS);
+              }),
+            ])
+          : await work();
+      if (result === "ejected") return;
+      if (result === "timeout") {
+        setNoteOk(false);
+        setNote("library.stickHealth.fix.timeout");
         return;
-      } else await openRekordbox();
+      }
       setNoteOk(true);
       setNote(
         kind === "prepare"
@@ -377,18 +400,28 @@ export function StickHealthCard({
               ? "library.stickHealth.fix.repaired"
               : "library.stickHealth.prepare.opened",
       );
-    } catch {
+    } catch (error) {
       setNoteOk(false);
+      const key =
+        error instanceof LocalizedError
+          ? error.key === "exports.stickWrite.libraryBusy"
+            ? "library.stickHealth.fix.busy"
+            : error.key === "exports.stickWrite.prepareTimeout"
+              ? "library.stickHealth.fix.timeout"
+              : null
+          : null;
       setNote(
-        kind === "eject"
-          ? "library.stickHealth.fix.ejectFailed"
-          : kind === "repair"
-            ? "library.stickHealth.fix.repairFailed"
-            : kind === "openRekordbox"
-              ? "library.stickHealth.prepare.failed"
-              : "library.stickHealth.fix.failed",
+        key ??
+          (kind === "eject"
+            ? "library.stickHealth.fix.ejectFailed"
+            : kind === "repair"
+              ? "library.stickHealth.fix.repairFailed"
+              : kind === "openRekordbox"
+                ? "library.stickHealth.prepare.failed"
+                : "library.stickHealth.fix.failed"),
       );
     } finally {
+      if (watchdog !== undefined) clearTimeout(watchdog);
       setBusy(null);
       setBusyDetail(null);
     }
@@ -462,7 +495,9 @@ export function StickHealthCard({
                   {fact.parts ? (
                     <span className="stick-strip-fact-parts">
                       {fact.parts.map((part) => (
-                        <span key={part}>{part}</span>
+                        <span key={part} title={part}>
+                          {part}
+                        </span>
                       ))}
                       {fact.more ? (
                         <span className="is-more">

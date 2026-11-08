@@ -12,7 +12,7 @@ Connect the stick, build the set, hear it on the deck, take it with you. The shi
 
 ![Rekordbox stick and playlists](screenshots/en/01-stick-library.png)
 
-Plug the stick in. SETBUILDER reads playlists and history from `export.pdb`, including the hidden `PIONEER` or `.PIONEER` folder. Under **Build set**, **Start with a playlist** lists them. **Load as set** takes a playlist into the set. Order, key and BPM stay. Files from the stick play in the player.
+Plug the stick in. One recognized volume loads without the folder picker. SETBUILDER reads playlists and history from `export.pdb`, including the hidden `PIONEER` or `.PIONEER` folder. Under **Build set**, **Start with a playlist** lists them. **Load as set** takes a playlist into the set. Order, key and BPM stay. Files from the stick play in the player.
 
 If the folder dialog hangs, pick **export.pdb** (`PIONEER/rekordbox/export.pdb`). Do not select the whole USB with every music file; that can stall. **Change stick** when another volume is mounted.
 
@@ -34,7 +34,7 @@ The brief is at the top. **Title**, **Slot duration (min)** and **Blend time (av
 
 The setlist shows phase, role and the join from the previous track. **Setlist**, **Roles** and **Arc** switch the view. **Comfortable** shows the icon row; **Compact** keeps it tight. Change the order with the grip or the arrows. **Keep** leaves a track in the set while sorting may move it. **Pin here** holds the exact slot. Play opens the player, and the playing row stays visible beside it. **Fit to slot** cuts when the set runs over the slot. **Fill with matches** adds tracks that fit when it is short.
 
-Under **When adding**, you choose where the next song comes in: after a song you name, at the end, or **Auto**. **Auto** puts it after the song in that phase it best follows — key, BPM, energy. **Phase** and **Role** stay what you set.
+Under **When adding**, you choose where the next song comes in: after a song you name, at the end, or **Auto**. **Auto** puts it after the song it best follows — key, BPM, energy — in its phase first, then anywhere, and only at the end if nothing fits. The status says which place it took.
 
 ## 3. Hear it on the deck
 
