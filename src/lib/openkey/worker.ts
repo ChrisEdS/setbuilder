@@ -61,6 +61,11 @@ type EssentiaModule = {
     method: string,
     minTempo: number,
   ): { ticks?: VectorFloat; estimates?: VectorFloat; bpmIntervals?: VectorFloat };
+  BeatTrackerMultiFeature(
+    signal: VectorFloat,
+    maxTempo: number,
+    minTempo: number,
+  ): { ticks?: VectorFloat; confidence?: number };
   vectorToArray(vector: VectorFloat): Float32Array;
 };
 
@@ -270,9 +275,18 @@ async function beatTicks(samples: Float32Array, sampleRate: number): Promise<num
   if (samples.length === 0) throw new Error("This file has no audio to analyze");
   const engine = await library();
   const prepared = signalAt44100(engine, samples, sampleRate);
-  let rhythm: { ticks?: VectorFloat; estimates?: VectorFloat; bpmIntervals?: VectorFloat } | null = null;
+  let rhythm: {
+    ticks?: VectorFloat;
+    estimates?: VectorFloat;
+    bpmIntervals?: VectorFloat;
+  } | null = null;
   try {
-    rhythm = engine.RhythmExtractor2013(prepared.signal, 208, "multifeature", 40);
+    try {
+      // Zapata 2013 multi-feature tracker: strongest beat extractor in this WASM build.
+      rhythm = engine.BeatTrackerMultiFeature(prepared.signal, 208, 40);
+    } catch {
+      rhythm = engine.RhythmExtractor2013(prepared.signal, 208, "multifeature", 40);
+    }
     const values = rhythm.ticks ? engine.vectorToArray(rhythm.ticks) : new Float32Array();
     const ms: number[] = [];
     for (let index = 0; index < values.length; index += 1) {

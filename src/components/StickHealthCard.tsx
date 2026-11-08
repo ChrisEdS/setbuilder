@@ -150,13 +150,14 @@ function facts(health: StickHealth, t: Translate): Fact[] {
           }),
   });
 
-  const library = health.libraryAside
-    ? { tone: "ok" as const, key: "library.stickHealth.fact.libraryAside" as const }
-    : !health.libraryDb.present
-      ? { tone: "ok" as const, key: "library.stickHealth.fact.libraryNone" as const }
-      : health.libraryDb.synced
-        ? { tone: "ok" as const, key: "library.stickHealth.fact.librarySynced" as const }
-        : { tone: "warn" as const, key: "library.stickHealth.fact.libraryStale" as const };
+  const library =
+    !health.libraryDb.present && health.libraryAside
+      ? { tone: "warn" as const, key: "library.stickHealth.fact.libraryAside" as const }
+      : !health.libraryDb.present
+        ? { tone: "warn" as const, key: "library.stickHealth.fact.libraryNone" as const }
+        : health.libraryDb.synced
+          ? { tone: "ok" as const, key: "library.stickHealth.fact.librarySynced" as const }
+          : { tone: "warn" as const, key: "library.stickHealth.fact.libraryStale" as const };
   list.push({
     id: "library",
     tone: library.tone,

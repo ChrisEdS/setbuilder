@@ -18,6 +18,8 @@ import {
   snapCueTime,
   structureCues,
   writeAnlzHotCues,
+  readAnlzMemoryCues,
+  writeAnlzMemoryCues,
   type AnlzPhrase,
   type PhraseName,
 } from "./anlz-cues.ts";
@@ -438,4 +440,51 @@ test("a file without a hot-cue tag is left unchanged", () => {
   const written = writeAnlzHotCues(original, [{ slot: 0, timeMs: 1000, name: "A" }]);
   assert.equal(written.wrote, false);
   assert.equal(written.bytes, original);
+});
+
+test("a hot-cue loop keeps its end and a point cue stays a point", () => {
+  const written = writeAnlzHotCues(pmai([emptyTag("PCOB", 24, 1), emptyTag("PCO2", 20, 1)]), [
+    { slot: 1, timeMs: 1000, endMs: 3000, name: "Loop" },
+    { slot: 0, timeMs: 200, name: "A" },
+  ]);
+  assert.equal(written.wrote, true);
+  const cues = readAnlzHotCues(written.bytes);
+  const loop = cues.find((cue) => cue.slot === 1);
+  const point = cues.find((cue) => cue.slot === 0);
+  assert.equal(loop?.timeMs, 1000);
+  assert.equal(loop?.endMs, 3000);
+  assert.equal(point?.endMs, undefined);
+  assert.equal(readAnlzMemoryCues(written.bytes)?.length, 0);
+});
+
+test("memory cues write as their own type and leave hot cues and unknown sections", () => {
+  const wave = emptyTag("PWAV", 20, 0);
+  const hot = emptyTag("PCOB", 24, 1);
+  const memory = emptyTag("PCOB", 24, 0);
+  const mystery = emptyTag("XXXX", 20, 7);
+  const original = pmai([wave, hot, memory, mystery]);
+  const written = writeAnlzMemoryCues(original, [
+    { timeMs: 4200, name: "Break" },
+    { timeMs: 800, name: "Mix" },
+    ...Array.from({ length: 12 }, (_, index) => ({ timeMs: 10_000 + index, name: "" })),
+  ]);
+  assert.equal(written.wrote, true);
+  const body = 28;
+  assert.deepEqual(written.bytes.subarray(body, body + wave.length), wave);
+  assert.deepEqual(written.bytes.subarray(body + wave.length, body + wave.length + hot.length), hot);
+  const view = new DataView(written.bytes.buffer, written.bytes.byteOffset, written.bytes.byteLength);
+  assert.equal(view.getUint32(8, false), written.bytes.length);
+  const memoryAt = body + wave.length + hot.length;
+  assert.equal(String.fromCharCode(...written.bytes.subarray(memoryAt, memoryAt + 4)), "PCOB");
+  assert.equal(view.getUint32(memoryAt + 12, false), 0);
+  const mysteryAt = written.bytes.findIndex((_, index) => String.fromCharCode(...written.bytes.subarray(index, index + 4)) === "XXXX");
+  assert.deepEqual(written.bytes.subarray(mysteryAt, mysteryAt + mystery.length), mystery);
+  const read = readAnlzMemoryCues(written.bytes) ?? [];
+  assert.equal(read.length, 10);
+  assert.equal(read[0]?.timeMs, 800);
+  assert.equal(read[0]?.name, "Mix");
+  assert.equal(readAnlzHotCues(written.bytes).length, 0);
+  const hotAgain = writeAnlzHotCues(written.bytes, [{ slot: 0, timeMs: 50, name: "A" }]);
+  assert.equal(readAnlzMemoryCues(hotAgain.bytes)?.length, 10);
+  assert.equal(readAnlzMemoryCues(hotAgain.bytes)?.[0]?.timeMs, 800);
 });

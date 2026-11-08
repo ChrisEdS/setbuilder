@@ -666,12 +666,49 @@ export type ExpectedUpdate = {
   allocated: Allocation[];
 };
 
+function changedPageIndexes(before: Uint8Array, after: Uint8Array, pageLen: number): number[] {
+  const shared = Math.min(before.length, after.length) / pageLen;
+  const found: number[] = [];
+  for (let page = 1; page < shared; page++) {
+    const from = page * pageLen;
+    for (let i = 0; i < pageLen; i++) {
+      if (before[from + i] !== after[from + i]) {
+        found.push(page);
+        break;
+      }
+    }
+  }
+  for (let page = shared; page < after.length / pageLen; page++) found.push(page);
+  return found;
+}
+
 function failed(detail: string): PdbWriteError {
   return new PdbWriteError(
     "exports.pdbWrite.verifyFailed",
     { detail },
     `Die Prüfung der neuen Stick-Datenbank ist fehlgeschlagen (${detail}).`,
   );
+}
+
+/**
+ * Playlist data pages the writer touched must agree with themselves: page number,
+ * row groups of 16, presence bits, and the heap the header claims.
+ * A page that was already inconsistent and was not written is left for the player
+ * as it was; a page this write changed has to pass or the write is refused.
+ */
+export function auditPdbPlaylistPages(buffer: ArrayBuffer, pageIndexes: number[]): void {
+  const view = new DataView(buffer);
+  const { pageLen } = readHeader(view);
+  if (pageLen < 0x40 || buffer.byteLength % pageLen !== 0) throw failed("page length");
+  const pages = buffer.byteLength / pageLen;
+  for (const page of pageIndexes) {
+    if (page <= 0 || page >= pages) throw failed("page header");
+    const start = page * pageLen;
+    const type = view.getUint32(start + 8, true);
+    if (type !== TREE && type !== ENTRIES) throw failed("page type");
+    if ((view.getUint8(start + 27) & 0x40) !== 0) throw failed("page header");
+    if (!readPage(view, pageLen, page, type)) throw failed("page header");
+  }
 }
 
 export function verifyPdbReplacement(
@@ -714,6 +751,7 @@ export function verifyPdbReplacement(
     (item) => item.kind === "playlist" && item.name === expected.name,
   ).length;
   if (sameNameAfter !== sameNameBefore) throw failed("duplicate playlist");
+  auditPdbPlaylistPages(after, changedPageIndexes(new Uint8Array(before), new Uint8Array(after), headerAfter.pageLen));
 }
 
 /**
@@ -753,6 +791,9 @@ export function verifyPdbUpdate(
     if (a[i] !== b[i] && !allowed.has(i)) throw failed("header");
   }
   if (viewAfter.getUint32(0x14, true) <= viewBefore.getUint32(0x14, true)) throw failed("sequence");
+  const addedPages: number[] = [];
+  for (let page = pagesBefore; page < pagesAfter; page++) addedPages.push(page);
+  auditPdbPlaylistPages(after, [...expected.changedPages, ...addedPages]);
 
   const changedSet = new Set(expected.changedPages);
   for (let page = 1; page < pagesBefore; page++) {

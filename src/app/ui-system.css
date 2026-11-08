@@ -1026,9 +1026,9 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 .set-shell .manual-list:not(.is-compact) .manual-row-main {
-  grid-template-columns: minmax(12rem, max-content) minmax(0, 1fr);
-  column-gap: 0.75rem;
-  align-items: start;
+  grid-template-columns: minmax(12rem, 1fr) minmax(0, max-content);
+  column-gap: 1.15rem;
+  align-items: center;
 }
 
 .set-shell .manual-list:not(.is-compact) .manual-controls {
@@ -1036,10 +1036,12 @@ html[data-frame="mac"] .set-shell .hero-copy {
   flex-flow: row wrap;
   align-items: center;
   justify-content: flex-end;
+  justify-self: end;
   gap: 0.35rem 0.5rem;
-  width: 100%;
+  width: max-content;
   max-width: 100%;
   min-width: 0;
+  margin-left: auto;
 }
 
 .set-shell .manual-list:not(.is-compact) .manual-meta {
@@ -1058,7 +1060,7 @@ html[data-frame="mac"] .set-shell .hero-copy {
   flex: 0 0 auto;
   width: max-content;
   max-width: 100%;
-  min-width: min(100%, max-content);
+  margin-left: auto;
   justify-content: flex-end;
   gap: 0.2rem !important;
 }
@@ -1138,35 +1140,49 @@ html[data-frame="mac"] .set-shell .hero-copy {
   padding-top: 0 !important;
 }
 
-/* Compact → expanded: number, cover, title and the phase/role fields share
-   one line. The icon strip is the next line and does not shift that line. */
+/* Compact → expanded: number, cover, title, phase, role and the tools share
+   one line. Only the tool strip wraps, and only under the phase and role. */
 .set-shell .manual-row.is-compact-open {
-  grid-template-columns: max-content max-content minmax(0, 1fr);
+  align-items: start;
 }
 
-.set-shell .manual-row.is-compact-open .manual-row-main,
-.set-shell .manual-row.is-compact-open .manual-controls {
-  display: contents;
-}
-
-.set-shell .manual-row.is-compact-open .manual-index {
-  grid-column: 1;
-  grid-row: 1;
-  align-self: center;
-}
-
-.set-shell .manual-row.is-compact-open .manual-select-wrap {
-  grid-column: 2;
-  grid-row: 1;
-  align-self: center;
+.set-shell .manual-row.is-compact-open .manual-row-main {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1fr) minmax(0, max-content);
+  align-items: start;
+  column-gap: 0.7rem;
   min-width: 0;
 }
 
-.set-shell .manual-row.is-compact-open .manual-meta {
-  grid-column: 3;
-  grid-row: 1;
+.set-shell .manual-row.is-compact-open .manual-index {
+  align-self: start;
+}
+
+.set-shell .manual-row.is-compact-open .manual-select-wrap {
+  align-self: start;
+  min-width: 0;
+}
+
+.set-shell .manual-row.is-compact-open .manual-controls {
+  display: flex !important;
+  flex-flow: row wrap;
+  align-items: center;
+  align-self: start;
+  justify-content: flex-end;
   justify-self: end;
-  align-self: center;
+  gap: 0.35rem 0.45rem;
+  width: max-content;
+  max-width: 100%;
+  min-width: 0;
+  margin-left: auto;
+  padding-top: 0 !important;
+}
+
+.set-shell .manual-row.is-compact-open .manual-meta {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  align-items: center;
 }
 
 .set-shell .manual-list.is-compact .manual-row.is-compact-open .manual-meta select {
@@ -1176,9 +1192,13 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 .set-shell .manual-row.is-compact-open .timeline-tools {
-  grid-column: 2 / -1;
-  grid-row: 2;
-  justify-self: end;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  width: max-content;
+  max-width: 100%;
+  min-width: 0;
+  margin-left: auto;
+  justify-content: flex-end;
 }
 
 .set-shell .manual-row.is-compact-open .manual-subline,
@@ -1281,15 +1301,16 @@ html[data-frame="mac"] .set-shell .hero-copy {
   min-width: max-content;
 }
 
-/* Expanded compact: one icon line across the free width. The whole strip
-   drops under the selects only when that line does not fit. */
+/* Expanded compact: tools stay beside phase and role. They wrap inside that
+   cluster, not across the cover. */
 .set-shell .manual-list.is-compact .manual-row.is-compact-open .timeline-tools {
-  flex: 1 1 auto;
-  flex-wrap: nowrap !important;
+  flex: 0 1 auto;
+  flex-wrap: wrap !important;
   justify-content: flex-end;
-  width: auto;
-  min-width: min(100%, max-content);
+  width: max-content;
+  min-width: 0;
   max-width: 100%;
+  margin-left: auto;
 }
 
 .set-shell .manual-list.is-compact .timeline-tools-tail {
@@ -2112,6 +2133,7 @@ html[data-frame="mac"] .set-shell .hero-copy {
   .set-shell .manual-list.is-compact .manual-row.is-compact-open .timeline-tools {
     flex-wrap: wrap !important;
     min-width: 0;
+    max-width: 100%;
   }
 
   .set-shell .hero {
@@ -2311,7 +2333,7 @@ html[data-frame="mac"] .set-shell .hero-copy {
   flex-grow: 0;
 }
 
-.preview-player.is-light :is(.preview-wave-overview, .preview-cue-row, .preview-phrase) {
+.preview-player.is-light :is(.preview-wave-overview, .preview-cue-row, .preview-grid-panel, .preview-phrase) {
   display: none;
   height: 0;
   min-height: 0;
@@ -2891,6 +2913,69 @@ html[data-frame="mac"] .set-shell .hero-copy {
   flex: 0 0 auto;
 }
 
+.preview-player .preview-grid-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.28rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.32rem 0.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0.55rem;
+  background: #101010;
+}
+
+.preview-player .preview-grid-bpm {
+  min-width: 4.4rem;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  text-align: right;
+}
+
+.preview-player .preview-grid-nudge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.16rem;
+}
+
+.preview-player .preview-grid-panel button {
+  box-sizing: border-box;
+  width: 1.7rem;
+  height: 1.35rem;
+  min-width: 1.7rem;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.preview-player .preview-grid-nudge button {
+  width: 1.7rem;
+  padding: 0;
+}
+
+.preview-player .preview-grid-panel button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.preview-player .preview-grid-panel button.preview-grid-analyze {
+  width: auto;
+  min-width: 4.4rem;
+  padding: 0 0.55rem;
+}
+
 .preview-player .preview-phrase {
   position: absolute;
   top: 0;
@@ -2947,6 +3032,10 @@ html[data-frame="mac"] .set-shell .hero-copy {
 
 .preview-player .preview-wave-stage.is-zoomed {
   cursor: grab;
+}
+
+.preview-player .preview-wave-stage.is-grid {
+  cursor: ew-resize;
 }
 
 .preview-player .preview-wave-stage.is-light {
@@ -3035,6 +3124,11 @@ html[data-frame="mac"] .set-shell .hero-copy {
   color: #121212;
 }
 
+.preview-player .preview-cue-block {
+  width: 100%;
+  min-width: 0;
+}
+
 .preview-player .preview-cue-row {
   display: grid;
   grid-template-columns: repeat(8, minmax(0, 1fr));
@@ -3050,7 +3144,7 @@ html[data-frame="mac"] .set-shell .hero-copy {
   justify-content: center;
   gap: 0.05rem;
   min-width: 0;
-  height: 1.7rem;
+  height: 2.15rem;
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 0.45rem;
   background: transparent;
@@ -3091,6 +3185,35 @@ html[data-frame="mac"] .set-shell .hero-copy {
   cursor: pointer;
 }
 
+.preview-player .preview-cue-face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  line-height: 1.05;
+}
+
+.preview-player .preview-cue-face b,
+.preview-player .preview-cue-face small {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preview-player .preview-cue-face b {
+  font-size: 0.68rem;
+}
+
+.preview-player .preview-cue-face small {
+  font-size: 0.56rem;
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
+}
+
 .preview-player .preview-cue-pad input {
   width: 100%;
   min-width: 0;
@@ -3124,6 +3247,7 @@ html[data-frame="mac"] .set-shell .hero-copy {
   .preview-close,
   .preview-wave-tools button,
   .preview-wave-zoom button,
+  .preview-grid-panel button,
   .preview-transitions button
 ):focus-visible {
   outline: 1px solid rgba(255, 255, 255, 0.65) !important;

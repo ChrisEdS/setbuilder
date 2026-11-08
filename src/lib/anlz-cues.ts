@@ -1,5 +1,5 @@
 import { beatTempo } from "./beatgrid";
-import { CUE_SLOT_COUNT, type TrackCue } from "@/lib/set";
+import { CUE_SLOT_COUNT, MEMORY_CUE_LIMIT, type MemoryCue, type TrackCue } from "@/lib/set";
 
 /**
  * Hot cues and, on request, the beat-grid tag inside an existing Pioneer ANLZ
@@ -7,6 +7,7 @@ import { CUE_SLOT_COUNT, type TrackCue } from "@/lib/set";
  */
 
 const HOT_CUE = 1;
+const MEMORY_CUE = 0;
 const PCPT_LEN = 0x38;
 const PCP2_LEN = 0x68;
 const NAME_BYTES = 0x10;
@@ -15,6 +16,8 @@ export type AnlzCue = {
   slot: number;
   timeMs: number;
   name: string;
+  /** Loop end. Absent for a point cue. */
+  endMs?: number;
 };
 
 /** One beat from an existing PQTZ grid. `beat` 1 is the downbeat. */
@@ -78,6 +81,11 @@ function utf16be(data: Uint8Array, offset: number, bytes: number): string {
   return name;
 }
 
+function loopEnd(timeMs: number, end: number): number | undefined {
+  if (end === 0xffffffff || !Number.isFinite(end) || end <= timeMs) return undefined;
+  return end;
+}
+
 function readPcob(data: Uint8Array, tag: Tag): AnlzCue[] {
   const view = viewOf(data);
   const cues: AnlzCue[] = [];
@@ -88,8 +96,9 @@ function readPcob(data: Uint8Array, tag: Tag): AnlzCue[] {
     if (length < PCPT_LEN || offset + length > end) break;
     const hot = view.getUint32(offset + 12, false);
     const timeMs = view.getUint32(offset + 32, false);
+    const endMs = loopEnd(timeMs, view.getUint32(offset + 36, false));
     const slot = hot >= 1 && hot <= CUE_SLOT_COUNT ? hot - 1 : cues.length;
-    if (timeMs !== 0xffffffff) cues.push({ slot, timeMs, name: "" });
+    if (timeMs !== 0xffffffff) cues.push({ slot, timeMs, name: "", ...(endMs == null ? {} : { endMs }) });
     offset += length;
   }
   return cues;
@@ -105,10 +114,11 @@ function readPco2(data: Uint8Array, tag: Tag): AnlzCue[] {
     if (length < 48 || offset + length > end) break;
     const hot = view.getUint32(offset + 12, false);
     const timeMs = view.getUint32(offset + 20, false);
+    const endMs = loopEnd(timeMs, view.getUint32(offset + 24, false));
     const nameBytes = view.getUint32(offset + 40, false);
     const name = utf16be(data, offset + 44, Math.min(nameBytes, length - 44));
     const slot = hot >= 1 && hot <= CUE_SLOT_COUNT ? hot - 1 : cues.length;
-    if (timeMs !== 0xffffffff) cues.push({ slot, timeMs, name });
+    if (timeMs !== 0xffffffff) cues.push({ slot, timeMs, name, ...(endMs == null ? {} : { endMs }) });
     offset += length;
   }
   return cues;
@@ -623,7 +633,10 @@ function prepare(cues: AnlzCue[]): AnlzCue[] {
     if (slot < 0 || slot >= CUE_SLOT_COUNT || used.has(slot)) continue;
     if (!Number.isFinite(timeMs) || timeMs < 0) continue;
     used.add(slot);
-    next.push({ slot, timeMs, name: cue.name.trim().slice(0, 24) });
+    const endMs = Math.round(cue.endMs ?? NaN);
+    const stored: AnlzCue = { slot, timeMs, name: cue.name.trim().slice(0, 24) };
+    if (Number.isFinite(endMs) && endMs > timeMs) stored.endMs = endMs;
+    next.push(stored);
   }
   return next;
 }
@@ -639,7 +652,7 @@ function pcptEntry(cue: AnlzCue): Uint8Array {
   view.setUint32(24, 0xffffffff, false);
   view.setUint32(28, 0x010003e8, false);
   view.setUint32(32, cue.timeMs, false);
-  view.setUint32(36, 0xffffffff, false);
+  view.setUint32(36, cue.endMs != null && cue.endMs > cue.timeMs ? cue.endMs : 0xffffffff, false);
   return entry;
 }
 
@@ -666,7 +679,7 @@ function pcp2Entry(cue: AnlzCue): Uint8Array {
   view.setUint32(12, cue.slot + 1, false);
   view.setUint32(16, 0x010003e8, false);
   view.setUint32(20, cue.timeMs, false);
-  view.setUint32(24, 0xffffffff, false);
+  view.setUint32(24, cue.endMs != null && cue.endMs > cue.timeMs ? cue.endMs : 0xffffffff, false);
   view.setUint32(28, 0x00010000, false);
   view.setUint32(40, NAME_BYTES, false);
   const name = (cue.name || `Cue ${cue.slot + 1}`).slice(0, 7);
@@ -722,10 +735,177 @@ export function cuesMatch(left: readonly AnlzCue[], right: readonly AnlzCue[]): 
   const bySlot = (cues: readonly AnlzCue[]) => [...cues].sort((a, b) => a.slot - b.slot);
   return bySlot(left).every((cue, index) => {
     const other = bySlot(right)[index];
-    return other != null && cue.slot === other.slot && cue.timeMs === other.timeMs;
+    if (!other) return false;
+    const end = cue.endMs != null && cue.endMs > cue.timeMs ? cue.endMs : 0xffffffff;
+    const otherEnd = other.endMs != null && other.endMs > other.timeMs ? other.endMs : 0xffffffff;
+    return cue.slot === other.slot && cue.timeMs === other.timeMs && end === otherEnd;
   });
 }
 
 export function toTrackCues(cues: readonly AnlzCue[]): TrackCue[] {
-  return cues.map((cue) => ({ slot: cue.slot, timeMs: cue.timeMs, name: cue.name }));
+  return cues.map((cue) => ({
+    slot: cue.slot,
+    timeMs: cue.timeMs,
+    name: cue.name,
+    ...(cue.endMs != null && cue.endMs > cue.timeMs ? { endMs: cue.endMs } : {}),
+  }));
+}
+
+function prepareMemory(cues: readonly MemoryCue[]): MemoryCue[] {
+  const next: MemoryCue[] = [];
+  for (const cue of cues) {
+    const timeMs = Math.round(cue.timeMs);
+    if (!Number.isFinite(timeMs) || timeMs < 0 || timeMs > 0xffffffff) continue;
+    next.push({ timeMs, name: cue.name.trim().slice(0, 24) });
+    if (next.length >= MEMORY_CUE_LIMIT) break;
+  }
+  next.sort((left, right) => left.timeMs - right.timeMs || left.name.localeCompare(right.name));
+  return next;
+}
+
+function readMemoryPcob(data: Uint8Array, tag: Tag): MemoryCue[] {
+  const view = viewOf(data);
+  const cues: MemoryCue[] = [];
+  let offset = tag.offset + 24;
+  const end = tag.offset + tag.length;
+  while (offset + PCPT_LEN <= end && kindAt(data, offset) === "PCPT" && cues.length < MEMORY_CUE_LIMIT) {
+    const length = view.getUint32(offset + 8, false);
+    if (length < PCPT_LEN || offset + length > end) break;
+    const timeMs = view.getUint32(offset + 32, false);
+    if (timeMs !== 0xffffffff) cues.push({ timeMs, name: "" });
+    offset += length;
+  }
+  return cues;
+}
+
+function readMemoryPco2(data: Uint8Array, tag: Tag): MemoryCue[] {
+  const view = viewOf(data);
+  const cues: MemoryCue[] = [];
+  let offset = tag.offset + 20;
+  const end = tag.offset + tag.length;
+  while (offset + 48 <= end && kindAt(data, offset) === "PCP2" && cues.length < MEMORY_CUE_LIMIT) {
+    const length = view.getUint32(offset + 8, false);
+    if (length < 48 || offset + length > end) break;
+    const timeMs = view.getUint32(offset + 20, false);
+    const nameBytes = view.getUint32(offset + 40, false);
+    const name = utf16be(data, offset + 44, Math.min(nameBytes, length - 44));
+    if (timeMs !== 0xffffffff) cues.push({ timeMs, name });
+    offset += length;
+  }
+  return cues;
+}
+
+/** Memory cues (cue-list type 0). Hot cues are left unread. */
+export function readAnlzMemoryCues(data: Uint8Array): MemoryCue[] | null {
+  if (kindAt(data, 0) !== "PMAI") return null;
+  const tags = listTags(data);
+  const named = tags.filter((tag) => tag.kind === "PCO2" && tagType(data, tag) === MEMORY_CUE);
+  const plain = tags.filter((tag) => tag.kind === "PCOB" && tagType(data, tag) === MEMORY_CUE);
+  if (named.length) return named.flatMap((tag) => readMemoryPco2(data, tag)).slice(0, MEMORY_CUE_LIMIT);
+  return plain.flatMap((tag) => readMemoryPcob(data, tag)).slice(0, MEMORY_CUE_LIMIT);
+}
+
+function memoryPcpt(cue: MemoryCue): Uint8Array {
+  const entry = new Uint8Array(PCPT_LEN);
+  const view = new DataView(entry.buffer);
+  entry.set(ascii("PCPT"), 0);
+  view.setUint32(4, 0x1c, false);
+  view.setUint32(8, PCPT_LEN, false);
+  view.setUint32(12, 0, false);
+  view.setUint32(20, 0x00010000, false);
+  view.setUint32(24, 0xffffffff, false);
+  view.setUint32(28, 0x010003e8, false);
+  view.setUint32(32, cue.timeMs, false);
+  view.setUint32(36, 0xffffffff, false);
+  return entry;
+}
+
+function memoryPcp2(cue: MemoryCue): Uint8Array {
+  const entry = new Uint8Array(PCP2_LEN);
+  const view = new DataView(entry.buffer);
+  entry.set(ascii("PCP2"), 0);
+  view.setUint32(4, 0x10, false);
+  view.setUint32(8, PCP2_LEN, false);
+  view.setUint32(12, 0, false);
+  view.setUint32(16, 0x010003e8, false);
+  view.setUint32(20, cue.timeMs, false);
+  view.setUint32(24, 0xffffffff, false);
+  view.setUint32(28, 0x00010000, false);
+  view.setUint32(40, NAME_BYTES, false);
+  const name = cue.name.slice(0, 7);
+  for (let index = 0; index < name.length; index += 1) {
+    view.setUint16(44 + index * 2, name.charCodeAt(index), false);
+  }
+  return entry;
+}
+
+function memoryPcob(cues: readonly MemoryCue[]): Uint8Array {
+  const len = 24 + cues.length * PCPT_LEN;
+  const tag = new Uint8Array(len);
+  const view = new DataView(tag.buffer);
+  tag.set(ascii("PCOB"), 0);
+  view.setUint32(4, 0x18, false);
+  view.setUint32(8, len, false);
+  view.setUint32(12, MEMORY_CUE, false);
+  view.setUint32(16, cues.length, false);
+  view.setUint32(20, 0xffffffff, false);
+  cues.forEach((cue, index) => tag.set(memoryPcpt(cue), 24 + index * PCPT_LEN));
+  return tag;
+}
+
+function memoryPco2(cues: readonly MemoryCue[]): Uint8Array {
+  const len = 20 + cues.length * PCP2_LEN;
+  const tag = new Uint8Array(len);
+  const view = new DataView(tag.buffer);
+  tag.set(ascii("PCO2"), 0);
+  view.setUint32(4, 0x14, false);
+  view.setUint32(8, len, false);
+  view.setUint32(12, MEMORY_CUE, false);
+  view.setUint32(16, cues.length << 16, false);
+  cues.forEach((cue, index) => tag.set(memoryPcp2(cue), 20 + index * PCP2_LEN));
+  return tag;
+}
+
+function appendTag(data: Uint8Array, tag: Uint8Array): Uint8Array {
+  const out = new Uint8Array(data.length + tag.length);
+  out.set(data, 0);
+  out.set(tag, data.length);
+  return out;
+}
+
+/**
+ * Replace memory-cue tags only (type 0). Hot cues and every other section stay.
+ * A file with no memory tag gains one at the end. An empty list does not invent a tag.
+ */
+export function writeAnlzMemoryCues(
+  data: Uint8Array,
+  cues: readonly MemoryCue[],
+): { bytes: Uint8Array; wrote: boolean } {
+  if (kindAt(data, 0) !== "PMAI") return { bytes: data, wrote: false };
+  const prepared = prepareMemory(cues);
+  const memory = listTags(data).filter(
+    (tag) => (tag.kind === "PCOB" || tag.kind === "PCO2") && tagType(data, tag) === MEMORY_CUE,
+  );
+  if (!memory.length) {
+    if (!prepared.length) return { bytes: data, wrote: false };
+    let bytes = appendTag(data, memoryPcob(prepared));
+    const named = prepared.some((cue) => cue.name.length > 0) || listTags(data).some((tag) => tag.kind === "PCO2");
+    if (named) bytes = appendTag(bytes, memoryPco2(prepared));
+    viewOf(bytes).setUint32(8, bytes.length, false);
+    return { bytes, wrote: true };
+  }
+  let bytes = data;
+  for (const tag of [...memory].sort((left, right) => right.offset - left.offset)) {
+    const next = tag.kind === "PCO2" ? memoryPco2(prepared) : memoryPcob(prepared);
+    bytes = splice(bytes, tag.offset, tag.length, next);
+  }
+  const hasNamed = listTags(bytes).some((tag) => tag.kind === "PCO2" && tagType(bytes, tag) === MEMORY_CUE);
+  if (!hasNamed && prepared.some((cue) => cue.name.length > 0)) bytes = appendTag(bytes, memoryPco2(prepared));
+  viewOf(bytes).setUint32(8, bytes.length, false);
+  return { bytes, wrote: true };
+}
+
+export function memoryMatch(left: readonly MemoryCue[], right: readonly MemoryCue[]): boolean {
+  if (left.length !== right.length) return false;
+  return left.every((cue, index) => cue.timeMs === right[index]?.timeMs && cue.name === right[index]?.name);
 }

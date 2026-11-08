@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
 import { Tip } from "@/components/Hint";
 import { useI18n } from "@/lib/i18n/react";
 import {
   beatsFromBpm,
-  GRID_NUDGE_MS,
-  placeFirstDownbeat,
   snapCueTime,
   structureCues,
   type AnlzBeat,
@@ -14,6 +12,21 @@ import {
   type AnlzPhrase,
   type PhraseName,
 } from "@/lib/anlz-cues";
+import {
+  GRID_HOLD_DELAY_MS,
+  GRID_HOLD_FIRST_MS,
+  GRID_SLIDE_COARSE_MS,
+  GRID_SLIDE_FINE_MS,
+  cloneGrid,
+  flagGrid,
+  gridBpm,
+  gridDragDeltaMs,
+  gridsEqual,
+  nextGridHoldDelay,
+  scaleGridTempo,
+  slideGrid,
+  snapGrid,
+} from "@/lib/beatgrid-edit";
 import type { MessageKey } from "@/lib/i18n/core";
 import { CUE_SLOT_COUNT, cueColor, cueLetter, type TrackCue } from "@/lib/set";
 import {
@@ -268,9 +281,9 @@ export function WaveformDeck({
   phrasesReady,
   phraseNote,
   onShiftGrid,
+  onReplaceGrid,
   onAnalyzeGrid,
   onUndoGrid,
-  analyzingGrid,
   canUndoGrid,
   canAnalyzeGrid,
   onSeek,
@@ -305,10 +318,10 @@ export function WaveformDeck({
   /** False while the phrase read for this track is still running. */
   phrasesReady: boolean;
   phraseNote: string | null;
-  onShiftGrid: (deltaMs: number) => void;
+  onShiftGrid: (deltaMs: number) => boolean;
+  onReplaceGrid: (beats: AnlzBeat[]) => void;
   onAnalyzeGrid: () => void;
   onUndoGrid: () => void;
-  analyzingGrid: boolean;
   canUndoGrid: boolean;
   canAnalyzeGrid: boolean;
   onSeek: (seconds: number) => void;
@@ -339,15 +352,23 @@ export function WaveformDeck({
   const [cueUndo, setCueUndo] = useState<TrackCue[] | null>(null);
   const [structureNote, setStructureNote] = useState<string | null>(null);
   const [undoSession, setUndoSession] = useState(cueSession);
+  const [gridOpen, setGridOpen] = useState(false);
+  const [canResetGrid, setCanResetGrid] = useState(false);
   if (cueSession !== undoSession) {
     setUndoSession(cueSession);
     setCueUndo(null);
     setStructureNote(null);
+    setGridOpen(false);
+    setCanResetGrid(false);
   }
   const dragRef = useRef<{ slot: number; timeMs: number } | null>(null);
   const dragMoved = useRef(false);
   const playTimer = useRef<number | null>(null);
-  const grabRef = useRef<{ x: number; time: number; playRatio: number; moved: boolean } | null>(null);
+  const grabRef = useRef<{ x: number; time: number; playRatio: number; moved: boolean; grid: boolean; applied: number } | null>(null);
+  const anchorRef = useRef<AnlzBeat[] | null>(null);
+  const holdStart = useRef<number | null>(null);
+  const holdTick = useRef<number | null>(null);
+  if (cueSession !== undoSession) anchorRef.current = null;
   const zoomRef = useRef(1);
   const viewRef = useRef(0);
   const padRef = useRef(0);
@@ -547,17 +568,15 @@ export function WaveformDeck({
       const slot = number - 1;
       const existing = cues.find((cue) => cue.slot === slot);
       if (existing) {
-        onPlay(existing.timeMs / 1000);
+        runCue(existing);
         return;
       }
-      if (spanRef.current <= 0) return;
-      setStructureNote(null);
-      const timeMs = snapCueTime(Math.round(timeRef.current * 1000), gridRef.current.marks, gridRef.current.quantize);
-      onCues([...cues, { slot, timeMs, name: cueLetter(slot) }]);
+      storeCue(slot);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [cues, onCues, onPlay]);
+  }, [cues, onCues, onPlay, bpm]);
+  useEffect(() => stopHold, []);
 
   const win = waveformWindow(zoom, viewStart, padRatio);
   const shown = drag ? cues.map((cue) => (cue.slot === drag.slot ? { ...cue, timeMs: drag.timeMs } : cue)) : cues;
@@ -629,16 +648,97 @@ export function WaveformDeck({
     if (structureNote) setStructureNote(null);
   }
 
+  function stopHold() {
+    if (holdStart.current != null) window.clearTimeout(holdStart.current);
+    if (holdTick.current != null) window.clearTimeout(holdTick.current);
+    holdStart.current = null;
+    holdTick.current = null;
+  }
+
+  function rememberGrid() {
+    const marks = gridRef.current.marks;
+    if (anchorRef.current || !marks.length) return;
+    anchorRef.current = cloneGrid(marks);
+    setCanResetGrid(true);
+  }
+
+  function nudgeGrid(deltaMs: number) {
+    const marks = gridRef.current.marks;
+    if (!slideGrid(marks, deltaMs)) return;
+    rememberGrid();
+    onShiftGrid(deltaMs);
+  }
+
+  function beginHold(deltaMs: number, event: ReactPointerEvent<HTMLButtonElement>) {
+    if (event.button !== 0 || event.currentTarget.disabled) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    stopHold();
+    nudgeGrid(deltaMs);
+    holdStart.current = window.setTimeout(() => {
+      let holdDelay = GRID_HOLD_FIRST_MS;
+      const fire = () => {
+        nudgeGrid(deltaMs);
+        holdTick.current = window.setTimeout(fire, holdDelay);
+        holdDelay = nextGridHoldDelay(holdDelay);
+      };
+      fire();
+    }, GRID_HOLD_DELAY_MS);
+  }
+
+  function runCue(cue: TrackCue) {
+    onPlay(cue.timeMs / 1000);
+  }
+
+  function storeCue(slot: number) {
+    forgetStructureNote();
+    if (spanRef.current <= 0) return;
+    const timeMs = snapCueTime(Math.round(timeRef.current * 1000), gridRef.current.marks, gridRef.current.quantize);
+    onCues([...cues, { slot, timeMs, name: cueLetter(slot) }]);
+  }
+
   function setPad(slot: number) {
     const existing = cues.find((cue) => cue.slot === slot);
     if (existing) {
-      playCue(existing.timeMs / 1000);
+      if (playTimer.current) window.clearTimeout(playTimer.current);
+      playTimer.current = window.setTimeout(() => runCue(existing), 180);
       return;
     }
-    forgetStructureNote();
-    if (span <= 0) return;
-    const timeMs = snapCueTime(Math.round(timeRef.current * 1000), gridMarks, quantize);
-    onCues([...cues, { slot, timeMs, name: cueLetter(slot) }]);
+    storeCue(slot);
+  }
+
+  function applyFlag() {
+    const marks = gridRef.current.marks;
+    const next = flagGrid(marks, timeRef.current * 1000);
+    if (!next || gridsEqual(next, marks)) return;
+    rememberGrid();
+    onReplaceGrid(next);
+  }
+
+  function applySnap() {
+    const marks = gridRef.current.marks;
+    const next = snapGrid(marks, timeRef.current * 1000);
+    if (!next || !marks[0] || gridsEqual(next, marks)) return;
+    rememberGrid();
+    onShiftGrid(next[0].timeMs - marks[0].timeMs);
+  }
+
+  function applyTempo(factor: 0.5 | 2) {
+    const marks = gridRef.current.marks;
+    const next = scaleGridTempo(marks, factor, timeRef.current * 1000);
+    if (!next) return;
+    rememberGrid();
+    onReplaceGrid(next);
+  }
+
+  function resetGrid() {
+    const anchor = anchorRef.current;
+    if (anchor) {
+      anchorRef.current = null;
+      setCanResetGrid(false);
+      onReplaceGrid(cloneGrid(anchor));
+      return;
+    }
+    if (canUndoGrid) onUndoGrid();
   }
 
   function rename(slot: number, name: string) {
@@ -681,6 +781,8 @@ export function WaveformDeck({
 
   const playhead = place(currentTime);
   const zoomLabel = zoom < 1.2 ? "1×" : `${Math.round(zoom)}×`;
+  const tempo = fromFile ? gridBpm(gridMarks) : null;
+  const bpmText = tempo == null ? "—" : tempo.toFixed(1);
   const windowLeft = Math.max(0, win.start) * 100;
   const windowWidth = (Math.min(1, win.start + win.span) - Math.max(0, win.start)) * 100;
   const overviewPlay = span > 0 ? (currentTime / span) * 100 : 0;
@@ -730,17 +832,47 @@ export function WaveformDeck({
               {t("crates.player.structure")}
             </button>
           </Tip>
-          <Tip text={t("crates.player.structureUndoTip")} disabled={!cueUndo}>
-            <button type="button" aria-label={t("crates.player.structureUndo")} disabled={!cueUndo} onClick={undoStructure}>
-              {t("crates.player.structureUndo")}
-            </button>
-          </Tip>
+          {cueUndo ? (
+            <Tip text={t("crates.player.structureUndoTip")}>
+              <button type="button" aria-label={t("crates.player.structureUndo")} onClick={undoStructure}>
+                {t("crates.player.structureUndo")}
+              </button>
+            </Tip>
+          ) : null}
         </div>
         {light ? null : (
           <div className="preview-tool-group">
+            <Tip text={t("crates.player.quantize")}>
+              <button type="button" aria-pressed={quantize} aria-label={t("crates.player.quantize")} onClick={() => onQuantize(!quantize)}>
+                Q
+              </button>
+            </Tip>
+            <Tip text={t("crates.player.gridPanelTip")}>
+              <button
+                type="button"
+                aria-pressed={gridOpen}
+                aria-label={t("crates.player.gridPanel")}
+                onClick={() => {
+                  const next = !gridOpen;
+                  setGridOpen(next);
+                  if (next && !showGrid) onShowGrid(true);
+                }}
+              >
+                {t("crates.player.gridPanel")}
+              </button>
+            </Tip>
+          </div>
+        )}
+      </div>
+      {!light && gridOpen ? (
+        <div className="preview-grid-panel" role="group" aria-label={t("crates.player.gridPanel")}>
+          {fromFile ? (
+            <span className="preview-grid-bpm">{t("crates.player.gridBpm", { bpm: bpmText })}</span>
+          ) : (
             <Tip text={t("crates.player.gridAnalyzeTip")} disabled={!canAnalyzeGrid}>
               <button
                 type="button"
+                className="preview-grid-analyze"
                 aria-label={t("crates.player.gridAnalyze")}
                 disabled={!canAnalyzeGrid}
                 onClick={onAnalyzeGrid}
@@ -748,71 +880,57 @@ export function WaveformDeck({
                 {t("crates.player.gridAnalyze")}
               </button>
             </Tip>
-            <Tip text={t("crates.player.gridAnalyzeUndoTip")} disabled={!canUndoGrid || analyzingGrid}>
-              <button
-                type="button"
-                aria-label={t("crates.player.gridAnalyzeUndo")}
-                disabled={!canUndoGrid || analyzingGrid}
-                onClick={onUndoGrid}
-              >
-                {t("crates.player.gridAnalyzeUndo")}
-              </button>
-            </Tip>
-            <Tip text={t("crates.player.gridLinesTip")}>
-              <button type="button" aria-pressed={showGrid} aria-label={t("crates.player.gridLines")} onClick={() => onShowGrid(!showGrid)}>
-                {t("crates.player.gridLines")}
-              </button>
-            </Tip>
-            <Tip text={t("crates.player.quantize")}>
-              <button type="button" aria-pressed={quantize} aria-label={t("crates.player.quantize")} onClick={() => onQuantize(!quantize)}>
-                Q
-              </button>
-            </Tip>
-            <Tip text={t("crates.player.gridEarlier")} disabled={!fromFile}>
-              <button type="button" aria-label={t("crates.player.gridEarlier")} disabled={!fromFile} onClick={() => onShiftGrid(-GRID_NUDGE_MS)}>
-                −5
-              </button>
-            </Tip>
-            <Tip text={t("crates.player.gridLater")} disabled={!fromFile}>
-              <button type="button" aria-label={t("crates.player.gridLater")} disabled={!fromFile} onClick={() => onShiftGrid(GRID_NUDGE_MS)}>
-                +5
-              </button>
-            </Tip>
-            <Tip text={t("crates.player.gridToPlayhead")} disabled={!fromFile}>
-              <button
-                type="button"
-                aria-label={t("crates.player.gridToPlayhead")}
-                disabled={!fromFile}
-                onClick={() => {
-                  const marks = gridRef.current.marks;
-                  const playMs = Math.round(timeRef.current * 1000);
-                  onShiftGrid(playMs - snapCueTime(playMs, marks, true));
-                }}
-              >
-                1
-              </button>
-            </Tip>
-            <Tip text={t("crates.player.gridDownbeatTip")} disabled={!fromFile}>
-              <button
-                type="button"
-                aria-label={t("crates.player.gridDownbeat")}
-                disabled={!fromFile}
-                onClick={() => {
-                  const marks = gridRef.current.marks;
-                  const playMs = Math.round(timeRef.current * 1000);
-                  const next = placeFirstDownbeat(marks, playMs);
-                  const first = marks[0];
-                  const moved = next?.[0];
-                  if (!first || !moved) return;
-                  onShiftGrid(moved.timeMs - first.timeMs);
-                }}
-              >
-                {t("crates.player.gridDownbeat")}
-              </button>
-            </Tip>
+          )}
+          <div className="preview-grid-nudge">
+            {(
+              [
+                ["«", -GRID_SLIDE_COARSE_MS, "crates.player.gridSlideCoarseEarlier"],
+                ["‹", -GRID_SLIDE_FINE_MS, "crates.player.gridSlideFineEarlier"],
+                ["›", GRID_SLIDE_FINE_MS, "crates.player.gridSlideFineLater"],
+                ["»", GRID_SLIDE_COARSE_MS, "crates.player.gridSlideCoarseLater"],
+              ] as const
+            ).map(([glyph, delta, key]) => (
+              <Tip key={key} text={t(key)} disabled={!fromFile}>
+                <button
+                  type="button"
+                  aria-label={t(key)}
+                  disabled={!fromFile}
+                  onPointerDown={(event) => beginHold(delta, event)}
+                  onPointerUp={stopHold}
+                  onPointerCancel={stopHold}
+                >
+                  {glyph}
+                </button>
+              </Tip>
+            ))}
           </div>
-        )}
-      </div>
+          <Tip text={t("crates.player.gridFlagTip")} disabled={!fromFile}>
+            <button type="button" aria-label={t("crates.player.gridFlag")} disabled={!fromFile} onClick={applyFlag}>
+              ⚑
+            </button>
+          </Tip>
+          <Tip text={t("crates.player.gridSnapTip")} disabled={!fromFile}>
+            <button type="button" aria-label={t("crates.player.gridSnap")} disabled={!fromFile} onClick={applySnap}>
+              ↦
+            </button>
+          </Tip>
+          <Tip text={t("crates.player.gridHalfTip")} disabled={!fromFile}>
+            <button type="button" aria-label={t("crates.player.gridHalf")} disabled={!fromFile} onClick={() => applyTempo(0.5)}>
+              ½
+            </button>
+          </Tip>
+          <Tip text={t("crates.player.gridDoubleTip")} disabled={!fromFile}>
+            <button type="button" aria-label={t("crates.player.gridDouble")} disabled={!fromFile} onClick={() => applyTempo(2)}>
+              2×
+            </button>
+          </Tip>
+          <Tip text={t("crates.player.gridResetTip")} disabled={!canResetGrid && !canUndoGrid}>
+            <button type="button" aria-label={t("crates.player.gridReset")} disabled={!canResetGrid && !canUndoGrid} onClick={resetGrid}>
+              ↺
+            </button>
+          </Tip>
+        </div>
+      ) : null}
       {light ? null : (
       <div
         className="preview-wave-overview"
@@ -845,7 +963,7 @@ export function WaveformDeck({
       )}
       <div
         ref={stageRef}
-        className={["preview-wave-stage", zoom > 1 ? "is-zoomed" : "", light ? "is-light" : ""].filter(Boolean).join(" ")}
+        className={["preview-wave-stage", zoom > 1 ? "is-zoomed" : "", light ? "is-light" : "", !light && gridOpen ? "is-grid" : ""].filter(Boolean).join(" ")}
         style={{ "--wave-lane": light ? "0%" : `${WAVE_LANE * 100}%` } as CSSProperties}
         title={t("crates.player.zoomWheel")}
         onPointerDown={(event) => {
@@ -853,7 +971,14 @@ export function WaveformDeck({
           holdRef.current = true;
           const visible = waveformWindow(zoomRef.current, viewRef.current, padRef.current);
           const playRatio = span > 0 && visible.span > 0 ? (timeRef.current / span - visible.start) / visible.span : 0.5;
-          grabRef.current = { x: event.clientX, time: timeRef.current, playRatio, moved: false };
+          grabRef.current = {
+            x: event.clientX,
+            time: timeRef.current,
+            playRatio,
+            moved: false,
+            grid: gridOpen && gridRef.current.fromFile,
+            applied: 0,
+          };
           event.currentTarget.setPointerCapture(event.pointerId);
         }}
         onPointerMove={(event) => {
@@ -862,11 +987,22 @@ export function WaveformDeck({
           const dx = event.clientX - grab.x;
           if (Math.abs(dx) > 3 && !grab.moved) {
             grab.moved = true;
-            onPause();
+            if (!grab.grid) onPause();
           }
           if (!grab.moved) return;
           const rect = stageRef.current?.getBoundingClientRect();
           if (!rect || rect.width <= 0) return;
+          if (grab.grid) {
+            const visibleWindow = waveformWindow(zoomRef.current, viewRef.current, padRef.current);
+            const visibleMs = visibleWindow.span * span * 1000;
+            const total = Math.round(gridDragDeltaMs(dx, rect.width, visibleMs));
+            const step = total - grab.applied;
+            if (step !== 0 && onShiftGrid(step)) {
+              if (grab.applied === 0) rememberGrid();
+              grab.applied = total;
+            }
+            return;
+          }
           const visibleWindow = waveformWindow(zoomRef.current, viewRef.current, padRef.current);
           const visible = visibleWindow.span * span;
           const nextTime = Math.min(span, Math.max(0, grab.time - (dx / rect.width) * visible));
@@ -962,10 +1098,16 @@ export function WaveformDeck({
         ))}
       </div>
       {light ? null : (
+      <div className="preview-cue-block">
       <div className="preview-cue-row" role="group" aria-label={t("crates.player.cueName", { letter: "A–H" })}>
         {Array.from({ length: CUE_SLOT_COUNT }, (_, slot) => {
           const cue = cues.find((item) => item.slot === slot);
           const letter = cueLetter(slot);
+          const custom = cue && cue.name.trim() && cue.name.trim() !== letter ? cue.name.trim() : "";
+          const when = cue ? formatTime(cue.timeMs / 1000) : "";
+          const padLabel = !cue
+            ? t("crates.player.cuePadSet", { letter })
+            : t("crates.player.cuePadTime", { letter, time: when });
           return (
             <span
               key={slot}
@@ -985,14 +1127,11 @@ export function WaveformDeck({
                   }}
                 />
               ) : (
-                <Tip
-                  as="span"
-                  text={cue ? t("crates.player.cuePadPlay", { letter }) : t("crates.player.cuePadSet", { letter })}
-                >
+                <Tip as="span" text={padLabel}>
                   <button
                     type="button"
                     className="preview-cue-jump"
-                    aria-label={cue ? t("crates.player.cuePadPlay", { letter }) : t("crates.player.cuePadSet", { letter })}
+                    aria-label={padLabel}
                     onClick={() => setPad(slot)}
                     onDoubleClick={() => {
                       if (!cue) return;
@@ -1000,7 +1139,12 @@ export function WaveformDeck({
                       setEditing(slot);
                     }}
                   >
-                    {letter}
+                    {cue ? (
+                      <span className="preview-cue-face">
+                        <b>{letter}</b>
+                        <small>{custom || when}</small>
+                      </span>
+                    ) : null}
                   </button>
                 </Tip>
               )}
@@ -1019,6 +1163,7 @@ export function WaveformDeck({
             </span>
           );
         })}
+      </div>
       </div>
       )}
       {structureNote ? <p className="preview-cue-note">{structureNote}</p> : null}

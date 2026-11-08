@@ -202,6 +202,7 @@ export function StickWriteDialog({
   const plan = step.kind === "planned" ? step.plan : null;
   const missing = plan?.match.missing ?? [];
   const suggestions = plan?.suggestions ?? [];
+  const setTotal = (plan?.match.matched.length ?? 0) + missing.length;
   const leftOut = missing.filter(
     (track) =>
       !suggestions.some(
@@ -254,17 +255,17 @@ export function StickWriteDialog({
           <div className="stick-write-copy">
             <p className="modal-status">{t("library.stickWrite.intro")}</p>
             <p className="modal-next">{t("library.stickWrite.introNext")}</p>
-            <p className="modal-info">{t("library.stickWrite.introInfo")}</p>
             <details className="stick-safety-fold">
               <summary>{t("library.stickWrite.safetyMore")}</summary>
               <p className="stick-safety modal-info">{t("library.stickWrite.safetyDetails")}</p>
+              <p className="modal-info">{t("library.stickWrite.introInfo")}</p>
+              <p className="modal-info">{t("library.stickWrite.chooseHint")}</p>
             </details>
             {step.kind === "error" ? (
               <p className="stick-warn" role="alert">
                 {step.text}
               </p>
             ) : null}
-            <p className="modal-info stick-hint">{t("library.stickWrite.chooseHint")}</p>
           </div>
           <div className="stick-actions">
             <button type="button" className="btn ghost" onClick={onClose}>
@@ -286,14 +287,16 @@ export function StickWriteDialog({
       {plan ? (
         <>
           <div className="stick-write-copy">
-            <p className="modal-status stick-write-status">
-              {missing.length
-                ? t("library.stickWrite.found", {
-                    found: plan.match.matched.length,
-                    total: plan.match.matched.length + missing.length,
-                  })
-                : t("library.stickWrite.allFound", { total: plan.match.matched.length })}
-            </p>
+            {setTotal ? (
+              <p className="modal-status stick-write-status">
+                {missing.length
+                  ? t("library.stickWrite.found", {
+                      found: plan.match.matched.length,
+                      total: setTotal,
+                    })
+                  : t("library.stickWrite.allFound", { total: setTotal })}
+              </p>
+            ) : null}
             {suggestions.length ? (
               <div className="stick-missing">
                 <strong>{t("library.stickWrite.suggestTitle")}</strong>
@@ -357,6 +360,11 @@ export function StickWriteDialog({
                 ) : null}
               </div>
             ) : null}
+            {plan.alternativesMissing > 0 ? (
+              <p className="modal-info stick-hint">
+                {t("library.stickWrite.altsLeftOut", { count: plan.alternativesMissing })}
+              </p>
+            ) : null}
             {plan.refusal ? (
               <>
                 <p className="stick-warn" role="alert">
@@ -413,8 +421,6 @@ export function StickWriteDialog({
               deferPrimaryAction={readyToLeave}
               {...healthHandlers}
             />
-          ) : plan.hasLibraryDb && !ejected ? (
-            <p className="modal-info stick-hint">{t("library.stickWrite.oneLibrary")}</p>
           ) : null}
           {ejectFailed ? (
             <p className="stick-warn" role="alert">
@@ -425,6 +431,15 @@ export function StickWriteDialog({
             <details className="stick-safety-fold">
               <summary>{t("library.stickWrite.safetyMore")}</summary>
               <p className="stick-safety">{t("library.stickWrite.safetyDetails")}</p>
+              <p className="modal-info">{t("library.stickWrite.introInfo")}</p>
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={() => void restore()}
+                disabled={ejecting}
+              >
+                {t("library.stickWrite.restore")}
+              </button>
             </details>
           ) : null}
           <div className="stick-actions">
@@ -436,14 +451,6 @@ export function StickWriteDialog({
               <>
                 <button type="button" className="btn ghost" onClick={onClose} disabled={ejecting}>
                   {t("library.stickWrite.cancel")}
-                </button>
-                <button
-                  type="button"
-                  className="btn ghost"
-                  onClick={() => void restore()}
-                  disabled={ejecting}
-                >
-                  {t("library.stickWrite.restore")}
                 </button>
                 {readyToLeave ? (
                   <>
@@ -502,25 +509,59 @@ export function StickWriteDialog({
               {t("library.stickWrite.doneTitle")}
             </strong>
             <p className="modal-status stick-write-status">
-              {t("library.stickWrite.done", {
-                name: step.result.playlistName,
-                count: step.result.trackCount,
-              })}
-              {step.result.alternativesName
-                ? ` ${t("library.stickWrite.doneAlts", { name: step.result.alternativesName })}`
-                : ""}
+              {ejected
+                ? t("library.stickWrite.ejected")
+                : t("library.stickWrite.done", {
+                    name: step.result.playlistName,
+                    count: step.result.trackCount,
+                  })}
             </p>
-            <p className="modal-next stick-write-next">
-              {ejected ? t("library.stickWrite.ejected") : t("library.stickWrite.doneNext")}
-            </p>
-            <p className="modal-info stick-hint">
-              {t("library.stickWrite.doneBackup", { backup: step.result.backupName })}
-            </p>
-            {step.sidecars.length ? (
-              <p className="modal-info stick-hint">
-                {t("library.stickWrite.sidecar", { files: step.sidecars.join(", ") })}
+            <details className="stick-safety-fold">
+              <summary>{t("library.stickWrite.safetyMore")}</summary>
+              <p className="stick-safety modal-info">{t("library.stickWrite.safetyDetails")}</p>
+              <p className="modal-info">{t("library.stickWrite.introInfo")}</p>
+              <p className="modal-info">
+                {t(
+                  step.result.library === "written"
+                    ? "library.stickWrite.where.written"
+                    : step.result.library === "missing"
+                      ? "library.stickWrite.where.missing"
+                      : "library.stickWrite.where.untouched",
+                  { library: step.result.libraryTrackCount },
+                )}
               </p>
-            ) : null}
+              {step.result.alternativesName ? (
+                <p className="modal-info">
+                  {t("library.stickWrite.doneAlts", {
+                    name: step.result.alternativesName,
+                    count: step.result.alternativesCount,
+                  })}
+                </p>
+              ) : null}
+              <p className="modal-info">
+                {t("library.stickWrite.doneBackup", { backup: step.result.backupName })}
+              </p>
+              {step.result.libraryBackupName ? (
+                <p className="modal-info">
+                  {t("library.stickWrite.doneLibraryBackup", { backup: step.result.libraryBackupName })}
+                </p>
+              ) : null}
+              {step.sidecars.length ? (
+                <p className="modal-info">
+                  {t("library.stickWrite.sidecar", { files: step.sidecars.join(", ") })}
+                </p>
+              ) : null}
+              {!ejected ? (
+                <button
+                  type="button"
+                  className="btn ghost"
+                  onClick={() => void restore()}
+                  disabled={ejecting}
+                >
+                  {t("library.stickWrite.restore")}
+                </button>
+              ) : null}
+            </details>
           </div>
           {health && !ejected ? (
             <StickHealthCard
@@ -547,18 +588,10 @@ export function StickWriteDialog({
                 <button
                   type="button"
                   className="btn ghost"
-                  onClick={() => void restore()}
-                  disabled={ejecting}
-                >
-                  {t("library.stickWrite.restore")}
-                </button>
-                <button
-                  type="button"
-                  className="btn ghost"
                   onClick={onClose}
                   disabled={ejecting}
                 >
-                  {t("library.stickWrite.close")}
+                  {t("library.stickWrite.cancel")}
                 </button>
                 <button
                   type="button"

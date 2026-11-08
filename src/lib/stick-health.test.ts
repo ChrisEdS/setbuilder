@@ -123,7 +123,7 @@ test("a hidden-only PIONEER folder is a reason players miss the library", () => 
   assert.equal(health.verdict, "hiddenFolder");
 });
 
-test("after prepare, a .PIONEER stick with OneLibrary aside is ready", () => {
+test("a missing player library with only a backup is not ready", () => {
   const health = assessStick({
     pioneer: ".PIONEER",
     pdb: { buffer: fixture(), size: fixture().byteLength },
@@ -133,11 +133,12 @@ test("after prepare, a .PIONEER stick with OneLibrary aside is ready", () => {
     sidecar: true,
     libraryAside: true,
   });
-  assert.equal(health.verdict, "ready");
+  assert.equal(health.verdict, "needsRekordbox");
   assert.equal(health.libraryAside, true);
+  assert.equal(health.libraryDb.present, false);
 });
 
-test("library aside plus a readable export.pdb with playlists is ready, not needsRekordbox", () => {
+test("a stale player library is not ready just because a backup also exists", () => {
   const health = assessStick({
     pioneer: ".PIONEER",
     pdb: { buffer: fixture(), size: fixture().byteLength, lastModified: 200 },
@@ -147,13 +148,9 @@ test("library aside plus a readable export.pdb with playlists is ready, not need
     sidecar: true,
     libraryAside: true,
   });
-  assert.ok(health.pdb.present);
-  assert.equal(health.pdb.error, null);
-  assert.ok(health.pdb.playlists >= 1);
   assert.equal(health.libraryDb.present, true);
   assert.equal(health.libraryDb.stale, true);
-  assert.equal(health.libraryAside, true);
-  assert.equal(health.verdict, "ready");
+  assert.equal(health.verdict, "needsRekordbox");
 });
 
 test("picking only export.pdb cannot say whether a player will find the library", () => {
@@ -208,6 +205,23 @@ test("a missing or empty database is broken", () => {
 
 const ALL: StickActionCaps = { canPrepare: true, canEject: true, canOpenRekordbox: true };
 const NONE: StickActionCaps = { canPrepare: false, canEject: false, canOpenRekordbox: false };
+
+test("when the live library is present, rekordbox is the next step; a missing library is restored", () => {
+  const base = {
+    verdict: "needsRekordbox" as const,
+    libraryAside: true,
+    libraryDb: { present: false },
+  };
+  assert.equal(primaryStickAction(base, ALL), "prepare");
+  assert.equal(
+    primaryStickAction({ ...base, libraryAside: false }, ALL),
+    "openRekordbox",
+  );
+  assert.equal(
+    primaryStickAction({ ...base, libraryDb: { present: true } }, ALL),
+    "openRekordbox",
+  );
+});
 
 test("one primary action per verdict", () => {
   const at = (verdict: Parameters<typeof primaryStickAction>[0]["verdict"], libraryAside = false) => ({

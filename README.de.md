@@ -27,7 +27,7 @@ Anleitung mit Screenshots: [docs/GUIDE.de.md](docs/GUIDE.de.md)
 
 ## Der Stick
 
-Einen rekordbox-USB-Stick verbinden (ein erkanntes Volume lädt ohne Ordner-Dialog; ein erinnerter Stick kommt zurück, solange der Zugriff gilt). Playlist, History oder die Collection für die Keys laden. Im Brief setzt du die Slot-Minuten und die mittlere Blend-Zeit. Im Set legst du den Bogen, die Übergänge, Pins und Alternativen, und du kannst die Nacht auf den Slot setzen. **Auf Stick schreiben** legt das Set als Playlist ab und behält eine Sicherung. **Für Player vorbereiten** legt eine ältere Player-Bibliothek beiseite, damit der Player diese Playlists zeigt. Auswerfen, dann den Stick vor dem Gig am echten Player spielen.
+Einen rekordbox-USB-Stick verbinden (ein erkanntes Volume lädt ohne Ordner-Dialog; ein erinnerter Stick kommt zurück, solange der Zugriff gilt). Playlist, History oder die Collection für die Keys laden. Im Brief setzt du die Slot-Minuten und die mittlere Blend-Zeit. Im Set legst du den Bogen, die Übergänge, Pins und Alternativen, und du kannst die Nacht auf den Slot setzen. **Auf Stick schreiben** legt das Set als Playlist in export.pdb und, wenn die Datei sich öffnen lässt, in die Player-Bibliothek. Die Bibliothek wird nicht gelöscht. **Für Player vorbereiten** legt eine fehlende Player-Bibliothek aus der Sicherung zurück. Auswerfen, dann den Stick vor dem Gig am echten Player spielen.
 
 Für die Kabine gibt es ein PDF und kopierten Text. Für den Rechner rekordbox-XML und M3U.
 

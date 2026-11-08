@@ -503,6 +503,57 @@ test("the file count is known before analysis folders are opened", async () => {
   assert.ok(counted.some((walk) => walk.finished > 0 && walk.finished < walk.total));
 });
 
+test("a later analysis group is listed while the first group's percent is already moving", async () => {
+  const root = new MemoryDir("LE_BACKUP");
+  const pioneer = new MemoryDir("PIONEER");
+  const library = new MemoryDir("USBANLZ");
+  const first = new MemoryDir("P001");
+  const second = new MemoryDir("P002");
+  ["/Contents/A/One.mp3", "/Contents/B/Two.mp3"].forEach((path, index) => {
+    const track = new MemoryDir(`0000000${index}`);
+    const dat = new MemoryFile("ANLZ0000.DAT", fileWith([pathTag(path), beatTag()]));
+    track.files.set(dat.name, dat);
+    first.dirs.set(track.name, track);
+  });
+  const late = new MemoryDir("00000002");
+  const lateDat = new MemoryFile(
+    "ANLZ0000.DAT",
+    fileWith([pathTag("/Contents/C/Three.mp3"), beatTag()]),
+  );
+  late.files.set(lateDat.name, lateDat);
+  second.dirs.set(late.name, late);
+  library.dirs.set(first.name, first);
+  library.dirs.set(second.name, second);
+  pioneer.dirs.set(library.name, library);
+  root.dirs.set(pioneer.name, pioneer);
+  const seen: Array<StickIndexWalk | null> = [];
+  let percentWhileListing = false;
+  const listSecond = second.keys.bind(second);
+  second.keys = async function* () {
+    for (let attempt = 0; attempt < 20 && !percentWhileListing; attempt += 1) {
+      percentWhileListing = seen.some(
+        (walk) => walk !== null && walk.finished > 0 && walk.total > 0,
+      );
+      if (!percentWhileListing) await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+    yield* listSecond();
+  };
+  const stop = subscribeStickIndexProgress(root, (walk) => {
+    seen.push(walk);
+  });
+  const beats = await readStickBeatGrid(root, 1, "/Contents/A/One.mp3");
+  stop();
+  assert.equal(beats?.[0]?.timeMs, 1517);
+  assert.equal(percentWhileListing, true);
+  assert.equal(
+    formatGridReadingNote(
+      seen.find((walk) => walk !== null && walk.finished > 0 && walk.total > 0) ?? null,
+      readingText("en"),
+    ),
+    "Reading the beatgrid for the first time. 50%",
+  );
+});
+
 test("a background preload fills the index the player uses, and a second start does not walk", async () => {
   const paths = ["/Contents/A/One.mp3", "/Contents/B/Two.mp3", "/Contents/C/Three.mp3"];
   const root = new MemoryDir("LE_BACKUP");

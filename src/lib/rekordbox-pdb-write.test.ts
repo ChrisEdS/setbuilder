@@ -3,6 +3,7 @@ import test from "node:test";
 import { parseRekordboxPdb } from "./rekordbox-pdb.ts";
 import {
   addPlaylistToPdb,
+  auditPdbPlaylistPages,
   replacePlaylistInPdb,
   verifyPdbReplacement,
   verifyPdbUpdate,
@@ -19,28 +20,32 @@ import {
 } from "./testing/pdb-fixture.ts";
 
 
-test("adds one playlist and leaves everything else byte for byte alone", () => {
+test("round trip: the new playlist reads back and every other byte stays", () => {
   const source = fixture();
-  const before = parseRekordboxPdb(source.slice(0));
-  const result = addPlaylistToPdb(source, { name: "SETBUILDER - Friday", trackIds: [7, 8, 7] });
-
-  assert.equal(result.buffer.byteLength, source.byteLength);
-  assert.ok(result.changedPages.length <= 2);
+  const trackIds = [7, 8, 7];
+  const result = addPlaylistToPdb(source, { name: "SETBUILDER - Friday", trackIds });
+  verifyPdbUpdate(source, result.buffer, {
+    playlistId: result.playlistId,
+    name: result.name,
+    trackIds,
+    changedPages: result.changedPages,
+    allocated: result.allocated,
+  });
+  auditPdbPlaylistPages(result.buffer, result.changedPages);
   const after = parseRekordboxPdb(result.buffer.slice(0));
-  assert.deepEqual(after.tracks, before.tracks);
   const added = after.playlists.find((playlist) => playlist.id === result.playlistId);
-  assert.ok(added);
-  assert.equal(added.name, "SETBUILDER - Friday");
-  assert.equal(added.path, "SETBUILDER - Friday");
-  assert.deepEqual(added.trackIds, [7, 8, 7]);
-  for (const old of before.playlists) {
+  assert.equal(added?.name, "SETBUILDER - Friday");
+  assert.deepEqual(added?.trackIds, trackIds);
+  const before = new Uint8Array(source);
+  const written = new Uint8Array(result.buffer);
+  for (let page = 0; page < before.length / PAGE; page++) {
+    if (page !== 0 && result.changedPages.includes(page)) continue;
+    if (page === 0) continue;
     assert.deepEqual(
-      after.playlists.find((item) => item.kind === old.kind && item.id === old.id),
-      old,
+      before.slice(page * PAGE, (page + 1) * PAGE),
+      written.slice(page * PAGE, (page + 1) * PAGE),
     );
   }
-  // The input buffer itself is never modified.
-  assert.deepEqual(new Uint8Array(source), new Uint8Array(fixture()));
 });
 
 test("pages that were not touched are identical", () => {

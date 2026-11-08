@@ -13,6 +13,7 @@ import {
   DEFAULT_SET,
   explicitOverlapMs,
   normalizeCues,
+  normalizeMemoryCues,
   type SetDraft,
   type SetPhaseId,
   type SetSlotKind,
@@ -196,6 +197,9 @@ export function normalizeDraftTrack(value: unknown): SetTrack | null {
   const cues = normalizeCues(raw.cues);
   if (cues) track.cues = cues;
   else delete track.cues;
+  const memoryCues = normalizeMemoryCues(raw.memoryCues);
+  if (memoryCues) track.memoryCues = memoryCues;
+  else delete track.memoryCues;
   return track;
 }
 

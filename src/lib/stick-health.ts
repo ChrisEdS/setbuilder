@@ -138,13 +138,11 @@ export function assessStick(input: StickHealthInput): StickHealth {
   let verdict: StickHealthVerdict = "ready";
   if (!pdb.present || pdb.error) verdict = "broken";
   else if (pdb.playlists === 0) verdict = "empty";
-  // A backup in SETBUILDER-Backup means prepare already moved the old library
-  // out of the player's way. A leftover exportLibrary.db must not keep the
-  // stick on "needs prepare" once that backup exists and export.pdb has playlists.
-  else if (libraryDb.present && !libraryDb.synced && !input.libraryAside) verdict = "needsRekordbox";
+  // A missing live library is not ready, even when a backup remains.
+  // A library that is older than export.pdb still needs a write into that file.
+  else if (!libraryDb.present && input.libraryAside) verdict = "needsRekordbox";
+  else if (libraryDb.present && !libraryDb.synced) verdict = "needsRekordbox";
   else if (input.pioneer === "none") verdict = "incomplete";
-  // .PIONEER alone is a soft warning — after prepare (OneLibrary aside) the stick
-  // is ready for Device Library players; don't keep alarming the DJ.
   else if (input.pioneer === ".PIONEER" && !input.libraryAside) {
     verdict = "hiddenFolder";
   }
@@ -165,7 +163,7 @@ export function assessStick(input: StickHealthInput): StickHealth {
 export type StickAction = "prepare" | "eject" | "openRekordbox";
 
 export type StickActionCaps = {
-  /** We hold a writable directory handle and exportLibrary.db can be set aside. */
+  /** We hold a writable directory handle, so a missing library can be restored. */
   canPrepare: boolean;
   /** The desktop helper can eject this volume. */
   canEject: boolean;
@@ -185,7 +183,9 @@ export type StickActionOpts = {
 };
 
 export function primaryStickAction(
-  health: Pick<StickHealth, "verdict" | "libraryAside">,
+  health: Pick<StickHealth, "verdict" | "libraryAside"> & {
+    libraryDb?: Pick<StickHealth["libraryDb"], "present">;
+  },
   caps: StickActionCaps,
   opts?: StickActionOpts,
 ): StickAction | null {
@@ -197,6 +197,10 @@ export function primaryStickAction(
     case "empty":
       return null;
     case "needsRekordbox":
+      if (health.libraryDb) {
+        if (!health.libraryDb.present && health.libraryAside && caps.canPrepare) return "prepare";
+        return rekordbox;
+      }
       return caps.canPrepare ? "prepare" : rekordbox;
     case "ready":
       // Eject is intentional (write-dialog footer / details), not the default CTA.

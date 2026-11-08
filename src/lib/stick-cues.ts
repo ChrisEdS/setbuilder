@@ -1,14 +1,17 @@
 import {
   anlzPathsMatch,
   cuesMatch,
+  memoryMatch,
   anchorAnlzGrid,
   readAnlzBeatGrid,
   readAnlzContentPath,
   readAnlzHotCues,
+  readAnlzMemoryCues,
   readAnlzPhrases,
   replaceAnlzBeatGrid,
   shiftAnlzGrid,
   writeAnlzHotCues,
+  writeAnlzMemoryCues,
   type AnlzBeat,
   type AnlzCue,
   type AnlzPhrase,
@@ -16,6 +19,7 @@ import {
 import { BACKUP_DIR } from "@/lib/brand";
 import { getStickFilesEpoch, listRememberedAnalysisFiles, lookupStickAnalysisFile } from "@/lib/stick-audio";
 import type { DirLike, FileLike } from "@/lib/rekordbox-stick-write";
+import type { MemoryCue } from "@/lib/set";
 
 export type CueStickStatus = "written" | "missing" | "rejected" | "no-stick" | "no-id";
 
@@ -255,9 +259,11 @@ async function buildAnalysisIndex(root: DirLike): Promise<Map<string, Located>> 
     const map = new Map<string, Located>();
     const library = await analysisLibrary(root);
     if (!library?.keys) return map;
-    // Names only. Opening each track folder is the slow part and must not
-    // happen while the file count is still unknown.
-    const tracks: TrackRef[] = [];
+    // Group handles only. The file count for a group is known from its names,
+    // and those files are read while the next groups are still being listed.
+    // Waiting for every name first keeps the note on the bare first-read
+    // sentence for the whole slow walk.
+    const groups: DirLike[] = [];
     for await (const parent of library.keys()) {
       let group: DirLike;
       try {
@@ -266,27 +272,42 @@ async function buildAnalysisIndex(root: DirLike): Promise<Map<string, Located>> 
         continue;
       }
       if (!group.keys) continue;
-      for await (const name of group.keys()) tracks.push({ group, name });
+      groups.push(group);
     }
-    const perTrack: Array<IndexedPath[] | null> = new Array(tracks.length);
+    const tracks: TrackRef[] = [];
+    const perTrack: Array<IndexedPath[] | null> = [];
     let cursor = 0;
     let finished = 0;
-    let total = tracks.length;
+    let total = 0;
     let shown: number | null = null;
+    let listing = true;
+    let waiters: Array<() => void> = [];
+    const wake = () => {
+      const pending = waiters;
+      waiters = [];
+      for (const resolve of pending) resolve();
+    };
+    const waitForTracks = () =>
+      new Promise<void>((resolve) => {
+        waiters.push(resolve);
+      });
     const publish = () => {
       const percent = indexWalkPercent(finished, total);
       if (percent == null || percent === shown) return;
       shown = percent;
       reportIndex(root, { finished, total });
     };
-    if (total > 0) publish();
     async function readNext(): Promise<void> {
       for (;;) {
+        if (cursor >= tracks.length) {
+          if (!listing) return;
+          await waitForTracks();
+          continue;
+        }
         const index = cursor;
         cursor += 1;
-        if (index >= tracks.length) return;
         const ref = tracks[index];
-        if (!ref) return;
+        if (!ref) continue;
         const files = await analysisFilesIn(ref);
         if (files.length !== 1) total += files.length - 1;
         const indexed: IndexedPath[] = [];
@@ -311,7 +332,21 @@ async function buildAnalysisIndex(root: DirLike): Promise<Map<string, Located>> 
         }
       }
     }
-    await Promise.all(Array.from({ length: Math.min(8, tracks.length) }, () => readNext()));
+    const readers = Array.from({ length: 8 }, () => readNext());
+    for (const group of groups) {
+      const batch: TrackRef[] = [];
+      const names = group.keys?.();
+      if (!names) continue;
+      for await (const name of names) batch.push({ group, name });
+      if (batch.length === 0) continue;
+      tracks.push(...batch);
+      total += batch.length;
+      publish();
+      wake();
+    }
+    listing = false;
+    wake();
+    await Promise.all(readers);
     for (const indexed of perTrack) {
       if (!indexed) continue;
       for (const entry of indexed) {
@@ -692,6 +727,95 @@ export async function saveStickHotCues(
   let status: CueStickStatus = "missing";
   for (const file of originals.keys()) {
     const result = await commitFile(file, cues);
+    if (result === "rejected") {
+      for (const [item, original] of originals) await writeBytes(item, original);
+      return "rejected";
+    }
+    if (result === "written") status = "written";
+  }
+  return status;
+}
+
+async function memoryIn(dir: DirLike, datName = DAT): Promise<MemoryCue[] | null> {
+  const ext = await maybeFile(dir, pairedExt(datName));
+  const dat = await maybeFile(dir, datName);
+  if (ext) {
+    const named = readAnlzMemoryCues(await readBytes(ext));
+    if (named && named.length) return named;
+  }
+  if (!dat) return null;
+  return readAnlzMemoryCues(await readBytes(dat));
+}
+
+export async function readStickMemoryCues(root: DirLike, trackId: number, filePath = ""): Promise<MemoryCue[] | null> {
+  const located = await locateAnalysis(root, trackId, filePath);
+  if (!located) return null;
+  return memoryIn(located.dir, located.datName);
+}
+
+export async function readRememberedMemoryCues(trackId: number, filePath = ""): Promise<MemoryCue[] | null> {
+  try {
+    const dat = filePath
+      ? await rememberedDat(filePath)
+      : trackId > 0
+        ? lookupStickAnalysisFile(trackId)
+        : null;
+    if (!dat) return null;
+    const ext = rememberedExt(dat);
+    if (ext) {
+      const named = readAnlzMemoryCues(new Uint8Array(await ext.arrayBuffer()));
+      if (named && named.length) return named;
+    }
+    return readAnlzMemoryCues(new Uint8Array(await dat.arrayBuffer()));
+  } catch {
+    return null;
+  }
+}
+
+async function commitMemory(file: FileLike, cues: readonly MemoryCue[]): Promise<"written" | "missing" | "rejected"> {
+  const original = await readBytes(file);
+  const next = writeAnlzMemoryCues(original, cues);
+  if (!next.wrote) return "missing";
+  const expected = readAnlzMemoryCues(next.bytes) ?? [];
+  await writeBytes(file, next.bytes);
+  const back = await readBytes(file);
+  if (!memoryMatch(readAnlzMemoryCues(back) ?? [], expected) || back.length !== next.bytes.length) {
+    await writeBytes(file, original);
+    return "rejected";
+  }
+  return "written";
+}
+
+/**
+ * Rewrite memory-cue tags only. Hot cues and unknown sections stay.
+ * The original bytes are copied into SETBUILDER-Backup first.
+ */
+export async function saveStickMemoryCues(
+  root: DirLike,
+  trackId: number,
+  cues: readonly MemoryCue[],
+  filePath = "",
+): Promise<CueStickStatus> {
+  const located = await locateAnalysis(root, trackId, filePath);
+  if (!located) return "missing";
+  const { dir } = located;
+  const dat = await maybeFile(dir, located.datName);
+  const ext = await maybeFile(dir, pairedExt(located.datName));
+  if (!dat && !ext) return "missing";
+  const originals = new Map<FileLike, Uint8Array>();
+  const hex = located.folder.replace(/[^0-9A-F]/gi, "").toUpperCase().padStart(8, "0").slice(-8);
+  for (const [file, suffix] of [
+    [dat, "DAT"],
+    [ext, "EXT"],
+  ] as const) {
+    if (!file) continue;
+    const original = await readBytes(file);
+    originals.set(file, original);
+    await backup(root, `ANLZ-${hex}.${suffix}`, original);
+  }
+  let status: CueStickStatus = "missing";
+  for (const file of originals.keys()) {
+    const result = await commitMemory(file, cues);
     if (result === "rejected") {
       for (const [item, original] of originals) await writeBytes(item, original);
       return "rejected";

@@ -16,7 +16,7 @@ Stick anschließen. Ein erkanntes Volume lädt ohne Ordner-Dialog. SETBUILDER li
 
 Hängt der Ordner-Dialog: **export.pdb** wählen (`PIONEER/rekordbox/export.pdb`). Nicht den ganzen USB mit allen Musikdateien, das kann ewig dauern. **Anderer Stick**, wenn ein anderes Volume dran ist.
 
-Der Streifen am Stick ist der Player-Check. Gelb heißt: die alte Player-Bibliothek verdeckt die Playlists noch. **Für Player vorbereiten** ist der Knopf dafür, danach auswerfen. Diese Anleitung drückt ihn nicht. Grün heißt: Device-Library-Player können den Stick nutzen. CDJ-3000X, XDJ-AZ und OPUS-QUAD brauchen weiter rekordbox für OneLibrary. Am Gerät prüfen.
+Der Streifen am Stick ist der Player-Check. Gelb heißt: die Player-Bibliothek fehlt oder ist älter als die Playlists. **Für Player vorbereiten** legt eine fehlende Bibliothek aus der Sicherung zurück und löscht sie nie. **Auf Stick schreiben** aktualisiert export.pdb und die Player-Bibliothek, wenn sie sich öffnen lässt. Grün heißt: die Stick-Datenbank ist lesbar. CDJ-3000X, XDJ-AZ und OPUS-QUAD lesen die Player-Bibliothek. Am Gerät prüfen.
 
 ## 2. Set bauen
 

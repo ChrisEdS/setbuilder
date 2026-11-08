@@ -16,7 +16,7 @@ Plug the stick in. One recognized volume loads without the folder picker. SETBUI
 
 If the folder dialog hangs, pick **export.pdb** (`PIONEER/rekordbox/export.pdb`). Do not select the whole USB with every music file; that can stall. **Change stick** when another volume is mounted.
 
-The strip on the stick is the player check. Amber means the old player library is still hiding your playlists. **Prepare for player** is that button, then eject. This guide does not press it. Green means Device Library players can use the stick. CDJ-3000X, XDJ-AZ and OPUS-QUAD still need rekordbox for OneLibrary. Check it on the hardware.
+The strip on the stick is the player check. Amber means the player library is missing or older than the playlists. **Prepare for player** puts a missing library back from the backup and never deletes it. **Write to stick** updates export.pdb and the player library when that library can be opened. Green means the stick database is readable. CDJ-3000X, XDJ-AZ and OPUS-QUAD read the player library. Check it on the hardware.
 
 ## 2. Build the set
 

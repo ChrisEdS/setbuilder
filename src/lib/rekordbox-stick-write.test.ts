@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { parseRekordboxPdb } from "./rekordbox-pdb.ts";
+import { parseRekordboxPdb, type PdbLibrary, type PdbTrack } from "./rekordbox-pdb.ts";
+import { translate } from "./i18n/core.ts";
 import { DEFAULT_SET } from "./set.ts";
 import {
   BACKUP_DIR,
@@ -13,7 +14,6 @@ import {
   prepareStickForPlayers,
   pruneBackups,
   restoreLatestBackup,
-  restorePlayerLibrary,
   rewriteSetToStick,
   writeSetToStick,
   writeStickSidecars,
@@ -144,6 +144,121 @@ test("matches set tracks by file path first, then by unique title and artist", (
   assert.equal(match.missing[0].name, "Not on the stick");
 });
 
+function pdbTrack(id: number, title: string, artist: string, filePath: string): PdbTrack {
+  const filename = filePath.split(/[/\\]/).pop() ?? "";
+  return {
+    id,
+    title,
+    artist,
+    album: "",
+    key: "",
+    bpm: "",
+    durationMs: 0,
+    comment: "",
+    mixName: "",
+    filePath,
+    filename,
+    artworkPath: "",
+  };
+}
+
+function libraryOf(rows: PdbTrack[]): PdbLibrary {
+  return { tracks: rows, playlists: [] };
+}
+
+test("a stick path still matches when only the spelling differs", () => {
+  const stored = "/Contents/Ada/Night Drive.mp3";
+  const library = libraryOf([pdbTrack(7, "Night Drive", "Ada", stored)]);
+  const paths = [
+    "\\Contents\\Ada\\Night Drive.mp3",
+    "/CONTENTS/Ada/Night Drive.mp3",
+    "/PIONEER/Contents/Ada/Night Drive.mp3",
+    "Contents/Ada/Night Drive.mp3",
+  ];
+  for (const filePath of paths) {
+    const match = matchSetToStick([{ name: "other", artists: ["nobody"], filePath }], library);
+    assert.deepEqual(match.trackIds, [7], filePath);
+    assert.equal(match.missing.length, 0);
+  }
+});
+
+test("a collection path matches the stick file when that file name is unique", () => {
+  const library = libraryOf([
+    pdbTrack(1, "Noir", "thds", "/Contents/thds/aaaaa/Noir.mp3"),
+    pdbTrack(2, "Noir", "thds", "/Contents/thds/bbbbb/Other Noir.mp3"),
+  ]);
+  const match = matchSetToStick(
+    [
+      {
+        name: "Noir",
+        artists: ["thds"],
+        filePath: "/Collection/0123456789abcdef0123456789abcd/Noir.mp3",
+      },
+    ],
+    library,
+  );
+  assert.deepEqual(match.trackIds, [1]);
+  assert.equal(match.missing.length, 0);
+});
+
+test("two stick rows with the same file name are not guessed", () => {
+  const library = libraryOf([
+    pdbTrack(1, "Noir", "thds", "/Contents/thds/aaaaa/Noir.mp3"),
+    pdbTrack(2, "Noir", "thds", "/Contents/thds/bbbbb/Noir.mp3"),
+  ]);
+  const match = matchSetToStick(
+    [
+      {
+        name: "Noir",
+        artists: ["thds"],
+        filePath: "/Collection/0123456789abcdef0123456789abcd/Noir.mp3",
+      },
+    ],
+    library,
+  );
+  assert.equal(match.trackIds.length, 0);
+  assert.equal(match.missing.length, 1);
+});
+
+test("a complete set does not warn to pick alternatives when an alternative is absent", async () => {
+  const { root } = stick();
+  const set = [
+    {
+      name: "unrelated",
+      artists: ["Nobody"],
+      filePath: "/PIONEER/Night Drive.mp3",
+      role: "groove" as const,
+    },
+    {
+      name: "Morning Light",
+      artists: ["Ada"],
+      filePath: "\\Morning Light.mp3",
+      role: "peak" as const,
+    },
+    {
+      name: "Not on the stick",
+      artists: ["Nobody"],
+      filePath: "/Collection/0123456789abcdef0123456789abcd/Missing Track.mp3",
+      role: "safety" as const,
+    },
+  ];
+  const plan = await planStickWrite(root, set, "Friday");
+  assert.equal(plan.performanceCount, 2);
+  assert.equal(plan.match.missing.length, 0);
+  assert.equal(plan.suggestions.length, 0);
+  assert.equal(plan.alternativesMissing, 1);
+  assert.equal(plan.alternativesCount, 0);
+  assert.equal(
+    translate("de", "library.stickWrite.allFound", { total: plan.match.matched.length }),
+    "Alle 2 Titel des Sets liegen auf dem Stick.",
+  );
+  const altLine = translate("de", "library.stickWrite.altsLeftOut", {
+    count: plan.alternativesMissing,
+  });
+  assert.equal(altLine, "1 Alternativen sind keine eindeutige Datei und bleiben draußen.");
+  assert.equal(altLine.includes("aussuchen"), false);
+});
+
 test("the preview writes nothing", async () => {
   const { root, db } = stick();
   const before = db.data.slice();
@@ -162,6 +277,8 @@ test("writes the playlist, keeps a verified backup and leaves the rest alone", a
 
   assert.equal(done.backupName, "export-20261013-180509.pdb");
   assert.equal(done.trackCount, 2);
+  assert.equal(done.library, "missing");
+  assert.equal(done.libraryTrackCount, 0);
   const backup = root.dirs.get(BACKUP_DIR)?.files.get(done.backupName);
   assert.deepEqual(backup?.data, original);
 
@@ -171,6 +288,34 @@ test("writes the playlist, keeps a verified backup and leaves the rest alone", a
   assert.deepEqual(added?.trackIds, [7, 8]);
   assert.deepEqual(after.tracks, before.tracks);
   assert.equal(await latestBackupName(root), done.backupName);
+});
+
+test("an unreadable player library stays byte for byte and the playlist still lands in export.pdb", async () => {
+  const { root, db, rekordbox } = stick();
+  const lib = new MemFile("exportLibrary.db", {});
+  lib.data = new Uint8Array([1, 2, 3, 4]);
+  rekordbox.files.set("exportLibrary.db", lib);
+  const done = await writeSetToStick(root, tracks, "Friday", new Date(2026, 9, 13, 18, 6, 0));
+  assert.equal(done.library, "untouched");
+  assert.equal(done.libraryTrackCount, 0);
+  assert.equal(done.libraryBackupName, null);
+  assert.deepEqual([...(rekordbox.files.get("exportLibrary.db")?.data ?? [])], [1, 2, 3, 4]);
+  const after = parseRekordboxPdb(db.data.slice().buffer as ArrayBuffer);
+  assert.ok(after.playlists.some((item) => item.name === "SETBUILDER - Friday"));
+});
+
+test("an open player library (non-empty wal) is not rewritten", async () => {
+  const { root, rekordbox } = stick();
+  const lib = new MemFile("exportLibrary.db", {});
+  lib.data = new Uint8Array([1, 2, 3, 4]);
+  rekordbox.files.set("exportLibrary.db", lib);
+  const wal = new MemFile("exportLibrary.db-wal", {});
+  wal.data = new Uint8Array([1]);
+  rekordbox.files.set("exportLibrary.db-wal", wal);
+  const done = await writeSetToStick(root, tracks, "Friday", new Date(2026, 9, 13, 18, 7, 0));
+  assert.equal(done.library, "untouched");
+  assert.deepEqual([...(rekordbox.files.get("exportLibrary.db")?.data ?? [])], [1, 2, 3, 4]);
+  assert.equal(rekordbox.files.has("exportLibrary.db-wal"), true);
 });
 
 test("refuses a set with no track on the stick and changes nothing", async () => {
@@ -238,13 +383,17 @@ test("writes alternatives as a second playlist next to the set", async () => {
   const plan = await planStickWrite(root, mixed, "Friday");
   assert.equal(plan.performanceCount, 1);
   assert.equal(plan.alternativesCount, 1);
-  assert.equal(plan.match.trackIds.length, 2);
+  assert.equal(plan.match.missing.length, 0);
+  assert.equal(plan.alternativesMissing, 0);
+  assert.equal(plan.suggestions.length, 0);
   assert.equal(plan.alternativesName, "SETBUILDER - Friday Alternativen");
   assert.equal(plan.alreadyOnStick, false);
 
   const done = await writeSetToStick(root, mixed, "Friday", new Date(2026, 9, 14, 2, 0, 0));
   assert.equal(done.playlistName, "SETBUILDER - Friday");
   assert.equal(done.alternativesName, "SETBUILDER - Friday Alternativen");
+  assert.equal(done.trackCount, 1);
+  assert.equal(done.alternativesCount, 1);
   const after = parseRekordboxPdb(db.data.slice().buffer as ArrayBuffer);
   assert.deepEqual(after.playlists.find((item) => item.name === "SETBUILDER - Friday")?.trackIds, [7]);
   assert.deepEqual(
@@ -320,6 +469,8 @@ test("updating a set changes its entries and preserves unrelated current databas
   const onlyDrive = [{ name: "Night Drive", artists: ["Ada"], filePath: "/Night Drive.mp3" }];
   const done = await rewriteSetToStick(root, onlyDrive, "Friday", new Date(2026, 9, 14, 3, 11, 0));
   assert.equal(done.playlistName, "SETBUILDER - Friday");
+  assert.equal(done.trackCount, 1);
+  assert.equal(done.alternativesCount, 0);
   const after = parseRekordboxPdb(db.data.slice().buffer as ArrayBuffer);
   assert.deepEqual(after.playlists.find((item) => item.name === "SETBUILDER - Friday")?.trackIds, [7]);
   assert.deepEqual(after.playlists.find((item) => item.name === "SETBUILDER - Current")?.trackIds, [8]);
@@ -403,42 +554,40 @@ test("restores the newest backup", async () => {
   await assert.rejects(restoreLatestBackup(empty.root), /Sicherung/);
 });
 
-test("prepareStickForPlayers moves exportLibrary.db aside and can put it back", async () => {
+test("prepareStickForPlayers leaves exportLibrary.db on the stick", async () => {
   const { root, rekordbox } = stick();
   const lib = new MemFile("exportLibrary.db", {});
   lib.data = new Uint8Array([9, 8, 7, 6]);
   rekordbox.files.set("exportLibrary.db", lib);
-  const stages: string[] = [];
-  const done = await prepareStickForPlayers(root, new Date(2026, 9, 14, 3, 0, 0), (progress) => {
-    stages.push(progress.stage);
-  });
-  assert.equal(done.aside, true);
-  assert.equal(done.backupName, "exportLibrary-aside-20261014-030000.db");
-  assert.equal(rekordbox.files.has("exportLibrary.db"), false);
-  const stored = root.dirs.get(BACKUP_DIR)?.files.get(done.backupName ?? "");
-  assert.deepEqual(stored && [...stored.data], [9, 8, 7, 6]);
-  assert.deepEqual(
-    [...new Set(stages)],
-    ["locate", "copy", "verify", "remove", "done"],
-  );
-  await restorePlayerLibrary(root);
+  const done = await prepareStickForPlayers(root, new Date(2026, 9, 14, 3, 0, 0));
+  assert.deepEqual(done, { aside: false, backupName: null, restored: false });
   assert.deepEqual([...(rekordbox.files.get("exportLibrary.db")?.data ?? [])], [9, 8, 7, 6]);
+  assert.equal(root.dirs.has(BACKUP_DIR), false);
 });
 
 test("prepareStickForPlayers does nothing when there is no OneLibrary", async () => {
   const { root } = stick();
-  assert.deepEqual(await prepareStickForPlayers(root), { aside: false, backupName: null });
+  assert.deepEqual(await prepareStickForPlayers(root), {
+    aside: false,
+    backupName: null,
+    restored: false,
+  });
 });
 
-test("prepareStickForPlayers treats an existing aside as already done", async () => {
+test("prepareStickForPlayers puts a missing player library back from the backup", async () => {
   const { root, rekordbox } = stick();
   const backup = new MemDir(BACKUP_DIR);
-  backup.files.set(
-    "exportLibrary-aside-20261014-030000.db",
-    new MemFile("exportLibrary-aside-20261014-030000.db", {}),
-  );
+  const stored = new MemFile("exportLibrary-aside-20261014-030000.db", {});
+  stored.data = new Uint8Array([9, 8, 7, 6]);
+  backup.files.set(stored.name, stored);
   root.dirs.set(BACKUP_DIR, backup);
-  assert.equal(rekordbox.files.has("exportLibrary.db"), false);
+  rekordbox.files.set("exportLibrary.db-wal", new MemFile("exportLibrary.db-wal", {}));
   const done = await prepareStickForPlayers(root);
-  assert.deepEqual(done, { aside: true, backupName: "exportLibrary-aside-20261014-030000.db" });
+  assert.deepEqual(done, {
+    aside: false,
+    backupName: "exportLibrary-aside-20261014-030000.db",
+    restored: true,
+  });
+  assert.deepEqual([...(rekordbox.files.get("exportLibrary.db")?.data ?? [])], [9, 8, 7, 6]);
+  assert.equal(rekordbox.files.has("exportLibrary.db-wal"), false);
 });

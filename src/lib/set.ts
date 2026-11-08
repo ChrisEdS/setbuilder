@@ -52,7 +52,17 @@ export type TrackCue = {
   slot: number;
   timeMs: number;
   name: string;
+  /** Loop end. Absent for a point cue. */
+  endMs?: number;
 };
+
+/** Memory cues. Markers without pad letters, ten at most, same ceiling as a CDJ. */
+export type MemoryCue = {
+  timeMs: number;
+  name: string;
+};
+
+export const MEMORY_CUE_LIMIT = 10;
 
 export const CUE_SLOT_COUNT = 8;
 
@@ -93,9 +103,29 @@ export function normalizeCues(value: unknown): TrackCue[] | undefined {
     if (used.has(slot)) continue;
     used.add(slot);
     const name = typeof raw.name === "string" ? raw.name.trim().slice(0, 24) : "";
-    cues.push({ slot, timeMs, name });
+    const endMs = Math.round(Number(raw.endMs));
+    const cue: TrackCue = { slot, timeMs, name };
+    if (Number.isFinite(endMs) && endMs > timeMs) cue.endMs = endMs;
+    cues.push(cue);
   }
   cues.sort((a, b) => a.timeMs - b.timeMs || a.slot - b.slot);
+  return cues;
+}
+
+/** Keep up to ten memory cues. An array (even empty) is kept; anything else is absent. */
+export function normalizeMemoryCues(value: unknown): MemoryCue[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const cues: MemoryCue[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object") continue;
+    const raw = item as Record<string, unknown>;
+    const timeMs = Math.round(Number(raw.timeMs));
+    if (!Number.isFinite(timeMs) || timeMs < 0) continue;
+    const name = typeof raw.name === "string" ? raw.name.trim().slice(0, 24) : "";
+    cues.push({ timeMs, name });
+    if (cues.length >= MEMORY_CUE_LIMIT) break;
+  }
+  cues.sort((a, b) => a.timeMs - b.timeMs || a.name.localeCompare(b.name));
   return cues;
 }
 
@@ -151,6 +181,11 @@ export type SetTrack = {
    * An empty list is a deliberate clear and stays empty.
    */
   cues?: TrackCue[];
+  /**
+   * Memory cues for this set. Missing means the stick has not been read yet.
+   * An empty list is a deliberate clear and stays empty.
+   */
+  memoryCues?: MemoryCue[];
 };
 
 export type SetSlotKind = "warmup" | "support" | "peaktime" | "closing";

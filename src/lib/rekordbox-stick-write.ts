@@ -9,8 +9,11 @@
  *   3. replace export.pdb (the browser swaps the file atomically when the write is closed)
  *   4. read export.pdb back and check it is the old file plus exactly the new playlist
  *   5. if that check fails: put the original back and say so
+ *   6. the same playlist is written into exportLibrary.db when that file opens.
+ *      If it does not open, the file stays byte for byte as it was.
  *
- * The rekordbox library on the computer (master.db) is never touched.
+ * exportLibrary.db is never deleted. The rekordbox library on the computer
+ * (master.db) is never touched.
  */
 
 import type { MessageKey } from "@/lib/i18n/core";
@@ -27,6 +30,7 @@ import { buildM3u, buildM3uAlternatives, buildRekordboxXml } from "@/lib/export-
 import type { Translate } from "@/lib/i18n/core";
 import { tDe } from "@/lib/i18n/core";
 import type { SetDraft, SetTrack, TrackRole } from "@/lib/set";
+import { anlzPathsMatch } from "@/lib/anlz-cues";
 import { suggestStickMatches, type StickSuggestion } from "@/lib/stick-match";
 import { BACKUP_DIR, BACKUP_DIR_LEGACY, REKORDBOX_XML_NAME, SIDECAR_DIR } from "@/lib/brand";
 import {
@@ -35,6 +39,7 @@ import {
   stickAlternativesPlaylistName,
   stickPlaylistName,
 } from "@/lib/stick-names";
+import { updateOneLibrary, type OneLibraryPlaylist } from "@/lib/onelibrary-write";
 
 export { BACKUP_DIR, SIDECAR_DIR };
 export const BACKUP_KEEP = 3;
@@ -227,23 +232,64 @@ function pathKey(path: string): string {
   return path.replaceAll("\\", "/").toLowerCase();
 }
 
+/** File name only. Stick rows live under /Contents/…; a set track may still say /Collection/…/file. */
+function fileBase(path: string): string {
+  const slash = path.replaceAll("\\", "/").replace(/^\/+/, "").normalize("NFC").toLowerCase();
+  return slash.split("/").pop() ?? "";
+}
+
+function usableFileBase(base: string): boolean {
+  const dot = base.lastIndexOf(".");
+  return dot > 0 && base.length >= 8;
+}
+
+function uniqueId(ids: Iterable<number>): number | null {
+  let found: number | null = null;
+  const seen = new Set<number>();
+  for (const id of ids) {
+    if (seen.has(id)) continue;
+    seen.add(id);
+    if (seen.size > 1) return null;
+    found = id;
+  }
+  return found;
+}
+
 export type StickMatch<T extends Wanted = Wanted> = {
   trackIds: number[];
   matched: T[];
   missing: T[];
 };
 
-/** Maps set tracks to track ids of this stick: by file path, else by unique title and artist. */
+/**
+ * Maps set tracks to track ids on this stick.
+ * Path first (exact, then the same looseness as analysis files: slash, case,
+ * leading slash, PIONEER prefix). A unique file name still counts when the
+ * folders differ. Title and artist are only used when that is still one row.
+ */
 export function matchSetToStick<T extends Wanted>(tracks: T[], library: PdbLibrary): StickMatch<T> {
   const byPath = new Map<string, number[]>();
+  const byBase = new Map<string, number[]>();
   const byName = new Map<string, number[]>();
+  const stickPaths: { id: number; filePath: string }[] = [];
   for (const stick of library.tracks) {
     if (stick.filePath) {
       const key = pathKey(stick.filePath);
-      byPath.set(key, [...(byPath.get(key) ?? []), stick.id]);
+      const pathIds = byPath.get(key);
+      if (pathIds) pathIds.push(stick.id);
+      else byPath.set(key, [stick.id]);
+      const base = fileBase(stick.filePath);
+      if (usableFileBase(base)) {
+        const baseIds = byBase.get(base);
+        if (baseIds) baseIds.push(stick.id);
+        else byBase.set(base, [stick.id]);
+      }
+      stickPaths.push({ id: stick.id, filePath: stick.filePath });
     }
     const nameKey = `${fold(stick.title)}|${fold(stick.artist)}`;
-    byName.set(nameKey, [...(byName.get(nameKey) ?? []), stick.id]);
+    const nameIds = byName.get(nameKey);
+    if (nameIds) nameIds.push(stick.id);
+    else byName.set(nameKey, [stick.id]);
   }
 
   const known = new Set(library.tracks.map((item) => item.id));
@@ -254,21 +300,32 @@ export function matchSetToStick<T extends Wanted>(tracks: T[], library: PdbLibra
       result.matched.push(track);
       continue;
     }
-    let ids = track.filePath ? byPath.get(pathKey(track.filePath)) : undefined;
-    if (!ids || ids.length !== 1) {
+    const filePath = track.filePath;
+    let id = filePath ? uniqueId(byPath.get(pathKey(filePath)) ?? []) : null;
+    if (id == null && filePath) {
+      id = uniqueId(
+        stickPaths
+          .filter((stick) => anlzPathsMatch(filePath, stick.filePath))
+          .map((stick) => stick.id),
+      );
+    }
+    if (id == null && filePath) {
+      const base = fileBase(filePath);
+      if (usableFileBase(base)) id = uniqueId(byBase.get(base) ?? []);
+    }
+    if (id == null) {
       const artists = track.artists.filter((name) => name && name !== "Unknown");
       const keys = artists.length
         ? artists.map((artist) => `${fold(track.name)}|${fold(artist)}`)
         : [`${fold(track.name)}|`];
       const found = new Set<number>();
-      for (const key of keys) for (const id of byName.get(key) ?? []) found.add(id);
-      ids = [...found];
+      for (const key of keys) for (const nameId of byName.get(key) ?? []) found.add(nameId);
+      id = uniqueId(found);
     }
-    if (ids.length === 1) {
-      result.trackIds.push(ids[0]);
+    if (id == null) result.missing.push(track);
+    else {
+      result.trackIds.push(id);
       result.matched.push(track);
-    } else {
-      result.missing.push(track);
     }
   }
   return result;
@@ -280,10 +337,12 @@ export function matchSetToStick<T extends Wanted>(tracks: T[], library: PdbLibra
 export type StickPlan = {
   location: StickLocation;
   library: PdbLibrary;
-  /** Performance and alternatives together, for the “found / missing” list. */
+  /** Performance tracks only. The found / missing warning is about the set. */
   match: StickMatch;
   performanceCount: number;
   alternativesCount: number;
+  /** Alternatives that are not on the stick. They are not missing set tracks. */
+  alternativesMissing: number;
   /** Name the playlist will get (a number is added when it exists). */
   playlistName: string;
   /** Alternatives playlist, when the set has Plan B tracks that are on the stick. */
@@ -423,14 +482,15 @@ export async function planStickWrite(
   return {
     location,
     library,
-    match: staged.match,
+    match: staged.perfMatch,
     performanceCount: staged.perfMatch.trackIds.length,
     alternativesCount: staged.altMatch.trackIds.length,
+    alternativesMissing: staged.altMatch.missing.length,
     playlistName: staged.playlistName,
     alternativesName: staged.alternativesName,
     skippedPerformance: staged.skippedPerformance,
     alreadyOnStick: staged.alreadyOnStick,
-    suggestions: suggestStickMatches(staged.match.missing, library),
+    suggestions: suggestStickMatches(staged.perfMatch.missing, library),
     refusal: staged.refusal,
     hasLibraryDb: location.hasLibraryDb,
     newPages: staged.newPages,
@@ -455,13 +515,106 @@ async function replaceFile(handle: FileLike, data: ArrayBuffer | Uint8Array) {
   }
 }
 
+export type StickLibraryResult = "written" | "untouched" | "missing";
+
 export type StickWriteDone = {
   playlistName: string;
   alternativesName: string | null;
+  /** Tracks in the set playlist the user is looking at (performance order). */
   trackCount: number;
+  /** Tracks in the alternatives playlist. Not part of trackCount. */
+  alternativesCount: number;
   backupName: string;
   newPages: number;
+  /** Which player library the write reached. */
+  library: StickLibraryResult;
+  libraryTrackCount: number;
+  libraryBackupName: string | null;
 };
+
+function playlistTrackCount(library: PdbLibrary, name: string | null): number {
+  if (!name) return 0;
+  const found = library.playlists.find((item) => item.kind === "playlist" && item.name === name);
+  return found?.trackIds.length ?? 0;
+}
+
+function bytesToBuffer(bytes: Uint8Array): ArrayBuffer {
+  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+}
+
+function pathsForIds(library: PdbLibrary, ids: number[]): string[] {
+  const byId = new Map(library.tracks.map((track) => [track.id, track.filePath]));
+  return ids.map((id) => byId.get(id) ?? "");
+}
+
+const LIBRARY_BACKUP_RE = /^exportLibrary-\d{8}-\d{6}\.db$/;
+
+async function pruneLibraryBackups(root: DirLike): Promise<void> {
+  const dir = await resolveBackupDir(root);
+  if (!dir?.keys || !dir.removeEntry) return;
+  const names: string[] = [];
+  for await (const name of dir.keys()) if (LIBRARY_BACKUP_RE.test(name)) names.push(name);
+  names.sort();
+  const drop = names.slice(0, Math.max(0, names.length - BACKUP_KEEP));
+  for (const name of drop) await dir.removeEntry(name);
+}
+
+/** Writes the same playlists into exportLibrary.db, or leaves that file untouched. */
+async function commitPlayerLibrary(
+  root: DirLike,
+  dir: DirLike,
+  library: PdbLibrary,
+  lists: { name: string; ids: number[] }[],
+  now: Date,
+): Promise<Pick<StickWriteDone, "library" | "libraryTrackCount" | "libraryBackupName">> {
+  const missing = { library: "missing" as const, libraryTrackCount: 0, libraryBackupName: null };
+  const untouched = { library: "untouched" as const, libraryTrackCount: 0, libraryBackupName: null };
+  const handle = await file(dir, "exportLibrary.db");
+  if (!handle) return missing;
+  // A non-empty WAL still holds pages. An empty WAL is a leftover and does not block the write.
+  const wal = await file(dir, LIBRARY_SIDECARS[0]);
+  if (wal && (await wal.getFile()).size > 0) return untouched;
+
+  const playlists: OneLibraryPlaylist[] = lists.map((list) => ({
+    name: list.name,
+    paths: pathsForIds(library, list.ids),
+  }));
+  const original = await readBytes(handle);
+  const planned = await updateOneLibrary(new Uint8Array(original), playlists, now);
+  if (planned.status !== "written") return untouched;
+
+  const backupDir = await root.getDirectoryHandle(BACKUP_DIR, { create: true });
+  const backupName = `exportLibrary-${stamp(now)}.db`;
+  const backup = await backupDir.getFileHandle(backupName, { create: true });
+  try {
+    await replaceFile(backup, original);
+    if (!sameBytes(await readBytes(backup), original)) return untouched;
+  } catch {
+    return untouched;
+  }
+
+  const next = bytesToBuffer(planned.bytes);
+  try {
+    await replaceFile(handle, planned.bytes);
+    const written = await readBytes(handle);
+    if (!sameBytes(written, next)) throw new Error("readback");
+  } catch (error) {
+    try {
+      await restoreOriginal(handle, original);
+    } catch {
+      throw stickError(
+        "exports.stickWrite.restoreFailed",
+        "Die Player-Bibliothek konnte nach dem Schreiben nicht zurückgesetzt werden. export.pdb enthält die Playlist. Die Sicherung liegt in SETBUILDER-Backup.",
+      );
+    }
+    if (!sameBytes(await readBytes(handle), original)) {
+      throw error;
+    }
+    return untouched;
+  }
+  await pruneLibraryBackups(root).catch(() => undefined);
+  return { library: "written", libraryTrackCount: planned.trackCount, libraryBackupName: backupName };
+}
 
 export async function writeSetToStick(
   root: DirLike,
@@ -545,12 +698,31 @@ export async function writeSetToStick(
 
   await pruneBackups(root, BACKUP_KEEP);
 
+  const libraryState = await commitPlayerLibrary(
+    root,
+    location.dir,
+    library,
+    [
+      ...(result ? [{ name: result.name, ids: perfMatch.trackIds }] : []),
+      ...(altResult ? [{ name: altResult.name, ids: altMatch.trackIds }] : []),
+    ],
+    now,
+  );
+
+  const playlistName = result?.name ?? staged.playlistName;
+  const alternativesName = altResult?.name ?? staged.alternativesName;
+  const already = playlistTrackCount(library, playlistName);
   return {
-    playlistName: result?.name ?? staged.playlistName,
-    alternativesName: altResult?.name ?? staged.alternativesName,
-    trackCount: perfMatch.trackIds.length + altMatch.trackIds.length,
+    playlistName,
+    alternativesName,
+    // The set playlist receives only the performance tracks. Alternatives are a second playlist.
+    trackCount: result ? perfMatch.trackIds.length : already || perfMatch.trackIds.length,
+    alternativesCount: altResult
+      ? altMatch.trackIds.length
+      : playlistTrackCount(library, alternativesName),
     backupName,
     newPages: staged.newPages,
+    ...libraryState,
   };
 }
 
@@ -629,12 +801,22 @@ export async function rewriteSetToStick(
   }
 
   await pruneBackups(root, BACKUP_KEEP);
+  const libraryState = await commitPlayerLibrary(
+    root,
+    location.dir,
+    library,
+    [{ name: playlist.name, ids: match.trackIds }],
+    now,
+  );
+  const alternativesName = existingAlternativesPlaylistName(library.playlists, title);
   return {
     playlistName: playlist.name,
-    alternativesName: existingAlternativesPlaylistName(library.playlists, title),
+    alternativesName,
     trackCount: match.trackIds.length,
+    alternativesCount: playlistTrackCount(library, alternativesName),
     backupName,
     newPages: result.allocated.length,
+    ...libraryState,
   };
 }
 
@@ -746,7 +928,7 @@ async function latestLibraryAside(root: DirLike): Promise<string | null> {
   return names.at(-1) ?? null;
 }
 
-/** Best-effort: drop SQLite WAL leftovers after the main OneLibrary file is gone. */
+/** Drops WAL leftovers only after the live player library is confirmed back. */
 async function clearLibrarySidecars(dir: DirLike): Promise<void> {
   if (!dir.removeEntry) return;
   for (const name of LIBRARY_SIDECARS) {
@@ -764,10 +946,8 @@ async function clearLibrarySidecars(dir: DirLike): Promise<void> {
 }
 
 /**
- * Newer players that prefer OneLibrary (exportLibrary.db) ignore SETBUILDER’s export.pdb.
- * We cannot write that encrypted file. Setting it aside (with a backup) makes
- * Device Library players — CDJ-3000, XDJ-XZ and older — read export.pdb instead.
- * CDJ-3000X, XDJ-AZ and OPUS-QUAD still need rekordbox.
+ * Leaves the player library on the stick. When the live file is missing and a
+ * backup remains, that backup is copied back. Nothing is deleted.
  */
 export async function prepareStickForPlayers(
   root: DirLike,
@@ -776,7 +956,9 @@ export async function prepareStickForPlayers(
 ): Promise<{
   aside: boolean;
   backupName: string | null;
+  restored: boolean;
 }> {
+  void now;
   report?.({ stage: "locate" });
   const location = await withTimeout(
     findStickDatabase(root),
@@ -785,68 +967,25 @@ export async function prepareStickForPlayers(
     "Die Player-Library wurde zu lange nicht gefunden. Stick stecken lassen, rekordbox schließen, erneut versuchen.",
   );
   const lib = await file(location.dir, "exportLibrary.db");
-  if (!lib) {
-    const existing = await latestLibraryAside(root);
-    if (existing) {
-      await clearLibrarySidecars(location.dir);
-      report?.({ stage: "done" });
-      return { aside: true, backupName: existing };
-    }
-    return { aside: false, backupName: null };
+  if (lib) {
+    report?.({ stage: "done" });
+    return { aside: false, backupName: null, restored: false };
   }
-  if (!location.dir.removeEntry) {
+  const existing = await latestLibraryAside(root);
+  if (!existing) {
+    report?.({ stage: "done" });
+    return { aside: false, backupName: null, restored: false };
+  }
+  const backupName = await restorePlayerLibrary(root, report);
+  if (!(await file(location.dir, "exportLibrary.db"))) {
     throw stickError(
-      "exports.stickWrite.removeDenied",
-      "Dieser Stick darf die Player-Library nicht beiseitelegen. Chrome, Edge oder die Desktop-App verwenden.",
-    );
-  }
-  const sourceMeta = await withTimeout(
-    lib.getFile(),
-    PREPARE_STEP_MS,
-    "exports.stickWrite.libraryBusy",
-    "rekordbox hält die Player-Library noch offen. rekordbox schließen und erneut vorbereiten.",
-  );
-  const backupDir = await root.getDirectoryHandle(BACKUP_DIR, { create: true });
-  const backupName = `exportLibrary-aside-${stamp(now)}.db`;
-  const backup = await backupDir.getFileHandle(backupName, { create: true });
-  report?.({ stage: "copy", bytesDone: 0, bytesTotal: sourceMeta.size });
-  const copied = await withTimeout(
-    copyFileStreaming(lib, backup, (bytesDone, bytesTotal) => {
-      report?.({ stage: "copy", bytesDone, bytesTotal });
-    }),
-    Math.max(PREPARE_STEP_MS, Math.ceil(sourceMeta.size / (256 * 1024)) * 1000),
-    "exports.stickWrite.prepareTimeout",
-    "Das Kopieren der Player-Library hat zu lange gedauert. rekordbox schließen und erneut versuchen.",
-  );
-  report?.({ stage: "verify", bytesDone: copied, bytesTotal: copied });
-  const backupMeta = await backup.getFile();
-  if (backupMeta.size !== copied || backupMeta.size !== sourceMeta.size) {
-    throw stickError(
-      "exports.stickWrite.backupFailed",
-      "Die Sicherung konnte nicht geschrieben werden. Es wurde nichts verändert.",
-    );
-  }
-  report?.({ stage: "remove" });
-  try {
-    await withTimeout(
-      location.dir.removeEntry("exportLibrary.db"),
-      PREPARE_STEP_MS,
-      "exports.stickWrite.libraryBusy",
-      "rekordbox hält die Player-Library noch offen. rekordbox schließen und erneut vorbereiten.",
-    );
-  } catch (error) {
-    // A timed-out unlink can still win on disk; treat a missing file as done.
-    if (await file(location.dir, "exportLibrary.db")) throw error;
-  }
-  if (await file(location.dir, "exportLibrary.db")) {
-    throw stickError(
-      "exports.stickWrite.asideFailed",
-      "exportLibrary.db konnte nicht beiseitegelegt werden. Die Sicherung liegt in SETBUILDER-Backup.",
+      "exports.stickWrite.restoreFailed",
+      "Die Player-Bibliothek konnte nicht aus der Sicherung zurückgelegt werden. Es wurde nichts gelöscht.",
     );
   }
   await clearLibrarySidecars(location.dir);
   report?.({ stage: "done" });
-  return { aside: true, backupName };
+  return { aside: false, backupName, restored: true };
 }
 
 /** Puts the newest set-aside OneLibrary back as exportLibrary.db. */

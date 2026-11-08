@@ -37,6 +37,7 @@ export function PlaylistLoadDialog({
   return (
     <dialog
       ref={dialog}
+      tabIndex={-1}
       className="stick-dialog playlist-load-dialog"
       aria-labelledby="playlist-load-title"
       aria-describedby="playlist-load-body"
@@ -53,17 +54,16 @@ export function PlaylistLoadDialog({
         <p id="playlist-load-body" className="modal-status">
           {t("builder.playlist.confirmBody")}
         </p>
-        <p className="modal-next">{t("builder.playlist.confirmNext")}</p>
       </div>
       <div className="stick-actions">
-        <button type="button" className="btn danger" onClick={onReplace}>
-          {t("builder.playlist.replace")}
+        <button type="button" className="btn ghost" onClick={onClose}>
+          {t("builder.playlist.cancel")}
         </button>
         <button type="button" className="btn" onClick={onMerge}>
           {t("builder.playlist.merge")}
         </button>
-        <button type="button" className="btn ghost" onClick={onClose}>
-          {t("builder.playlist.cancel")}
+        <button type="button" className="btn danger" onClick={onReplace}>
+          {t("builder.playlist.replace")}
         </button>
       </div>
     </dialog>

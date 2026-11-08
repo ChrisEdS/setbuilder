@@ -27,7 +27,7 @@ Walkthrough with screenshots: [docs/GUIDE.md](docs/GUIDE.md)
 
 ## The stick
 
-Connect a rekordbox USB stick (one recognized volume loads without a picker; a remembered stick comes back while access still holds). Load a playlist, the history, or the collection for keys. In the brief you set the slot in minutes and the average blend. On the set you place the arc, the joins, pins, and alternatives, and you can fit the night to the slot. **Write to stick** stores the set as a playlist and keeps a backup. **Prepare for player** moves an older player library aside so the player shows those playlists. Eject, then play the stick on the actual player before the gig.
+Connect a rekordbox USB stick (one recognized volume loads without a picker; a remembered stick comes back while access still holds). Load a playlist, the history, or the collection for keys. In the brief you set the slot in minutes and the average blend. On the set you place the arc, the joins, pins, and alternatives, and you can fit the night to the slot. **Write to stick** stores the set as a playlist in export.pdb and, when that file can be opened, in the player library. The library is not deleted. **Prepare for player** puts a missing player library back from the backup. Eject, then play the stick on the actual player before the gig.
 
 For the booth there is a PDF and copied text. For the computer there is rekordbox XML and M3U.
 

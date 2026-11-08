@@ -277,6 +277,31 @@ test("a draft keeps cue points through a save and reload", () => {
   assert.deepEqual(round?.tracks[0].cues, draft.tracks[0].cues);
 });
 
+test("a draft keeps a loop cue and at most ten memory cues", () => {
+  const draft = normalizeStoredDraft({
+    title: "Memory",
+    tracks: [
+      {
+        id: "t1",
+        name: "One",
+        artists: ["Ada"],
+        cues: [{ slot: 0, timeMs: 1000, endMs: 3000, name: "A" }],
+        memoryCues: [
+          { timeMs: 8000, name: "  Out  " },
+          ...Array.from({ length: 12 }, (_, index) => ({ timeMs: index * 100, name: "" })),
+        ],
+      },
+    ],
+  });
+  assert.deepEqual(draft?.tracks[0].cues, [{ slot: 0, timeMs: 1000, name: "A", endMs: 3000 }]);
+  assert.equal(draft?.tracks[0].memoryCues?.length, 10);
+  assert.equal(draft?.tracks[0].memoryCues?.some((cue) => cue.name === "Out"), true);
+  assert.equal(draft?.tracks[0].memoryCues?.[0]?.timeMs, 0);
+  const round = decodeStoredDraft(encodeStoredDraft(draft!));
+  assert.deepEqual(round?.tracks[0].memoryCues, draft?.tracks[0].memoryCues);
+  assert.deepEqual(round?.tracks[0].cues, draft?.tracks[0].cues);
+});
+
 test("bulk normalization adds accepted ids to seen while filtering", () => {
   const track = (id: string, name: string) => ({ id, name, artists: [] });
   const fresh = uniqueIncomingDraftTracks(
