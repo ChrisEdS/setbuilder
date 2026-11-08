@@ -73,7 +73,23 @@ jobs:
 
       - name: Install desktop shell
         working-directory: desktop
-        run: npm ci
+        shell: bash
+        run: |
+          # GitHub's Electron release CDN often answers 504. npm ci is safe to repeat.
+          ok=0
+          for attempt in 1 2 3 4 5; do
+            if npm ci; then
+              ok=1
+              break
+            fi
+            echo "desktop install attempt ${attempt} failed; waiting before retry"
+            sleep $((attempt * 30))
+          done
+          test "$ok" = 1
+
+      - name: Prepare desktop bundle
+        working-directory: desktop
+        run: npm run build
 
       - name: Package
         working-directory: desktop
@@ -102,7 +118,16 @@ jobs:
           if [ -z "${CSC_LINK:-}" ] && [[ "$args" == *"--mac"* ]]; then
             args="$args -c.mac.identity=-"
           fi
-          npm run build && npx electron-builder --publish never $args
+          ok=0
+          for attempt in 1 2 3 4 5; do
+            if npx electron-builder --publish never $args; then
+              ok=1
+              break
+            fi
+            echo "package attempt ${attempt} failed; waiting before retry"
+            sleep $((attempt * 30))
+          done
+          test "$ok" = 1
 
       - name: Keep per-arch Mac update metadata
         if: runner.os == 'macOS'
