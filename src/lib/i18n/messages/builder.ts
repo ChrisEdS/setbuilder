@@ -49,25 +49,25 @@ const de = {
   "builder.ready.title": "Vor dem Mitnehmen",
   "builder.ready.intro":
     "Der Stick ist bereit. Nächster Schritt: mitnehmen — auswerfen und am echten Player hören, bevor der Gig beginnt.",
-  "builder.ready.nextBlocked": "Nächster Schritt: Blocker beheben — oder Stick-Ordner erneut wählen.",
+  "builder.ready.nextBlocked": "Nächster Schritt: den Punkt oben klären.",
   "builder.ready.nextOk":
     "Der Stick ist bereit. Nächster Schritt: mitnehmen — auswerfen und am echten Player hören, bevor der Gig beginnt.",
   "builder.ready.continue": "Mitnehmen",
   "builder.ready.close": "Zurück",
   "builder.ready.block": "Hält diese Aktion auf",
-  "builder.ready.filesBlock": "{count} Tracks ohne Datei in dieser Sitzung. Stick schreiben braucht die Dateien.",
-  "builder.ready.filesAck": "{count} Tracks ohne Datei in dieser Sitzung.",
+  "builder.ready.filesBlock": "{count} Titel ohne Datei in dieser Sitzung. Zum Schreiben den Stick-Ordner erneut wählen.",
+  "builder.ready.filesAck": "{count} Titel ohne Datei in dieser Sitzung.",
   "builder.ready.reselectStick": "Stick-Ordner erneut wählen",
   "builder.ready.reselectStickTip":
     "Denselben Ordner wählen, von dem das Set kommt — dann sind die Dateien wieder in der Sitzung.",
   "builder.ready.reselectStickBusy": "Lese den Stick…",
-  "builder.ready.keys": "{count} Tracks ohne Key.",
-  "builder.ready.energy": "{count} Tracks ohne Energie.",
+  "builder.ready.keys": "{count} Titel ohne Key.",
+  "builder.ready.energy": "{count} Titel ohne Energie.",
   "builder.ready.planB": "Plan B dünn: {phases}.",
   "builder.ready.planBPhase": "{phase} {have}/{need}",
   "builder.ready.player.broken": "Auf dem Stick liegt keine lesbare Bibliothek.",
   "builder.ready.player.empty": "Auf dem Stick liegen noch keine Playlists.",
-  "builder.ready.player.needsRekordbox": "Die alte Player-Bibliothek verdeckt die Playlists. Vorher für den Player vorbereiten.",
+  "builder.ready.player.needsRekordbox": "Die Player-Bibliothek fehlt oder ist älter als die Playlists. Vorher für den Player vorbereiten.",
   "builder.ready.player.hiddenFolder": "Der Stick-Ordner ist versteckt. Viele Player finden ihn trotzdem.",
   "builder.ready.player.incomplete": "Nur eine Datei gewählt. Für den Player den ganzen Stick wählen.",
   "builder.ready.heard": "Den Stick am echten Player hören, bevor der Gig beginnt.",
@@ -126,7 +126,7 @@ const de = {
     "Noch kein Stick. Oben unter „Stick laden & vorbereiten“ den Stick laden.",
   "builder.playlist.confirmTitle": "Playlist „{name}“ laden?",
   "builder.playlist.confirmBody":
-    "Im aktuellen Set stehen bereits Tracks. Ersetzen überschreibt die Setliste; Zusammenführen behält sie und hängt nur neue Tracks an.",
+    "Im aktuellen Set stehen bereits Titel. Ersetzen überschreibt die Setliste. Zusammenführen behält sie und hängt nur neue Titel an.",
   "builder.playlist.confirmNext": "Nächster Schritt: Ersetzen oder Zusammenführen wählen.",
   "builder.playlist.replace": "Ersetzen",
   "builder.playlist.merge": "Zusammenführen",
@@ -795,7 +795,7 @@ const de = {
   // Destructive actions and storage
   "builder.reset.title": "Set zurücksetzen?",
   "builder.reset.body": "Das aktuelle Set wird geleert.",
-  "builder.reset.next": "Nächster Schritt: Bestätigen — oder abbrechen und behalten.",
+  "builder.reset.next": "Notizen und die Reihenfolge sind danach weg. Gespeicherte Setups bleiben.",
   "builder.reset.confirm": "Zurücksetzen",
   "builder.reset.cancel": "Abbrechen",
   "builder.storage.blocked":
@@ -850,13 +850,13 @@ const en: Record<keyof typeof de, string> = {
   "builder.ready.title": "Before you take it",
   "builder.ready.intro":
     "The stick is ready. Next: take it with you — eject, then hear it on a real player before the gig.",
-  "builder.ready.nextBlocked": "Next: fix the blockers — or choose the stick folder again.",
+  "builder.ready.nextBlocked": "Next: settle the point above.",
   "builder.ready.nextOk":
     "The stick is ready. Next: take it with you — eject, then hear it on a real player before the gig.",
   "builder.ready.continue": "Take it",
   "builder.ready.close": "Back",
   "builder.ready.block": "Stops this action",
-  "builder.ready.filesBlock": "{count} tracks have no file in this session. Writing the stick needs those files.",
+  "builder.ready.filesBlock": "{count} tracks have no file in this session. Choose the stick folder again to write.",
   "builder.ready.filesAck": "{count} tracks have no file in this session.",
   "builder.ready.reselectStick": "Choose stick folder again",
   "builder.ready.reselectStickTip":
@@ -868,7 +868,7 @@ const en: Record<keyof typeof de, string> = {
   "builder.ready.planBPhase": "{phase} {have}/{need}",
   "builder.ready.player.broken": "This stick has no readable library.",
   "builder.ready.player.empty": "This stick has no playlists yet.",
-  "builder.ready.player.needsRekordbox": "The old player library is hiding the playlists. Prepare it for the player first.",
+  "builder.ready.player.needsRekordbox": "The player library is missing or older than the playlists. Prepare it for the player first.",
   "builder.ready.player.hiddenFolder": "The stick folder is hidden. Many players still find it.",
   "builder.ready.player.incomplete": "Only one file was picked. Choose the whole stick for the player.",
   "builder.ready.heard": "Play the stick on the actual player before the gig.",
@@ -926,7 +926,7 @@ const en: Record<keyof typeof de, string> = {
     "No stick yet. Load it above under “Load stick & prepare”.",
   "builder.playlist.confirmTitle": "Load playlist “{name}”?",
   "builder.playlist.confirmBody":
-    "The current set already has tracks. Replace overwrites the set list; Merge keeps it and appends only new tracks.",
+    "The current set already has tracks. Replace overwrites the set list. Merge keeps it and appends only new tracks.",
   "builder.playlist.confirmNext": "Next: choose Replace or Merge.",
   "builder.playlist.replace": "Replace",
   "builder.playlist.merge": "Merge",
@@ -1578,7 +1578,7 @@ const en: Record<keyof typeof de, string> = {
 
   "builder.reset.title": "Reset the set?",
   "builder.reset.body": "The current set is cleared.",
-  "builder.reset.next": "Next: confirm — or cancel and keep the set.",
+  "builder.reset.next": "Notes and the order are gone after this. Saved setups stay.",
   "builder.reset.confirm": "Reset",
   "builder.reset.cancel": "Cancel",
   "builder.storage.blocked":

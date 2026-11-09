@@ -201,6 +201,20 @@ test("a collection path matches the stick file when that file name is unique", (
   assert.equal(match.missing.length, 0);
 });
 
+test("two database rows for the same path are the one file already in the set", () => {
+  const path = "/Contents/Ada/Night Drive.mp3";
+  const library = libraryOf([
+    pdbTrack(4, "Night Drive", "Ada", path),
+    pdbTrack(9, "Night Drive", "Ada", path),
+  ]);
+  const match = matchSetToStick(
+    [{ name: "Night Drive", artists: ["Ada"], filePath: path }],
+    library,
+  );
+  assert.deepEqual(match.trackIds, [4]);
+  assert.equal(match.missing.length, 0);
+});
+
 test("two stick rows with the same file name are not guessed", () => {
   const library = libraryOf([
     pdbTrack(1, "Noir", "thds", "/Contents/thds/aaaaa/Noir.mp3"),
@@ -255,7 +269,7 @@ test("a complete set does not warn to pick alternatives when an alternative is a
   const altLine = translate("de", "library.stickWrite.altsLeftOut", {
     count: plan.alternativesMissing,
   });
-  assert.equal(altLine, "1 Alternativen sind keine eindeutige Datei und bleiben draußen.");
+  assert.equal(altLine, "Alternativen ohne eindeutige Datei: 1. Sie bleiben draußen.");
   assert.equal(altLine.includes("aussuchen"), false);
 });
 

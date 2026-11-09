@@ -312,6 +312,12 @@ export function StickWriteDialog({
                       <li key={(item.track as SetTrack).id ?? item.track.name}>
                         <span>{setLabel}</span>
                         {item.candidates.map((candidate) => {
+                          const fileLabel = candidate.filePath
+                            .replaceAll("\\", "/")
+                            .split("/")
+                            .filter(Boolean)
+                            .slice(-2)
+                            .join("/");
                           const stickLabel = [candidate.artist, candidate.title]
                             .filter(Boolean)
                             .join(" – ");
@@ -319,22 +325,25 @@ export function StickWriteDialog({
                             stickLabel.replace(/\s+/g, " ").trim().toLowerCase() ===
                             setLabel.replace(/\s+/g, " ").trim().toLowerCase();
                           return (
-                            <button
-                              key={candidate.id}
-                              type="button"
-                              className="btn ghost"
-                              onClick={() => {
-                                const id = (item.track as SetTrack).id;
-                                if (!id || !root.current) return;
-                                const next = { ...hints, [id]: candidate.id };
-                                setHints(next);
-                                void planFrom(root.current, next);
-                              }}
-                            >
-                              {sameLabel || item.candidates.length === 1
-                                ? t("library.stickWrite.suggestUse")
-                                : `${t("library.stickWrite.suggestUse")}: ${stickLabel}`}
-                            </button>
+                            <span key={candidate.id} className="stick-missing-choice">
+                              {fileLabel ? <span className="stick-missing-file">{fileLabel}</span> : null}
+                              {!sameLabel && stickLabel ? (
+                                <span className="stick-missing-file">{stickLabel}</span>
+                              ) : null}
+                              <button
+                                type="button"
+                                className="btn ghost"
+                                onClick={() => {
+                                  const id = (item.track as SetTrack).id;
+                                  if (!id || !root.current) return;
+                                  const next = { ...hints, [id]: candidate.id };
+                                  setHints(next);
+                                  void planFrom(root.current, next);
+                                }}
+                              >
+                                {t("library.stickWrite.suggestUse")}
+                              </button>
+                            </span>
                           );
                         })}
                       </li>

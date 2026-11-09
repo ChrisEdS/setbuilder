@@ -243,13 +243,13 @@ const de = {
   "library.stickWrite.busy.reading": "Lese den Stick…",
   "library.stickWrite.busy.writing": "Schreibe und prüfe…",
   "library.stickWrite.busy.restoring": "Spiele die Sicherung zurück…",
-  "library.stickWrite.found": "{found} von {total} Titeln des Sets liegen auf dem Stick.",
+  "library.stickWrite.found": "{found} von {total} Titeln sind eindeutig und kommen in die Playlist.",
   "library.stickWrite.allFound": "Alle {total} Titel des Sets liegen auf dem Stick.",
   "library.stickWrite.missingTitle": "Diese Titel des Sets liegen nicht auf dem Stick und werden ausgelassen:",
   "library.stickWrite.altsLeftOut":
-    "{count} Alternativen sind keine eindeutige Datei und bleiben draußen.",
+    "Alternativen ohne eindeutige Datei: {count}. Sie bleiben draußen.",
   "library.stickWrite.missingMore": "… und {count} weitere",
-  "library.stickWrite.noneFound": "Keiner der Titel liegt auf diesem Stick. Das Set muss aus Titeln bestehen, die du in rekordbox auf diesen Stick exportiert hast.",
+  "library.stickWrite.noneFound": "Keiner der Titel ist eindeutig auf diesem Stick. Es wird nichts geschrieben.",
   "library.stickWrite.willWrite": "Wird geschrieben: Playlist „{name}“ mit {count} Titeln.",
   "library.stickWrite.willWriteAlts": "Alternativen als „{name}“.",
   "library.stickWrite.willAddAltsOnly": "Das Set liegt schon als „{name}“ auf dem Stick. Alternativen werden als „{alts}“ ergänzt.",
@@ -264,7 +264,8 @@ const de = {
   "library.stickWrite.ejected": "Ausgeworfen. Stick abziehen und in den Player stecken.",
   "library.stickWrite.ejectFailed":
     "Auswerfen fehlgeschlagen — nicht abziehen. „Stick reparieren“ oder im Finder auswerfen.",
-  "library.stickWrite.suggestTitle": "Ähnliche Titel auf dem Stick — meinst du einen davon?",
+  "library.stickWrite.suggestTitle":
+    "Diese Titel liegen mehrfach auf dem Stick. Wähle die Datei, dann kommen sie in die Playlist.",
   "library.stickWrite.suggestUse": "Diesen nehmen",
   "library.stickWrite.doneAlts": "Alternativen: „{name}“ mit {count} Titeln.",
   "library.stickWrite.sidecar": "Zusätzlich im Ordner SETBUILDER: {files} — nützlich, falls neuere Player die Stick-Playlist nicht zeigen.",
@@ -649,13 +650,13 @@ const en: Record<keyof typeof de, string> = {
   "library.stickWrite.busy.reading": "Reading the stick…",
   "library.stickWrite.busy.writing": "Writing and checking…",
   "library.stickWrite.busy.restoring": "Restoring the backup…",
-  "library.stickWrite.found": "{found} of {total} tracks in the set are on the stick.",
+  "library.stickWrite.found": "{found} of {total} tracks match one file and go into the playlist.",
   "library.stickWrite.allFound": "All {total} tracks in the set are on the stick.",
   "library.stickWrite.missingTitle": "These tracks from the set are not on the stick and are left out:",
   "library.stickWrite.altsLeftOut":
-    "{count} alternatives are not a unique file and stay out.",
+    "Alternatives with no single file: {count}. They stay out.",
   "library.stickWrite.missingMore": "… and {count} more",
-  "library.stickWrite.noneFound": "None of the tracks are on this stick. The set has to consist of tracks you exported to this stick in rekordbox.",
+  "library.stickWrite.noneFound": "None of the tracks match one file on this stick. Nothing will be written.",
   "library.stickWrite.willWrite": "Will be written: playlist “{name}” with {count} tracks.",
   "library.stickWrite.willWriteAlts": "Alternatives as “{name}”.",
   "library.stickWrite.willAddAltsOnly": "The set is already on the stick as “{name}”. Alternatives will be added as “{alts}”.",
@@ -670,7 +671,8 @@ const en: Record<keyof typeof de, string> = {
   "library.stickWrite.ejected": "Ejected. Unplug the stick and put it in the player.",
   "library.stickWrite.ejectFailed":
     "Eject failed — do not unplug. Tap “Repair stick”, or eject in Finder.",
-  "library.stickWrite.suggestTitle": "Similar titles on the stick — did you mean one of these?",
+  "library.stickWrite.suggestTitle":
+    "These titles are on the stick more than once. Pick the file and they go into the playlist.",
   "library.stickWrite.suggestUse": "Use this",
   "library.stickWrite.doneAlts": "Alternatives: “{name}” with {count} tracks.",
   "library.stickWrite.sidecar": "Also in the SETBUILDER folder: {files} — useful if newer players don’t show the stick playlist.",

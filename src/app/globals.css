@@ -8486,6 +8486,19 @@ details:not([open]) > .menu-panel {
   color: var(--ink);
   font-weight: 600;
 }
+.stick-missing-choice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.65rem;
+  width: 100%;
+}
+.stick-missing-file {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 450;
+  overflow-wrap: anywhere;
+}
 .stick-missing .btn {
   font-size: 0.82rem;
 }

@@ -255,6 +255,16 @@ function uniqueId(ids: Iterable<number>): number | null {
   return found;
 }
 
+/** Several database rows for one path are the same file. Different paths stay ambiguous. */
+function sameFileId(ids: Iterable<number>, pathOf: Map<number, string>): number | null {
+  const unique = [...new Set(ids)];
+  if (unique.length === 1) return unique[0] ?? null;
+  if (unique.length < 2) return null;
+  const paths = new Set(unique.map((id) => pathKey(pathOf.get(id) ?? "")));
+  if (paths.size !== 1 || paths.has("")) return null;
+  return Math.min(...unique);
+}
+
 export type StickMatch<T extends Wanted = Wanted> = {
   trackIds: number[];
   matched: T[];
@@ -293,6 +303,7 @@ export function matchSetToStick<T extends Wanted>(tracks: T[], library: PdbLibra
   }
 
   const known = new Set(library.tracks.map((item) => item.id));
+  const pathOf = new Map(library.tracks.map((item) => [item.id, item.filePath]));
   const result: StickMatch<T> = { trackIds: [], matched: [], missing: [] };
   for (const track of tracks) {
     if (track.stickId && known.has(track.stickId)) {
@@ -301,12 +312,14 @@ export function matchSetToStick<T extends Wanted>(tracks: T[], library: PdbLibra
       continue;
     }
     const filePath = track.filePath;
-    let id = filePath ? uniqueId(byPath.get(pathKey(filePath)) ?? []) : null;
+    // Same path under several row ids is still the one file the set already uses.
+    let id = filePath ? sameFileId(byPath.get(pathKey(filePath)) ?? [], pathOf) : null;
     if (id == null && filePath) {
-      id = uniqueId(
+      id = sameFileId(
         stickPaths
           .filter((stick) => anlzPathsMatch(filePath, stick.filePath))
           .map((stick) => stick.id),
+        pathOf,
       );
     }
     if (id == null && filePath) {
@@ -320,7 +333,7 @@ export function matchSetToStick<T extends Wanted>(tracks: T[], library: PdbLibra
         : [`${fold(track.name)}|`];
       const found = new Set<number>();
       for (const key of keys) for (const nameId of byName.get(key) ?? []) found.add(nameId);
-      id = uniqueId(found);
+      id = sameFileId(found, pathOf);
     }
     if (id == null) result.missing.push(track);
     else {
