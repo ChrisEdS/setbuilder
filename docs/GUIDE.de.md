@@ -2,7 +2,7 @@
 
 **Deutsch** · [English](GUIDE.md) · [README](../README.de.md)
 
-**5.1.0.** Die Bilder sind die englische Oberfläche in Chrome. Dieselben Schritte, deutsche Beschriftungen. Oben rechts schaltet **DE** / **EN**.
+**5.1.1.** Die Bilder sind die englische Oberfläche in Chrome. Dieselben Schritte, deutsche Beschriftungen. Oben rechts schaltet **DE** / **EN**.
 
 Stick verbinden, Set bauen, im Deck hören, mitnehmen. Die ausgelieferte App ist die Desktop-App (Port **4317**). Im Browser: Port **4327**.
 

@@ -3641,6 +3641,9 @@ export function SetBuilder() {
               <label>
                 <span>{t("builder.brief.slotKind")}</span>
                 <select
+                  className={
+                    draft.slotKind ? undefined : "hero-meta-select-empty"
+                  }
                   value={draft.slotKind ?? ""}
                   onChange={(e) => {
                     const value = e.target.value;

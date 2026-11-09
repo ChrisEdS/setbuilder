@@ -285,6 +285,16 @@ html[data-frame="mac"] .set-shell .hero-copy {
   resize: vertical;
 }
 
+.set-shell .hero-meta input::placeholder,
+.set-shell .hero-meta-notes textarea::placeholder {
+  color: #727272;
+  opacity: 1;
+}
+
+.set-shell .hero-meta select.hero-meta-select-empty {
+  color: #727272 !important;
+}
+
 .set-shell :where(
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
   select,

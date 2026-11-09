@@ -40,6 +40,27 @@ test("migrates an older draft, normalizes tracks and preserves user text", () =>
   assert.equal(draft.blendMs, 120_000);
 });
 
+test("legacy shipped brief samples load empty so placeholders show", () => {
+  const draft = normalizeStoredDraft({
+    title: "My gig",
+    vibe: "Tech house → melodic peak",
+    venue: "Club, mid-size, good PA",
+    slot: "Peak time · 60 min",
+    slotKind: "peaktime",
+    audience: "Locals, floor already warm",
+    gear: "CDJs / USB",
+    tracks: [{ id: "t", name: "One" }],
+  });
+  assert.ok(draft);
+  assert.equal(draft.vibe, "");
+  assert.equal(draft.venue, "");
+  assert.equal(draft.slot, "");
+  assert.equal(draft.audience, "");
+  assert.equal(draft.gear, "");
+  assert.equal(draft.slotKind, undefined);
+  assert.equal(draft.title, "My gig");
+});
+
 test("empty brief fields stay empty; slot kind stays unset without a valid value", () => {
   const draft = normalizeStoredDraft({
     title: "Bare",

@@ -45,6 +45,44 @@ const transitions = new Set<TransitionVerb>([
   "unset",
 ]);
 const slots = new Set<SetSlotKind>(["warmup", "support", "peaktime", "closing"]);
+
+/** Shipped brief samples (DE/EN) before examples moved to input placeholders. */
+const LEGACY_BRIEF_SAMPLES = {
+  title: new Set(["Nachtlinie 01", "Nightline 01"]),
+  vibe: new Set(["Tech House → Melodic Peak", "Tech house → melodic peak"]),
+  venue: new Set(["Club, mid-size, guter PA", "Club, mid-size, good PA"]),
+  audience: new Set([
+    "Locals, dancefloor schon warm",
+    "Locals, floor already warm",
+  ]),
+  gear: new Set(["CDJs / USB"]),
+  slot: new Set(["Peak Time · 60 Min", "Peak time · 60 min"]),
+} as const;
+
+function clearLegacyBriefSample(
+  field: keyof typeof LEGACY_BRIEF_SAMPLES,
+  value: string,
+): string {
+  const trimmed = value.trim();
+  if (!trimmed || !LEGACY_BRIEF_SAMPLES[field].has(trimmed)) return value;
+  return "";
+}
+
+function clearLegacyDefaultSlotKind(
+  raw: Record<string, unknown>,
+  slot: string,
+  slotKind: SetSlotKind | undefined,
+): SetSlotKind | undefined {
+  if (slotKind !== "peaktime") return slotKind;
+  if (LEGACY_BRIEF_SAMPLES.slot.has(slot.trim())) return undefined;
+  const fields = ["vibe", "venue", "audience", "gear"] as const;
+  const pristineSample = fields.every((field) => {
+    const stored = text(raw[field]).trim();
+    return stored && LEGACY_BRIEF_SAMPLES[field].has(stored);
+  });
+  return pristineSample ? undefined : slotKind;
+}
+
 const sources = new Set<TrackSource>([
   "spotify",
   "tidal",
@@ -304,19 +342,33 @@ export function normalizeStoredDraft(value: unknown): SetDraft | null {
     ...(keptIds ?? []),
     ...(excludedIds ?? []),
   ]);
+  const title = clearLegacyBriefSample("title", raw.title);
+  const vibe = clearLegacyBriefSample("vibe", text(raw.vibe, DEFAULT_SET.vibe));
+  const venue = clearLegacyBriefSample("venue", text(raw.venue, DEFAULT_SET.venue));
+  const slot = clearLegacyBriefSample("slot", text(raw.slot, DEFAULT_SET.slot));
+  const audience = clearLegacyBriefSample(
+    "audience",
+    text(raw.audience, DEFAULT_SET.audience),
+  );
+  const gear = clearLegacyBriefSample("gear", text(raw.gear, DEFAULT_SET.gear));
+  const slotKind = clearLegacyDefaultSlotKind(
+    raw,
+    slot,
+    slots.has(raw.slotKind as SetSlotKind)
+      ? (raw.slotKind as SetSlotKind)
+      : undefined,
+  );
   const draft: SetDraft = {
     ...DEFAULT_SET,
     ...raw,
     schemaVersion: DRAFT_SCHEMA_VERSION,
-    title: raw.title,
-    vibe: text(raw.vibe, DEFAULT_SET.vibe),
-    venue: text(raw.venue, DEFAULT_SET.venue),
-    slot: text(raw.slot, DEFAULT_SET.slot),
-    slotKind: slots.has(raw.slotKind as SetSlotKind)
-      ? (raw.slotKind as SetSlotKind)
-      : undefined,
-    audience: text(raw.audience, DEFAULT_SET.audience),
-    gear: text(raw.gear, DEFAULT_SET.gear),
+    title,
+    vibe,
+    venue,
+    slot,
+    slotKind,
+    audience,
+    gear,
     notes: text(raw.notes),
     phaseNote: phaseNotes(raw.phaseNote),
     openerId,
