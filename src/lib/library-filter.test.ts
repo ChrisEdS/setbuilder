@@ -24,6 +24,36 @@ test("bpm and energy bounds drop tracks outside the window", () => {
   assert.equal(matchesLibraryFilter({ key: "8A", bpm: "122" }, { energyMin: 1 }), false);
 });
 
+test("a star minimum keeps rated tracks and drops unrated ones", () => {
+  const rated = { key: "8A", bpm: "122", rating: 4 };
+  const none = { key: "8A", bpm: "122" };
+  const zero = { key: "8A", bpm: "122", rating: 0 };
+  assert.equal(matchesLibraryFilter(rated, {}), true);
+  assert.equal(matchesLibraryFilter(rated, { ratingMin: 0 }), true);
+  assert.equal(matchesLibraryFilter(rated, { ratingMin: null }), true);
+  assert.equal(matchesLibraryFilter(none, { ratingMin: 0 }), true);
+  assert.equal(matchesLibraryFilter(rated, { ratingMin: 4 }), true);
+  assert.equal(matchesLibraryFilter(rated, { ratingMin: 5 }), false);
+  assert.equal(matchesLibraryFilter(none, { ratingMin: 1 }), false);
+  assert.equal(matchesLibraryFilter(zero, { ratingMin: 1 }), false);
+});
+
+test("color, genre and comment narrow the library", () => {
+  const pink = { key: "8A", bpm: "122", color: 1, genre: "Techno", comment: "8A - Energy 7" };
+  const plain = { key: "8A", bpm: "122", color: 0, genre: "", comment: "" };
+  assert.equal(matchesLibraryFilter(pink, {}), true);
+  assert.equal(matchesLibraryFilter(plain, { color: 0 }), true);
+  assert.equal(matchesLibraryFilter({ key: "8A", bpm: "122" }, { color: 0 }), true);
+  assert.equal(matchesLibraryFilter(plain, { color: 1 }), false);
+  assert.equal(matchesLibraryFilter(pink, { color: 1 }), true);
+  assert.equal(matchesLibraryFilter(plain, { genre: "Techno" }), false);
+  assert.equal(matchesLibraryFilter(pink, { genre: "Techno" }), true);
+  assert.equal(matchesLibraryFilter(pink, { genre: "" }), true);
+  assert.equal(matchesLibraryFilter(pink, { comment: "energy" }), true);
+  assert.equal(matchesLibraryFilter(pink, { comment: "  " }), true);
+  assert.equal(matchesLibraryFilter(plain, { comment: "energy" }), false);
+});
+
 test("an empty bound stays open", () => {
   assert.equal(boundOf(""), null);
   assert.equal(boundOf("  "), null);

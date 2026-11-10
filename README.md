@@ -2,7 +2,9 @@
 
 [Deutsch](README.de.md) · **English**
 
-**Version 5.1.1**
+**Version 5.2.0**
+
+The library filters by stars, color, genre, and comment. Playlist names open in a list under the search field. A missing cover uses the setlist note tile. A playlist row keeps the track count beside the title, and Load as set stays clear of the scrollbar. Stick health says when newer players still show an older copy. Detail fields stay one short line, with the source mark next to Details. The player opens in Light, Structure highlights the cues it sets, and Analyze stays in the grid bar.
 
 SETBUILDER builds a DJ set from a rekordbox USB stick. Load a playlist or a history, fit the night to the slot, and check key, BPM, and energy. Then write the set back and hear the joins before the gig. The interface is German and English.
 
@@ -31,7 +33,7 @@ Connect a rekordbox USB stick (one recognized volume loads without a picker; a r
 
 For the booth there is a PDF and copied text. For the computer there is rekordbox XML and M3U.
 
-rekordbox on its own needs no account. Spotify and Tidal are optional. Their redirect is `http://127.0.0.1:4317/api/auth/callback` (Tidal: `…/api/auth/tidal/callback`). Keys go under **Settings**, or into `.env.local` ([`.env.example`](.env.example)).
+rekordbox on its own needs no account. Spotify and Tidal are optional. The desktop redirect is `http://127.0.0.1:4317/api/auth/callback` (Tidal: `…/api/auth/tidal/callback`). For `npm run dev` on port **4327**, use that port in the redirect instead. Keys go under **Settings**, or into `.env.local` ([`.env.example`](.env.example)).
 
 ## Run it
 

@@ -8,6 +8,14 @@ export type LibraryFilter = {
   bpmMax?: number | null;
   energyMin?: number | null;
   energyMax?: number | null;
+  /** Minimum rekordbox stars, 1–5. 0 or unset leaves the rating open. */
+  ratingMin?: number | null;
+  /** 0 is no color. 1–8 is one rekordbox color. Unset leaves color open. */
+  color?: number | null;
+  /** Exact genre name from the loaded library. Empty leaves genre open. */
+  genre?: string | null;
+  /** Case-insensitive substring of the rekordbox comment. Empty leaves it open. */
+  comment?: string | null;
 };
 
 const NEIGHBORHOOD = new Set(["same", "relative", "adjacent"]);
@@ -38,7 +46,15 @@ export function boundOf(raw: string): number | null {
 }
 
 export function matchesLibraryFilter(
-  row: { key: string; bpm: string; energy?: number },
+  row: {
+    key: string;
+    bpm: string;
+    energy?: number;
+    rating?: number;
+    color?: number;
+    genre?: string;
+    comment?: string;
+  },
   filter: LibraryFilter,
 ): boolean {
   if (filter.key && !inCamelotNeighborhood(filter.key, row.key)) return false;
@@ -57,5 +73,16 @@ export function matchesLibraryFilter(
     if (energyMin != null && row.energy < energyMin) return false;
     if (energyMax != null && row.energy > energyMax) return false;
   }
+  const ratingMin = filter.ratingMin ?? null;
+  if (ratingMin != null && ratingMin > 0) {
+    if (row.rating == null || row.rating < ratingMin) return false;
+  }
+  if (filter.color != null) {
+    if ((row.color ?? 0) !== filter.color) return false;
+  }
+  const genre = filter.genre?.trim();
+  if (genre && (row.genre ?? "") !== genre) return false;
+  const comment = filter.comment?.trim().toLowerCase();
+  if (comment && !(row.comment ?? "").toLowerCase().includes(comment)) return false;
   return true;
 }

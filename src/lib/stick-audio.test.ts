@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  addRememberedStickFiles,
   forgetStickFiles,
+  getStickMediaEpoch,
   isStickAudioPath,
   lookupRememberedStickFile,
   matchStickFile,
@@ -41,4 +43,22 @@ test("stickArtworkUrl resolves Collection JPEGs and stickAudioUrl ignores them",
   forgetStickFiles();
   assert.equal(stickFileCount(), 0);
   assert.equal(stickAudioUrl("/Contents/Night Drive.mp3"), null);
+});
+
+test("addRememberedStickFiles keeps audio already in the session", () => {
+  const mp3 = fileWithPath("Night Drive.mp3", "Contents/Night Drive.mp3", [0xff, 0xfb, 1]);
+  rememberStickFiles([mp3]);
+  const audio = stickAudioUrl("/Contents/Night Drive.mp3");
+  const jpeg = fileWithPath(
+    "a90_m.jpg",
+    "PIONEER/Artwork/00005/a90_m.jpg",
+    [0xff, 0xd8, 0xff, 2],
+  );
+  const mediaEpoch = getStickMediaEpoch();
+  addRememberedStickFiles([jpeg]);
+  assert.equal(stickAudioUrl("/Contents/Night Drive.mp3"), audio);
+  assert.equal(getStickMediaEpoch(), mediaEpoch);
+  assert.ok(stickArtworkUrl("/PIONEER/Artwork/00005/a90_m.jpg")?.startsWith("blob:"));
+  forgetStickFiles();
+  assert.equal(getStickMediaEpoch(), mediaEpoch + 1);
 });

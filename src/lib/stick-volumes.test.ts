@@ -2,12 +2,15 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { volumePath } from "./stick-eject.ts";
 import {
+  artworkContentType,
   cachedPdbCounts,
   confineToVolume,
   isSafeVolumeName,
   listPioneerVolumes,
   resolveUnderVolume,
+  stickArtworkCandidates,
   stickVolumeName,
+  volumeArtworkUrl,
 } from "./stick-volumes.ts";
 
 test("volume names match the eject allow-list and skip the Mac disk", () => {
@@ -116,4 +119,23 @@ test("playlist counts are not parsed again when mtime and size match", () => {
   assert.equal(reads, 1);
   assert.deepEqual(cachedPdbCounts(cache, "ChrisleBeat", 101, 5, load), { tracks: 10, playlists: 2 });
   assert.equal(reads, 2);
+});
+
+test("artwork URLs drop the device slash and try the larger sibling first", () => {
+  assert.deepEqual(stickArtworkCandidates("/PIONEER/Artwork/00227/a4531.jpg"), [
+    "PIONEER/Artwork/00227/a4531_m.jpg",
+    "PIONEER/Artwork/00227/a4531.jpg",
+  ]);
+  assert.deepEqual(stickArtworkCandidates("PIONEER/Artwork/00227/a4531_m.jpg"), [
+    "PIONEER/Artwork/00227/a4531_m.jpg",
+  ]);
+  assert.deepEqual(stickArtworkCandidates("/Contents/Song.mp3"), []);
+  assert.deepEqual(stickArtworkCandidates("/PIONEER/../Artwork/a.jpg"), []);
+  assert.equal(artworkContentType("PIONEER/Artwork/00227/a4531_m.jpg"), "image/jpeg");
+  assert.equal(
+    volumeArtworkUrl("LE_BACKUP", "/PIONEER/Artwork/00227/a4531.jpg"),
+    "/api/desktop/artwork?name=LE_BACKUP&path=PIONEER%2FArtwork%2F00227%2Fa4531.jpg",
+  );
+  assert.equal(volumeArtworkUrl("../etc", "/PIONEER/Artwork/a.jpg"), null);
+  assert.equal(volumeArtworkUrl("LE_BACKUP", "/Contents/Song.mp3"), null);
 });

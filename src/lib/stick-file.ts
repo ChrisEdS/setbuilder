@@ -7,7 +7,13 @@ import { id3PrefixLength } from "@/lib/openkey/decode-window";
 import { artworkFromId3, energyLevelFromId3 } from "@/lib/openkey/writeEnergy";
 import { hasKnownEnergy } from "@/lib/energy";
 import type { EnergySource, SetDraft } from "@/lib/set";
-import { lookupRememberedStickFile, rememberArtworkBlob } from "@/lib/stick-audio";
+import {
+  addRememberedStickFiles,
+  getStickFilesEpoch,
+  lookupRememberedStickFile,
+  rememberArtworkBlob,
+  stickArtworkUrl,
+} from "@/lib/stick-audio";
 import type { DirLike, FileLike } from "@/lib/rekordbox-stick-write";
 import {
   loadPersistedStickHandle,
@@ -15,6 +21,7 @@ import {
   stickPermission,
   type PersistableDir,
 } from "@/lib/stick-session";
+import { savedVolumeHandle } from "@/lib/stick-volume-client";
 
 export type StickTrackFile = {
   file: File;
@@ -120,6 +127,84 @@ export async function resolveTrackAudio(
     handle: null,
     relativePath: remembered.webkitRelativePath || remembered.name,
   };
+}
+
+const artworkMiss = new Set<string>();
+const artworkInflight = new Set<string>();
+let artworkEpoch = -1;
+
+function artworkCached(path: string): boolean {
+  const large = path.replace(/(\.[a-z]+)$/i, "_m$1");
+  return Boolean((large !== path && stickArtworkUrl(large)) || stickArtworkUrl(path));
+}
+
+async function resolveArtworkFile(roots: DirLike[], path: string): Promise<File | null> {
+  const large = path.replace(/(\.[a-z]+)$/i, "_m$1");
+  const candidates = large !== path ? [large, path] : [path];
+  for (const root of roots) {
+    for (const candidate of candidates) {
+      try {
+        const file = await resolveStickFile(root, candidate);
+        if (file && file.size > 0) return file;
+      } catch {
+        /* The other size, or the other stick root, may still have it. */
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Read Artwork-folder JPEGs for library rows that are not already in memory.
+ * A full folder pick already holds them; a volume reconnect only hydrated the set.
+ */
+export async function rememberLibraryArtwork(paths: readonly string[]): Promise<void> {
+  const epoch = getStickFilesEpoch();
+  if (artworkEpoch !== epoch) {
+    artworkMiss.clear();
+    artworkEpoch = epoch;
+  }
+  const missing = [...new Set(paths.map((path) => path.trim()).filter(Boolean))].filter(
+    (path) => !artworkCached(path) && !artworkMiss.has(path) && !artworkInflight.has(path),
+  );
+  if (!missing.length) return;
+  for (const path of missing) artworkInflight.add(path);
+  let attempted = false;
+  try {
+    const roots: DirLike[] = [];
+    const volume = savedVolumeHandle();
+    if (volume) roots.push(volume);
+    try {
+      const persisted = await loadPersistedStickHandle();
+      if (
+        persisted &&
+        !roots.includes(persisted) &&
+        (await stickPermission(persisted, "read", false))
+      ) {
+        roots.push(persisted);
+      }
+    } catch {
+      /* The saved volume can still serve the jpegs. */
+    }
+    if (!roots.length) return;
+    attempted = true;
+    for (let index = 0; index < missing.length; index += 8) {
+      const slice = missing.slice(index, index + 8);
+      const files = (
+        await Promise.all(slice.map((path) => resolveArtworkFile(roots, path)))
+      ).filter((file): file is File => Boolean(file));
+      if (!files.length) continue;
+      addRememberedStickFiles(files);
+      artworkEpoch = getStickFilesEpoch();
+    }
+  } finally {
+    for (const path of missing) artworkInflight.delete(path);
+    if (attempted) {
+      for (const path of missing) {
+        if (!artworkCached(path)) artworkMiss.add(path);
+      }
+    }
+  }
 }
 
 /** MP3 / MPEG only — ID3 write is unsupported for other formats. */

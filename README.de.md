@@ -2,7 +2,9 @@
 
 **Deutsch** · [English](README.md)
 
-**Version 5.1.1**
+**Version 5.2.0**
+
+Die Bibliothek filtert nach Sternen, Farbe, Genre und Kommentar. Playlist-Namen öffnen als Liste unter dem Suchfeld. Ein fehlendes Cover nutzt die Noten-Kachel der Setliste. In der Playlist-Zeile bleibt die Trackzahl neben dem Titel, und „Als Set laden“ bleibt frei von der Scrollbar. Die Stick-Prüfung sagt, wenn neuere Player noch eine ältere Fassung zeigen. Die Detailfelder bleiben eine kurze Zeile, die Herkunftsmarke sitzt neben Details. Der Player öffnet in Light, Struktur hebt die gesetzten Cues hervor, und Analysieren bleibt in der Grid-Leiste.
 
 SETBUILDER baut ein DJ-Set aus einem rekordbox-USB-Stick. Du lädst eine Playlist oder eine History, legst die Nacht auf den Slot und prüfst Key, BPM und Energie. Danach schreibst du das Set zurück und hörst die Übergänge vor dem Gig. Die Oberfläche ist Deutsch und Englisch.
 
@@ -31,7 +33,7 @@ Einen rekordbox-USB-Stick verbinden (ein erkanntes Volume lädt ohne Ordner-Dial
 
 Für die Kabine gibt es ein PDF und kopierten Text. Für den Rechner rekordbox-XML und M3U.
 
-rekordbox allein braucht kein Konto. Spotify und Tidal sind optional. Die Weiterleitung ist `http://127.0.0.1:4317/api/auth/callback` (Tidal: `…/api/auth/tidal/callback`). Keys trägst du unter **Einstellungen** ein oder in `.env.local` ([`.env.example`](.env.example)).
+rekordbox allein braucht kein Konto. Spotify und Tidal sind optional. Die Desktop-Weiterleitung ist `http://127.0.0.1:4317/api/auth/callback` (Tidal: `…/api/auth/tidal/callback`). Für `npm run dev` auf Port **4327** denselben Port in der Weiterleitung verwenden. Keys trägst du unter **Einstellungen** ein oder in `.env.local` ([`.env.example`](.env.example)).
 
 ## Starten
 

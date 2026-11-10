@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { libraryTrackToSetTrack, rehydrateStickCovers, type StickTrack } from "./rekordbox-stick.ts";
+import {
+  coverUrl,
+  libraryTrackToSetTrack,
+  rehydrateStickCovers,
+  setTrackImageUrl,
+  type StickTrack,
+} from "./rekordbox-stick.ts";
 import { rememberStickFiles } from "./stick-audio.ts";
 import { DEFAULT_SET, type SetTrack } from "./set.ts";
 
@@ -119,6 +125,7 @@ test("rehydrateStickCovers uses Collection artwork files, not the MP3 path", () 
     }),
   ]);
   assert.ok(next.tracks[0].imageUrl?.startsWith("blob:"));
+  assert.ok(coverUrl("/PIONEER/Artwork/00001/a1.jpg", "LE_BACKUP")?.startsWith("blob:"));
   rememberStickFiles([]);
 });
 
@@ -148,4 +155,41 @@ test("rehydrateStickCovers leaves unmatched tracks alone", () => {
     stick({ id: "7", title: "Night Drive" }),
   ]);
   assert.equal(next, draft);
+});
+
+test("coverUrl serves the volume artwork route when the JPEG is not in memory", () => {
+  rememberStickFiles([]);
+  assert.equal(
+    coverUrl("/PIONEER/Artwork/00230/a4580.jpg", "LE_BACKUP"),
+    "/api/desktop/artwork?name=LE_BACKUP&path=PIONEER%2FArtwork%2F00230%2Fa4580.jpg",
+  );
+  assert.equal(coverUrl("", "LE_BACKUP"), null);
+  assert.equal(coverUrl("/PIONEER/Artwork/00230/a4580.jpg", null), null);
+  const covers = new Map([
+    [
+      "/contents/temple tears/bubble gum/temple tears - bubble gum.mp3",
+      "/api/desktop/artwork?name=LE_BACKUP&path=PIONEER%2FArtwork%2F00230%2Fa4580.jpg",
+    ],
+  ]);
+  assert.equal(
+    setTrackImageUrl(
+      {
+        imageUrl: null,
+        filePath: "/Contents/Temple Tears/Bubble Gum/Temple Tears - Bubble Gum.mp3",
+      },
+      covers,
+    ),
+    "/api/desktop/artwork?name=LE_BACKUP&path=PIONEER%2FArtwork%2F00230%2Fa4580.jpg",
+  );
+  assert.equal(
+    setTrackImageUrl(
+      { imageUrl: null, filePath: "/Contents/Peter Fox/Alles Neu.mp3" },
+      covers,
+    ),
+    null,
+  );
+  assert.equal(
+    setTrackImageUrl({ imageUrl: "https://i.scdn.co/ok.jpg", filePath: "" }, covers),
+    "https://i.scdn.co/ok.jpg",
+  );
 });

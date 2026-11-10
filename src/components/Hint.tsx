@@ -23,6 +23,8 @@ type TipProps = {
   end?: boolean;
   /** Use span inside phrasing parents (e.g. title line) so Tip stays valid HTML. */
   as?: "div" | "span";
+  /** Keep the bubble closed. Used while another popup owns this control. */
+  quiet?: boolean;
 };
 
 type BubblePos = {
@@ -127,6 +129,7 @@ export function Tip({
   className,
   end = false,
   as = "div",
+  quiet = false,
 }: TipProps) {
   const wrapRef = useRef<HTMLElement>(null);
   const Wrap = as;
@@ -147,6 +150,7 @@ export function Tip({
 
   const show = useCallback(
     (source: "pointer" | "focus" = "pointer") => {
+      if (quiet) return;
       if (hideTimer.current != null) {
         window.clearTimeout(hideTimer.current);
         hideTimer.current = null;
@@ -159,7 +163,7 @@ export function Tip({
         setOpen(true);
       }, delay);
     },
-    [],
+    [quiet],
   );
 
   const hide = useCallback(
@@ -200,6 +204,15 @@ export function Tip({
       if (showTimer.current != null) window.clearTimeout(showTimer.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (!quiet) return;
+    clearShow();
+    if (hideTimer.current != null) window.clearTimeout(hideTimer.current);
+    openRef.current = false;
+    setOpen(false);
+    setPos(null);
+  }, [quiet, clearShow]);
 
   const update = useCallback(() => {
     const wrap = wrapRef.current;

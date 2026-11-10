@@ -7,6 +7,10 @@
 
 const BLOCKED_NAMES = new Set(["Macintosh HD", "Macintosh HD - Data", "/", ""]);
 const SAFE_VOLUME = /^[A-Za-z0-9 ._-]{1,80}$/;
+const ARTWORK_FILE = /\.(jpe?g|png|gif|webp|bmp)$/i;
+
+/** localStorage key for the Pioneer volume the desktop API is reading. */
+export const SAVED_STICK_VOLUME = "setbuilder.stickVolume";
 
 export const PIONEER_PDB_RELATIVES = [
   "PIONEER/rekordbox/export.pdb",
@@ -185,6 +189,59 @@ export type PdbCountEntry = {
   mtimeMs: number;
   counts: PdbCounts | null;
 };
+
+/** Volume name saved by the desktop stick loader, or null in node and private mode. */
+export function readSavedVolumeName(): string | null {
+  const storage = globalThis.localStorage;
+  if (!storage) return null;
+  try {
+    const value = storage.getItem(SAVED_STICK_VOLUME)?.trim() ?? "";
+    return isSafeVolumeName(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Rekordbox artwork path with the device slash removed.
+ * Rejects anything that is not an image under the stick, including `..`.
+ */
+export function stickArtworkRelative(artworkPath: string): string | null {
+  if (artworkPath.includes("\0")) return null;
+  const relative = artworkPath.replaceAll("\\", "/").replace(/^\/+/, "");
+  if (!relative || !ARTWORK_FILE.test(relative)) return null;
+  const parts = relative.split("/");
+  if (parts.some((part) => part.length === 0 || part === "." || part === "..")) return null;
+  return relative;
+}
+
+/** Larger `_m` sibling first, then the path rekordbox stored. Already-large paths stay once. */
+export function stickArtworkCandidates(artworkPath: string): string[] {
+  const relative = stickArtworkRelative(artworkPath);
+  if (!relative) return [];
+  if (/_m\.[^.]+$/i.test(relative)) return [relative];
+  const large = relative.replace(/(\.[^.]+)$/i, "_m$1");
+  return large === relative ? [relative] : [large, relative];
+}
+
+export function artworkContentType(path: string): string | null {
+  const ext = /\.([a-z0-9]+)$/i.exec(path)?.[1]?.toLowerCase() ?? "";
+  if (ext === "jpg" || ext === "jpeg") return "image/jpeg";
+  if (ext === "png") return "image/png";
+  if (ext === "webp") return "image/webp";
+  if (ext === "gif") return "image/gif";
+  if (ext === "bmp") return "image/bmp";
+  return null;
+}
+
+/** Same-origin URL for a cover on a mounted Pioneer volume. Null when the path is not an image. */
+export function volumeArtworkUrl(volume: string, artworkPath: string): string | null {
+  const name = volume.trim();
+  if (!isSafeVolumeName(name)) return null;
+  const relative = stickArtworkRelative(artworkPath);
+  if (!relative) return null;
+  return `/api/desktop/artwork?name=${encodeURIComponent(name)}&path=${encodeURIComponent(relative)}`;
+}
 
 /**
  * Returns the cached parse when size and mtime match. `load` runs only on a miss

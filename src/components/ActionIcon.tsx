@@ -8,6 +8,7 @@ type ActionIconName =
   | "energy"
   | "replace"
   | "exchange"
+  | "place"
   | "opener"
   | "closer"
   | "pin"
@@ -74,6 +75,16 @@ export function ActionIcon({ name }: { name: ActionIconName }) {
         <path d="M4 17h5" />
         <path d="M16.5 6.5a4.5 4.5 0 0 1 0 11" />
         <path d="m14.2 15.2 2.3 2.3 2.3-2.3" />
+      </>
+    ),
+    // Arrow into a slot = Einsetzen (alternative into the set).
+    place: (
+      <>
+        <path d="M4 6h7" />
+        <path d="M4 12h7" />
+        <path d="M4 18h7" />
+        <path d="M14 12h6" />
+        <path d="m17 9 3 3-3 3" />
       </>
     ),
     opener: (

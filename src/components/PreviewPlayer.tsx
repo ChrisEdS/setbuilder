@@ -19,11 +19,11 @@ import { TrackArt } from "@/components/TrackArt";
 import { ActionIcon } from "@/components/ActionIcon";
 import { playerNeighbors } from "@/lib/player-queue";
 import {
-  getStickFilesEpoch,
+  getStickMediaEpoch,
   isPlayableStickAudio,
   lookupStickAudio,
   stickAudioBaseName,
-  subscribeStickFiles,
+  subscribeStickMedia,
 } from "@/lib/stick-audio";
 import {
   getPreviewTransportSnapshot,
@@ -78,8 +78,8 @@ function useIsClient() {
   );
 }
 
-function useStickFilesEpoch() {
-  return useSyncExternalStore(subscribeStickFiles, getStickFilesEpoch, () => 0);
+function useStickMediaEpoch() {
+  return useSyncExternalStore(subscribeStickMedia, getStickMediaEpoch, () => 0);
 }
 
 function useStickHandleEpoch() {
@@ -150,6 +150,11 @@ type Props = {
   /** Fired when stick-backed preview audio fails after it had a playable source. */
   onStickMediaLost?: () => void;
   onCues?: (id: string, cues: TrackCue[]) => void;
+  /**
+   * Increments when the setlist starts the player. Each bump opens Light.
+   * Next and previous keep whatever Light state the listener left.
+   */
+  lightEpoch?: number;
 };
 
 function listed(ids: readonly string[] | undefined, id: string): boolean {
@@ -334,6 +339,8 @@ function PreviewDock({
   rehearsal,
   actions,
   onCues,
+  light,
+  onLight,
 }: {
   track: PlayTrack;
   tracks: PlayTrack[];
@@ -351,6 +358,8 @@ function PreviewDock({
   rehearsal?: Rehearsal | null;
   actions?: PlayerTrackActions | null;
   onCues?: (id: string, cues: TrackCue[]) => void;
+  light: boolean;
+  onLight: (on: boolean) => void;
 }) {
   const { t } = useI18n();
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -370,7 +379,6 @@ function PreviewDock({
   const [phrasesMissing, setPhrasesMissing] = useState(false);
   const [quantize, setQuantize] = useState(true);
   const [showGrid, setShowGrid] = useState(true);
-  const [light, setLight] = useState(false);
   const [gridNotice, setGridNotice] = useState<string | null>(null);
   const [gridAnalyzing, setGridAnalyzing] = useState(false);
   const [gridUndo, setGridUndo] = useState<AnlzBeat[] | null | undefined>(undefined);
@@ -1302,7 +1310,7 @@ function PreviewDock({
               showGrid={showGrid}
               onShowGrid={setShowGrid}
               light={light}
-              onLight={setLight}
+              onLight={onLight}
               phrases={phrases}
               phrasesReady={gridMissing || phrasesMissing || phrases !== null}
               phraseNote={phrasesMissing ? t("crates.player.phrasesMissing") : null}
@@ -1499,16 +1507,30 @@ export function PreviewPlayer({
   actions,
   onStickMediaLost,
   onCues,
+  lightEpoch = 0,
 }: Props) {
   const isClient = useIsClient();
-  const stickEpoch = useStickFilesEpoch();
+  const stickEpoch = useStickMediaEpoch();
   const [place, setPlace] = useState<PlayerPlace | null>(null);
   const [width, setWidth] = useState<number | null>(null);
   const [height, setHeight] = useState<number | null>(null);
   const [heightFor, setHeightFor] = useState(currentId);
+  // Kept above the per-track dock so next/previous stay in Light.
+  const [light, setLight] = useState(false);
+  const [seenLightEpoch, setSeenLightEpoch] = useState(lightEpoch);
+  const playerOpen = Boolean(currentId);
+  const [lightOpen, setLightOpen] = useState(playerOpen);
   if (currentId !== heightFor) {
     setHeightFor(currentId);
     setHeight(null);
+  }
+  if (lightEpoch !== seenLightEpoch) {
+    setSeenLightEpoch(lightEpoch);
+    setLight(true);
+  }
+  if (playerOpen !== lightOpen) {
+    setLightOpen(playerOpen);
+    if (!playerOpen) setLight(false);
   }
   const track = tracks.find((item) => item.id === currentId) ?? null;
   if (!isClient || !track) return null;
@@ -1532,6 +1554,8 @@ export function PreviewPlayer({
       rehearsal={rehearsal}
       actions={actions}
       onCues={onCues}
+      light={light}
+      onLight={setLight}
     />,
     document.body,
   );

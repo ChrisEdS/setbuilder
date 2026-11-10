@@ -1,11 +1,18 @@
 import { distributeRoles } from "@/lib/extract-set";
 import { uniqueIncomingDraftTracks } from "@/lib/draft-codec";
 import { stickArtworkUrl } from "@/lib/stick-audio";
+import { readSavedVolumeName, volumeArtworkUrl } from "@/lib/stick-volumes";
 import { energyFromRekordboxTags, hasKnownEnergy } from "@/lib/energy";
 import { tDe, type Translate } from "@/lib/i18n/core";
 import { LocalizedError } from "@/lib/i18n/error";
 import { parseKeyValue } from "@/lib/key-import";
-import { parseRekordboxPdb, type PdbLibrary, type PdbTrack } from "@/lib/rekordbox-pdb";
+import {
+  parseRekordboxPdb,
+  rekordboxColorFromAttribute,
+  rekordboxStarsFromAttribute,
+  type PdbLibrary,
+  type PdbTrack,
+} from "@/lib/rekordbox-pdb";
 import {
   PHASES,
   type SetDraft,
@@ -30,6 +37,12 @@ export type StickTrack = {
   filePath: string;
   /** Cover path from the stick's Artwork folder (export.pdb only) */
   artworkPath?: string;
+  /** Star rating 0–5 from export.pdb or the XML Rating attribute. */
+  rating?: number;
+  /** Track color 0–8. 0 or missing is no color. */
+  color?: number;
+  /** Genre name. Empty when the track has none. */
+  genre?: string;
 };
 
 export type RekordboxStickSet = {
@@ -289,6 +302,9 @@ function toStickTrack(track: PdbTrack): StickTrack {
     }),
     filePath: track.filePath,
     artworkPath: track.artworkPath,
+    rating: track.rating,
+    color: track.color,
+    genre: track.genre,
   };
 }
 
@@ -366,12 +382,42 @@ export function rehydrateStickCovers(draft: SetDraft, library: StickTrack[]): Se
   return changed ? { ...draft, tracks } : draft;
 }
 
-/** Blob URL for the cover file the browser still holds from the stick folder. */
-function coverUrl(artworkPath: string | undefined): string | null {
+/**
+ * Cover for a rekordbox artwork path.
+ * A folder pick wins when that JPEG is already in memory. Otherwise the saved
+ * Pioneer volume is served by the local artwork route — a directory handle is
+ * not an image URL the page can request. `volumeName` is for tests.
+ */
+export function coverUrl(artworkPath: string | undefined, volumeName?: string | null): string | null {
   if (!artworkPath) return null;
   // Prefer the larger _m variant (a1_m.jpg), fall back to the 80px original.
   const large = artworkPath.replace(/(\.[a-z]+)$/i, "_m$1");
-  return stickArtworkUrl(large) || stickArtworkUrl(artworkPath);
+  const remembered = stickArtworkUrl(large) || stickArtworkUrl(artworkPath);
+  if (remembered) return remembered;
+  const volume = volumeName === undefined ? readSavedVolumeName() : volumeName;
+  if (!volume) return null;
+  return volumeArtworkUrl(volume, artworkPath);
+}
+
+/** file path → cover URL for stick tracks that actually have an artwork path. */
+export function stickCoversByFile(library: readonly StickTrack[]): Map<string, string> {
+  const covers = new Map<string, string>();
+  for (const stick of library) {
+    if (!stick.filePath || !stick.artworkPath) continue;
+    const url = coverUrl(stick.artworkPath);
+    if (!url) continue;
+    covers.set(pathKey(stick.filePath), url);
+  }
+  return covers;
+}
+
+/** Stick cover when this track has one. A catalog image stays when the stick has none. */
+export function setTrackImageUrl(
+  track: { imageUrl: string | null; filePath?: string },
+  covers: ReadonlyMap<string, string>,
+): string | null {
+  const fromStick = track.filePath ? covers.get(pathKey(track.filePath)) : undefined;
+  return fromStick || track.imageUrl || null;
 }
 
 /** Audio and artwork paths the current set still needs from the stick. */
@@ -420,6 +466,10 @@ export function stickLibraryRows(
     key: track.keyCamelot || track.keyRaw,
     bpm: track.bpm,
     energy: track.energyLevel,
+    rating: track.rating,
+    color: track.color,
+    genre: track.genre,
+    comment: track.comment,
     playlists: playlistsByTrackId.get(track.id) ?? [],
     stick: track,
   }));
@@ -680,6 +730,11 @@ function setsFromXml(xml: string): RekordboxStickSet[] {
         remixer: node.getAttribute("Remixer"),
       }),
       filePath: decodeXmlLocation(node.getAttribute("Location") || ""),
+      rating: rekordboxStarsFromAttribute(node.getAttribute("Rating")),
+      color: rekordboxColorFromAttribute(
+        node.getAttribute("Colour") ?? node.getAttribute("Color"),
+      ),
+      genre: node.getAttribute("Genre") || "",
     });
   }
 

@@ -28,7 +28,7 @@ const de = {
   "analysis.relation.clash": "Key-Clash",
   "analysis.relation.clash.short": "Clash",
   "analysis.relation.clash.hint":
-    "Keys liegen weit auseinander. Melodien beißen sich, außer du brichst, filterst oder EQst. Sortieren, tauschen oder den Key ändern senkt die Zahl.",
+    "Keys liegen weit auseinander. Orientierung, kein Fehler: Break, Filter oder EQ halten den Übergang, wenn du ihn so willst. Sortieren, tauschen oder den Key ändern verschiebt die Lage.",
   "analysis.relation.unknown": "Key offen",
   "analysis.relation.unknown.short": "Offen",
   "analysis.relation.unknown.hint":
@@ -169,11 +169,11 @@ const de = {
     "Anteil der Performance-Tracks mit Camelot-Key. Ohne Key zählt der Übergang nicht im Mix-Score. In der Setliste setzen.",
   "analysis.harmonic.statScore": "Mix-Score",
   "analysis.harmonic.statScoreHint":
-    "Mittel aller Übergänge: Key und Energie zu gleichen Teilen, plus eine kleine BPM-Korrektur. Über 75 % ist weich, unter 50 % knallt es oft. Sortieren, ziehen oder Key/Energie ändern das.",
+    "Orientierung, kein Qualitätsurteil. Mittel aller Übergänge: Key und Energie zu gleichen Teilen, plus eine kleine BPM-Korrektur. Über 75 % liegen die Keys eng, unter 50 % oft weiter auseinander. Sortieren, ziehen oder Key/Energie ändern die Zahl.",
   "analysis.harmonic.statClashes.one": "Key-Clash",
   "analysis.harmonic.statClashes.other": "Key-Clashes",
   "analysis.harmonic.statClashesHint":
-    "Übergänge, deren Keys auf dem Camelot-Wheel weit auseinanderliegen. Melodien beißen sich, außer du brichst oder EQst. Sortieren, tauschen oder den Key ändern senkt die Zahl.",
+    "Übergänge, deren Keys auf dem Camelot-Wheel weit auseinanderliegen. Orientierung: ein Break oder EQ kann helfen, muss aber nicht. Sortieren, tauschen oder den Key ändern verschiebt die Lage.",
   "analysis.harmonic.camelotHint":
     "{key}: A = Moll (kräftiger), B = Dur (heller). Gleicher Key, ±1 oder A↔B auf derselben Zahl mischt weich. In der Setliste ändern.",
   "analysis.harmonic.camelotOpenHint":
@@ -181,11 +181,11 @@ const de = {
   "analysis.harmonic.advice.ok":
     "Mix-Score {score} % — die Keys liegen nah beieinander. Reihenfolge, Key oder Energie in der Setliste ändern das.",
   "analysis.harmonic.advice.mid":
-    "Mix-Score {score} % — mehrere Übergänge sind weit. Sortieren oder einzelne Keys in der Setliste ändern hebt die Zahl.",
+    "Mix-Score {score} % — Orientierung: mehrere Übergänge liegen weit. Sortieren oder einzelne Keys in der Setliste ändern die Lage, wenn du das willst.",
   "analysis.harmonic.advice.clashes":
-    "{clashes} Clashes, Mix-Score {score} %. Ein Clash heißt: der nächste Key ist weit weg. Sortieren, den Track tauschen oder den Key ändern senkt die Zahl.",
+    "{clashes} weite Key-Abstände, Mix-Score {score} %. Orientierung, kein Fehler: der nächste Key liegt weit. Sortieren, tauschen oder den Key ändern verschiebt die Lage.",
   "analysis.harmonic.advice.clashOne":
-    "1 Clash, Mix-Score {score} %. Ein Clash heißt: der nächste Key ist weit weg. Sortieren, den Track tauschen oder den Key ändern löst ihn.",
+    "1 weiter Key-Abstand, Mix-Score {score} %. Orientierung, kein Fehler: der nächste Key liegt weit. Sortieren, tauschen oder den Key ändern verschiebt die Lage.",
   "analysis.harmonic.emptyTitle": "Noch kein Set.",
   "analysis.harmonic.emptyHint":
     "Zuerst eine Playlist vom Stick laden, dann erscheint hier der Key-Verlauf.",
@@ -227,7 +227,7 @@ const en: Record<keyof typeof de, string> = {
   "analysis.relation.clash": "Harmonic clash",
   "analysis.relation.clash.short": "Clash",
   "analysis.relation.clash.hint":
-    "Keys sit far apart. Melodies fight unless you break, filter or EQ. Sorting, swapping or changing the key lowers the number.",
+    "Keys sit far apart. A guide, not a fault: a break, filter or EQ can hold the join if you want it. Sorting, swapping or changing the key moves the layout.",
   "analysis.relation.unknown": "Key unknown",
   "analysis.relation.unknown.short": "Open",
   "analysis.relation.unknown.hint":
@@ -362,11 +362,11 @@ const en: Record<keyof typeof de, string> = {
     "Share of performance tracks that have a Camelot key. Without a key the transition does not count in the mix score. Set it in the setlist.",
   "analysis.harmonic.statScore": "Mix score",
   "analysis.harmonic.statScoreHint":
-    "Average of every transition: key and energy in equal parts, plus a small BPM correction. Above 75 % is smooth, below 50 % often clashes. Sorting, dragging or changing key/energy changes this.",
+    "A guide, not a quality score. Average of every transition: key and energy in equal parts, plus a small BPM correction. Above 75 % the keys sit close, below 50 % they are often farther apart. Sorting, dragging or changing key/energy changes the number.",
   "analysis.harmonic.statClashes.one": "Clash",
   "analysis.harmonic.statClashes.other": "Clashes",
   "analysis.harmonic.statClashesHint":
-    "Transitions whose keys sit far apart on the Camelot wheel. Melodies fight unless you break or EQ. Sorting, swapping or changing the key lowers the number.",
+    "Transitions whose keys sit far apart on the Camelot wheel. A guide: a break or EQ can help, it does not have to. Sorting, swapping or changing the key moves the layout.",
   "analysis.harmonic.camelotHint":
     "{key}: A = minor (stronger), B = major (lighter). Same key, ±1 or A↔B on the same number mix smoothly. Change it in the setlist.",
   "analysis.harmonic.camelotOpenHint":
@@ -374,11 +374,11 @@ const en: Record<keyof typeof de, string> = {
   "analysis.harmonic.advice.ok":
     "Mix score {score} % — the keys sit close together. Order, key or energy in the setlist change this.",
   "analysis.harmonic.advice.mid":
-    "Mix score {score} % — several transitions are far. Sorting or changing a key in the setlist raises the number.",
+    "Mix score {score} % — a guide: several transitions sit far apart. Sorting or changing a key in the setlist moves the layout if you want that.",
   "analysis.harmonic.advice.clashes":
-    "{clashes} clashes, mix score {score} %. A clash means the next key is far away. Sorting, swapping the track or changing the key lowers the number.",
+    "{clashes} wide key gaps, mix score {score} %. A guide, not a fault: the next key sits far away. Sorting, swapping or changing the key moves the layout.",
   "analysis.harmonic.advice.clashOne":
-    "1 clash, mix score {score} %. A clash means the next key is far away. Sorting, swapping the track or changing the key resolves it.",
+    "1 wide key gap, mix score {score} %. A guide, not a fault: the next key sits far away. Sorting, swapping or changing the key moves the layout.",
   "analysis.harmonic.emptyTitle": "No set yet.",
   "analysis.harmonic.emptyHint":
     "Load a playlist from the stick first, then the key path shows up here.",

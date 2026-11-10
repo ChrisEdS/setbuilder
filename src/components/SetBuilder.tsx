@@ -24,6 +24,7 @@ import {
   useState,
   useSyncExternalStore,
   useTransition,
+  type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import { ConnectionSetup } from "@/components/ConnectionSetup";
 import { FieldNoticeView, type FieldNotice } from "@/components/FieldNotice";
@@ -35,6 +36,7 @@ import { StickSetList, type StickStatusSlice } from "@/components/RekordboxStick
 import { GigReadyDialog } from "@/components/GigReadyDialog";
 import { PlaylistLoadDialog } from "@/components/PlaylistLoadDialog";
 import { ResetSetDialog } from "@/components/ResetSetDialog";
+import { ReshuffleConfirmDialog } from "@/components/ReshuffleConfirmDialog";
 import {
   isStickLostDialogHidden,
   StickDisconnectDialog,
@@ -64,6 +66,8 @@ import {
   readRekordboxStick,
   rehydrateStickCovers,
   reshufflePoolForDraft,
+  setTrackImageUrl,
+  stickCoversByFile,
   sourcePoolFromStickLibrary,
   stickLibraryPoolCount,
   stickLibraryRows,
@@ -457,6 +461,10 @@ function historyLibraryRows(sets: RekordboxStickSet[]): LibraryRow[] {
         key: track.keyCamelot || track.keyRaw,
         bpm: track.bpm,
         energy: track.energyLevel,
+        rating: track.rating,
+        color: track.color,
+        genre: track.genre,
+        comment: track.comment,
         stick: track,
       });
     }
@@ -468,6 +476,31 @@ function poolOffer(count: number, performanceCount: number): PoolOffer {
   if (count < 2) return { ready: false, reason: "missing" };
   if (count <= performanceCount) return { ready: false, reason: "small" };
   return { ready: true, count };
+}
+
+function moveTab<T extends string>(
+  event: ReactKeyboardEvent<HTMLElement>,
+  ids: readonly T[],
+  current: T,
+  select: (id: T) => void,
+) {
+  const key = event.key;
+  if (key !== "ArrowRight" && key !== "ArrowLeft" && key !== "Home" && key !== "End") {
+    return;
+  }
+  event.preventDefault();
+  const index = Math.max(0, ids.indexOf(current));
+  const nextIndex =
+    key === "Home"
+      ? 0
+      : key === "End"
+        ? ids.length - 1
+        : key === "ArrowRight"
+          ? (index + 1) % ids.length
+          : (index - 1 + ids.length) % ids.length;
+  select(ids[nextIndex]);
+  const buttons = event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]');
+  buttons[nextIndex]?.focus();
 }
 
 export function SetBuilder() {
@@ -517,6 +550,8 @@ export function SetBuilder() {
   const [tidalConnected, setTidalConnected] = useState<boolean | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
   const [focusTrackId, setFocusTrackId] = useState<string | null>(null);
+  /** Bumped when the setlist opens the player, so that open starts in Light. */
+  const [setlistLightEpoch, setSetlistLightEpoch] = useState(0);
   const previewTransport = useSyncExternalStore(
     subscribePreviewTransport,
     getPreviewTransportSnapshot,
@@ -574,6 +609,16 @@ export function SetBuilder() {
   const [trimUndo, setTrimUndo] = useState<TrimRestore[] | null>(null);
   /** Full draft before the last Sortieren that actually changed order. */
   const [sortUndo, setSortUndo] = useState<SetDraft | null>(null);
+  /** Full draft before the last extract or reshuffle. */
+  const [automationUndo, setAutomationUndo] = useState<{
+    kind: "extract" | "reshuffle";
+    draft: SetDraft;
+  } | null>(null);
+  const [pendingReshuffle, setPendingReshuffle] = useState<{
+    pool: SourcePoolTrack[];
+    keepPlaylistPool: boolean;
+    body: string;
+  } | null>(null);
   const [replaceFor, setReplaceFor] = useState<string | null>(null);
   const [exchangeFor, setExchangeFor] = useState<string | null>(null);
   const [placeFor, setPlaceFor] = useState<string | null>(null);
@@ -1239,10 +1284,13 @@ export function SetBuilder() {
         throw new Error(data.error || t("builder.fail.extract"));
       }
 
+      const before = readStoredDraft();
       setDraft({
         ...data.draft,
-        notes: data.draft.notes ?? draft.notes,
+        notes: data.draft.notes ?? before.notes,
       });
+      setAutomationUndo({ kind: "extract", draft: before });
+      setSortUndo(null);
       setRoleFilter("all");
       const performanceCount = (data.draft.tracks ?? []).filter(
         (track) => track.role !== "safety",
@@ -1818,6 +1866,11 @@ export function SetBuilder() {
     section?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  function startSetlistPlayer(id: string) {
+    setSetlistLightEpoch((epoch) => epoch + 1);
+    setFocusTrackId(id);
+  }
+
   function playLibraryTrack(track: SetTrack) {
     if (previewTransport.trackId === track.id && previewTransport.playing) {
       requestPreviewPause();
@@ -1848,12 +1901,12 @@ export function SetBuilder() {
       requestPreviewResume();
       return;
     }
-    setFocusTrackId(track.id);
+    startSetlistPlayer(track.id);
   }
 
   function rehearseTrack(track: SetTrack) {
     setRehearsal(true);
-    setFocusTrackId(track.id);
+    startSetlistPlayer(track.id);
   }
 
   function patchTrack(id: string, patch: Partial<SetTrack>) {
@@ -2027,6 +2080,20 @@ export function SetBuilder() {
     getStickFilesEpoch,
     () => 0,
   );
+  const stickCovers = useMemo(
+    () => stickCoversByFile(libraryRows.flatMap((row) => (row.stick ? [row.stick] : []))),
+    [libraryRows, stickFilesEpoch],
+  );
+  const playerTracks = useMemo(() => {
+    const list =
+      libraryPreview && !draft.tracks.some((item) => item.id === libraryPreview.id)
+        ? [...draft.tracks, libraryPreview]
+        : draft.tracks;
+    return list.map((item) => {
+      const imageUrl = setTrackImageUrl(item, stickCovers);
+      return imageUrl === item.imageUrl ? item : { ...item, imageUrl };
+    });
+  }, [draft.tracks, libraryPreview, stickCovers]);
 
   const pendingChecks = useMemo(() => {
     // Epoch bumps after rememberStickFiles / hydrateStickMedia; keep it read so
@@ -2772,24 +2839,34 @@ export function SetBuilder() {
           : choice.fromStick
             ? "builder.tool.reshuffleConfirmStick"
             : "builder.tool.reshuffleConfirm";
-    if (!window.confirm(t(confirmKey, { pool: choice.pool.length }))) {
-      return;
-    }
+    setPendingReshuffle({
+      pool: choice.pool,
+      keepPlaylistPool: choice.keepPlaylistPool,
+      body: t(confirmKey, { pool: choice.pool.length }),
+    });
+  }
+
+  function confirmReshuffle() {
+    const pending = pendingReshuffle;
+    if (!pending) return;
+    setPendingReshuffle(null);
+    const before = readStoredDraft();
     beginWork(t("builder.status.reshuffling"));
-    const pool = choice.pool;
-    const keepPlaylistPool = choice.keepPlaylistPool;
+    const pool = pending.pool;
+    const keepPlaylistPool = pending.keepPlaylistPool;
     window.setTimeout(() => {
       try {
         const next = reshuffleDraftFromPool(
-          { ...current, sourcePool: pool },
+          { ...before, sourcePool: pool },
           t,
         );
         // Stick library/history draws must not overwrite a stored playlist pool.
         setDraft(
           keepPlaylistPool
             ? next
-            : { ...next, sourcePool: current.sourcePool },
+            : { ...next, sourcePool: before.sourcePool },
         );
+        setAutomationUndo({ kind: "reshuffle", draft: before });
         setSortUndo(null);
         setFocusTrackId(null);
         endWork(
@@ -2802,6 +2879,16 @@ export function SetBuilder() {
         endWork(null);
       }
     }, 0);
+  }
+
+  function undoAutomation() {
+    if (!automationUndo) return;
+    const kind = automationUndo.kind;
+    setDraft(automationUndo.draft);
+    setAutomationUndo(null);
+    setStatus(
+      t(kind === "extract" ? "builder.extract.undoDone" : "builder.reshuffle.undoDone"),
+    );
   }
 
   async function runEnergyScan(
@@ -3299,11 +3386,10 @@ export function SetBuilder() {
               <div className="setups-inline">
                 <input
                   value={draft.title}
+                  readOnly
                   placeholder={t("builder.brief.titlePlaceholder")}
-                  onChange={(event) =>
-                    setDraft((current) => ({ ...current, title: event.target.value }))
-                  }
                   aria-label={t("builder.setups.nameAria")}
+                  title={t("builder.setups.nameHint")}
                 />
                 <button type="button" className="btn" onClick={saveSetup}>
                   {t("common.save")}
@@ -3547,6 +3633,7 @@ export function SetBuilder() {
             <input
               value={draft.title}
               placeholder={t("builder.brief.titlePlaceholder")}
+              aria-label={t("builder.brief.title")}
               onChange={(e) =>
                 setDraft((c) => ({ ...c, title: e.target.value }))
               }
@@ -3902,7 +3989,17 @@ export function SetBuilder() {
                     </div>
                   )}
 
-                  <div className="seg crate-add-tabs" role="tablist" aria-label={t("builder.add.tabsAria")}>
+                  <div
+                    className="seg crate-add-tabs"
+                    role="tablist"
+                    aria-label={t("builder.add.tabsAria")}
+                    onKeyDown={(event) =>
+                      moveTab(event, ["link", "search", "manual", "auto"] as const, addTab, (id) => {
+                        setAddTab(id);
+                        clearNotice();
+                      })
+                    }
+                  >
                     {(["link", "search", "manual", "auto"] as const).map((id, index, all) => (
                       <Tip
                         key={id}
@@ -3912,7 +4009,10 @@ export function SetBuilder() {
                         <button
                           type="button"
                           role="tab"
+                          id={`add-tab-${id}`}
+                          tabIndex={addTab === id ? 0 : -1}
                           aria-selected={addTab === id}
+                          aria-controls={`add-panel-${id}`}
                           className={addTab === id ? "seg-item active" : "seg-item"}
                           onClick={() => {
                             setAddTab(id);
@@ -3925,7 +4025,12 @@ export function SetBuilder() {
                     ))}
                   </div>
 
-                  <div className="crate-add-panel">
+                  <div
+                    className="crate-add-panel"
+                    id={`add-panel-${addTab}`}
+                    role="tabpanel"
+                    aria-labelledby={`add-tab-${addTab}`}
+                  >
               {addTab === "search" ? (
                 <>
                   <form
@@ -4203,7 +4308,14 @@ export function SetBuilder() {
 
           <div className="set-chrome">
             <div className="set-bar">
-              <div className="seg crate-view-tabs" role="tablist" aria-label={t("builder.view.aria")}>
+              <div
+                className="seg crate-view-tabs"
+                role="tablist"
+                aria-label={t("builder.view.aria")}
+                onKeyDown={(event) =>
+                  moveTab(event, ["list", "roles", "keys"] as const, crateView, setCrateView)
+                }
+              >
                 {(["list", "roles", "keys"] as const).map((id, index, all) => (
                   <Tip
                     key={id}
@@ -4213,6 +4325,8 @@ export function SetBuilder() {
                     <button
                       type="button"
                       role="tab"
+                      id={`set-tab-${id}`}
+                      tabIndex={crateView === id ? 0 : -1}
                       aria-selected={crateView === id}
                       aria-controls={`set-view-${id}`}
                       className={crateView === id ? "seg-item active" : "seg-item"}
@@ -4262,6 +4376,12 @@ export function SetBuilder() {
                 open={resetOpen}
                 onClose={() => setResetOpen(false)}
                 onConfirm={confirmReset}
+              />
+              <ReshuffleConfirmDialog
+                open={pendingReshuffle !== null}
+                body={pendingReshuffle?.body ?? ""}
+                onClose={() => setPendingReshuffle(null)}
+                onConfirm={confirmReshuffle}
               />
               <StickDisconnectDialog
                 open={stickLostOpen}
@@ -4365,6 +4485,39 @@ export function SetBuilder() {
           <FieldNoticeView notice={localNotice("library")} />
           <FieldNoticeView notice={localNotice("export")} />
 
+          {automationUndo ? (
+            <div className="set-undo stick-reload" role="status">
+              <div className="stick-reload-copy">
+                <strong className="set-undo-title">
+                  {t(
+                    automationUndo.kind === "extract"
+                      ? "builder.extract.undoTitle"
+                      : "builder.reshuffle.undoTitle",
+                  )}
+                </strong>
+                <p className="set-undo-meta">
+                  {t(
+                    automationUndo.kind === "extract"
+                      ? "builder.extract.undoBody"
+                      : "builder.reshuffle.undoBody",
+                  )}
+                </p>
+              </div>
+              <div className="stick-reload-actions">
+                <button type="button" className="btn" onClick={undoAutomation}>
+                  {t("builder.sort.undo")}
+                </button>
+                <button
+                  type="button"
+                  className="btn ghost"
+                  onClick={() => setAutomationUndo(null)}
+                >
+                  {t("builder.sort.dismiss")}
+                </button>
+              </div>
+            </div>
+          ) : null}
+
           {sortUndo ? (
             <div className="set-undo stick-reload" role="status">
               <div className="stick-reload-copy">
@@ -4457,7 +4610,14 @@ export function SetBuilder() {
           ) : null}
 
           {crateView === "list" ? (
-            <div id="set-view-list" className="crate-view crate-list" role="tabpanel">
+            <div
+              id="set-view-list"
+              className="crate-view crate-list"
+              role="tabpanel"
+              aria-labelledby="set-tab-list"
+            >
+              <p className="crate-action-legend">{t("builder.list.actionLegend")}</p>
+              <p className="crate-action-legend">{t("builder.list.pinLegend")}</p>
               <div className="crate-list-head">
                 {visibleTimeline.length > 0 ? (
                 <div
@@ -4700,20 +4860,15 @@ export function SetBuilder() {
                         <button
                           type="button"
                           className="manual-select"
-                          onClick={() => setFocusTrackId(track.id)}
+                          onClick={() => startSetlistPlayer(track.id)}
                         >
                           <TrackArt
-                            url={track.imageUrl}
+                            url={setTrackImageUrl(track, stickCovers)}
                             size={rowCompact ? 32 : 44}
                           />
                           <span className="manual-copy">
                             <span className="manual-title-line">
                               <strong title={track.name}>{track.name}</strong>
-                              <SourceBadge
-                                source={track.source}
-                                tip={t("builder.row.sourceTip")}
-                                inline
-                              />
                               {rowCompact && draft.openerId === track.id ? (
                                 <em className="anchor-pill is-opener">{t("builder.row.openerBadge")}</em>
                               ) : null}
@@ -4961,7 +5116,7 @@ export function SetBuilder() {
                                   );
                                 }}
                               >
-                                <ActionIcon name="replace" />
+                                <ActionIcon name="place" />
                               </button>
                             </Tip>
                           ) : (
@@ -5325,6 +5480,11 @@ export function SetBuilder() {
                           onClick={() => toggleTrackDetails(track.id)}
                         >
                           <span className="td-label">{t("builder.row.details")}</span>
+                          <SourceBadge
+                            source={track.source}
+                            tip={t("builder.row.sourceTip")}
+                            inline
+                          />
                           <span className="td-values">{trackDetailsSummary(track, t)}</span>
                         </button>
                         {track.role !== "safety" ? (
@@ -5402,13 +5562,20 @@ export function SetBuilder() {
                     >
                       <summary>
                         <span className="td-label">{t("builder.row.details")}</span>
+                        {rowCompact ? null : (
+                          <SourceBadge
+                            source={track.source}
+                            tip={t("builder.row.sourceTip")}
+                            inline
+                          />
+                        )}
                         <span className="td-values">{trackDetailsSummary(track, t)}</span>
                       </summary>
                     <label className="manual-comment">
                       <span>{t("builder.row.setNote")}</span>
                       <textarea
                         value={track.comment || ""}
-                        rows={2}
+                        rows={1}
                         placeholder={t("builder.row.setNotePlaceholder")}
                         title={t("builder.row.setNoteTip")}
                         onChange={(e) =>
@@ -5419,30 +5586,38 @@ export function SetBuilder() {
                       />
                     </label>
                     <div className="manual-extra">
-                      <input
-                        value={track.bpm}
-                        onChange={(e) =>
-                          patchTrack(track.id, { bpm: e.target.value })
-                        }
-                        placeholder={t("builder.row.bpmPlaceholder")}
-                        aria-label={t("builder.row.bpmAria", { name: track.name })}
-                        title={t("builder.row.bpmHint")}
-                      />
-                      <select
-                        value={track.keyCamelot}
-                        onChange={(e) =>
-                          patchTrack(track.id, { keyCamelot: e.target.value })
-                        }
-                        aria-label={t("builder.row.keyAria", { name: track.name })}
-                        title={t("builder.row.keyHint")}
-                      >
+                      <label className="manual-length">
+                        <span>{t("builder.row.bpmLabel")}</span>
+                        <input
+                          className="manual-bpm"
+                          value={track.bpm}
+                          onChange={(e) =>
+                            patchTrack(track.id, { bpm: e.target.value })
+                          }
+                          placeholder={t("builder.row.bpmPlaceholder")}
+                          aria-label={t("builder.row.bpmAria", { name: track.name })}
+                          title={t("builder.row.bpmHint")}
+                        />
+                      </label>
+                      <label className="manual-length">
+                        <span>{t("builder.row.keyLabel")}</span>
+                        <select
+                          className="manual-key"
+                          value={track.keyCamelot}
+                          onChange={(e) =>
+                            patchTrack(track.id, { keyCamelot: e.target.value })
+                          }
+                          aria-label={t("builder.row.keyAria", { name: track.name })}
+                          title={t("builder.row.keyHint")}
+                        >
                         <option value="">{t("builder.row.keyOption")}</option>
                         {CAMELOT_CODES.map((code) => (
                           <option key={code} value={code}>
                             {code}
                           </option>
                         ))}
-                      </select>
+                        </select>
+                      </label>
                       <select
                         value={hasKnownEnergy(track) ? (track.energyLevel ?? "") : ""}
                         onChange={(e) =>
@@ -5462,27 +5637,30 @@ export function SetBuilder() {
                         ))}
                       </select>
                       <div className="manual-transition">
-                        <select
-                          value={track.transition}
-                          onChange={(e) =>
-                            patchTrack(
-                              track.id,
-                              transitionOverlapPatch(e.target.value as TransitionVerb),
-                            )
-                          }
-                          aria-label={t("builder.row.transitionAria", { name: track.name })}
-                          title={t("builder.row.transitionHint")}
-                        >
-                          {TRANSITIONS.map((item) => (
-                            <option
-                              key={item.id}
-                              value={item.id}
-                              title={transitionHint(t, item.id)}
-                            >
-                              {transitionLabel(t, item.id)}
-                            </option>
-                          ))}
-                        </select>
+                        <label className="manual-length">
+                          <span>{t("builder.row.blendLabel")}</span>
+                          <select
+                            value={track.transition}
+                            onChange={(e) =>
+                              patchTrack(
+                                track.id,
+                                transitionOverlapPatch(e.target.value as TransitionVerb),
+                              )
+                            }
+                            aria-label={t("builder.row.transitionAria", { name: track.name })}
+                            title={t("builder.row.transitionHint")}
+                          >
+                            {TRANSITIONS.map((item) => (
+                              <option
+                                key={item.id}
+                                value={item.id}
+                                title={transitionHint(t, item.id)}
+                              >
+                                {transitionLabel(t, item.id)}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
                         <label className="manual-length">
                           <span>{t("builder.row.length")}</span>
                           <OverlapField
@@ -5509,7 +5687,7 @@ export function SetBuilder() {
           ) : null}
 
           {crateView === "roles" ? (
-            <div id="set-view-roles" className="crate-view" role="tabpanel">
+            <div id="set-view-roles" className="crate-view" role="tabpanel" aria-labelledby="set-tab-roles">
           <RoleCrates
             embedded
             tracks={draft.tracks}
@@ -5565,7 +5743,7 @@ export function SetBuilder() {
           ) : null}
 
           {crateView === "keys" ? (
-            <div id="set-view-keys" className="crate-view" role="tabpanel">
+            <div id="set-view-keys" className="crate-view" role="tabpanel" aria-labelledby="set-tab-keys">
       <section className="curve" aria-label={t("builder.curve.aria")}>
         <div className="curve-head">
           <h2>{t("builder.curve.title")}</h2>
@@ -5721,12 +5899,9 @@ export function SetBuilder() {
       </details>
 
       <PreviewPlayer
-        tracks={
-          libraryPreview && !draft.tracks.some((item) => item.id === libraryPreview.id)
-            ? [...draft.tracks, libraryPreview]
-            : draft.tracks
-        }
+        tracks={playerTracks}
         currentId={focusTrackId}
+        lightEpoch={setlistLightEpoch}
         onChange={(id) => setFocusTrackId(id)}
         onClose={() => {
           setFocusTrackId(null);
@@ -5734,7 +5909,12 @@ export function SetBuilder() {
         }}
         blendMs={blendMs}
         onStickMediaLost={() => reportStickLost(true)}
-        onCues={(id, cues) => patchTrack(id, { cues })}
+        onCues={(id, cues) => {
+          patchTrack(id, { cues });
+          // A library or pool preview is not in the set. The player reads that
+          // copy, so cue edits have to land here or Structure looks dead.
+          setLibraryPreview((current) => (current?.id === id ? { ...current, cues } : current));
+        }}
         rehearsal={
           rehearsal
             ? {

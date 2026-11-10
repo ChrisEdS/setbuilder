@@ -18,7 +18,7 @@ const de = {
     "Musik lässt sich analysieren und planen – aber Gehör, Gefühl und Floor entscheiden. SETBUILDER gibt Orientierung, macht Übergänge sichtbar und liefert Ideen. Nutze es als Hilfe – und vertraue dann deinen Ohren.",
   "builder.hero.lede":
     "SETBUILDER formt aus dem Rekordbox-Stick ein Set: Playlist oder History laden, den Bogen nach Slot und Dauer legen, Key und BPM prüfen. Spotify, Tidal und Beatport ergänzen, wenn ein Track noch nicht auf dem Stick liegt.",
-  "builder.brief.aria": "Set brief",
+  "builder.brief.aria": "Set-Angaben",
   "builder.brief.title": "Titel",
   "builder.brief.titlePlaceholder": "Nachtlinie 01",
   "builder.brief.vibe": "Vibe / Genre-Arc",
@@ -236,7 +236,7 @@ const de = {
     "Anchor, Bridge, Groove und Alternativen als Spalten. Titel zwischen Rollen ziehen.",
   "builder.view.keys.label": "Bogen",
   "builder.view.keys.hint":
-    "Phasen im Slot, Energie pro Track und Camelot-Keys entlang der Reihenfolge, mit Mix-Score und Clashes.",
+    "Phasen im Slot, Energie pro Track und Camelot-Keys entlang der Reihenfolge. Mix-Score und weite Key-Abstände sind Orientierung, kein Urteil.",
   "builder.tool.sort": "Sortieren",
   "builder.tool.sortTip":
     "Ordnet die Performance neu — Harmonie, Energie oder Phasen. Opener, Closer und Pins bleiben an ihrer Stelle. Behaltene Tracks dürfen verschoben werden.",
@@ -329,7 +329,7 @@ const de = {
     "{count} gesetzte Level in die Dateien schreiben. Key, BPM und Audio bleiben.",
   "builder.sort.perfect": "Perfekt · Max Score",
   "builder.sort.perfectHint":
-    "Ganzes Set: exakter Camelot-TSP (Held-Karp ≤18, sonst NN+2-opt/Or-opt). Clashes zuerst killen, dann Mix-Score. Opener/Closer bleiben. Phasen danach neu.",
+    "Ganzes Set: exakter Camelot-TSP (Held-Karp ≤18, sonst NN+2-opt/Or-opt). Zuerst engere Keys, dann Mix-Score. Orientierung, kein Zwang. Opener/Closer bleiben. Phasen danach neu.",
   "builder.sort.perfectPins": "Perfekt · nur Pins",
   "builder.sort.perfectPinsHint":
     "Gepinnte Tracks bleiben genau an ihrer Stelle. Dieser Sortiervorgang verschiebt sie nicht. Opener/Closer bleiben. Alternativen bleiben draußen.",
@@ -427,12 +427,12 @@ const de = {
   "builder.row.energyRedoAria": "Energie für {name} neu messen",
   "builder.row.energyMenu.measure": "Neu messen",
   "builder.row.energyMenu.set": "Energie setzen",
-  "builder.row.replace": "Ersatz",
+  "builder.row.replace": "Ersetzen",
   "builder.row.replaceTitle":
-    "Ersatz aus deinen Alternativen oder aus der Bibliothek, passend zu Vorgänger und Nachfolger",
+    "Ersetzen: anderer Track an dieser Stelle, aus Alternativen oder der Bibliothek, passend zu Vorgänger und Nachfolger",
   "builder.row.exchange": "Tauschen",
   "builder.row.exchangeTitle":
-    "Songs aus der geladenen Playlist, die an dieser Stelle zu Key, BPM und Energie passen",
+    "Tauschen: Song aus der geladenen Playlist, der an dieser Stelle zu Key, BPM und Energie passt",
   "builder.row.exchangeMissing":
     "Keine Playlist verfügbar — Stick-Playlist als Set laden oder eine Playlist extrahieren.",
   "builder.row.setOpener": "Opener",
@@ -481,9 +481,13 @@ const de = {
   "builder.row.excludeBadge": "Raus",
   "builder.row.excludeBadgeTip":
     "Ausgeschlossen. Bleibt durch Kürzen, Auffüllen und Andere Songs außerhalb der Performance.",
-  "builder.row.placeInSet": "Ins Set",
+  "builder.row.placeInSet": "Einsetzen",
   "builder.row.placeInSetTip":
-    "Alternative vor oder nach einem Song der aktuellen Playlist setzen.",
+    "Einsetzen: Alternative vor oder nach einem Song der aktuellen Playlist setzen.",
+  "builder.list.actionLegend":
+    "Ersetzen nimmt einen anderen Track an diese Stelle. Tauschen holt aus der Playlist. Einsetzen bringt eine Alternative ins Set.",
+  "builder.list.pinLegend":
+    "Behalten: bleibt im Set, Sortieren darf schieben. Pin: hält genau diesen Slot.",
   "builder.place.ariaLabel": "Alternative ins Set setzen",
   "builder.place.title": "Ins Set setzen",
   "builder.place.target": "{name}",
@@ -538,6 +542,9 @@ const de = {
   "builder.row.transitionHint":
     "Wie du in den nächsten Track gehst: Long Blend weich, EQ oder Break bei Clash, Reset wenn die Energie fällt.",
   "builder.row.transitionAria": "Übergang für {name}",
+  "builder.row.bpmLabel": "BPM",
+  "builder.row.keyLabel": "Key",
+  "builder.row.blendLabel": "Blend",
   "builder.row.length": "Länge",
   "builder.row.overlapHint": "Überlappung für die Spielzeit. Frei oder aus der Liste.",
 
@@ -597,8 +604,9 @@ const de = {
   "builder.setups.intro": "Brief sichern, Setup laden, optional Spotify und Tidal verbinden.",
   "builder.setups.sectionBrief": "Brief & Setup",
   "builder.setups.sectionServices": "Dienste",
-  "builder.setups.name": "Name",
-  "builder.setups.nameAria": "Setup-Name",
+  "builder.setups.name": "Titel",
+  "builder.setups.nameAria": "Set-Titel aus dem Brief oben",
+  "builder.setups.nameHint": "Ändern im Brief oben. Hier wird derselbe Titel gespeichert.",
   "builder.setups.stored": "Gespeicherter Stand",
   "builder.setups.selectAria": "Gespeichertes Setup",
   "builder.setups.choose": "Wählen…",
@@ -688,6 +696,19 @@ const de = {
   "builder.sort.undo": "Rückgängig",
   "builder.sort.dismiss": "Lassen",
   "builder.sort.undoDone": "Vorherige Reihenfolge wiederhergestellt.",
+  "builder.reshuffle.confirmTitle": "Neue Songs?",
+  "builder.reshuffle.confirmNext":
+    "Du kannst die vorherige Setliste danach einmal zurückholen, inklusive Notizen.",
+  "builder.reshuffle.cancel": "Abbrechen",
+  "builder.reshuffle.go": "Neu setzen",
+  "builder.reshuffle.undoTitle": "Neue Songs gesetzt",
+  "builder.reshuffle.undoBody":
+    "Die vorherige Setliste (inkl. Notizen) kann einmal zurückgeholt werden.",
+  "builder.reshuffle.undoDone": "Vorheriges Set wiederhergestellt.",
+  "builder.extract.undoTitle": "Set aus Playlist ersetzt",
+  "builder.extract.undoBody":
+    "Die vorherige Setliste (inkl. Notizen) kann einmal zurückgeholt werden.",
+  "builder.extract.undoDone": "Vorheriges Set wiederhergestellt.",
   "builder.status.reshuffle.done":
     "Neue Auswahl aus dem Pool ({pool}): {tracks} Performance-Tracks. Bogen und Alternativen prüfen.",
   "builder.status.reshuffle.unavailable":
@@ -1031,7 +1052,7 @@ const en: Record<keyof typeof de, string> = {
     "Anchor, Bridge, Groove and Alternatives as columns. Drag tracks between roles.",
   "builder.view.keys.label": "Arc",
   "builder.view.keys.hint":
-    "Phases in the slot, energy per track and Camelot keys along the order, with mix score and clashes.",
+    "Phases in the slot, energy per track and Camelot keys along the order. Mix score and wide key gaps are a guide, not a verdict.",
   "builder.tool.sort": "Sort",
   "builder.tool.sortTip":
     "Reorders the performance — harmony, energy or phases. Opener, closer and pins stay in place. Kept tracks may move.",
@@ -1124,7 +1145,7 @@ const en: Record<keyof typeof de, string> = {
     "Write {count} set levels into the files. Key, BPM and audio stay.",
   "builder.sort.perfect": "Perfect · Max score",
   "builder.sort.perfectHint":
-    "Whole set: exact Camelot TSP (Held-Karp ≤18, else NN+2-opt/Or-opt). Kill clashes first, then max mix score. Opener/closer stay. Phases re-laid after.",
+    "Whole set: exact Camelot TSP (Held-Karp ≤18, else NN+2-opt/Or-opt). Prefer closer keys first, then mix score. A guide, not a rule. Opener/closer stay. Phases re-laid after.",
   "builder.sort.perfectPins": "Perfect · pins only",
   "builder.sort.perfectPinsHint":
     "Pinned tracks stay exactly where they are. This sort does not move them. Opener and closer stay. Alternatives stay out.",
@@ -1223,10 +1244,10 @@ const en: Record<keyof typeof de, string> = {
   "builder.row.energyMenu.set": "Set energy",
   "builder.row.replace": "Replace",
   "builder.row.replaceTitle":
-    "Replacement from your Alternatives or the library, matched to the previous and next track",
+    "Replace: another track in this slot, from Alternatives or the library, matched to the previous and next track",
   "builder.row.exchange": "Exchange",
   "builder.row.exchangeTitle":
-    "Songs from the loaded playlist that fit key, BPM and energy at this position",
+    "Exchange: a song from the loaded playlist that fits key, BPM and energy at this position",
   "builder.row.exchangeMissing":
     "No playlist available — load a stick playlist as a set, or extract a playlist.",
   "builder.row.setOpener": "Opener",
@@ -1275,9 +1296,13 @@ const en: Record<keyof typeof de, string> = {
   "builder.row.excludeBadge": "Out",
   "builder.row.excludeBadgeTip":
     "Excluded. Stays out of the performance through trim, refill and Different songs.",
-  "builder.row.placeInSet": "Into set",
+  "builder.row.placeInSet": "Insert",
   "builder.row.placeInSetTip":
-    "Put this Alternative before or after a song in the current playlist.",
+    "Insert: put this Alternative before or after a song in the current playlist.",
+  "builder.list.actionLegend":
+    "Replace puts another track in this slot. Exchange takes one from the playlist. Insert brings an Alternative into the set.",
+  "builder.list.pinLegend":
+    "Keep: stays in the set, sorting may move it. Pin: holds this exact slot.",
   "builder.place.ariaLabel": "Place Alternative in the set",
   "builder.place.title": "Place in set",
   "builder.place.target": "{name}",
@@ -1332,6 +1357,9 @@ const en: Record<keyof typeof de, string> = {
   "builder.row.transitionHint":
     "How you go into the next track: long blend when it's smooth, EQ or a break on a clash, a reset when energy drops.",
   "builder.row.transitionAria": "Transition for {name}",
+  "builder.row.bpmLabel": "BPM",
+  "builder.row.keyLabel": "Key",
+  "builder.row.blendLabel": "Blend",
   "builder.row.length": "Length",
   "builder.row.overlapHint": "Overlap used for playing time. Free or from the list.",
 
@@ -1389,8 +1417,9 @@ const en: Record<keyof typeof de, string> = {
   "builder.setups.intro": "Save the brief, load a setup, optionally connect Spotify and Tidal.",
   "builder.setups.sectionBrief": "Brief & setup",
   "builder.setups.sectionServices": "Services",
-  "builder.setups.name": "Name",
-  "builder.setups.nameAria": "Setup name",
+  "builder.setups.name": "Title",
+  "builder.setups.nameAria": "Set title from the brief above",
+  "builder.setups.nameHint": "Edit it in the brief above. Saving uses that same title.",
   "builder.setups.stored": "Saved state",
   "builder.setups.selectAria": "Saved setup",
   "builder.setups.choose": "Choose…",
@@ -1478,6 +1507,19 @@ const en: Record<keyof typeof de, string> = {
   "builder.sort.undo": "Undo",
   "builder.sort.dismiss": "Keep it",
   "builder.sort.undoDone": "Previous order restored.",
+  "builder.reshuffle.confirmTitle": "Different songs?",
+  "builder.reshuffle.confirmNext":
+    "You can bring the previous set list back once afterwards, including notes.",
+  "builder.reshuffle.cancel": "Cancel",
+  "builder.reshuffle.go": "Rebuild",
+  "builder.reshuffle.undoTitle": "Different songs applied",
+  "builder.reshuffle.undoBody":
+    "The previous set list (including notes) can be brought back once.",
+  "builder.reshuffle.undoDone": "Previous set restored.",
+  "builder.extract.undoTitle": "Set replaced from playlist",
+  "builder.extract.undoBody":
+    "The previous set list (including notes) can be brought back once.",
+  "builder.extract.undoDone": "Previous set restored.",
   "builder.status.reshuffle.done":
     "New pick from the pool ({pool}): {tracks} performance tracks. Check the arc and Alternatives.",
   "builder.status.reshuffle.unavailable":

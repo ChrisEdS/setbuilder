@@ -334,6 +334,7 @@ export function WaveformDeck({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overviewRef = useRef<HTMLCanvasElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+  const cueRowRef = useRef<HTMLDivElement>(null);
   const elapsedRef = useRef<HTMLSpanElement>(null);
   const playheadRef = useRef<HTMLSpanElement>(null);
   const overviewPlayRef = useRef<HTMLSpanElement>(null);
@@ -351,6 +352,9 @@ export function WaveformDeck({
   const [editing, setEditing] = useState<number | null>(null);
   const [cueUndo, setCueUndo] = useState<TrackCue[] | null>(null);
   const [structureNote, setStructureNote] = useState<string | null>(null);
+  const [litSlots, setLitSlots] = useState<number[] | null>(null);
+  const litShow = useRef<number | null>(null);
+  const litClear = useRef<number | null>(null);
   const [undoSession, setUndoSession] = useState(cueSession);
   const [gridOpen, setGridOpen] = useState(false);
   const [canResetGrid, setCanResetGrid] = useState(false);
@@ -358,6 +362,7 @@ export function WaveformDeck({
     setUndoSession(cueSession);
     setCueUndo(null);
     setStructureNote(null);
+    setLitSlots(null);
     setGridOpen(false);
     setCanResetGrid(false);
   }
@@ -577,6 +582,12 @@ export function WaveformDeck({
     return () => window.removeEventListener("keydown", onKey);
   }, [cues, onCues, onPlay, bpm]);
   useEffect(() => stopHold, []);
+  useEffect(() => {
+    return () => {
+      if (litShow.current != null) window.clearTimeout(litShow.current);
+      if (litClear.current != null) window.clearTimeout(litClear.current);
+    };
+  }, []);
 
   const win = waveformWindow(zoom, viewStart, padRatio);
   const shown = drag ? cues.map((cue) => (cue.slot === drag.slot ? { ...cue, timeMs: drag.timeMs } : cue)) : cues;
@@ -751,6 +762,29 @@ export function WaveformDeck({
     onCues(cues.filter((cue) => cue.slot !== slot));
   }
 
+  function revealStructure(slots: number[]) {
+    if (litClear.current != null) window.clearTimeout(litClear.current);
+    if (litShow.current != null) window.clearTimeout(litShow.current);
+    setLitSlots(null);
+    litShow.current = window.setTimeout(() => {
+      litShow.current = null;
+      setLitSlots(slots);
+    }, 30);
+    litClear.current = window.setTimeout(() => {
+      litClear.current = null;
+      setLitSlots(null);
+    }, 1600);
+    window.requestAnimationFrame(() => {
+      const row = cueRowRef.current;
+      const scroller = row?.closest(".preview-body");
+      if (!row || !(scroller instanceof HTMLElement)) return;
+      const rowBox = row.getBoundingClientRect();
+      const box = scroller.getBoundingClientRect();
+      if (rowBox.bottom > box.bottom + 1) scroller.scrollTop += rowBox.bottom - box.bottom;
+      else if (rowBox.top < box.top) scroller.scrollTop -= box.top - rowBox.top;
+    });
+  }
+
   function placeStructure() {
     if (!phrasesReady) return;
     const next = structureCues(phrases, gridMarks, quantize);
@@ -760,9 +794,9 @@ export function WaveformDeck({
       return;
     }
     const named = next.map((cue) => ({ slot: cue.slot, timeMs: cue.timeMs, name: t(STRUCTURE_KEY[cue.label]) }));
-    if (named.length === cues.length && named.every((cue) => cues.some((item) => item.slot === cue.slot && item.timeMs === cue.timeMs && item.name === cue.name))) {
-      return;
-    }
+    const same = named.length === cues.length && named.every((cue) => cues.some((item) => item.slot === cue.slot && item.timeMs === cue.timeMs && item.name === cue.name));
+    revealStructure(named.map((cue) => cue.slot));
+    if (same) return;
     setCueUndo((current) => current ?? cues.map((cue) => ({ ...cue })));
     setStructureNote(null);
     onCues(named);
@@ -828,7 +862,7 @@ export function WaveformDeck({
         </div>
         <div className="preview-tool-group">
           <Tip text={t("crates.player.structureTip")} disabled={!phrasesReady}>
-            <button type="button" aria-label={t("crates.player.structure")} disabled={!phrasesReady} onClick={placeStructure}>
+            <button type="button" className={litSlots?.length ? "is-structure" : undefined} aria-label={t("crates.player.structure")} disabled={!phrasesReady} onClick={placeStructure}>
               {t("crates.player.structure")}
             </button>
           </Tip>
@@ -868,19 +902,18 @@ export function WaveformDeck({
         <div className="preview-grid-panel" role="group" aria-label={t("crates.player.gridPanel")}>
           {fromFile ? (
             <span className="preview-grid-bpm">{t("crates.player.gridBpm", { bpm: bpmText })}</span>
-          ) : (
-            <Tip text={t("crates.player.gridAnalyzeTip")} disabled={!canAnalyzeGrid}>
-              <button
-                type="button"
-                className="preview-grid-analyze"
-                aria-label={t("crates.player.gridAnalyze")}
-                disabled={!canAnalyzeGrid}
-                onClick={onAnalyzeGrid}
-              >
-                {t("crates.player.gridAnalyze")}
-              </button>
-            </Tip>
-          )}
+          ) : null}
+          <Tip text={t("crates.player.gridAnalyzeTip")} disabled={!canAnalyzeGrid}>
+            <button
+              type="button"
+              className="preview-grid-analyze"
+              aria-label={t("crates.player.gridAnalyze")}
+              disabled={!canAnalyzeGrid}
+              onClick={onAnalyzeGrid}
+            >
+              {t("crates.player.gridAnalyze")}
+            </button>
+          </Tip>
           <div className="preview-grid-nudge">
             {(
               [
@@ -1052,7 +1085,7 @@ export function WaveformDeck({
           <button
             key={cue.slot}
             type="button"
-            className="preview-cue-mark"
+            className={litSlots?.includes(cue.slot) ? "preview-cue-mark is-structure" : "preview-cue-mark"}
             style={{ left: `${place(cue.timeMs / 1000)}%`, color: cueColor(cue.slot) }}
             title={cue.name || t("crates.player.cueName", { letter: cueLetter(cue.slot) })}
             onPointerDown={(event) => {
@@ -1099,7 +1132,7 @@ export function WaveformDeck({
       </div>
       {light ? null : (
       <div className="preview-cue-block">
-      <div className="preview-cue-row" role="group" aria-label={t("crates.player.cueName", { letter: "A–H" })}>
+      <div ref={cueRowRef} className="preview-cue-row" role="group" aria-label={t("crates.player.cueName", { letter: "A–H" })}>
         {Array.from({ length: CUE_SLOT_COUNT }, (_, slot) => {
           const cue = cues.find((item) => item.slot === slot);
           const letter = cueLetter(slot);
@@ -1111,7 +1144,7 @@ export function WaveformDeck({
           return (
             <span
               key={slot}
-              className={cue ? "preview-cue-pad is-set" : "preview-cue-pad"}
+              className={["preview-cue-pad", cue ? "is-set" : "", litSlots?.includes(slot) ? "is-structure" : ""].filter(Boolean).join(" ")}
               style={cue ? { borderColor: cueColor(slot), color: cueColor(slot) } : undefined}
             >
               {editing === slot && cue ? (

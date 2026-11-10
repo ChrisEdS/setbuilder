@@ -8,6 +8,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
   type RefObject,
 } from "react";
@@ -25,9 +26,17 @@ import { bestFollowId, rankFitsAfter } from "@/lib/replace-track";
 import { Tip } from "@/components/Hint";
 import { RekordboxStick, type StickStatusSlice } from "@/components/RekordboxStick";
 import { StickReloadBanner } from "@/components/StickReloadBanner";
+import { REKORDBOX_COLOR_HEX } from "@/lib/rekordbox-pdb";
 import type { RekordboxStickSet } from "@/lib/rekordbox-stick";
-import { libraryRowTrackId, libraryTrackToSetTrack, type StickTrack } from "@/lib/rekordbox-stick";
-import { stickFileCount } from "@/lib/stick-audio";
+import {
+  coverUrl,
+  libraryRowTrackId,
+  libraryTrackToSetTrack,
+  type StickTrack,
+} from "@/lib/rekordbox-stick";
+import { getStickFilesEpoch, stickFileCount, subscribeStickFiles } from "@/lib/stick-audio";
+import { rememberLibraryArtwork } from "@/lib/stick-file";
+import { getStickHandleEpoch, subscribeStickHandle } from "@/lib/stick-session";
 import { errorText, phaseLabel, roleLabel } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n/react";
 import {
@@ -63,6 +72,14 @@ export type LibraryRow = {
   bpm: string;
   /** Energy Level 1–10 when the source has it */
   energy?: number;
+  /** rekordbox stars 0–5. Missing or 0 renders nothing and fails a star minimum. */
+  rating?: number;
+  /** Track color 0–8. 0 or missing is no color and renders no swatch. */
+  color?: number;
+  /** Genre name from the stick. Empty matches only “any”. */
+  genre?: string;
+  /** rekordbox comment. Filtered as a case-insensitive substring. */
+  comment?: string;
   /** Stick playlist / history names this track belongs to */
   playlists?: string[];
   stick?: StickTrack;
@@ -74,6 +91,17 @@ type SourceTab = "rekordbox" | "tidal" | "csv";
 const FIT_PAGE_SIZE = 5;
 /** Cap when browsing the whole library without a fit filter. */
 const LIBRARY_BROWSE_CAP = 48;
+
+const TRACK_COLORS = [
+  { id: 1, key: "library.filter.color.pink" },
+  { id: 2, key: "library.filter.color.red" },
+  { id: 3, key: "library.filter.color.orange" },
+  { id: 4, key: "library.filter.color.yellow" },
+  { id: 5, key: "library.filter.color.green" },
+  { id: 6, key: "library.filter.color.aqua" },
+  { id: 7, key: "library.filter.color.blue" },
+  { id: 8, key: "library.filter.color.purple" },
+] as const;
 
 const EXAMPLE = `Artist,Title,Key,BPM
 Floating Points,Ratio - Edit,8A,122
@@ -115,6 +143,29 @@ function playlistPickerLabels(rows: LibraryRow[]): string[] {
       return !all.has(label.slice(sep + 3));
     })
     .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+}
+
+/** Stick cover between play and title. Missing art keeps the setlist note tile. */
+function LibraryRowCover({ artworkPath }: { artworkPath?: string }) {
+  const url = coverUrl(artworkPath);
+  const [broken, setBroken] = useState<string | null>(null);
+  if (!url || broken === url) {
+    return <span className="library-row-cover art-fallback sm" aria-hidden="true" />;
+  }
+  return (
+    // Blob URLs from the stick folder; next/image cannot load them.
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      className="library-row-cover"
+      src={url}
+      alt=""
+      width={28}
+      height={28}
+      draggable={false}
+      decoding="async"
+      onError={() => setBroken(url)}
+    />
+  );
 }
 
 export function LibraryBrowser({
@@ -163,6 +214,8 @@ export function LibraryBrowser({
   const [addPhase, setAddPhase] = useState<SetPhaseId>("open");
   const [addRole, setAddRole] = useState<TrackRole>("groove");
   const [query, setQuery] = useState("");
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const [suggestIndex, setSuggestIndex] = useState(0);
   const [libraryToolsOpen, setLibraryToolsOpen] = useState(true);
   const libraryToolsId = useId();
   const [keyFilter, setKeyFilter] = useState("");
@@ -170,6 +223,10 @@ export function LibraryBrowser({
   const [bpmMax, setBpmMax] = useState("");
   const [energyMin, setEnergyMin] = useState("");
   const [energyMax, setEnergyMax] = useState("");
+  const [ratingMin, setRatingMin] = useState("");
+  const [colorFilter, setColorFilter] = useState("");
+  const [genreFilter, setGenreFilter] = useState("");
+  const [commentFilter, setCommentFilter] = useState("");
   const searchHintsId = useId();
   // The field updates immediately. Filtering and “fits after” ranking wait, so a
   // keystroke does not sort the whole stick library.
@@ -179,7 +236,11 @@ export function LibraryBrowser({
   const deferredBpmMax = useDeferredValue(bpmMax);
   const deferredEnergyMin = useDeferredValue(energyMin);
   const deferredEnergyMax = useDeferredValue(energyMax);
-  const deferredFilterKey = `${deferredKeyFilter}|${deferredBpmMin}|${deferredBpmMax}|${deferredEnergyMin}|${deferredEnergyMax}`;
+  const deferredRatingMin = useDeferredValue(ratingMin);
+  const deferredColor = useDeferredValue(colorFilter);
+  const deferredGenre = useDeferredValue(genreFilter);
+  const deferredComment = useDeferredValue(commentFilter);
+  const deferredFilterKey = `${deferredKeyFilter}|${deferredBpmMin}|${deferredBpmMax}|${deferredEnergyMin}|${deferredEnergyMax}|${deferredRatingMin}|${deferredColor}|${deferredGenre}|${deferredComment}`;
 
   const inSet = useMemo(
     () =>
@@ -189,6 +250,19 @@ export function LibraryBrowser({
     [draft.tracks],
   );
   const playlistOptions = useMemo(() => playlistPickerLabels(rows), [rows]);
+  const playlistSuggestions = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return playlistOptions;
+    return playlistOptions.filter((name) => name.toLowerCase().includes(q));
+  }, [playlistOptions, query]);
+  const genreOptions = useMemo(() => {
+    const names = new Set<string>();
+    for (const row of rows) {
+      const name = row.genre?.trim();
+      if (name) names.add(name);
+    }
+    return [...names].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+  }, [rows]);
   const playlistFilter = playlistOptions.find((name) => name === query) ?? "";
   const fitReference = useMemo(
     () => draft.tracks.find((track) => track.id === fitTo) ?? null,
@@ -221,6 +295,10 @@ export function LibraryBrowser({
         bpmMax: boundOf(deferredBpmMax),
         energyMin: boundOf(deferredEnergyMin),
         energyMax: boundOf(deferredEnergyMax),
+        ratingMin: deferredRatingMin ? Number(deferredRatingMin) : null,
+        color: deferredColor === "" ? null : Number(deferredColor),
+        genre: deferredGenre,
+        comment: deferredComment,
       }),
     );
     if (fitReference) {
@@ -240,6 +318,10 @@ export function LibraryBrowser({
     deferredBpmMax,
     deferredEnergyMin,
     deferredEnergyMax,
+    deferredRatingMin,
+    deferredColor,
+    deferredGenre,
+    deferredComment,
   ]);
 
   const fitPageCount = fitReference
@@ -260,6 +342,30 @@ export function LibraryBrowser({
       )
     : rankedLibrary;
   const canShowMoreMatches = Boolean(fitReference) && rankedLibrary.length > FIT_PAGE_SIZE;
+  const stickFilesEpoch = useSyncExternalStore(
+    subscribeStickFiles,
+    getStickFilesEpoch,
+    () => 0,
+  );
+  const stickHandleEpoch = useSyncExternalStore(
+    subscribeStickHandle,
+    getStickHandleEpoch,
+    () => 0,
+  );
+  const artworkKey = filteredLibrary
+    .map((row) => row.stick?.artworkPath?.trim() || "")
+    .filter(Boolean)
+    .join("\0");
+  useEffect(() => {
+    if (!artworkKey) return;
+    void rememberLibraryArtwork(artworkKey.split("\0"));
+  }, [artworkKey, stickFilesEpoch, stickHandleEpoch]);
+  useEffect(() => {
+    if (!suggestOpen) return;
+    document
+      .getElementById(`${searchHintsId}-opt-${suggestIndex}`)
+      ?.scrollIntoView({ block: "nearest" });
+  }, [suggestOpen, suggestIndex, searchHintsId]);
 
   if (rows.length === 0) return null;
 
@@ -284,21 +390,86 @@ export function LibraryBrowser({
             </button>
           </h3>
           <div className="library-browser-toolbar" id={libraryToolsId}>
-            <Tip text={t("library.browser.searchTip")} className="library-search-field">
+            <Tip
+              text={t("library.browser.searchTip")}
+              className="library-search-field"
+              quiet={suggestOpen}
+            >
               <input
                 value={query}
-                list={playlistOptions.length > 0 ? searchHintsId : undefined}
-                onChange={(event) => setQuery(event.target.value)}
+                role="combobox"
+                aria-expanded={suggestOpen && playlistSuggestions.length > 0}
+                aria-controls={searchHintsId}
+                aria-autocomplete="list"
+                aria-activedescendant={
+                  suggestOpen && playlistSuggestions[suggestIndex]
+                    ? `${searchHintsId}-opt-${suggestIndex}`
+                    : undefined
+                }
+                onFocus={() => {
+                  setSuggestIndex(0);
+                  setSuggestOpen(true);
+                }}
+                onBlur={() => setSuggestOpen(false)}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  setSuggestIndex(0);
+                  setSuggestOpen(true);
+                }}
+                onKeyDown={(event) => {
+                  if (playlistSuggestions.length === 0) return;
+                  if (event.key === "ArrowDown") {
+                    event.preventDefault();
+                    setSuggestOpen(true);
+                    setSuggestIndex((index) =>
+                      Math.min(playlistSuggestions.length - 1, suggestOpen ? index + 1 : 0),
+                    );
+                  } else if (event.key === "ArrowUp") {
+                    event.preventDefault();
+                    setSuggestOpen(true);
+                    setSuggestIndex((index) => Math.max(0, index - 1));
+                  } else if (event.key === "Enter" && suggestOpen) {
+                    event.preventDefault();
+                    const name = playlistSuggestions[suggestIndex];
+                    if (name) {
+                      setQuery(name);
+                      setSuggestOpen(false);
+                    }
+                  } else if (event.key === "Escape") {
+                    setSuggestOpen(false);
+                  }
+                }}
                 placeholder={t("library.browser.searchPlaceholder")}
                 aria-label={t("library.browser.searchAria")}
               />
             </Tip>
-            {playlistOptions.length > 0 ? (
-              <datalist id={searchHintsId}>
-                {playlistOptions.map((name) => (
-                  <option key={name} value={name} />
+            {suggestOpen && playlistSuggestions.length > 0 ? (
+              <ul
+                className="library-suggest"
+                id={searchHintsId}
+                role="listbox"
+                onMouseDown={(event) => event.preventDefault()}
+              >
+                {playlistSuggestions.map((name, index) => (
+                  <li key={name} role="presentation">
+                    <button
+                      type="button"
+                      id={`${searchHintsId}-opt-${index}`}
+                      role="option"
+                      aria-selected={index === suggestIndex}
+                      className={index === suggestIndex ? "is-active" : undefined}
+                      onMouseEnter={() => setSuggestIndex(index)}
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        setQuery(name);
+                        setSuggestOpen(false);
+                      }}
+                    >
+                      {name}
+                    </button>
+                  </li>
                 ))}
-              </datalist>
+              </ul>
             ) : null}
           </div>
           <div className="library-refine">
@@ -393,6 +564,56 @@ export function LibraryBrowser({
                 ))}
               </select>
             </label>
+            <label className="library-rating">
+              {t("library.filter.stars")}
+              <select
+                value={ratingMin}
+                onChange={(event) => setRatingMin(event.target.value)}
+              >
+                <option value="">{t("library.filter.starsAny")}</option>
+                <option value="1">1+</option>
+                <option value="2">2+</option>
+                <option value="3">3+</option>
+                <option value="4">4+</option>
+                <option value="5">5</option>
+              </select>
+            </label>
+            <label className="library-color">
+              {t("library.filter.color")}
+              <select
+                value={colorFilter}
+                onChange={(event) => setColorFilter(event.target.value)}
+              >
+                <option value="">{t("library.filter.colorAny")}</option>
+                <option value="0">{t("library.filter.colorNone")}</option>
+                {TRACK_COLORS.map((color) => (
+                  <option key={color.id} value={String(color.id)}>
+                    {t(color.key)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="library-genre">
+              {t("library.filter.genre")}
+              <select
+                value={genreFilter}
+                onChange={(event) => setGenreFilter(event.target.value)}
+              >
+                <option value="">{t("library.filter.genreAny")}</option>
+                {genreOptions.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="library-comment">
+              {t("library.filter.comment")}
+              <input
+                value={commentFilter}
+                onChange={(event) => setCommentFilter(event.target.value)}
+              />
+            </label>
           </div>
           {onAddTrack ? (
           <div className="library-add-bar">
@@ -477,6 +698,7 @@ export function LibraryBrowser({
                     {playing ? "❚❚" : "▶"}
                   </button>
                 ) : null}
+                <LibraryRowCover artworkPath={row.stick?.artworkPath} />
                 <div className="library-row-copy">
                   <strong>{row.title}</strong>
                   <em>
@@ -484,6 +706,23 @@ export function LibraryBrowser({
                     {row.bpm ? ` · ${row.bpm}` : ""}
                     {row.energy != null ? ` · E${row.energy}` : ""}
                   </em>
+                  {row.color != null && row.color >= 1 && row.color <= 8 ? (
+                    <span
+                      className="library-row-color"
+                      role="img"
+                      aria-label={t(TRACK_COLORS[row.color - 1].key)}
+                      style={{ background: REKORDBOX_COLOR_HEX[row.color] }}
+                    />
+                  ) : null}
+                  {row.rating != null && row.rating > 0 ? (
+                    <span
+                      className="library-row-stars"
+                      role="img"
+                      aria-label={t("library.row.stars", { n: row.rating })}
+                    >
+                      {"★".repeat(Math.min(5, row.rating))}
+                    </span>
+                  ) : null}
                   <span>{row.artist || t("common.unknown")}</span>
                 </div>
                 {onAddTrack ? (

@@ -5,9 +5,16 @@
 
 import type { PersistableDir } from "@/lib/stick-session";
 import type { FileLike } from "@/lib/rekordbox-stick-write";
-import { isSafeVolumeName, type PioneerVolumeInfo } from "@/lib/stick-volumes";
+import {
+  isSafeVolumeName,
+  readSavedVolumeName,
+  SAVED_STICK_VOLUME,
+  type PioneerVolumeInfo,
+} from "@/lib/stick-volumes";
 
-const SAVED_VOLUME = "setbuilder.stickVolume";
+export { readSavedVolumeName };
+
+const SAVED_VOLUME = SAVED_STICK_VOLUME;
 
 export type { PioneerVolumeInfo };
 
@@ -173,16 +180,6 @@ export function localStickVolume(name: string): PersistableDir {
     throw error;
   }
   return volumeDir(trimmed, "");
-}
-
-export function readSavedVolumeName(): string | null {
-  if (typeof localStorage === "undefined") return null;
-  try {
-    const value = localStorage.getItem(SAVED_VOLUME)?.trim() ?? "";
-    return isSafeVolumeName(value) ? value : null;
-  } catch {
-    return null;
-  }
 }
 
 export function saveVolumeName(name: string): void {

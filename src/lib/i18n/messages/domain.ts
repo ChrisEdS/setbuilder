@@ -49,7 +49,7 @@ const de = {
     "Langer Überblend, 16–32 Takte. Für gleichen oder nahen Key, Energie ±1.",
   "domain.transition.eq-swap": "EQ swap",
   "domain.transition.eq-swap.hint":
-    "Bass raus, Bass rein. Gut bei Clash oder wenn Melodien sich beißen.",
+    "Bass raus, Bass rein. Hilft, wenn Keys weit liegen oder Melodien sich überlagern.",
   "domain.transition.echo-out": "Echo-out",
   "domain.transition.echo-out.hint":
     "Track ausklingen lassen, dann neu starten. Reset, wenn Energie oder Key springt.",
@@ -124,7 +124,7 @@ const en: Record<keyof typeof de, string> = {
     "Long blend, 16–32 bars. For the same or a nearby key, energy ±1.",
   "domain.transition.eq-swap": "EQ swap",
   "domain.transition.eq-swap.hint":
-    "Bass out, bass in. Good on a clash or when melodies fight.",
+    "Bass out, bass in. Helps when keys sit far apart or melodies overlap.",
   "domain.transition.echo-out": "Echo-out",
   "domain.transition.echo-out.hint":
     "Let the track ring out, then start fresh. A reset when energy or key jumps.",

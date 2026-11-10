@@ -72,7 +72,10 @@ export function matchStickFile(
 const urls = new Map<string, string>();
 let stickFiles: File[] = [];
 let stickEpoch = 0;
+/** Bumps only when remembered audio blob URLs are dropped. Artwork adds must not. */
+let stickMediaEpoch = 0;
 const stickListeners = new Set<() => void>();
+const stickMediaListeners = new Set<() => void>();
 
 type StickKind = "image" | "audio" | "any";
 type StickHit = { file: File; order: number };
@@ -190,6 +193,11 @@ function bumpStickEpoch() {
   for (const listener of stickListeners) listener();
 }
 
+function bumpStickMediaEpoch() {
+  stickMediaEpoch += 1;
+  for (const listener of stickMediaListeners) listener();
+}
+
 /** React subscription: re-render when remembered stick files change (blob URLs refresh). */
 export function subscribeStickFiles(onStoreChange: () => void): () => void {
   stickListeners.add(onStoreChange);
@@ -202,10 +210,45 @@ export function getStickFilesEpoch(): number {
   return stickEpoch;
 }
 
+/**
+ * Player subscription. This moves only when `rememberStickFiles` drops the
+ * session's blob URLs. Appending artwork must not remount the deck or reload
+ * the beatgrid.
+ */
+export function subscribeStickMedia(onStoreChange: () => void): () => void {
+  stickMediaListeners.add(onStoreChange);
+  return () => {
+    stickMediaListeners.delete(onStoreChange);
+  };
+}
+
+export function getStickMediaEpoch(): number {
+  return stickMediaEpoch;
+}
+
 export function rememberStickFiles(files: File[]) {
   for (const url of urls.values()) URL.revokeObjectURL(url);
   urls.clear();
   stickFiles = files;
+  bumpStickEpoch();
+  bumpStickMediaEpoch();
+}
+
+/** Add stick files without dropping audio the session already holds. */
+export function addRememberedStickFiles(files: File[]): void {
+  if (!files.length) return;
+  const seen = new Set(
+    stickFiles.map((file) => foldPath(file.webkitRelativePath || file.name)),
+  );
+  const extra: File[] = [];
+  for (const file of files) {
+    const key = foldPath(file.webkitRelativePath || file.name);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    extra.push(file);
+  }
+  if (!extra.length) return;
+  stickFiles = stickFiles.concat(extra);
   bumpStickEpoch();
 }
 

@@ -1,20 +1,35 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { parseRekordboxPdb } from "./rekordbox-pdb.ts";
+import {
+  parseRekordboxPdb,
+  rekordboxColor,
+  rekordboxColorFromAttribute,
+  rekordboxStars,
+  rekordboxStarsFromAttribute,
+} from "./rekordbox-pdb.ts";
 
 const PAGE = 4096;
 
 test("reads a playlist and a history set from export.pdb", () => {
   const library = parseRekordboxPdb(fixture());
-  assert.equal(library.tracks.length, 1);
-  assert.equal(library.tracks[0].title, "Night Drive");
-  assert.equal(library.tracks[0].artist, "Ada");
-  assert.equal(library.tracks[0].album, "Floor");
-  assert.equal(library.tracks[0].key, "8A");
-  assert.equal(library.tracks[0].bpm, "128");
-  assert.equal(library.tracks[0].durationMs, 200_000);
-  assert.equal(library.tracks[0].comment, "opener");
-  assert.equal(library.tracks[0].filePath, "/Night Drive.mp3");
+  assert.equal(library.tracks.length, 3);
+  const night = library.tracks.find((track) => track.id === 7);
+  assert.ok(night);
+  assert.equal(night.title, "Night Drive");
+  assert.equal(night.artist, "Ada");
+  assert.equal(night.album, "Floor");
+  assert.equal(night.key, "8A");
+  assert.equal(night.bpm, "128");
+  assert.equal(night.durationMs, 200_000);
+  assert.equal(night.comment, "opener");
+  assert.equal(night.filePath, "/Night Drive.mp3");
+  // Byte +89 is 3, the 0–5 scale. The color id at +88 must not become the rating.
+  assert.equal(night.rating, 3);
+  assert.equal(night.color, 1);
+  assert.equal(night.genre, "Techno");
+  assert.equal(library.tracks.find((track) => track.id === 8)?.rating, 5);
+  assert.equal(library.tracks.find((track) => track.id === 8)?.genre, "");
+  assert.equal(library.tracks.find((track) => track.id === 9)?.rating, 0);
 
   const playlist = library.playlists.find((item) => item.kind === "playlist");
   const history = library.playlists.find((item) => item.kind === "history");
@@ -24,6 +39,27 @@ test("reads a playlist and a history set from export.pdb", () => {
   assert.ok(history);
   assert.equal(history.name, "HISTORY 001");
   assert.deepEqual(history.trackIds, [7]);
+});
+
+test("star ratings accept the 0–5 byte and the 51-step XML scale", () => {
+  assert.equal(rekordboxStars(0), 0);
+  assert.equal(rekordboxStars(1), 1);
+  assert.equal(rekordboxStars(5), 5);
+  assert.equal(rekordboxStars(51), 1);
+  assert.equal(rekordboxStars(102), 2);
+  assert.equal(rekordboxStars(153), 3);
+  assert.equal(rekordboxStars(204), 4);
+  assert.equal(rekordboxStars(255), 5);
+  assert.equal(rekordboxStarsFromAttribute(null), undefined);
+  assert.equal(rekordboxStarsFromAttribute(""), undefined);
+  assert.equal(rekordboxStarsFromAttribute("255"), 5);
+  assert.equal(rekordboxColor(1), 1);
+  assert.equal(rekordboxColor(9), 0);
+  assert.equal(rekordboxColorFromAttribute("0xFF007F"), 1);
+  assert.equal(rekordboxColorFromAttribute("0x123456"), undefined);
+  assert.equal(rekordboxColorFromAttribute(""), undefined);
+  assert.equal(rekordboxStarsFromAttribute("0"), 0);
+  assert.equal(rekordboxStarsFromAttribute("3"), 3);
 });
 
 test("rejects a file that is not a rekordbox database", () => {
@@ -64,6 +100,7 @@ function fixture(): ArrayBuffer {
     { type: 8, page: 6 },
     { type: 11, page: 7 },
     { type: 12, page: 8 },
+    { type: 1, page: 9 },
   ];
   const file = new Uint8Array((tables.length + 1) * PAGE);
   const header = new DataView(file.buffer);
@@ -79,11 +116,12 @@ function fixture(): ArrayBuffer {
   writeRow(file, 1, 2, artistRow());
   writeRow(file, 2, 3, albumRow());
   writeRow(file, 3, 5, keyRow());
-  writeRow(file, 4, 0, trackRow());
+  writeRows(file, 4, 0, [trackRow(3, 7), trackRow(255, 8), trackRow(0, 9)]);
   writeRows(file, 5, 7, playlistRows());
   writeRow(file, 6, 8, entryRow());
   writeRow(file, 7, 11, historyPlaylistRow());
   writeRow(file, 8, 12, historyEntryRow());
+  writeRow(file, 9, 1, genreRow());
   return file.buffer;
 }
 
@@ -152,7 +190,7 @@ function keyRow(): Uint8Array {
   return row;
 }
 
-function trackRow(): Uint8Array {
+function trackRow(rating = 3, id = 7): Uint8Array {
   const title = shortAscii("Night Drive");
   const comment = shortAscii("opener");
   const filePath = shortAscii("/Night Drive.mp3");
@@ -163,8 +201,11 @@ function trackRow(): Uint8Array {
   view.setUint32(56, 12800, true);
   view.setUint32(64, 4, true);
   view.setUint32(68, 1, true);
-  view.setUint32(72, 7, true);
+  view.setUint32(72, id, true);
   view.setUint16(84, 200, true);
+  view.setUint8(88, 1);
+  view.setUint8(89, rating);
+  if (id === 7) view.setUint32(60, 5, true);
   const commentAt = 136;
   const titleAt = commentAt + comment.length;
   const pathAt = titleAt + title.length;
@@ -174,6 +215,15 @@ function trackRow(): Uint8Array {
   row.set(comment, commentAt);
   row.set(title, titleAt);
   row.set(filePath, pathAt);
+  return row;
+}
+
+function genreRow(): Uint8Array {
+  const name = shortAscii("Techno");
+  const row = new Uint8Array(4 + name.length);
+  const view = new DataView(row.buffer);
+  view.setUint32(0, 5, true);
+  row.set(name, 4);
   return row;
 }
 

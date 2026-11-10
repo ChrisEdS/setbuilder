@@ -2,9 +2,9 @@
 
 **Deutsch** · [English](GUIDE.md) · [README](../README.de.md)
 
-**5.1.1.** Die Bilder sind die englische Oberfläche in Chrome. Dieselben Schritte, deutsche Beschriftungen. Oben rechts schaltet **DE** / **EN**.
+**5.2.0.** Die Bilder sind die englische Oberfläche in Chrome. Dieselben Schritte, deutsche Beschriftungen. Oben rechts schaltet **DE** / **EN**.
 
-Stick verbinden, Set bauen, im Deck hören, mitnehmen. Die ausgelieferte App ist die Desktop-App (Port **4317**). Im Browser: Port **4327**.
+Stick verbinden, Set bauen, im Deck hören, mitnehmen. Die ausgelieferte App ist die Desktop-App (Port **4317**). Im Browser: Port **4327**. Spotify- und Tidal-Weiterleitungen in `.env.local` müssen denselben Port nutzen wie die geöffnete App: **4317** für die Desktop-App, **4327** für `npm run dev`.
 
 > **Vor dem Gig:** Stick am echten Player testen (Playlist sichtbar, Tracks spielbar). Backup behalten. SETBUILDER kann `export.pdb` schreiben und legt Kopien unter `SETBUILDER-Backup/` ab. Für deine Medien bist du selbst verantwortlich.
 

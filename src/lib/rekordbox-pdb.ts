@@ -24,6 +24,12 @@ export type PdbTrack = {
   filename: string;
   /** Cover path on the stick, e.g. /PIONEER/Artwork/00001/a1.jpg */
   artworkPath: string;
+  /** Star rating 0–5. 0 means rekordbox has no stars on this track. */
+  rating?: number;
+  /** Track color 0–8. 0 is no color. 1 Pink … 8 Purple, matching the colors table. */
+  color?: number;
+  /** Genre name from the genres table. Empty when the track has none. */
+  genre?: string;
 };
 
 export type PdbPlaylist = {
@@ -41,6 +47,7 @@ export type PdbLibrary = {
 
 const TABLE = {
   tracks: 0,
+  genres: 1,
   artists: 2,
   albums: 3,
   keys: 5,
@@ -89,6 +96,7 @@ export function parseRekordboxPdb(buffer: ArrayBuffer): PdbLibrary {
     });
   }
 
+  const genres = readNamedRows(view, pageLen, tables.get(TABLE.genres), readGenre);
   const artists = readNamedRows(view, pageLen, tables.get(TABLE.artists), readArtist);
   const albums = readNamedRows(view, pageLen, tables.get(TABLE.albums), readAlbum);
   const keys = readNamedRows(view, pageLen, tables.get(TABLE.keys), readKey);
@@ -101,6 +109,7 @@ export function parseRekordboxPdb(buffer: ArrayBuffer): PdbLibrary {
     albums,
     keys,
     artwork,
+    genres,
   );
   const tree = readPlaylistTree(view, pageLen, tables.get(TABLE.playlistTree));
   const entries = readPlaylistEntries(view, pageLen, tables.get(TABLE.playlistEntries));
@@ -160,10 +169,105 @@ function readArtwork(view: DataView, row: number, pageEnd: number) {
   return { id, name: readDeviceString(view, row + 4, pageEnd) };
 }
 
+function readGenre(view: DataView, row: number, pageEnd: number) {
+  if (row + 6 > pageEnd) return null;
+  const id = view.getUint32(row, true);
+  return { id, name: readDeviceString(view, row + 4, pageEnd).trim() };
+}
+
 function readKey(view: DataView, row: number, pageEnd: number) {
   if (row + 8 > pageEnd) return null;
   const id = view.getUint32(row, true);
   return { id, name: readDeviceString(view, row + 8, pageEnd) };
+}
+
+/**
+ * Star rating as an integer 0–5.
+ * export.pdb stores 0–5 in one byte. Collection XML stores
+ * 0, 51, 102, 153, 204, 255 (51 per star, 255 for five).
+ */
+export function rekordboxStars(raw: number): number {
+  if (!Number.isFinite(raw) || raw <= 0) return 0;
+  const stars = raw <= 5 ? raw : raw / 51;
+  return Math.min(5, Math.max(0, Math.round(stars)));
+}
+
+/**
+ * Track color 0–8. The colors table on this stick names them, in order:
+ * 1 Pink, 2 Red, 3 Orange, 4 Yellow, 5 Green, 6 Aqua, 7 Blue, 8 Purple.
+ * Anything else is no color.
+ */
+export function rekordboxColor(raw: number): number {
+  if (!Number.isInteger(raw) || raw < 1 || raw > 8) return 0;
+  return raw;
+}
+
+/** Swatch hues for those eight rekordbox colors. */
+export const REKORDBOX_COLOR_HEX: Record<number, string> = {
+  1: "#FF4D93",
+  2: "#FF3B30",
+  3: "#FF8A1F",
+  4: "#F5C518",
+  5: "#3DDC4A",
+  6: "#2AD4D0",
+  7: "#3D6BFF",
+  8: "#9B4DFF",
+};
+
+/** XML Colour/Color: 0–8, or the hex values rekordbox writes. Unknown stays unset. */
+const XML_COLORS: Record<string, number> = {
+  "0": 0,
+  "1": 1,
+  "2": 2,
+  "3": 3,
+  "4": 4,
+  "5": 5,
+  "6": 6,
+  "7": 7,
+  "8": 8,
+  "0x000000": 0,
+  "0xffffff": 0,
+  "0xff007f": 1,
+  "0xff4d93": 1,
+  "0xff0000": 2,
+  "0xff3b30": 2,
+  "0xff8a1f": 3,
+  "0xff8c00": 3,
+  "0xffa500": 3,
+  "0xff5a00": 3,
+  "0xffff00": 4,
+  "0xf5c518": 4,
+  "0x00ff00": 5,
+  "0x00e000": 5,
+  "0x3ddc4a": 5,
+  "0x00ffff": 6,
+  "0x25fde9": 6,
+  "0x2ad4d0": 6,
+  "0x0000ff": 7,
+  "0x0040ff": 7,
+  "0x3d6bff": 7,
+  "0x8000ff": 8,
+  "0x8f00ff": 8,
+  "0x9900ff": 8,
+  "0x9b4dff": 8,
+  "0x6600ff": 8,
+};
+
+export function rekordboxColorFromAttribute(raw: string | null | undefined): number | undefined {
+  if (raw == null || raw.trim() === "") return undefined;
+  const key = raw.trim().toLowerCase();
+  if (key in XML_COLORS) return XML_COLORS[key];
+  const value = Number(key);
+  if (Number.isInteger(value) && value >= 0 && value <= 8) return value;
+  return undefined;
+}
+
+/** XML `Rating` attribute. Missing or blank means the track has no rating. */
+export function rekordboxStarsFromAttribute(raw: string | null | undefined): number | undefined {
+  if (raw == null || raw.trim() === "") return undefined;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return undefined;
+  return rekordboxStars(value);
 }
 
 function readTracks(
@@ -174,6 +278,7 @@ function readTracks(
   albums: Map<number, string>,
   keys: Map<number, string>,
   artwork: Map<number, string>,
+  genres: Map<number, string>,
 ): PdbTrack[] {
   const tracks: PdbTrack[] = [];
   if (!table) return tracks;
@@ -183,6 +288,10 @@ function readTracks(
     if (!id) return;
     const tempo = view.getUint32(row + 56, true);
     const duration = view.getUint16(row + 84, true);
+    // Genre id at +60. Color uint8 at +88. Rating uint8 at +89. Strings from +94.
+    const genreId = view.getUint32(row + 60, true);
+    const color = rekordboxColor(view.getUint8(row + 88));
+    const rating = rekordboxStars(view.getUint8(row + 89));
     const title = trackString(view, row, pageEnd, 17);
     const filename = trackString(view, row, pageEnd, 19);
     tracks.push({
@@ -198,6 +307,9 @@ function readTracks(
       filePath: trackString(view, row, pageEnd, 20),
       filename,
       artworkPath: artwork.get(view.getUint32(row + 28, true)) || "",
+      rating,
+      color,
+      genre: genres.get(genreId) || "",
     });
   });
   return tracks;

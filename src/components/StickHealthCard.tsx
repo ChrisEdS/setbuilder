@@ -485,7 +485,22 @@ export function StickHealthCard({
   const headerSheet = placement === "header";
   const details = open && !busy ? (
     <div className={"stick-strip-details" + (headerSheet ? " is-sheet" : "")} id={detailsId}>
-          {headerSheet ? null : (
+          {verdictKey(health, caps.canPrepare) === "library.stickHealth.verdict.needsRekordbox" ? (
+            <ul className="stick-strip-explain">
+              <li>
+                <span className="stick-strip-explain-label">{t("library.stickHealth.explain.playlists")}</span>
+                <span>{t("library.stickHealth.explain.playlistsBody")}</span>
+              </li>
+              <li>
+                <span className="stick-strip-explain-label">{t("library.stickHealth.explain.players")}</span>
+                <span>{t("library.stickHealth.explain.playersBody")}</span>
+              </li>
+              <li>
+                <span className="stick-strip-explain-label">{t("library.stickHealth.explain.next")}</span>
+                <span>{t("library.stickHealth.explain.nextBody")}</span>
+              </li>
+            </ul>
+          ) : (
             <p className="stick-strip-meaning">{t(meaningKey(health, caps.canPrepare))}</p>
           )}
           <dl className="stick-strip-facts">
@@ -513,9 +528,11 @@ export function StickHealthCard({
               </div>
             ))}
           </dl>
-          <p className="stick-strip-why">
-            {t(headerSheet ? "library.stickHealth.whyShort" : "library.stickHealth.why")}
-          </p>
+          {verdictKey(health, caps.canPrepare) === "library.stickHealth.verdict.needsRekordbox" ? null : (
+            <p className="stick-strip-why">
+              {t(headerSheet ? "library.stickHealth.whyShort" : "library.stickHealth.why")}
+            </p>
+          )}
           {!headerSheet && detailsExtra ? <div className="stick-strip-extra">{detailsExtra}</div> : null}
           <div className="stick-strip-more">
             {onRecheck ? (
@@ -650,13 +667,9 @@ export function StickHealthCard({
           <span className="stick-strip-dot" aria-hidden="true" />
           <span className="stick-strip-verdict">{verdict}</span>
         </p>
+        {followUp}
         {actions}
-        {followUp || details ? (
-          <div className="stick-head-more">
-            {followUp}
-            {details}
-          </div>
-        ) : null}
+        {details ? <div className="stick-head-more">{details}</div> : null}
       </div>
     );
   }

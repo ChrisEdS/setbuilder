@@ -1,8 +1,9 @@
 /*
  * SETBUILDER UI system
  *
- * Loaded after the historical global stylesheet. Keep cross-feature visual
- * rules here so spacing, controls and surfaces do not drift between panels.
+ * Loaded after the historical global stylesheet. New SETBUILDER layout and
+ * control rules go here, not in globals.css. globals.css stays frozen except
+ * for a bug that cannot be expressed in this file.
  */
 
 :root {
@@ -281,8 +282,33 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 .set-shell textarea {
+  box-sizing: border-box;
+  height: auto;
   min-height: 4.75rem;
+  padding-top: 0.625rem !important;
+  padding-bottom: 0.625rem !important;
+  line-height: 1.35;
   resize: vertical;
+}
+
+/* Single-line fields stay one control height. Padding was growing selects past the row. */
+.set-shell :where(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  select
+) {
+  box-sizing: border-box;
+  height: var(--ui-control-height);
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  line-height: calc(var(--ui-control-height) - 2px);
+}
+
+.set-shell .add-target select {
+  width: auto;
+  min-width: 7.5rem;
+  height: var(--ui-control-height);
+  min-height: var(--ui-control-height);
+  border-radius: var(--ui-control-radius) !important;
 }
 
 .set-shell .hero-meta input::placeholder,
@@ -387,6 +413,13 @@ html[data-frame="mac"] .set-shell .hero-copy {
   transform: rotate(-135deg) translateY(-1px);
 }
 
+.set-shell .crate-action-legend {
+  margin: 0 0 0.35rem;
+  color: var(--ui-muted, #b3b3b3);
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
 .set-shell .hero-meta-more-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -415,22 +448,21 @@ html[data-frame="mac"] .set-shell .hero-copy {
   gap: var(--ui-space-2) !important;
 }
 
-/* Add-music head: one 5-column grid. Search is its own full-width row.
-   Playlist, Passt zu, key, BPM and energy share the filter tracks.
-   Beim Hinzufügen keeps phase and role. */
+/* Add-music head is a column, not a grid. A grid ancestor makes Chrome
+   anchor the playlist datalist to the grid (beside the field, or a row too
+   low) instead of to the input. Filters keep their own 5-column grid. */
 .set-shell .library-browser-head:has(.library-refine) {
-  display: grid !important;
-  grid-template-columns: minmax(9.5rem, 1.4fr) repeat(4, minmax(0, 1fr));
-  align-items: center;
-  column-gap: 0.75rem !important;
-  row-gap: 0.55rem !important;
+  display: flex !important;
+  flex-direction: column;
+  align-items: stretch !important;
+  justify-content: flex-start;
+  gap: 0.55rem !important;
   width: 100%;
+  min-width: 0;
 }
 
 .set-shell .library-browser-head:has(.library-refine) .library-browser-title {
-  grid-column: 1 / -1;
-  grid-row: 1;
-  align-self: center;
+  align-self: flex-start;
   width: auto;
   max-width: 100%;
   margin: 0 !important;
@@ -441,22 +473,93 @@ html[data-frame="mac"] .set-shell .hero-copy {
   text-overflow: unset;
 }
 
+/* Real box, same rectangle as the search input. display:contents, or a grid
+   item, is the box Chrome anchors the playlist datalist to. */
 .set-shell .library-browser-head:has(.library-refine) .library-browser-toolbar {
-  display: contents;
+  display: flex;
+  position: relative;
+  flex: none;
+  align-self: stretch;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  justify-content: stretch;
 }
 
-.set-shell .library-browser-head:has(.library-refine) .library-browser-toolbar > datalist {
-  display: none;
+/* Our list, not the native datalist. Chrome anchors that popup to the field's
+   right edge. This one hangs on the toolbar box, which is the search field. */
+.set-shell .library-browser-head:has(.library-refine) .library-suggest {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 100%;
+  box-sizing: border-box;
+  max-height: 15rem;
+  margin: 0;
+  padding: 0.2rem 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  list-style: none;
+  background: #161616;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.5);
+}
+
+.set-shell .library-suggest > li {
+  margin: 0;
+  padding: 0;
+}
+
+.set-shell .library-suggest button {
+  display: block;
+  width: 100%;
+  min-height: 0 !important;
+  height: auto !important;
+  margin: 0;
+  padding: 0.32rem 0.7rem !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #f4f4f4 !important;
+  font-size: 0.82rem !important;
+  font-weight: 450;
+  line-height: 1.35 !important;
+  letter-spacing: normal;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.set-shell .library-suggest button.is-active,
+.set-shell .library-suggest button:hover {
+  background: #2c2c2c !important;
+  color: #fff !important;
 }
 
 .set-shell .library-browser-head:has(.library-refine) .library-search-field {
-  grid-column: 1 / -1;
-  grid-row: 2;
   display: flex;
+  position: static;
+  flex: 1 1 auto;
+  align-self: stretch;
   width: 100%;
   min-width: 0 !important;
   max-width: none !important;
-  flex: none !important;
+}
+
+.set-shell .library-browser-head:has(.library-refine) .library-search-field input {
+  display: block;
+  flex: 1 1 auto;
+  align-self: stretch;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  box-sizing: border-box;
 }
 
 .set-shell .library-browser-head:has(.library-refine) .library-playlist-pick {
@@ -473,23 +576,14 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 .set-shell .library-browser-head:has(.library-refine) .library-refine {
-  grid-column: 1 / -1;
-  grid-row: 3;
   display: grid;
-  grid-template-columns: subgrid;
+  grid-template-columns: minmax(9.5rem, 1.4fr) repeat(4, minmax(0, 1fr));
   width: 100%;
+  min-width: 0;
   margin-top: 0.2rem;
   column-gap: 0.75rem !important;
   row-gap: 0.55rem;
   align-items: end;
-}
-
-.set-shell .library-browser-head:has(.library-refine):not(:has(.library-playlist-pick)):not(:has(.library-add-fit)) .library-refine {
-  grid-row: 2;
-}
-
-.set-shell .library-browser-head:has(.library-refine):not(:has(.library-playlist-pick)):not(:has(.library-add-fit)) .library-add-bar {
-  grid-row: 3;
 }
 
 .set-shell .library-refine label {
@@ -521,36 +615,19 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 @media (max-width: 900px) {
-  .set-shell .library-browser-head:has(.library-refine) {
+  .set-shell .library-browser-head:has(.library-refine) .library-refine,
+  .set-shell .library-browser-head:has(.library-refine) .library-add-bar,
+  .set-shell .library-browser-head:has(.library-refine) .library-add-group {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .set-shell .library-browser-head:has(.library-refine) .library-browser-title,
-  .set-shell .library-browser-head:has(.library-refine) .library-search-field {
-    grid-column: 1 / -1;
-    grid-row: auto;
-  }
-
-  .set-shell .library-browser-head:has(.library-refine) .library-refine {
-    grid-template-columns: subgrid;
-    grid-row: auto;
   }
 
   .set-shell .library-refine label:first-child {
     grid-column: 1 / -1;
   }
 
-  .set-shell .library-browser-head:has(.library-refine) .library-add-bar,
-  .set-shell .library-browser-head:has(.library-refine) .library-add-group {
-    grid-column: 1 / -1;
-    grid-row: auto;
-    grid-template-columns: subgrid;
-  }
-
   .set-shell .library-browser-head:has(.library-refine) .library-add-group > span {
     grid-column: 1 / -1;
   }
-
 }
 
 .set-shell .phase-purpose {
@@ -591,12 +668,11 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 .set-shell .library-browser-head:has(.library-refine) .library-add-bar {
-  grid-column: 1 / -1;
-  grid-row: 4;
   display: grid !important;
-  grid-template-columns: subgrid;
+  grid-template-columns: minmax(9.5rem, 1.4fr) repeat(4, minmax(0, 1fr));
   align-items: end;
   width: 100%;
+  min-width: 0;
   margin: 0.35rem 0 0 !important;
   padding-top: 0.75rem;
   justify-content: stretch !important;
@@ -672,6 +748,37 @@ html[data-frame="mac"] .set-shell .hero-copy {
   grid-row: 2;
 }
 
+/* Own class, after the nth-of-type rules, so this label does not move BPM or energy. */
+.set-shell .library-refine > label.library-rating {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.set-shell .library-refine > label.library-color {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+.set-shell .library-refine > label.library-genre {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+.set-shell .library-refine > label.library-comment {
+  grid-column: 3 / 6;
+  grid-row: 3;
+}
+
+@media (max-width: 900px) {
+  .set-shell .library-refine > label.library-rating,
+  .set-shell .library-refine > label.library-color,
+  .set-shell .library-refine > label.library-genre,
+  .set-shell .library-refine > label.library-comment {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+}
+
 .set-shell .library-browser-head:has(.library-refine) .library-add-bar label,
 .set-shell .library-browser-head:has(.library-refine) .library-add-fit {
   display: grid;
@@ -726,6 +833,41 @@ html[data-frame="mac"] .set-shell .hero-copy {
   background-position: right 0.65rem center !important;
   background-size: 1rem !important;
   text-overflow: ellipsis;
+}
+
+/* Library filters and the When adding row stay one short line, like a track field. */
+.set-shell .library-browser-head:has(.library-refine) :is(
+  .library-refine input,
+  .library-refine select,
+  .library-playlist-pick select,
+  .library-add-fit select,
+  .library-add-bar select
+) {
+  box-sizing: border-box;
+  height: 26px !important;
+  min-height: 26px !important;
+  max-height: 26px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  padding-left: 0.4rem !important;
+  font-size: 0.75rem !important;
+  line-height: 24px !important;
+}
+
+.set-shell .library-browser-head:has(.library-refine) :is(
+  .library-refine select,
+  .library-playlist-pick select,
+  .library-add-fit select,
+  .library-add-bar select
+) {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  padding-right: 1.15rem !important;
+  background-color: #121212 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23b3b3b3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.28rem center !important;
+  background-size: 0.7rem !important;
 }
 
 .set-shell .set-chrome {
@@ -1026,9 +1168,8 @@ html[data-frame="mac"] .set-shell .hero-copy {
   min-width: max-content;
 }
 
-/* Comfortable: selects and icons share one line while the row has room.
-   The icon strip keeps its intrinsic width, so a short row drops the whole
-   strip (right-aligned) instead of stranding two circles under the selects. */
+/* Comfortable: phase and role sit above Play, aligned to the icon strip.
+   The whole block stays at the right of the row. */
 .set-shell .manual-list:not(.is-compact) .manual-row {
   row-gap: 0.3rem;
   padding-top: 0.65rem !important;
@@ -1043,11 +1184,11 @@ html[data-frame="mac"] .set-shell .hero-copy {
 
 .set-shell .manual-list:not(.is-compact) .manual-controls {
   display: flex;
-  flex-flow: row wrap;
-  align-items: center;
-  justify-content: flex-end;
+  flex-flow: column nowrap;
+  align-items: flex-start;
+  justify-content: flex-start;
   justify-self: end;
-  gap: 0.35rem 0.5rem;
+  gap: 0.35rem;
   width: max-content;
   max-width: 100%;
   min-width: 0;
@@ -1067,11 +1208,11 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 .set-shell .manual-list:not(.is-compact) .timeline-tools {
-  flex: 0 0 auto;
+  flex: 0 1 auto;
   width: max-content;
   max-width: 100%;
-  margin-left: auto;
-  justify-content: flex-end;
+  margin-left: 0;
+  justify-content: flex-start;
   gap: 0.2rem !important;
 }
 
@@ -1083,6 +1224,85 @@ html[data-frame="mac"] .set-shell .hero-copy {
 .set-shell .manual-list:not(.is-compact) .track-details .manual-comment {
   margin-top: 0.3rem;
   gap: 0.35rem;
+}
+
+/* Opened set/mix note is one text line. Longer notes grow with the text. */
+.set-shell .manual-comment textarea,
+.set-shell .manual-comment textarea:focus {
+  field-sizing: content;
+  box-sizing: border-box;
+  height: auto !important;
+  min-height: calc(1.25em + 0.4rem + 2px) !important;
+  padding-top: 0.2rem !important;
+  padding-bottom: 0.2rem !important;
+  line-height: 1.25;
+  overflow-y: hidden;
+  resize: vertical;
+}
+
+/* Note and the BPM / key / energy / transition / length row stay one short line apart. */
+.set-shell .track-details .manual-extra {
+  margin-top: 0.625rem;
+  align-items: center;
+  grid-template-columns: max-content max-content minmax(6.2rem, 7.6rem) minmax(8rem, 1fr) max-content !important;
+}
+
+.set-shell .track-details .manual-extra input,
+.set-shell .track-details .manual-extra select {
+  box-sizing: border-box;
+  height: calc(1.25em + 0.4rem + 2px) !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  font-size: var(--ui-font-body) !important;
+  line-height: calc(1.25em + 0.4rem) !important;
+}
+
+.set-shell .track-details .manual-extra .manual-bpm {
+  width: 4rem !important;
+  min-width: 4rem !important;
+  flex: 0 0 4rem;
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+}
+
+.set-shell .track-details .manual-extra .manual-key {
+  width: 4.5rem !important;
+  min-width: 4.5rem !important;
+  flex: 0 0 4.5rem;
+}
+
+.set-shell .track-details .manual-extra .manual-transition > .manual-length:first-child {
+  width: 100%;
+  min-width: 0;
+}
+
+.set-shell .track-details .manual-extra .manual-transition > .manual-length:first-child > select {
+  flex: 1 1 auto;
+  width: auto !important;
+  min-width: 6.5rem;
+}
+
+.set-shell .track-details .manual-extra select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  padding-left: 0.5rem !important;
+  padding-right: 1.4rem !important;
+  background-color: #121212 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23b3b3b3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.35rem center !important;
+  background-size: 0.7rem !important;
+  text-overflow: ellipsis;
+}
+
+.set-shell .track-details .manual-extra .manual-length,
+.set-shell .track-details .manual-extra .overlap-field {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  align-items: center;
 }
 
 
@@ -1150,8 +1370,7 @@ html[data-frame="mac"] .set-shell .hero-copy {
   padding-top: 0 !important;
 }
 
-/* Compact → expanded: number, cover, title, phase, role and the tools share
-   one line. Only the tool strip wraps, and only under the phase and role. */
+/* Compact → expanded: phase and role sit above Play, same as Comfortable. */
 .set-shell .manual-row.is-compact-open {
   align-items: start;
 }
@@ -1175,12 +1394,12 @@ html[data-frame="mac"] .set-shell .hero-copy {
 
 .set-shell .manual-row.is-compact-open .manual-controls {
   display: flex !important;
-  flex-flow: row wrap;
-  align-items: center;
+  flex-flow: column nowrap;
+  align-items: flex-start;
   align-self: start;
-  justify-content: flex-end;
+  justify-content: flex-start;
   justify-self: end;
-  gap: 0.35rem 0.45rem;
+  gap: 0.35rem;
   width: max-content;
   max-width: 100%;
   min-width: 0;
@@ -1207,8 +1426,8 @@ html[data-frame="mac"] .set-shell .hero-copy {
   width: max-content;
   max-width: 100%;
   min-width: 0;
-  margin-left: auto;
-  justify-content: flex-end;
+  margin-left: 0;
+  justify-content: flex-start;
 }
 
 .set-shell .manual-row.is-compact-open .manual-subline,
@@ -1230,6 +1449,23 @@ html[data-frame="mac"] .set-shell .hero-copy {
   width: 32px !important;
   height: 32px !important;
   margin: 0 !important;
+  object-fit: cover;
+  object-position: center;
+  align-self: center;
+}
+
+/* Same cover box once a compact row is opened: drop the 0.15rem button
+   padding that sat the art below the index and the title block. */
+.set-shell .manual-row.is-compact-open .manual-select {
+  align-items: center !important;
+  padding: 0 !important;
+}
+
+.set-shell .manual-row.is-compact-open .manual-select img,
+.set-shell .manual-row.is-compact-open .manual-select .art-fallback {
+  object-fit: cover;
+  object-position: center;
+  align-self: center;
 }
 
 .set-shell .manual-row.is-compact .manual-copy {
@@ -1269,12 +1505,15 @@ html[data-frame="mac"] .set-shell .hero-copy {
 
 .set-shell .manual-row.is-compact .manual-title-line {
   display: flex !important;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 0.28rem;
+  margin-top: 0 !important;
 }
 
 .set-shell .manual-row.is-compact .manual-title-line > strong {
+  flex: 1 1 auto;
+  min-width: 0;
   line-height: 1.15;
 }
 
@@ -1927,11 +2166,16 @@ html[data-frame="mac"] .set-shell .hero-copy {
 .set-shell .stick-sets-fold .library-list {
   display: flex;
   flex-direction: column;
+  gap: 0;
+  row-gap: 0;
   width: 100%;
   min-width: 0;
   max-width: 100%;
 }
 
+/* Title and count on the left, Load as set on the right.
+   2px block padding keeps the row just above the 32px button.
+   12px end inset clears the 8px overlay scrollbar and leaves a few pixels. */
 .set-shell .stick-sets-fold .library-list li {
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) auto !important;
@@ -1941,9 +2185,10 @@ html[data-frame="mac"] .set-shell .hero-copy {
   width: 100%;
   min-width: 0;
   max-width: 100%;
-  min-height: calc(2rem + 1.25rem) !important;
+  min-height: auto !important;
   height: auto !important;
-  padding: 0.6rem 0 !important;
+  padding: 2px 0 !important;
+  padding-inline-end: 12px !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   box-sizing: border-box;
   overflow: visible;
@@ -1951,7 +2196,7 @@ html[data-frame="mac"] .set-shell .hero-copy {
 
 .set-shell .stick-sets-fold .library-list li:first-child,
 .set-shell .stick-sets-fold .library-list li:last-child {
-  padding-block: 0.6rem !important;
+  padding-block: 2px !important;
 }
 
 .set-shell .stick-sets-fold .library-list li > .stick-set-copy {
@@ -1965,18 +2210,21 @@ html[data-frame="mac"] .set-shell .hero-copy {
 
 .set-shell .stick-sets-fold .library-list li > .stick-set-copy strong {
   flex: 0 1 auto;
+  align-self: center;
   display: block;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1;
   color: #fff !important;
 }
 
 .set-shell .stick-sets-fold .library-list li > .stick-set-copy em {
   flex: 0 0 auto;
+  align-self: center;
   white-space: nowrap;
-  line-height: 1.2;
+  line-height: 1;
 }
 
 .set-shell .stick-sets-fold .library-list li > .stick-set-copy span {
@@ -1991,6 +2239,7 @@ html[data-frame="mac"] .set-shell .hero-copy {
 .set-shell .library-browser > .library-list {
   display: flex !important;
   flex-direction: column !important;
+  row-gap: 0 !important;
   width: 100%;
   min-width: 0;
   max-width: 100%;
@@ -2008,28 +2257,58 @@ html[data-frame="mac"] .set-shell .hero-copy {
   min-height: 2.25rem !important;
   max-height: none !important;
   padding: 0.28rem 0 !important;
+  padding-inline-end: 12px !important;
   overflow: hidden;
   box-sizing: border-box;
 }
 
 .set-shell .library-browser > .library-list > li > .lib-play {
   flex: 0 0 1.5rem;
+  align-self: center !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
   width: 1.5rem !important;
   height: 1.5rem !important;
   min-width: 1.5rem !important;
   min-height: 1.5rem !important;
+  margin-block: 0 !important;
   padding: 0 !important;
   font-size: 0.55rem;
+  line-height: 1;
+}
+
+.set-shell .library-browser > .library-list > li > .library-row-cover {
+  flex: 0 0 1.75rem;
+  align-self: center !important;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin-block: 0 !important;
+  object-fit: cover;
+  border-radius: var(--radius-xs);
+  display: block;
+}
+
+/* Same note tile as the setlist (art-fallback sm), locked to the 28px library cover box. */
+.set-shell .library-browser > .library-list > li > .library-row-cover.art-fallback {
+  width: 1.75rem !important;
+  height: 1.75rem !important;
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  border-radius: var(--radius-sm);
 }
 
 .set-shell .library-browser > .library-list > li > .library-row-copy {
   display: flex !important;
   flex-flow: row nowrap !important;
+  align-self: center !important;
   align-items: center;
   column-gap: 0.55rem;
   min-width: 0;
   flex: 1 1 auto;
+  margin-block: 0 !important;
   overflow: hidden;
+  line-height: 1;
 }
 
 .set-shell .library-browser > .library-list > li > .library-row-copy strong {
@@ -2040,11 +2319,13 @@ html[data-frame="mac"] .set-shell .hero-copy {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1;
 }
 
 .set-shell .library-browser > .library-list > li > .library-row-copy em {
   flex: 0 0 auto;
   white-space: nowrap;
+  line-height: 1;
 }
 
 .set-shell .library-browser > .library-list > li > .library-row-copy span {
@@ -2053,11 +2334,42 @@ html[data-frame="mac"] .set-shell .hero-copy {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1;
+}
+
+.set-shell .library-browser > .library-list > li > .library-row-copy > .library-row-color {
+  flex: 0 0 auto !important;
+  align-self: center;
+  width: 8px;
+  height: 8px;
+  min-width: 8px;
+  border-radius: 50%;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.set-shell .library-browser > .library-list > li > .library-row-copy > .library-row-stars {
+  flex: 0 0 auto !important;
+  align-self: center;
+  min-width: 0;
+  overflow: visible;
+  text-overflow: clip;
+  color: #b3b3b3;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .set-shell .library-browser > .library-list > li > .lib-add {
   flex: 0 0 auto;
+  align-self: center !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   margin-left: auto;
+  margin-block: 0 !important;
   width: auto !important;
   min-width: 0 !important;
   height: 1.75rem !important;
@@ -2909,7 +3221,8 @@ html[data-frame="mac"] .set-shell .hero-copy {
   cursor: pointer;
 }
 
-.preview-player .preview-wave-tools button[aria-pressed="true"] {
+.preview-player .preview-wave-tools button[aria-pressed="true"],
+.preview-player .preview-wave-tools button.is-structure {
   background: #fff;
   color: #111;
 }
@@ -3139,6 +3452,27 @@ html[data-frame="mac"] .set-shell .hero-copy {
   color: #121212;
 }
 
+.preview-player .preview-cue-mark.is-structure i {
+  box-shadow: 0 0 0 1px #fff, 0 0 0 3px rgba(255, 255, 255, 0.55);
+}
+
+.preview-player .preview-cue-mark.is-structure em,
+.preview-player .preview-cue-pad.is-structure {
+  outline: 2px solid #fff;
+  outline-offset: 1px;
+  animation: preview-structure-flash 1.5s ease-out 1;
+}
+
+@keyframes preview-structure-flash {
+  0%,
+  72% {
+    outline-color: #fff;
+  }
+  100% {
+    outline-color: transparent;
+  }
+}
+
 .preview-player .preview-cue-block {
   width: 100%;
   min-width: 0;
@@ -3154,10 +3488,10 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 .preview-player .preview-cue-pad {
+  position: relative;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.05rem;
+  align-items: stretch;
+  justify-content: stretch;
   min-width: 0;
   height: 2.15rem;
   border: 1px solid rgba(255, 255, 255, 0.16);
@@ -3178,19 +3512,32 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 .preview-player .preview-cue-pad > .tip:has(> .preview-cue-jump) {
+  display: flex;
   flex: 1 1 auto;
+  width: 100%;
 }
 
+/* The clear control sits in the corner so it never shifts the label. */
 .preview-player .preview-cue-pad > .tip:has(> .preview-cue-x) {
-  flex: 0 0 auto;
+  position: absolute;
+  top: 0.08rem;
+  right: 0.06rem;
+  z-index: 1;
+  height: auto;
 }
 
 .preview-player .preview-cue-jump {
+  display: flex;
   flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
   min-width: 0;
   height: 100%;
   margin: 0;
-  padding: 0;
+  /* Left rail for the label; the right inset is the corner × and nothing else. */
+  padding: 0.14rem 0.86rem 0.1rem 0.34rem;
   border: 0;
   background: transparent;
   color: inherit;
@@ -3201,37 +3548,48 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 .preview-player .preview-cue-face {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  grid-template-rows: 0.86rem minmax(0, 1fr);
+  align-content: stretch;
+  width: 100%;
+  height: 100%;
   min-width: 0;
-  line-height: 1.05;
+  line-height: 1;
 }
 
 .preview-player .preview-cue-face b,
 .preview-player .preview-cue-face small {
   display: block;
+  width: 100%;
   max-width: 100%;
+  margin: 0;
   overflow: hidden;
   font-weight: 750;
+  text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .preview-player .preview-cue-face b {
+  align-self: center;
   font-size: 0.68rem;
+  line-height: 1;
 }
 
 .preview-player .preview-cue-face small {
+  align-self: center;
   font-size: 0.56rem;
   font-weight: 550;
   font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
 .preview-player .preview-cue-pad input {
+  box-sizing: border-box;
   width: 100%;
   min-width: 0;
+  height: 100%;
+  padding: 0 0.95rem 0 0.3rem;
   border: 0;
   background: transparent;
   color: #fff;
@@ -3241,10 +3599,11 @@ html[data-frame="mac"] .set-shell .hero-copy {
 }
 
 .preview-player .preview-cue-x {
-  flex: 0 0 auto;
-  width: 0.9rem;
-  height: 1.1rem;
-  margin-right: 0.1rem;
+  display: grid;
+  place-items: center;
+  width: 0.78rem;
+  height: 0.78rem;
+  margin: 0;
   padding: 0;
   border: 0;
   border-radius: 2px;
@@ -3927,7 +4286,7 @@ dialog.stick-dialog.gig-ready-dialog .gig-ready-actions .btn {
 .set-shell .manual-row.is-compact .compact-details-trigger {
   display: inline-flex;
   align-items: baseline;
-  gap: 0.55rem;
+  gap: 0.28rem;
   min-width: 0;
   max-width: 100%;
   margin: 0;
@@ -3940,16 +4299,24 @@ dialog.stick-dialog.gig-ready-dialog .gig-ready-actions .btn {
   cursor: pointer;
 }
 
+/* Origin mark sits on this line, immediately after the word Details. */
+.set-shell .manual-row.is-compact .compact-details-trigger > .tip:has(.source-badge) {
+  flex: 0 0 auto;
+  align-self: center;
+  line-height: 0;
+}
+
 .set-shell .manual-row.is-compact .compact-details-line .td-label {
   flex: 0 0 auto;
   color: #f2f2f2;
-  font-size: 0.78rem;
+  font-size: 0.88rem;
   font-weight: 650;
 }
 
 .set-shell .manual-row.is-compact .compact-details-line .td-values {
   flex: 0 1 auto;
   min-width: 0;
+  margin-inline-start: 0.27rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3986,11 +4353,42 @@ dialog.stick-dialog.gig-ready-dialog .gig-ready-actions .btn {
 
 .set-shell .manual-row .track-details > summary {
   align-items: center;
+  gap: 0.28rem;
   width: 100%;
   max-width: 100%;
   min-height: 0;
   padding-top: 0;
   padding-bottom: 0;
+}
+
+/* Expanded / comfortable: origin mark sits immediately after Details. */
+.set-shell .manual-row .track-details > summary > .tip:has(.source-badge) {
+  flex: 0 0 auto;
+  align-self: center;
+  line-height: 0;
+}
+
+.set-shell .manual-row .track-details > summary .td-label {
+  flex: 0 0 auto;
+  color: #f2f2f2;
+  font-size: 0.88rem;
+  font-weight: 650;
+}
+
+.set-shell .manual-row .track-details > summary .td-values {
+  margin-inline-start: 0.27rem;
+}
+
+.set-shell .manual-row .track-details > summary .source-badge {
+  width: 1.45rem !important;
+  height: 1.45rem !important;
+  margin: 0 !important;
+  background: transparent !important;
+}
+
+.set-shell .manual-row .track-details > summary .source-badge .source-badge-icon {
+  width: 1.2rem !important;
+  height: 1.2rem !important;
 }
 
 /* Collapse cue: a real round target, not a 7px stroke in the empty margin. */
@@ -4430,7 +4828,58 @@ dialog.stick-dialog .stick-actions .btn {
   }
 }
 
+.set-shell .stick-import-head .stick-head-cluster > .stick-strip-next {
+  flex: 0 0 auto;
+  width: auto;
+  margin: 0 0 0 auto;
+  color: var(--ui-muted);
+  font-size: var(--ui-font-sm);
+  line-height: 1.4;
+  text-align: right;
+  white-space: nowrap;
+  align-self: center;
+}
+
+.set-shell .stick-import-head .stick-head-cluster > .stick-strip-note {
+  flex: 1 1 100%;
+  width: 100%;
+  margin: 0;
+  color: var(--ui-muted);
+  font-size: var(--ui-font-sm);
+  line-height: 1.4;
+}
+
+.set-shell .stick-strip-explain {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0.15rem 0 0.7rem;
+  padding: 0 0 0.7rem;
+  border-bottom: 1px solid var(--ui-border);
+  list-style: none;
+  max-width: 68ch;
+}
+
+.set-shell .stick-strip-explain li {
+  display: grid;
+  grid-template-columns: 8.25rem minmax(0, 1fr);
+  align-items: baseline;
+  gap: 0.75rem;
+  margin: 0;
+  color: var(--ink, #f5f5f5);
+  font-size: var(--ui-font-sm);
+  line-height: 1.4;
+}
+
+.set-shell .stick-strip-explain-label {
+  color: var(--ui-muted);
+}
+
 @media (max-width: 600px) {
+  .set-shell .stick-strip-explain li {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.1rem;
+  }
+
   .set-shell .manual-index {
     min-width: max-content;
     max-width: none;
