@@ -139,7 +139,15 @@ export function Tip({
   const openRef = useRef(false);
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<BubblePos | null>(null);
+  const [trackedQuiet, setTrackedQuiet] = useState(quiet);
   const tipId = useId();
+  if (quiet !== trackedQuiet) {
+    setTrackedQuiet(quiet);
+    if (quiet) {
+      if (open) setOpen(false);
+      if (pos !== null) setPos(null);
+    }
+  }
 
   const clearShow = useCallback(() => {
     if (showTimer.current != null) {
@@ -208,10 +216,11 @@ export function Tip({
   useEffect(() => {
     if (!quiet) return;
     clearShow();
-    if (hideTimer.current != null) window.clearTimeout(hideTimer.current);
+    if (hideTimer.current != null) {
+      window.clearTimeout(hideTimer.current);
+      hideTimer.current = null;
+    }
     openRef.current = false;
-    setOpen(false);
-    setPos(null);
   }, [quiet, clearShow]);
 
   const update = useCallback(() => {
