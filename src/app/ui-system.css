@@ -413,11 +413,8 @@ html[data-frame="mac"] .set-shell .hero-copy {
   transform: rotate(-135deg) translateY(-1px);
 }
 
-.set-shell .crate-action-legend {
-  margin: 0 0 0.35rem;
+.set-shell .list-head-tools > .list-icons-hint {
   color: var(--ui-muted, #b3b3b3);
-  font-size: 0.75rem;
-  line-height: 1.35;
 }
 
 .set-shell .hero-meta-more-grid {
@@ -4208,6 +4205,55 @@ dialog.stick-dialog.gig-ready-dialog .gig-ready-actions .btn {
 }
 
 .guide-blocks p {
+  margin: 0;
+  color: #d4d4d4;
+  font-size: var(--ui-font-body);
+  line-height: 1.45;
+}
+
+.icons-legend-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.icons-legend-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ui-space-3);
+}
+
+.icons-legend-icon {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--ui-radius-sm);
+  background: var(--ui-surface-raised);
+  color: #fff;
+}
+
+.icons-legend-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.icons-legend-copy strong {
+  display: block;
+  margin: 0 0 0.2rem;
+  color: #fff;
+  font-size: var(--ui-font-sm);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.icons-legend-copy p {
   margin: 0;
   color: #d4d4d4;
   font-size: var(--ui-font-body);

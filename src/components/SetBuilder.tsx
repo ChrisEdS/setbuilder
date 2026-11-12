@@ -55,6 +55,7 @@ import { scrollPlayingSetRow, watchPlayingRowClearance } from "@/lib/scroll-play
 import { PlaceInSetMenu } from "@/components/PlaceInSetMenu";
 import { ReplaceMenu } from "@/components/ReplaceMenu";
 import { SetGuideDrawer } from "@/components/SetGuideDrawer";
+import { SetRowIconsDrawer } from "@/components/SetRowIconsDrawer";
 import { clearBodyScrollLock } from "@/lib/ui-scroll-lock";
 import type { LibraryRow } from "@/components/LibraryPanel";
 import {
@@ -623,6 +624,7 @@ export function SetBuilder() {
   const [exchangeFor, setExchangeFor] = useState<string | null>(null);
   const [placeFor, setPlaceFor] = useState<string | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [iconsLegendOpen, setIconsLegendOpen] = useState(false);
   /** Setliste: tracks whose key/BPM/note body is open (summary stays visible). */
   const [openDetails, setOpenDetails] = useState<Set<string>>(() => new Set());
   /** Compact list: rows expanded to Comfortable chrome; independent of the details body. */
@@ -3910,6 +3912,9 @@ export function SetBuilder() {
           </em>
         </summary>
         {guideOpen ? <SetGuideDrawer onClose={() => setGuideOpen(false)} /> : null}
+        {iconsLegendOpen ? (
+          <SetRowIconsDrawer onClose={() => setIconsLegendOpen(false)} />
+        ) : null}
         <section className="crate-workspace" aria-label={t("builder.build.title")}>
           <div className="panel-head">
             <div>
@@ -4616,8 +4621,6 @@ export function SetBuilder() {
               role="tabpanel"
               aria-labelledby="set-tab-list"
             >
-              <p className="crate-action-legend">{t("builder.list.actionLegend")}</p>
-              <p className="crate-action-legend">{t("builder.list.pinLegend")}</p>
               <div className="crate-list-head">
                 {visibleTimeline.length > 0 ? (
                 <div
@@ -4726,6 +4729,14 @@ export function SetBuilder() {
                       </button>
                     </Tip>
                   </div>
+                  <Hint
+                    className="list-icons-hint"
+                    text={t("builder.list.iconsLegendAria")}
+                    end
+                    onMarkClick={() => setIconsLegendOpen(true)}
+                    markExpanded={iconsLegendOpen}
+                    markControls="set-row-icons-guide"
+                  />
                 </div>
                 {visibleTimeline.length > 0 ? (
                   <Tip text={t("builder.list.detailsTitle")} className="list-details-tip" end>

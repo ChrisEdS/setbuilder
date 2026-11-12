@@ -2,7 +2,7 @@
 
 **Deutsch** · [English](README.md)
 
-**Version 5.2.0**
+**Version 5.2.1**
 
 Die Bibliothek filtert nach Sternen, Farbe, Genre und Kommentar. Playlist-Namen öffnen als Liste unter dem Suchfeld. Ein fehlendes Cover nutzt die Noten-Kachel der Setliste. In der Playlist-Zeile bleibt die Trackzahl neben dem Titel, und „Als Set laden“ bleibt frei von der Scrollbar. Die Stick-Prüfung sagt, wenn neuere Player noch eine ältere Fassung zeigen. Die Detailfelder bleiben eine kurze Zeile, die Herkunftsmarke sitzt neben Details. Der Player öffnet in Light, Struktur hebt die gesetzten Cues hervor, und Analysieren bleibt in der Grid-Leiste.
 

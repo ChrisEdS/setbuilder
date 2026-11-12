@@ -2,7 +2,7 @@
 
 [Deutsch](README.de.md) · **English**
 
-**Version 5.2.0**
+**Version 5.2.1**
 
 The library filters by stars, color, genre, and comment. Playlist names open in a list under the search field. A missing cover uses the setlist note tile. A playlist row keeps the track count beside the title, and Load as set stays clear of the scrollbar. Stick health says when newer players still show an older copy. Detail fields stay one short line, with the source mark next to Details. The player opens in Light, Structure highlights the cues it sets, and Analyze stays in the grid bar.
 

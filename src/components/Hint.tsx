@@ -302,10 +302,25 @@ type Props = {
   className?: string;
   /** Hide the “?” when a nearby empty-state paragraph already explains the same thing. */
   mark?: boolean;
+  /** Bubble aligns to the right edge of the “?”. Use on trailing controls. */
+  end?: boolean;
+  /** When set, “?” opens a drawer (or similar) instead of the tip bubble. `text` is the control label only. */
+  onMarkClick?: () => void;
+  markExpanded?: boolean;
+  markControls?: string;
 };
 
 /** Visible “?” — hover or tap shows the explanation. Native title is too easy to miss. */
-export function Hint({ text, children, className, mark = true }: Props) {
+export function Hint({
+  text,
+  children,
+  className,
+  mark = true,
+  end = false,
+  onMarkClick,
+  markExpanded,
+  markControls,
+}: Props) {
   const id = useId();
   const ref = useRef<HTMLSpanElement>(null);
   const bubbleRef = useRef<HTMLSpanElement>(null);
@@ -323,13 +338,15 @@ export function Hint({ text, children, className, mark = true }: Props) {
         bubble && bubble.width > 0
           ? bubble
           : estimateRect(Math.min(MAX_WIDTH, window.innerWidth - MARGIN * 2), 56),
-        false,
+        end,
       ),
     );
-  }, []);
+  }, [end]);
+
+  const drawerTrigger = Boolean(onMarkClick);
 
   useLayoutEffect(() => {
-    if (!open || !mark) return;
+    if (!open || !mark || drawerTrigger) return;
     update();
     const frame = requestAnimationFrame(update);
     const onScroll = () => update();
@@ -340,10 +357,10 @@ export function Hint({ text, children, className, mark = true }: Props) {
       window.removeEventListener("scroll", onScroll, true);
       window.removeEventListener("resize", onScroll);
     };
-  }, [open, mark, text, update]);
+  }, [open, mark, text, update, drawerTrigger]);
 
   useEffect(() => {
-    if (!open || !mark) return;
+    if (!open || !mark || drawerTrigger) return;
     function onPointer(event: PointerEvent) {
       if (ref.current?.contains(event.target as Node)) return;
       setOpen(false);
@@ -361,7 +378,7 @@ export function Hint({ text, children, className, mark = true }: Props) {
       document.removeEventListener("pointerdown", onPointer);
       document.removeEventListener("keydown", onKey);
     };
-  }, [open, mark]);
+  }, [open, mark, drawerTrigger]);
 
   if (!mark) {
     return <span className={className}>{children}</span>;
@@ -370,25 +387,32 @@ export function Hint({ text, children, className, mark = true }: Props) {
   return (
     <span
       ref={ref}
-      className={["tip", "hint", open ? "is-open" : "", className].filter(Boolean).join(" ")}
+      className={["tip", "hint", end ? "tip-end" : "", open ? "is-open" : "", className]
+        .filter(Boolean)
+        .join(" ")}
     >
       {children}
       <button
         type="button"
         className="hint-mark"
         aria-label={text}
-        aria-expanded={open}
-        aria-describedby={open ? id : undefined}
+        aria-expanded={drawerTrigger ? markExpanded : open}
+        aria-controls={drawerTrigger ? markControls : undefined}
+        aria-describedby={!drawerTrigger && open ? id : undefined}
         onClick={(event) => {
           event.preventDefault();
           event.stopPropagation();
+          if (onMarkClick) {
+            onMarkClick();
+            return;
+          }
           if (open) setPos(null);
           setOpen(!open);
         }}
       >
         ?
       </button>
-      {open && pos ? (
+      {!drawerTrigger && open && pos ? (
         <PortalBubble id={id} text={text} pos={pos} bubbleRef={bubbleRef} />
       ) : null}
     </span>
