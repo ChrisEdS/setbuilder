@@ -505,9 +505,16 @@ export const EXTRACT_STEPS: { title: string; body: string }[] = [
 
 export function formatDuration(ms: number): string {
   const totalSeconds = Math.round(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  const totalMinutes = Math.floor(totalSeconds / 60);
+  const minutes = totalMinutes % 60;
+  const hours = Math.floor(totalMinutes / 60);
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds
+      .toString()
+      .padStart(2, "0")}`;
+  }
+  return `${totalMinutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
 export function performanceTracks(tracks: SetTrack[]): SetTrack[] {
@@ -660,7 +667,18 @@ export function overlapTakenMs(
   return Math.max(0, duration - trackPlayedMs(track, blendMs));
 }
 
-/** Planned blend overlap across the performance, the part that comes off playing time. */
+/** Sum of each row’s Länge (explicit overlap, else Übergang, else brief blend). */
+export function overlapPlannedTotalMs(tracks: SetTrack[], blendMs = BLEND_MS): number {
+  return performanceTracks(tracks).reduce(
+    (sum, track) => sum + resolvedOverlapMs(track, blendMs),
+    0,
+  );
+}
+
+/**
+ * Overlap actually taken off playing time across the performance. Matches
+ * file length minus Spielzeit; use overlapPlannedTotalMs when summing row Länge.
+ */
 export function overlapTotalMs(tracks: SetTrack[], blendMs = BLEND_MS): number {
   return performanceTracks(tracks).reduce((sum, track) => sum + overlapTakenMs(track, blendMs), 0);
 }

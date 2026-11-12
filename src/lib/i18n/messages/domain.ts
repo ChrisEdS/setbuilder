@@ -11,32 +11,37 @@ const de = {
   "domain.slot.closing.hint": "Nachhall, bewusst landen oder Twist",
 
   "domain.phase.open.label": "Open",
-  "domain.phase.open.hint": "Aufwärmen, Energie 3–5, Headroom lassen",
+  "domain.phase.open.hint":
+    "Anfang: Stimmung aufbauen und noch Luft nach oben lassen.",
   "domain.phase.lift.label": "Lift",
-  "domain.phase.lift.hint": "Textures und Vocals, Energie steigt langsam",
+  "domain.phase.lift.hint":
+    "Es wird lebendiger — mehr Klang und Stimme, die Energie steigt behutsam.",
   "domain.phase.rise.label": "Rise",
-  "domain.phase.rise.hint": "Auf 7–8, BPM und Mood anheben",
+  "domain.phase.rise.hint":
+    "Es geht spürbar voran — mehr Tempo und Druck im Raum.",
   "domain.phase.peak.label": "Peak",
-  "domain.phase.peak.hint": "8–10, Impact und Groove abwechseln",
+  "domain.phase.peak.hint":
+    "Höhepunkt des Slots — starke Titel, aber kein Dauer-Vollgas.",
   "domain.phase.release.label": "Release",
-  "domain.phase.release.hint": "Landen, 2–3 Stufen runter, nicht maxen",
+  "domain.phase.release.hint":
+    "Bewusst runter — Raum zum Atmen oder sauber übergeben.",
 
   "domain.role.anchor.label": "Anchor",
   "domain.role.anchor.hint": "Signature-Moment, Crowd-Connector",
   "domain.role.anchor.explain":
-    "Die großen Signature-Tracks, die der Floor kennt. Im Peak mit Abstand setzen — hintereinander verbrennen sie, einzeln tragen sie den Slot.",
+    "Titel, die der Floor kennt und mitnehmen soll — deine Signature-Momente. Mit Abstand setzen; drei hintereinander wirken wie einer.",
   "domain.role.bridge.label": "Bridge",
   "domain.role.bridge.hint": "Sorgfalt: Key-Clash, BPM- oder Energie-Sprung",
   "domain.role.bridge.explain":
-    "Übergänge, die du bewusst planst: Key-Clash, BPM-Sprung, Energy Boost oder Phasenwechsel. Hier entscheidest du Cut, EQ oder Break — nicht Autopilot.",
+    "Verbindet zwei Stimmungen, wenn Tempo, Key oder Energie springen — hier planst du den Übergang bewusst.",
   "domain.role.groove.label": "Groove",
   "domain.role.groove.hint": "Atem zwischen Peaks, weicher Mix",
   "domain.role.groove.explain":
-    "Weiche Anschlüsse zwischen den Peaks. Gleicher Key, ±1 oder A↔B — der Atem, der den Floor hält, ohne zu pushen.",
+    "Hält den Takt zwischen den großen Momenten — gleichmäßig und weich, ohne sofort wieder voll aufzudrehen.",
   "domain.role.safety.label": "Alternativen",
   "domain.role.safety.hint": "Plan B, wenn der Floor dreht",
   "domain.role.safety.explain":
-    "Ersatz neben der Performance. Zählt nicht in der Spieldauer, bis du ihn einsetzt — wenn der Floor dreht oder ein Anchor nicht trägt.",
+    "Reserve neben der Performance. Zählt nicht in der Spielzeit, bis du ihn einsortierst — wenn der Floor dreht oder ein Anchor nicht zieht.",
 
   "domain.transition.unset": "—",
   "domain.transition.unset.hint": "Kein Übergang. Der Mix bleibt unmarkiert.",
@@ -86,32 +91,37 @@ const en: Record<keyof typeof de, string> = {
   "domain.slot.closing.hint": "Afterglow, land on purpose or add a twist",
 
   "domain.phase.open.label": "Open",
-  "domain.phase.open.hint": "Warm-up, energy 3–5, leave headroom",
+  "domain.phase.open.hint":
+    "Start: set the mood and leave room to build.",
   "domain.phase.lift.label": "Lift",
-  "domain.phase.lift.hint": "Textures and vocals, energy rises slowly",
+  "domain.phase.lift.hint":
+    "It gets livelier — more texture and voice, energy rising gently.",
   "domain.phase.rise.label": "Rise",
-  "domain.phase.rise.hint": "Up to 7–8, raise BPM and mood",
+  "domain.phase.rise.hint":
+    "Momentum builds — more tempo and pressure in the room.",
   "domain.phase.peak.label": "Peak",
-  "domain.phase.peak.hint": "8–10, alternate impact and groove",
+  "domain.phase.peak.hint":
+    "High point of the slot — strong titles, not endless full throttle.",
   "domain.phase.release.label": "Release",
-  "domain.phase.release.hint": "Land it, drop 2–3 levels, don't max out",
+  "domain.phase.release.hint":
+    "Come down on purpose — breathe or hand over cleanly.",
 
   "domain.role.anchor.label": "Anchor",
   "domain.role.anchor.hint": "Signature moment, crowd connector",
   "domain.role.anchor.explain":
-    "The big signature tracks the floor knows. Space them in the peak — back to back they burn out, one by one they carry the slot.",
+    "Titles the floor knows and should sing along to — your signature moments. Space them out; three in a row feel like one.",
   "domain.role.bridge.label": "Bridge",
   "domain.role.bridge.hint": "Needs care: key clash, BPM or energy jump",
   "domain.role.bridge.explain":
-    "Transitions you plan on purpose: key clash, BPM jump, energy boost or phase change. Here you choose cut, EQ or break — not autopilot.",
+    "Links two moods when tempo, key or energy jumps — here you plan the transition on purpose.",
   "domain.role.groove.label": "Groove",
   "domain.role.groove.hint": "Breath between peaks, a smooth mix",
   "domain.role.groove.explain":
-    "Soft joins between the peaks. Same key, ±1 or A↔B — the breath that holds the floor without pushing.",
+    "Keeps the pulse between the big moments — steady and smooth, without cranking back up right away.",
   "domain.role.safety.label": "Alternatives",
   "domain.role.safety.hint": "Plan B when the floor turns",
   "domain.role.safety.explain":
-    "Backups beside the performance. They don't count in playtime until you insert them — when the floor turns or an anchor doesn't land.",
+    "Reserve beside the performance. Doesn't count in playtime until you slot it in — when the floor turns or an anchor doesn't land.",
 
   "domain.transition.unset": "—",
   "domain.transition.unset.hint": "No transition. The mix stays unmarked.",

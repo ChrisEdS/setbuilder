@@ -25,6 +25,7 @@ import {
   stickPermission,
   stickPicker,
 } from "@/lib/stick-session";
+import { Hint } from "@/components/Hint";
 import { StickHealthCard } from "@/components/StickHealthCard";
 import { inspectStick, inspectStickFiles, pdbSummaryOf, type StickHealth } from "@/lib/stick-health";
 import { enqueueWork } from "@/lib/work-queue";
@@ -144,7 +145,9 @@ export function StickSetList({
     <details className="explain-fold nested stick-sets-fold" open>
       <summary>
         <h3 className="library-browser-title">
-          <span className="library-browser-heading">{t("builder.playlist.title")}</span>
+          <Hint className="library-browser-heading" text={t("builder.playlist.note")}>
+            {t("builder.playlist.title")}
+          </Hint>
           <span className="library-browser-meta">
             {t("library.stick.setsCount", { shown: visible.length, total: sets.length })}
           </span>
@@ -179,7 +182,6 @@ export function StickSetList({
             </label>
           ) : null}
         </div>
-        <p className="builder-note">{t("builder.playlist.note")}</p>
         {visible.length ? (
           <ul className="library-list">
             {visible.map((set) => {

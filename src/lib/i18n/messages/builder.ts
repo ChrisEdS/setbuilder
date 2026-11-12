@@ -101,27 +101,54 @@ const de = {
   "builder.build.title": "Set bauen",
   "builder.build.summary": "{performance} Performance · {safety} Alternativen",
   "builder.guide.title": "So ist es gedacht",
+  "builder.guide.flow.title": "Ablauf",
+  "builder.guide.flow.1":
+    "Stick laden — unter „Stick laden & vorbereiten“ liest du Bibliothek, Tags und Playlists vom Rekordbox-Stick ein.",
+  "builder.guide.flow.2":
+    "Set anlegen — unter „Set bauen“ eine Playlist laden, „Automatisch“ nutzen oder Titel einzeln ins Set legen.",
+  "builder.guide.flow.3":
+    "Abend planen — Reihenfolge sortieren, jedem Titel Rolle und Phase am Bogen geben, Übergang markieren, Opener, Closer, Pins und Alternativen setzen.",
+  "builder.guide.flow.4":
+    "Anschlüsse hören — im Player Vorhören (Vorher / Jetzt / Danach): hörst du den Übergang und passt Marke und Länge an.",
+  "builder.guide.flow.5":
+    "Auf Stick schreiben — fertige Performance als Playlist speichern („Auf Stick schreiben“), auswerfen, spielen.",
+  "builder.guide.views.title": "Drei Ansichten",
+  "builder.guide.views.intro":
+    "Oben an der Setliste wechselst du den Blick — dieselben Titel, andere Frage:",
+  "builder.guide.views.list":
+    "Setliste — in welcher Reihenfolge du spielst; hier sortierst du und notierst Kommentare.",
+  "builder.guide.views.roles":
+    "Rollen — welche Aufgabe jeder Titel hat; Titel zwischen Anchor, Bridge, Groove und Alternativen ziehen.",
+  "builder.guide.views.arc":
+    "Bogen — wie die Energie über den Slot läuft; Phasen, Energie pro Titel und Keys; Mix-Score als Hinweis.",
+  "builder.guide.roles.title": "Rollen",
+  "builder.guide.roles.intro":
+    "Ein Set ist mehr als eine Playlist: Es ist die Story eines Abends — Reihenfolge, Energie und wie ein Titel in den nächsten geht. Jeder Performance-Titel bekommt eine Rolle.",
+  "builder.guide.arc.title": "Bogen",
+  "builder.guide.arc.intro":
+    "Der Energie-Bogen teilt deinen Slot in fünf Phasen. So siehst du, ob Aufbau und Höhepunkt zur geplanten Dauer passen — der Höhepunkt kommt bewusst später, nicht gleich am Anfang.",
+  "builder.guide.row.title": "In jeder Zeile",
   "builder.guide.brief.title": "Brief",
   "builder.guide.brief.body":
-    "Dauer und Blend-Zeit (Durchschnitt) gelten für den Slot. Set-Info (Vibe, Venue, Slot, Audience, Gear, Notes) sind nur Notizen zum Gig.",
+    "Geplante Dauer und durchschnittliche Blend-Zeit für den Slot. Set-Info (Vibe, Venue, Slot …) ist nur deine Gig-Notiz.",
   "builder.guide.details.title": "Details",
   "builder.guide.details.body":
-    "Key, BPM, Energie und Übergang in der Zeile sind die Mix-Marken für diesen Anschluss.",
+    "Key, BPM, Energie und Übergang — deine Mix-Notizen für genau diesen Anschluss in den nächsten Titel.",
   "builder.guide.transition.title": "Übergang",
   "builder.guide.transition.body":
-    "Ein Übergang markiert, wie du in den nächsten Track gehst (Cut, Short blend, Long blend, EQ swap, Echo-out und die übrigen) und wird nicht in die Audiodatei geschrieben. „—“ heißt: keine Marke.",
+    "Wie du in den nächsten Titel gehst (Cut, Blend, EQ swap, Echo-out …). Landet nur im Set, nicht in der MP3. „—“ = noch keine Marke.",
   "builder.guide.length.title": "Länge",
   "builder.guide.length.body":
-    "Die Länge daneben ist die Überlappung: diese Zeit geht von der Spielzeit ab, Slot-Zeile und Überlänge folgen ihr. Du wählst eine Länge oder tippst sie; lässt du sie leer, schlägt der Übergang eine Zeit vor, und „—“ behält die Blend-Zeit aus dem Brief.",
+    "Wie lange die beiden Titel überlappen — zieht von der Spielzeit ab. Leer lassen: der Übergang schlägt eine Zeit vor.",
   "builder.guide.rehearse.title": "Vorhören",
   "builder.guide.rehearse.body":
-    "Vorhören im Player (Vorher / Jetzt / Danach) ist zum Hören dieses Anschlusses und zum Setzen derselben Marke und Länge.",
+    "Im Player (Vorher / Jetzt / Danach) hörst du den Anschluss und setzt dieselbe Übergangs-Marke und Länge.",
   "builder.guide.note.title": "Set-Notiz",
   "builder.guide.note.body":
-    "Die Set-Notiz ist für die Kabine (Cue, Floor). Sie wird nicht in die MP3 geschrieben.",
+    "Kurznotiz für die Kabine — wird nicht auf den Stick in die Datei geschrieben.",
   "builder.playlist.title": "Mit einer Playlist starten",
   "builder.playlist.note":
-    "Die Playlist wird die Basis des Sets. Einzelne Tracks danach unter Musik hinzufügen.",
+    "Wählst du eine Playlist und tippst auf „Als Set laden“, wird daraus deine Setliste — mit allen Titeln in Stick-Reihenfolge. Danach ergänzt oder tauschst du einzelne Titel unter „Musik hinzufügen“. Alternativen stehen bereit, zählen aber nicht zur Spielzeit. Erst wenn du sie in die Performance setzt, laufen sie mit.",
   "builder.playlist.empty":
     "Noch kein Stick. Oben unter „Stick laden & vorbereiten“ den Stick laden.",
   "builder.playlist.confirmTitle": "Playlist „{name}“ laden?",
@@ -375,13 +402,13 @@ const de = {
 
   // Setlist
   "builder.list.headAll":
-    "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit / {minutes}:00 Slot",
+    "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit / {slot} Slot",
   "builder.list.headAllBlend":
-    "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit · {over} Überlappung / {minutes}:00 Slot",
+    "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit / {slot} Slot · {over} Überlappung",
   "builder.list.headAllLong":
-    "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit / {minutes}:00 Slot · zu lang",
+    "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit / {slot} Slot · Spielzeit zu lang",
   "builder.list.headAllLongBlend":
-    "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit · {over} Überlappung / {minutes}:00 Slot · zu lang",
+    "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit / {slot} Slot · {over} Überlappung · Spielzeit zu lang",
   "builder.list.mixPlanned": "nach Plan",
   "builder.list.headRole": "{role} · {tracks} · {duration}",
   "builder.list.details": "Details",
@@ -925,27 +952,54 @@ const en: Record<keyof typeof de, string> = {
   "builder.build.title": "Build set",
   "builder.build.summary": "{performance} performance · {safety} alternatives",
   "builder.guide.title": "How this works",
+  "builder.guide.flow.title": "Flow",
+  "builder.guide.flow.1":
+    "Load the stick — under “Load & prep stick” read library, tags and playlists from the rekordbox stick.",
+  "builder.guide.flow.2":
+    "Build the set — under “Build set” load a playlist, run “Auto”, or add titles one by one.",
+  "builder.guide.flow.3":
+    "Plan the night — sort order, give each title a role and arc phase, mark transitions, set opener, closer, pins and Alternatives.",
+  "builder.guide.flow.4":
+    "Hear each join — in the player rehearse (Before / Now / After): listen and adjust transition mark and length.",
+  "builder.guide.flow.5":
+    "Write to stick — save the finished performance as a playlist (“Write to stick”), eject, play.",
+  "builder.guide.views.title": "Three views",
+  "builder.guide.views.intro":
+    "At the top of the setlist you switch lens — same titles, different question:",
+  "builder.guide.views.list":
+    "Setlist — playback order; sort here and add comments.",
+  "builder.guide.views.roles":
+    "Roles — what each title does; drag between Anchor, Bridge, Groove and Alternatives.",
+  "builder.guide.views.arc":
+    "Arc — how energy runs across the slot; phases, energy per title and keys; mix score as a hint.",
+  "builder.guide.roles.title": "Roles",
+  "builder.guide.roles.intro":
+    "A set is more than a playlist: it’s the story of a night — order, energy and how one title flows into the next. Every performance title gets a role.",
+  "builder.guide.arc.title": "Arc",
+  "builder.guide.arc.intro":
+    "The energy arc splits your slot into five phases. You see whether the build and peak fit the planned duration — the peak comes on purpose later, not right at the start.",
+  "builder.guide.row.title": "In each row",
   "builder.guide.brief.title": "Brief",
   "builder.guide.brief.body":
-    "Duration and blend time (average) are what the slot uses. Set info (vibe, venue, slot, audience, gear, notes) is only notes about the gig.",
+    "Planned duration and average blend time for the slot. Set info (vibe, venue, slot …) is only your gig note.",
   "builder.guide.details.title": "Details",
   "builder.guide.details.body":
-    "Key, BPM, energy and the transition on the row are the mix marks for that join.",
+    "Key, BPM, energy and transition — your mix notes for this join into the next title.",
   "builder.guide.transition.title": "Transition",
   "builder.guide.transition.body":
-    "A transition marks how you go into the next track (cut, short blend, long blend, EQ swap, echo-out, and the others) and is not written into the audio file. “—” means no mark.",
+    "How you go into the next title (cut, blend, EQ swap, echo-out …). Stays in the set, not in the MP3. “—” = no mark yet.",
   "builder.guide.length.title": "Length",
   "builder.guide.length.body":
-    "The length next to it is the overlap: that time comes off the playing time, so the slot line and the overrun follow it. Pick a length or type one; if you leave it, the chosen transition suggests a time, and “—” keeps the blend time from the brief.",
+    "How long the two titles overlap — comes off playtime. Leave empty: the transition suggests a time.",
   "builder.guide.rehearse.title": "Rehearsal",
   "builder.guide.rehearse.body":
-    "Rehearsing in the player (Before / Now / Next) is for hearing that join and setting the same mark and length.",
+    "In the player (Before / Now / After) you hear the join and set the same transition mark and length.",
   "builder.guide.note.title": "Set note",
   "builder.guide.note.body":
-    "The set note is for the booth (cue, floor). It is not written to the MP3.",
+    "Short booth note — not written into the file on the stick.",
   "builder.playlist.title": "Start with a playlist",
   "builder.playlist.note":
-    "The playlist becomes the base of the set. Add single tracks afterwards under Add music.",
+    "When you pick a playlist and tap “Load as set”, it becomes your set list — every track in stick order. Afterwards you add or swap individual tracks under “Add music”. Alternates are ready but do not count toward playing time until you place them in the performance.",
   "builder.playlist.empty":
     "No stick yet. Load it above under “Load stick & prepare”.",
   "builder.playlist.confirmTitle": "Load playlist “{name}”?",
@@ -1193,13 +1247,13 @@ const en: Record<keyof typeof de, string> = {
     "Re-sets Anchor, Bridge and Groove by phase, key and BPM. The order stays.",
 
   "builder.list.headAll":
-    "Performance set · {tracks} · blend {mix} · {duration} playing / {minutes}:00 slot",
+    "Performance set · {tracks} · blend {mix} · {duration} playing / {slot} slot",
   "builder.list.headAllBlend":
-    "Performance set · {tracks} · blend {mix} · {duration} playing · {over} overlap / {minutes}:00 slot",
+    "Performance set · {tracks} · blend {mix} · {duration} playing / {slot} slot · {over} overlap",
   "builder.list.headAllLong":
-    "Performance set · {tracks} · blend {mix} · {duration} playing / {minutes}:00 slot · too long",
+    "Performance set · {tracks} · blend {mix} · {duration} playing / {slot} slot · playing time too long",
   "builder.list.headAllLongBlend":
-    "Performance set · {tracks} · blend {mix} · {duration} playing · {over} overlap / {minutes}:00 slot · too long",
+    "Performance set · {tracks} · blend {mix} · {duration} playing / {slot} slot · {over} overlap · playing time too long",
   "builder.list.mixPlanned": "as planned",
   "builder.list.headRole": "{role} · {tracks} · {duration}",
   "builder.list.details": "Details",

@@ -208,12 +208,13 @@ import {
   transitionOverlapPatch,
   phaseDurationMs,
   phaseWindowLabel,
-  overlapTotalMs,
+  overlapPlannedTotalMs,
   playedTotalMs,
   playingOverSlot,
   slotTargetMs,
   setPositionById,
   trackCount,
+  trackPlayedMs,
 } from "@/lib/set";
 import {
   DRAFT_EVENT,
@@ -4661,7 +4662,7 @@ export function SetBuilder() {
                     roleFilter === "all"
                       ? (() => {
                           const playingMs = playedTotalMs(visibleTimeline, blendMs);
-                          const overMs = overlapTotalMs(visibleTimeline, blendMs);
+                          const overMs = overlapPlannedTotalMs(visibleTimeline, blendMs);
                           const tooLong = playingOverSlot(playingMs, targetMs);
                           const withBlend = overMs >= 1000;
                           return t(
@@ -4677,7 +4678,7 @@ export function SetBuilder() {
                               duration: formatDuration(playingMs),
                               over: formatDuration(overMs),
                               mix: mixLabel,
-                              minutes: draft.durationMinutes,
+                              slot: formatDuration(targetMs),
                             },
                           );
                         })()
@@ -4686,7 +4687,7 @@ export function SetBuilder() {
                           tracks: trackCount(visibleTimeline.length, t),
                           duration: formatDuration(
                             visibleTimeline.reduce(
-                              (sum, track) => sum + track.durationMs,
+                              (sum, track) => sum + trackPlayedMs(track, blendMs),
                               0,
                             ),
                           ),
@@ -4879,7 +4880,15 @@ export function SetBuilder() {
                           />
                           <span className="manual-copy">
                             <span className="manual-title-line">
-                              <strong title={track.name}>{track.name}</strong>
+                              <strong
+                                title={
+                                  track.durationMs
+                                    ? `${track.name} · ${formatDuration(track.durationMs)}`
+                                    : track.name
+                                }
+                              >
+                                {track.name}
+                              </strong>
                               {rowCompact && draft.openerId === track.id ? (
                                 <em className="anchor-pill is-opener">{t("builder.row.openerBadge")}</em>
                               ) : null}
@@ -4902,7 +4911,7 @@ export function SetBuilder() {
                             <span>
                               {artistLine(track.artists, t)}
                               {track.durationMs
-                                ? ` · ${formatDuration(track.durationMs)}`
+                                ? ` · ${formatDuration(trackPlayedMs(track, blendMs))}`
                                 : ""}
                             </span>
                           </span>

@@ -11,10 +11,14 @@ import {
   reshuffleDraftFromPool,
 } from "./extract-set.ts";
 import { tEn } from "./i18n/core.ts";
+import { readFileSync } from "node:fs";
 import {
   DEFAULT_SET,
+  formatDuration,
+  overlapPlannedTotalMs,
   overlapTakenMs,
   overlapTotalMs,
+  performanceTracks,
   playedDurationMs,
   playedTotalMs,
   playingOverSlot,
@@ -92,6 +96,49 @@ test("too long compares playing time with the slot, not the overlap", () => {
   assert.equal(overlapTotalMs(over, 120_000), 10 * 60_000);
   assert.equal(playingOverSlot(playedTotalMs(over, 120_000), slot), true);
   assert.equal(playingOverSlot(overlapTotalMs(over, 120_000), slot), false);
+});
+
+test("formatDuration rolls long spans into hours", () => {
+  assert.equal(formatDuration(8 * 60_000 + 35_000), "8:35");
+  assert.equal(formatDuration(6 * 3_600_000 + 55 * 60_000 + 50_000), "6:55:50");
+  assert.equal(formatDuration(slotTargetMs(60)), "1:00:00");
+});
+
+test("spielzeit is not the raw file sum when blends are planned", () => {
+  const file = 7 * 60_000;
+  const tracks = Array.from({ length: 64 }, (_, index) => ({
+    ...mk(index, "lift"),
+    durationMs: file,
+    transition: "long-blend" as const,
+  }));
+  const rawSum = tracks.reduce((sum, track) => sum + track.durationMs, 0);
+  const withBriefOnly = tracks.reduce(
+    (sum, track) => sum + playedDurationMs(track.durationMs, 120_000),
+    0,
+  );
+  const planned = playedTotalMs(tracks, 120_000);
+  assert.equal(planned, 64 * (file - 60_000));
+  assert.notEqual(planned, rawSum);
+  assert.notEqual(planned, withBriefOnly);
+});
+
+test("row overlap labels sum to the status overlap figure", () => {
+  const draft = JSON.parse(
+    readFileSync(new URL("../../scripts/makrobe-64-fixture.json", import.meta.url), "utf8"),
+  );
+  const blend = 120_000;
+  const tracks = performanceTracks(draft.tracks);
+  const fileMs = tracks.reduce((sum, track) => sum + track.durationMs, 0);
+  const played = playedTotalMs(tracks, blend);
+  const plannedOverlap = overlapPlannedTotalMs(tracks, blend);
+  const takenOverlap = overlapTotalMs(tracks, blend);
+  assert.equal(tracks.length, 64);
+  assert.equal(fileMs, 27_303_000);
+  assert.equal(played, 24_950_000);
+  assert.equal(plannedOverlap, takenOverlap);
+  assert.equal(played + takenOverlap, fileMs);
+  assert.equal(formatDuration(played), "6:55:50");
+  assert.equal(formatDuration(plannedOverlap), "39:13");
 });
 
 test("a planned transition replaces the average blend on that track", () => {
