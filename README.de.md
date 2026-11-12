@@ -4,40 +4,22 @@
 
 **Version 5.2.2**
 
-Die Bibliothek filtert nach Sternen, Farbe, Genre und Kommentar. Playlist-Namen öffnen als Liste unter dem Suchfeld. Ein fehlendes Cover nutzt die Noten-Kachel der Setliste. In der Playlist-Zeile bleibt die Trackzahl neben dem Titel, und „Als Set laden“ bleibt frei von der Scrollbar. Die Stick-Prüfung sagt, wenn neuere Player noch eine ältere Fassung zeigen. Die Detailfelder bleiben eine kurze Zeile, die Herkunftsmarke sitzt neben Details. Der Player öffnet in Light, Struktur hebt die gesetzten Cues hervor, und Analysieren bleibt in der Grid-Leiste.
+SETBUILDER hilft dir, aus einem rekordbox-USB-Stick ein DJ-Set zu planen, die Titel im Zusammenspiel zu prüfen, die Übergänge vorzuhören und das fertige Set als Playlist wieder auf denselben Stick zu schreiben. Die App spricht Deutsch und Englisch.
 
-SETBUILDER baut ein DJ-Set aus einem rekordbox-USB-Stick. Du lädst eine Playlist oder eine History, legst die Nacht auf den Slot und prüfst Key, BPM und Energie. Danach schreibst du das Set zurück und hörst die Übergänge vor dem Gig. Die Oberfläche ist Deutsch und Englisch.
+**Für wen:** DJs, die schon mit rekordbox auf den Stick exportieren und vor dem Gig einen Slot planen wollen — nicht nur eine Playlist.
+
+## In vier Schritten
+
+1. **Stick laden** — Playlists und Bibliothek vom rekordbox-Stick einlesen.
+2. **Set bauen** — mit einer Playlist starten, den Slot (die Zeit, die du hast) setzen und die Performance-Titel ordnen.
+3. **Abend formen** — Rollen (Anchor, Bridge, Groove), Bogen-Phasen (Open, Lift, Rise, Peak, Release), Übergänge und Alternativen.
+4. **Auf Stick schreiben** — Set als Playlist auf den Stick speichern, auswerfen, am Player testen.
 
 Anleitung mit Screenshots: [docs/GUIDE.de.md](docs/GUIDE.de.md)
 
-## Was du mitnimmst
-
-- 🎚️ **Eine Nacht mit Form.** Open, Lift, Peak, Release. Du siehst, wo noch Luft ist und wo es schon voll ist.
-- ⏱️ **Die Nacht auf den Slot.** Zu lang, sie wird kürzer. Zu kurz füllt sie aus Alternativen und der geladenen Playlist.
-- 🔑 **Keys, die miteinander reden.** Camelot entlang des Sets. Ein Clash fällt auf, solange du noch Zeit hast.
-- ⚡ **Energie, die zum Song gehört.** Aus der Datei gelesen, gemessen oder von dir gesetzt.
-- ➕ **Wo der nächste Song reinkommt.** Hinter einem Song, den du nennst, am Ende oder auf Automatisch. Automatisch setzt ihn hinter den Song, dem er nach Key, BPM und Energie am besten folgt — zuerst in seiner Phase, dann überall, und nur ans Ende, wenn nichts passt. Der Status sagt, welchen Platz er hat.
-- 📌 **Behalten, oder den Slot pinnen.** Ein behaltener Track bleibt im Set, Sortieren darf ihn verschieben. Ein Pin hält genau diesen Slot. Opener und Closer halten die Enden.
-- 🛟 **Plan B in der Tasche.** Rollen und Alternativen, wenn der Floor dreht.
-- 🎧 **Den Übergang vorher hören.** Vorher, dieser Track, der nächste — dieselbe Länge wie im Set. Die Liste folgt dem Track, der spielt, und hält diese Zeile neben dem Player sichtbar.
-- 🌊 **Eine Welle über die volle Breite.** Der Zoom folgt der Wiedergabe, das Mausrad zoomt. Ein Klick sucht, die Wiedergabe läuft weiter. Ein Ziehen pausiert zum Schieben. Die Leertaste setzt fort. Die Pfeiltasten springen einen Takt und landen auf einem Downbeat.
-- 🎼 **Das rekordbox-Beatgrid.** Das Grid der Playlist wird im Hintergrund gelesen, bevor der Player aufgeht, und die erste Lesung zeigt den Fortschritt. Es startet als das, das rekordbox schon angelegt hat. Analyse ersetzt es auf Wunsch aus der Audiodatei, und −5, +5 und 1 schieben es weiter. Fehlt ein Grid, sagt das Deck das.
-- 🥁 **Der erste Downbeat auf dem Playhead.** Er setzt den ersten Downbeat dort und behält den Abstand der Beats. Ohne Rekordbox-Grid tut er nichts.
-- 🔖 **Hot Cues und Phrasenbänder.** Hot Cues A–H kommen mit dem Track. Ein neuer Cue rastet auf den nächsten Downbeat ein, wenn ein Grid da ist, und wird sofort auf den Stick geschrieben. Cues, die schon als Memory Cues liegen, bleiben. Die Phrasenbänder von rekordbox liegen auf der Welle. Liegt für den Track noch keine Analyse auf dem Stick, bleiben die Cues im Set. Der Player sieht sie dann noch nicht.
-- 💡 **Light.** Eine kleinere Wellenform. In der Leiste bleibt die laufende Zeit groß, und Ansicht, Cues und Grid bleiben getrennt.
-- 🎒 **Fertig, wenn es sitzt.** Der Stick für den Player, der Zettel für die Kabine, die Datei für den Rechner.
-
-## Der Stick
-
-Einen rekordbox-USB-Stick verbinden (ein erkanntes Volume lädt ohne Ordner-Dialog; ein erinnerter Stick kommt zurück, solange der Zugriff gilt). Playlist, History oder die Collection für die Keys laden. Im Brief setzt du die Slot-Minuten und die mittlere Blend-Zeit. Im Set legst du den Bogen, die Übergänge, Pins und Alternativen, und du kannst die Nacht auf den Slot setzen. **Auf Stick schreiben** legt das Set als Playlist in export.pdb und, wenn die Datei sich öffnen lässt, in die Player-Bibliothek. Die Bibliothek wird nicht gelöscht. **Für Player vorbereiten** legt eine fehlende Player-Bibliothek aus der Sicherung zurück. Auswerfen, dann den Stick vor dem Gig am echten Player spielen.
-
-Für die Kabine gibt es ein PDF und kopierten Text. Für den Rechner rekordbox-XML und M3U.
-
-rekordbox allein braucht kein Konto. Spotify und Tidal sind optional. Die Desktop-Weiterleitung ist `http://127.0.0.1:4317/api/auth/callback` (Tidal: `…/api/auth/tidal/callback`). Für `npm run dev` auf Port **4327** denselben Port in der Weiterleitung verwenden. Keys trägst du unter **Einstellungen** ein oder in `.env.local` ([`.env.example`](.env.example)).
-
 ## Starten
 
-Builds für Mac, Windows und Linux liegen unter [GitHub Releases](https://github.com/ChrisEdS/setbuilder/releases). Ein Tag `v*` baut sie in GitHub Actions mit Node 22: macOS arm64 und x64 (`.dmg` und `.zip`), Windows x64 (NSIS), Linux x64 (AppImage und `.deb`). Die Desktop-App hört auf Port **4317**.
+Builds für Mac, Windows und Linux liegen unter [GitHub Releases](https://github.com/ChrisEdS/setbuilder/releases). Die Desktop-App öffnet sich im Browser unter Port **4317**.
 
 Ein unsignierter Mac-Download braucht manchmal einmal das hier:
 
@@ -54,7 +36,7 @@ npm run dev
 
 Der Dev-Server ist [http://127.0.0.1:4327](http://127.0.0.1:4327). Tests: `npm test`.
 
-Die Desktop-Hülle, aus dem Repo:
+Desktop-Hülle aus dem Repo:
 
 ```bash
 npm install

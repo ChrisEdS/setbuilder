@@ -2,70 +2,115 @@
 
 **Deutsch** · [English](GUIDE.md) · [README](../README.de.md)
 
-**5.2.2.** Die Bilder sind die englische Oberfläche in Chrome. Dieselben Schritte, deutsche Beschriftungen. Oben rechts schaltet **DE** / **EN**.
+**Version 5.2.2.** Die Screenshots zeigen die englische Oberfläche in Chrome. **DE** / **EN** oben rechts schaltet die Beschriftungen. Die englische Anleitung folgt denselben Schritten.
 
-Stick verbinden, Set bauen, im Deck hören, mitnehmen. Die ausgelieferte App ist die Desktop-App (Port **4317**). Im Browser: Port **4327**. Spotify- und Tidal-Weiterleitungen in `.env.local` müssen denselben Port nutzen wie die geöffnete App: **4317** für die Desktop-App, **4327** für `npm run dev`.
+Die Desktop-App (Port **4317**) ist der normale Weg. Wer aus dem Repo mit `npm run dev` startet, nutzt Port **4327**.
 
-> **Vor dem Gig:** Stick am echten Player testen (Playlist sichtbar, Tracks spielbar). Backup behalten. SETBUILDER kann `export.pdb` schreiben und legt Kopien unter `SETBUILDER-Backup/` ab. Für deine Medien bist du selbst verantwortlich.
+> **Vor dem Gig:** Stick in SETBUILDER auswerfen, am CDJ/XDJ testen (Playlist sichtbar, Titel spielbar) und ein Backup des Sticks behalten. Für deine Medien bist du selbst verantwortlich.
 
-## 1. Stick verbinden
+## Was du machst
+
+1. Stick laden und vorbereiten  
+2. Mit einer Playlist starten  
+3. Setliste, Rollen und Bogen nutzen  
+4. Übergänge im Player hören  
+5. Set auf den Stick schreiben  
+
+---
+
+## 1. Stick laden und vorbereiten
 
 ![Rekordbox-Stick und Playlists](screenshots/de/01-stick-library.png)
 
-Stick anschließen. Ein erkanntes Volume lädt ohne Ordner-Dialog. SETBUILDER liest Playlists und History aus `export.pdb`, auch im versteckten Ordner `PIONEER` oder `.PIONEER`. Unter **Set bauen** steht **Mit einer Playlist starten**. **Als Set laden** übernimmt eine Playlist ins Set. Reihenfolge, Key und BPM bleiben. Dateien vom Stick lassen sich im Player hören.
+1. Schließe deinen rekordbox-USB-Stick an.
+2. Öffne oben **Stick laden & vorbereiten**.
+3. Erkennt SETBUILDER den Stick, lädt er ohne Ordner-Dialog. Zeigt sich ein Dialog: den Stick wählen (den rekordbox-Export), nicht einen Ordner, der nur Musikdateien enthält.
+4. Warte, bis die Bibliothek bereit ist. Du kannst nach Sternen, Farbe, Genre und Kommentar filtern. Playlist-Namen öffnen als Liste unter dem Suchfeld.
+5. Achte auf den Statusstreifen am Stick — er sagt, ob der Stick für deinen Player bereit ist.
+   - **Gelb** — die Player-Bibliothek auf dem Stick fehlt oder ist älter als die Playlists. Tippe **Für Player vorbereiten**, um sie aus einer Sicherung wiederherzustellen, die SETBUILDER behält. Nichts auf dem Stick wird gelöscht.
+   - **Grün** — die Stick-Datenbank ist lesbar. Neuere Player zeigen manchmal noch eine ältere Fassung; Streifen und **Details** erklären das.
+6. Für einen anderen Stick: **Anderer Stick**.
 
-Hängt der Ordner-Dialog: **export.pdb** wählen (`PIONEER/rekordbox/export.pdb`). Nicht den ganzen USB mit allen Musikdateien, das kann ewig dauern. **Anderer Stick**, wenn ein anderes Volume dran ist.
+Unter **Set bauen** listet **Mit einer Playlist starten** die Playlists auf dem Stick. Titel vom Stick lassen sich im Player abspielen, sobald der Stick geladen ist.
 
-Der Streifen am Stick ist der Player-Check. Gelb heißt: die Player-Bibliothek fehlt oder ist älter als die Playlists. **Für Player vorbereiten** legt eine fehlende Bibliothek aus der Sicherung zurück und löscht sie nie. **Auf Stick schreiben** aktualisiert export.pdb und die Player-Bibliothek, wenn sie sich öffnen lässt. Grün heißt: die Stick-Datenbank ist lesbar. CDJ-3000X, XDJ-AZ und OPUS-QUAD lesen die Player-Bibliothek. Am Gerät prüfen.
+---
 
-## 2. Set bauen
+## 2. Mit einer Playlist starten
 
 ![Brief: Titel, Slot, Blend-Zeit](screenshots/de/02-brief.png)
 
 ![Setliste nach der Playlist](screenshots/de/02-setlist.png)
 
-Oben der Brief. **Titel**, **Slot-Dauer (Min)** und **Blend-Zeit (Durchschnitt)**. Die Minuten sind die Uhr für **Auf Slot setzen**: länger, und das Set füllt sich; kürzer, und es wird geschnitten. **Set-Info** (Vibe, Venue, Slot, Audience, Gear, Notes) sind Notizen zum Gig. Die Uhr bleibt in den Minuten.
+1. Unter **Set bauen** öffnest du **Mit einer Playlist starten**.
+2. Wählst du eine Playlist, tippst du auf **Als Set laden**.
+3. Hat das Set schon Titel: **Ersetzen** (einmal überschreiben, mit **Rückgängig**), **Zusammenführen** (Set behalten, nur fehlende Titel anhängen) oder **Abbrechen**.
+4. Die Playlist-Reihenfolge wird deine Setliste. Key und BPM bleiben wie auf dem Stick.
 
-**Mit einer Playlist starten** listet die Playlists vom Stick. Über ein nicht leeres Set fragt SETBUILDER:
+Oben setzt der **Brief**:
 
-- **Ersetzen** überschreibt die Setliste und bietet einmal **Rückgängig**.
-- **Zusammenführen** behält die Setliste und hängt nur Tracks an, die noch fehlen.
-- **Abbrechen** ändert nichts.
+- **Titel** — Name des Sets.
+- **Slot-Dauer (Min)** — Zeitfenster für deinen Gig (der **Slot**).
+- **Blend-Zeit (Durchschnitt)** — wie lange jeder Anschluss im Schnitt in den nächsten Titel überlappt (die **Blend**). SETBUILDER nutzt das, wenn in der Zeile noch keine Übergangs-Länge steht.
 
-Die Setliste zeigt Phase, Rolle und den Anschluss zum Vorgänger. **Setliste**, **Rollen** und **Bogen** wechseln die Ansicht. **Comfortabel** zeigt die Icon-Zeile, **Kompakt** hält sie schmal. Die Reihenfolge änderst du am Griff oder mit den Pfeilen. **Behalten** lässt den Track im Set, Sortieren darf ihn verschieben. **Genau hier** hält den Slot. Play öffnet den Player, und die spielende Zeile bleibt daneben sichtbar. **Auf Slot setzen** kürzt, wenn das Set über dem Slot liegt. **Mit Matches füllen** legt passende Tracks nach, wenn es zu kurz ist.
+**Set-Info** (Vibe, Venue, Slot, Audience, Gear, Notes) ist nur deine Gig-Notiz. Sie ändert die Uhr nicht.
 
-Unter **Beim Hinzufügen** wählst du, wo der nächste Song reinkommt: hinter einem Song, den du nennst, am Ende oder auf **Automatisch**. **Automatisch** setzt ihn hinter den Song, dem er am besten folgt — Key, BPM, Energie — zuerst in seiner Phase, dann überall, und nur ans Ende, wenn nichts passt. Der Status sagt, welchen Platz er hat.
+Die Statuszeile unter dem Set zeigt **Spielzeit** und Slot. **Spielzeit** ist die Summe der Dateilängen minus die geplante Überlappung pro Zeile. Ein 60-Minuten-Slot kann länger als 60 Minuten Spielzeit haben und trotzdem passen; ist die Spielzeit für den Slot zu lang, sagt die Statuszeile das.
 
-## 3. Im Deck hören
+**Alternativen** (Plan-B-Titel) liegen neben der Performance. Sie zählen nicht zur Spielzeit, bis du sie in die Performance schiebst.
+
+---
+
+## 3. Setliste, Rollen und Bogen
+
+1. Wechsle oben an der Setliste **Setliste**, **Rollen** und **Bogen**. Dieselben Titel, drei Ansichten:
+   - **Setliste** — Wiedergabereihenfolge. Sortieren am Griff oder mit Pfeilen. Kommentare. **Details** pro Zeile für Key, BPM, Energie und Übergangs-Notizen.
+   - **Rollen** — jeder Performance-Titel hat eine **Rolle** (seine Aufgabe): **Anchor** (Signature-Moment), **Bridge** (sorgfältiger Anschluss, wenn Key, BPM oder Energie springt), **Groove** (ruhiger Takt zwischen Peaks), **Alternativen** (Reserve; nur reinziehen, wenn du sie brauchst).
+   - **Bogen** — wie die Energie über den Slot läuft. Jeder Titel sitzt in einer **Phase**: **Open**, **Lift**, **Rise**, **Peak** oder **Release**. So siehst du, ob Aufbau und Höhepunkt zur Slot-Dauer passen.
+
+2. In jeder Zeile setzt du den **Übergang** (Cut, Blend, EQ swap, Echo-out, …) und die **Länge** (Überlappung). Die Überlappung zieht von der Spielzeit in dieser Zeile ab. Länge leer lassen: SETBUILDER schlägt eine Zeit aus der Blend vor.
+
+3. **Behalten** lässt den Titel im Set, Sortieren darf ihn verschieben. **Genau hier** pinnt den Slot. **Opener** und **Closer** halten den ersten und letzten Performance-Titel.
+
+4. Unter **Beim Hinzufügen** wählst du, wo der nächste Titel landet: hinter einem Titel deiner Wahl, am Ende oder **Automatisch** (hinter dem besten Follow in Key, BPM und Energie — zuerst in seiner Phase, dann überall).
+
+5. **Auf Slot setzen** kürzt, wenn die Spielzeit über dem Slot liegt (Titel wandern zu Alternativen), oder füllt aus Alternativen und dem Playlist-Pool, wenn es zu kurz ist. Opener, Closer und Pins bleiben.
+
+6. **So ist es gedacht** in der App passt zu dieser Anleitung.
+
+---
+
+## 4. Übergänge im Player hören
 
 ![Player mit Wellenform, Zoom 2×, Q und Cues A–H](screenshots/de/03-deck.png)
 
-Der Player ist die Karte über der Setliste. An der rechten Kante breiter ziehen, an der unteren höher. Die Wellenform geht über die Breite der Karte. Oben die Übersicht, darunter die große Welle. **+** zoomt (im Bild **2×**), die Übersicht markiert das Fenster, der Playhead bleibt. Die Setliste hält die spielende Zeile neben dem Player im Blick, auch wenn der Player sich danach verschiebt oder wächst. Das Beatgrid der Playlist wird im Hintergrund gelesen, bevor der Player aufgeht, und die erste Lesung zeigt, wie weit sie ist.
+1. Tippe **Play** in einer Zeile. Der Player öffnet sich über der Setliste und hält die spielende Zeile sichtbar.
+2. Nutze **Vorhören** (**Vorher** / **Jetzt** / **Danach**), um zu hören, wie dieser Titel in den nächsten übergeht — dieselben Längen wie im Set.
+3. Passe Übergangs-Marke und Länge beim Hören an. Diese Notizen bleiben im Set, nicht in der Audiodatei auf dem Stick.
+4. Player am rechten oder unteren Rand größer ziehen. **+** zoomt die Wellenform. **Q** rastet neue Hot Cues **A–H** auf das rekordbox-Beatgrid ein, wenn ein Grid da ist. **−5**, **+5** und **1** schieben das Grid. Neue Cues können auf den Stick geschrieben werden, sobald die Analyse dazu passt.
 
-**Q** quantisiert. Ein Hot Cue **A–H** landet dann auf dem nächsten Downbeat des Rekordbox-Beatgrids. Aus macht **Q** die Zeit, die du gesetzt hast. **−5** und **+5** schieben das Grid um 5 ms. **1** legt den nächsten Downbeat auf den Playhead. Phrasenbänder kommen aus der rekordbox-Analyse und wandern mit, wenn du das Grid schiebst. Cues und die Verschiebung bleiben im Player. Der CDJ sieht sie erst, wenn sie in der Analyse-Datei auf dem Stick stehen.
+---
 
-- 🥁 **Der erste Downbeat auf dem Playhead.** Er setzt den ersten Downbeat dort und behält den Abstand der Beats. Ohne Rekordbox-Grid tut er nichts.
-
-Im Bild: Nefertiti (Futuro Pelo), Wellenform, Zoom 2×, **Q**, **−5**, **+5**, **1**, Pads A–H. Darunter steht „Kein Rekordbox-Beatgrid für diesen Track.“ Bei den Tracks, die hier aus dem Set geöffnet wurden, hat der Player kein Grid gezeichnet — also auch keine Phrasenbänder und keinen gesetzten Cue. Die Knöpfe sind dieselben, sobald die Analyse-Datei zum Track passt.
-
-## 4. Mitnehmen
+## 5. Auf den Stick schreiben
 
 ![Export: Set speichern, Auf Stick schreiben, PDF, Text kopieren](screenshots/de/04-export.png)
 
-**Exportieren** ist nach Ziel gruppiert.
+1. Öffne **Exportieren**.
+2. **Für den Player** — **Auf Stick schreiben**. SETBUILDER legt das Set als neue Playlist auf dem Stick ab (Performance-Titel plus Alternativen). Nur Titel, die schon auf dem Stick liegen. Vor dem Schreiben entsteht eine Sicherung; bei Problemen kannst du zurückrollen.
+3. **Im Setbuilder** — **Set speichern** behält deine Arbeit in der App, ohne den Stick anzufassen.
+4. **Für die Kabine** — **PDF** oder **Text kopieren** als Zettel (Brief, Reihenfolge, Keys, BPM, Energie wenn bekannt).
+5. **Für den Rechner** — **XML für rekordbox** oder **M3U** zum Import woanders (nicht dasselbe wie Auf den Stick schreiben).
 
-- **Im Setbuilder** — **Set speichern**. Schreibt den Stick nicht.
-- **Für den Player** — **Auf Stick schreiben**. Playlist `SETBUILDER - <Titel>` plus Alternativen in die aktuelle `export.pdb`, mit Backup, Rücklesen und Rollback. Nur Tracks, die schon auf dem Stick liegen. Diese Anleitung hat den Knopf nicht gedrückt.
-- **Für die Kabine** — **PDF** (im Druckdialog „Als PDF speichern“) und **Text kopieren**. Brief, Reihenfolge, Key, BPM, Energie wenn bekannt, Set-Notiz.
-- **Für den Rechner** — im selben Menü darunter: **XML für rekordbox** (Import, nicht der Stick) und **M3U**.
+6. Wenn das Schreiben fertig ist, wirf den Stick in SETBUILDER aus, bevor du ihn abziehst.
 
-Unter **Verbindungen & Setups** lassen sich Brief und Set als Setup speichern. Der Name folgt dem Titel aus dem Brief.
+---
 
 ## Vor dem Gig
 
-Stick-Lesen, Import und Schreiben laufen nacheinander. Der Rest der Oberfläche bleibt bedienbar. Schreibweg, CDJ/XDJ-Wiedergabe und Auswerfen an der Hardware prüfen, die du spielst. Browser-Ordnerrechte und ein voller Stick kann SETBUILDER nicht für dich beweisen.
+Lesen, Import und Schreiben am Stick laufen nacheinander; der Rest der App bleibt bedienbar. An der Hardware, die du wirklich spielst: Playlist sichtbar, Titel laden. Ordnerrechte und voller Stick kann SETBUILDER nicht für dich prüfen.
+
+---
 
 ## Weiterführend
 
-- [README](../README.de.md) — Setup, Desktop-Download, Sprachen, Tests, Lizenz
-- [Desktop-Paketierung](../desktop/README.md) — Build, Signierung, Quarantäne
+- [README](../README.de.md) — installieren, Desktop-Download, Lizenz  
+- [Desktop-Paketierung](../desktop/README.md) — Build und Signierung für Entwickler  

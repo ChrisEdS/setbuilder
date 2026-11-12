@@ -1,71 +1,116 @@
-# SETBUILDER guide
+# SETBUILDER manual
 
 [Deutsch](GUIDE.de.md) · **English** · [README](../README.md)
 
-**5.2.2.** The pictures are the English interface in Chrome. **DE** / **EN** at the top right switches the labels. The German guide is the same steps.
+**Version 5.2.2.** Screenshots show the English interface in Chrome. **DE** / **EN** at the top right switches the labels. The German manual follows the same steps.
 
-Connect the stick, build the set, hear it on the deck, take it with you. The shipping client is the desktop app (port **4317**). In the browser: port **4327**. Spotify and Tidal redirects in `.env.local` must use the same port as the app you open: **4317** for the desktop build, **4327** for `npm run dev`.
+The desktop app (port **4317**) is what you normally install. If you run from the repo with `npm run dev`, use port **4327**.
 
-> **Before the gig:** Test the stick on the actual player (playlist visible, tracks playable). Keep a backup. SETBUILDER can write `export.pdb` and keeps copies under `SETBUILDER-Backup/`. You are responsible for your media.
+> **Before the gig:** Eject the stick in SETBUILDER, test it on your CDJ/XDJ (playlist visible, titles playable), and keep a backup of the stick. You are responsible for your media.
 
-## 1. Connect the stick
+## What you will do
+
+1. Load and prepare the stick  
+2. Start with a playlist  
+3. Use the set list, roles, and arc  
+4. Hear transitions in the player  
+5. Write the set back to the stick  
+
+---
+
+## 1. Load and prepare the stick
 
 ![Rekordbox stick and playlists](screenshots/en/01-stick-library.png)
 
-Plug the stick in. One recognized volume loads without the folder picker. SETBUILDER reads playlists and history from `export.pdb`, including the hidden `PIONEER` or `.PIONEER` folder. Under **Build set**, **Start with a playlist** lists them. **Load as set** takes a playlist into the set. Order, key and BPM stay. Files from the stick play in the player.
+1. Plug in your rekordbox USB stick.
+2. Open **Load stick & prepare** at the top of the screen.
+3. If the stick is recognized, SETBUILDER loads it without a folder dialog. If a dialog appears, choose the stick (the rekordbox export), not a folder that only holds music files.
+4. Wait until the library is ready. You can filter by stars, color, genre, and comment. Playlist names open as a list under the search field.
+5. Watch the status strip on the stick panel — it tells you whether the stick is ready for your player.
+   - **Amber** — the player library on the stick is missing or older than the playlists. Tap **Prepare for player** to restore it from a backup SETBUILDER keeps. Nothing on the stick is deleted.
+   - **Green** — the stick database is readable. Newer decks sometimes still show an older copy; the strip and **Details** explain what to do.
+6. To switch sticks, use **Change stick**.
 
-If the folder dialog hangs, pick **export.pdb** (`PIONEER/rekordbox/export.pdb`). Do not select the whole USB with every music file; that can stall. **Change stick** when another volume is mounted.
+Under **Build set**, **Start with a playlist** lists the playlists on the stick. Titles from the stick can play in the player once the stick is loaded.
 
-The strip on the stick is the player check. Amber means the player library is missing or older than the playlists. **Prepare for player** puts a missing library back from the backup and never deletes it. **Write to stick** updates export.pdb and the player library when that library can be opened. Green means the stick database is readable. CDJ-3000X, XDJ-AZ and OPUS-QUAD read the player library. Check it on the hardware.
+---
 
-## 2. Build the set
+## 2. Start with a playlist
 
 ![Brief: title, slot, blend time](screenshots/en/02-brief.png)
 
 ![Setlist after the playlist](screenshots/en/02-setlist.png)
 
-The brief is at the top. **Title**, **Slot duration (min)** and **Blend time (average)**. Those minutes are the clock **Fit to slot** uses: lengthen them and the set fills; shorten them and it cuts. **Set info** (vibe, venue, slot, audience, gear, notes) is for the gig. The clock stays in the minutes.
+1. In **Build set**, open **Start with a playlist**.
+2. Pick a playlist and tap **Load as set**.
+3. If the set already has titles, choose **Replace** (overwrite once, with **Undo**), **Merge** (keep the set and add missing titles only), or **Cancel**.
+4. The playlist order becomes your set list. Keys and BPM stay as on the stick.
 
-**Start with a playlist** lists the playlists on the stick. Loading one into a set that already has tracks asks:
+At the top, the **brief** sets:
 
-- **Replace** overwrites the setlist and offers one **Undo**.
-- **Merge** keeps the setlist and appends only tracks that are missing.
-- **Cancel** changes nothing.
+- **Title** — name of the set.
+- **Slot duration (min)** — the time window for your gig (the **slot**).
+- **Blend time (average)** — how long each join overlaps into the next title on average (the **blend**). SETBUILDER uses this when a row has no transition length yet.
 
-The setlist shows phase, role and the join from the previous track. **Setlist**, **Roles** and **Arc** switch the view. **Comfortable** shows the icon row; **Compact** keeps it tight. Change the order with the grip or the arrows. **Keep** leaves a track in the set while sorting may move it. **Pin here** holds the exact slot. Play opens the player, and the playing row stays visible beside it. **Fit to slot** cuts when the set runs over the slot. **Fill with matches** adds tracks that fit when it is short.
+**Set info** (vibe, venue, slot, audience, gear, notes) is only your gig note. It does not change the clock.
 
-Under **When adding**, you choose where the next song comes in: after a song you name, at the end, or **Auto**. **Auto** puts it after the song it best follows — key, BPM, energy — in its phase first, then anywhere, and only at the end if nothing fits. The status says which place it took.
+The status line under the set shows **playing time** and the slot. **Playing time** is the sum of file lengths minus the planned overlap on each row. A 60-minute slot can be longer than 60 minutes of playing time and still fit; if playing time is too long for the slot, the status line says so.
 
-## 3. Hear it on the deck
+**Alternatives** (Plan B titles) sit beside the performance. They do not count toward playing time until you move them into the performance.
+
+---
+
+## 3. Set list, roles, and arc
+
+1. Switch **Setlist**, **Roles**, and **Arc** at the top of the set. Same titles, three views:
+   - **Setlist** — playback order. Sort with the grip or arrows. Add comments. Open **Details** per row for key, BPM, energy, and transition notes.
+   - **Roles** — each performance title has a **role** (its job): **Anchor** (signature moment), **Bridge** (careful join when key, BPM, or energy jumps), **Groove** (steady breath between peaks), or **Alternatives** (reserve; drag in only when you need them).
+   - **Arc** — how energy runs across the slot. Each title sits in a **phase**: **Open**, **Lift**, **Rise**, **Peak**, or **Release**. The arc helps you see whether the build and peak match the slot duration.
+
+2. In each row, set the **transition** (cut, blend, EQ swap, echo-out, …) and the **length** (overlap). Overlap comes off playing time for that row. Leave length empty and SETBUILDER suggests a time from the blend average.
+
+3. Use **Keep** so a title stays in the set while sorting may move it. **Pin here** locks the exact slot. **Opener** and **Closer** hold the first and last performance titles.
+
+4. Under **When adding**, choose where the next title lands: after a title you pick, at the end, or **Auto** (after the best follow in key, BPM, and energy — first in its phase, then anywhere).
+
+5. **Fit to slot** shortens the set if playing time is over the slot (moved titles go to alternatives) or fills from alternatives and the playlist pool if it is short. Opener, closer, and pins stay put.
+
+6. Open **How this works** in the app anytime — it matches this manual.
+
+---
+
+## 4. Hear transitions in the player
 
 ![Player with waveform, 2× zoom, Q and cues A–H](screenshots/en/03-deck.png)
 
-The player is the card over the setlist. Drag the right edge wider and the bottom edge taller. The waveform runs the width of the card. The overview is on top, the large wave under it. **+** zooms (the picture is at **2×**). The overview marks the window. The playhead stays. The set list keeps the playing row in view beside the player, including after the player moves or grows. The playlist beatgrid is read in the background before the player opens, and the first read shows how far it has got.
+1. Tap **Play** on a row. The player opens above the set list and keeps the playing row visible.
+2. Use **Rehearsal** (**Before** / **Now** / **After**) to hear how this title hands off to the next — same lengths as in the set.
+3. Adjust transition mark and length while you listen. Those notes stay in the set, not in the audio file on the stick.
+4. Resize the player by dragging the right or bottom edge. **+** zooms the waveform. **Q** snaps new hot cues **A–H** to the rekordbox beatgrid when a grid is present. **−5**, **+5**, and **1** nudge the grid. New cues can be written back to the stick when analysis is available.
 
-**Q** quantizes. A hot cue **A–H** then lands on the next downbeat of the Rekordbox beatgrid. With **Q** off, the cue keeps the time you set. **−5** and **+5** nudge the grid by 5 ms. **1** moves the nearest downbeat onto the playhead. Phrase color bands come from the rekordbox analysis and follow the grid when you nudge it. Cues and the nudge stay in the player. The CDJ sees them once they are in the analysis file on the stick.
+---
 
-- 🥁 **The first downbeat on the playhead.** It sets the first downbeat there and keeps the beat spacing. With no Rekordbox grid it does nothing.
-
-In the picture: Nefertiti (Futuro Pelo), the waveform, zoom 2×, **Q**, **−5**, **+5**, **1**, pads A–H. Under that it says “No Rekordbox beatgrid for this track.” On the tracks opened from this set, the player drew no grid, so no phrase bands and no placed cue either. The same buttons apply once the analysis file matches the track.
-
-## 4. Take it with you
+## 5. Write to the stick
 
 ![Export: Save set, Write to stick, PDF, Copy text](screenshots/en/04-export.png)
 
-**Export** is grouped by where the set goes.
+1. Open **Export**.
+2. **For the player** — **Write to stick**. SETBUILDER saves the set as a new playlist on the stick (performance titles plus alternatives). Only titles already on the stick are included. A backup is made before writing; you can roll back if something goes wrong.
+3. **In SETBUILDER** — **Save set** keeps your work in the app without touching the stick.
+4. **For the booth** — **PDF** or **Copy text** for a paper cheat sheet (brief, order, keys, BPM, energy when known).
+5. **For the computer** — **XML for rekordbox** or **M3U** for importing elsewhere (not the same as writing the stick).
 
-- **In SETBUILDER** — **Save set**. Does not write the stick.
-- **For the player** — **Write to stick**. Playlist `SETBUILDER - <title>` plus alternatives in the current `export.pdb`, with a backup, a read-back and a rollback. Only tracks already on the stick. This guide did not press it.
-- **For the booth** — **PDF** (choose “Save as PDF” in the print dialog) and **Copy text**. Brief, order, key, BPM, energy when known, set note.
-- **For the computer** — further down the same menu: **XML for rekordbox** (an import, not the stick) and **M3U**.
+6. When the write finishes, eject the stick in SETBUILDER before unplugging.
 
-Under **Connections & setups** you can save the brief and the set as a setup. The name follows the title from the brief.
+---
 
 ## Before the gig
 
-Stick reads, imports and writes run one after another. The rest of the UI stays usable. Check the write path, CDJ/XDJ playback and eject on the hardware you play. SETBUILDER cannot prove browser folder permissions or a full stick for you.
+Stick read, import, and write jobs run one after another; the rest of the app stays usable. On the hardware you actually play, confirm the playlist appears and titles load. SETBUILDER cannot test folder permissions or a full stick for you.
+
+---
 
 ## Further reading
 
-- [README](../README.md) — setup, desktop download, languages, tests, license
-- [Desktop packaging](../desktop/README.md) — build, signing, quarantine
+- [README](../README.md) — install, desktop download, license  
+- [Desktop packaging](../desktop/README.md) — build and signing for developers  
