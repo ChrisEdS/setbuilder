@@ -9,13 +9,6 @@ export const metadata: Metadata = {
   title: "SETBUILDER — DJ Set Prep",
   description:
     "DJ set prep for rekordbox: load a stick or collection, shape the arc by slot and duration, check energy, key and BPM, export as rekordbox XML, PDF or M3U. / Set-Vorbereitung für rekordbox.",
-  icons: {
-    icon: [
-      { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/icon-512.png", type: "image/png", sizes: "512x512" },
-    ],
-    apple: [{ url: "/logo.svg", type: "image/svg+xml" }],
-  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

@@ -2,7 +2,7 @@
 
 **Deutsch** · [English](README.md)
 
-**Version 5.2.2**
+**Version 5.2.3**
 
 SETBUILDER hilft dir, aus einem rekordbox-USB-Stick ein DJ-Set zu planen, die Titel im Zusammenspiel zu prüfen, die Übergänge vorzuhören und das fertige Set als Playlist wieder auf denselben Stick zu schreiben. Die App spricht Deutsch und Englisch.
 
@@ -17,14 +17,14 @@ SETBUILDER hilft dir, aus einem rekordbox-USB-Stick ein DJ-Set zu planen, die Ti
 
 ## Das bekommst du
 
-- **Stick und Playlist** — Rekordbox-USB-Stick einstecken, eine Playlist laden — ihre Reihenfolge wird deine Setliste, Key und BPM wie auf dem Stick.
-- **Slot und Spielzeit** — Der **Slot** ist die Zeit, die du für den Gig hast; die **Spielzeit** summiert Titellängen minus die geplante Überlappung an jedem Übergang, und die Statuszeile sagt, wenn die Spielzeit länger als der Slot ist.
-- **Rollen** — Jedem Performance-Titel gibst du eine **Rolle** (seine Aufgabe): **Anchor** für einen Signature-Moment, **Bridge** wenn Key oder Energie springen, **Groove** für ruhigen Fluss zwischen Peaks.
-- **Alternativen** — **Alternativen** sind Reserve-Titel neben der Hauptliste; sie zählen nicht zur Spielzeit, bis du sie in die Performance ziehst.
-- **Energie-Bogen** — Der **Bogen** zeigt, wie die Energie über den Slot in Phasen läuft — **Open**, **Lift**, **Rise**, **Peak**, **Release** — damit du siehst, ob der Aufbau zur Zeit passt.
-- **Übergänge hören** — **Vorhören** spielt den vorherigen Titel, diesen und den nächsten mit denselben Übergangs-Längen wie im Set, damit du Blends zu Hause prüfen kannst.
-- **Zurück auf den Stick** — **Auf Stick schreiben** legt das Set als Playlist auf denselben USB-Stick; SETBUILDER sichert vorher, bevor etwas geändert wird.
-- **Deutsch und Englisch** — **DE** / **EN** in der App umschalten; die Anleitung gibt es in beiden Sprachen.
+- **Playlist wird zum Set** — Dein rekordbox-Stick ist die Bibliothek: Eine Playlist laden, und ihre Reihenfolge wird deine Setliste — Key und BPM wie exportiert. Du planst in einem **Slot** (der Zeit, die du hast), nicht nur nach Playlist-Länge.
+- **Spielzeit gegen Slot** — Pro Zeile zieht die geplante Überlappung von der Titellänge ab. Die Statuszeile summiert die **Spielzeit** gegen den Slot und sagt dir, wenn das Set zu lang wird.
+- **Rollen und Alternativen** — Performance-Titel als **Anchor**, **Bridge** oder **Groove** markieren, damit du ihre Aufgabe im Abend siehst. **Alternativen** halten Reserve-Titel neben der Liste; sie zählen nicht zur Spielzeit, bis du einen reinziehst.
+- **Energie-Bogen** — In der Bogen-Ansicht sitzen Titel über **Open**, **Lift**, **Rise**, **Peak** und **Release** auf deinem Slot. So siehst du vor dem Gig, ob Aufbau und Höhepunkt dort landen, wo du sie willst.
+- **Vorhören** — **Vorher**, **Jetzt** und **Danach** spielen den Übergang in den nächsten Titel mit der Überlappungs-Länge aus der Zeile. Übergangs-Marke beim Hören anpassen — sie bleibt im Set, nicht in der Datei auf dem Stick.
+- **Beatgrid in der Wellenform** — Das rekordbox-Beatgrid im Player schieben (**−5**, **+5**, **1**). Hot Cues **A–H** liegen auf der Wellenform; **Q** rastet neue Cues am Grid ein, und beim Export kannst du Cues zurück auf den Stick schreiben.
+- **Sicher auf den Stick schreiben** — **Auf Stick schreiben** legt Performance-Titel und Alternativen als Playlist auf denselben USB-Stick. SETBUILDER sichert vorher, liest die Datenbank danach zum Prüfen wieder ein und rollt bei fehlgeschlagener Prüfung zurück.
+- **Deutsch und Englisch** — **DE** / **EN** jederzeit umschalten; dieselben Bildschirme und die Anleitung gibt es in beiden Sprachen.
 
 Anleitung mit Screenshots: [docs/GUIDE.de.md](docs/GUIDE.de.md)
 

@@ -2,7 +2,7 @@
 
 [Deutsch](README.de.md) · **English**
 
-**Version 5.2.2**
+**Version 5.2.3**
 
 SETBUILDER helps you plan a DJ set from a rekordbox USB stick, check how the titles flow together, hear the joins at home, and write the finished set back as a playlist on the same stick. The app speaks German and English.
 
@@ -17,14 +17,14 @@ SETBUILDER helps you plan a DJ set from a rekordbox USB stick, check how the tit
 
 ## What you get
 
-- **Stick and playlist** — Plug in your rekordbox USB stick, load a playlist, and its order becomes your set list with keys and BPM as exported.
-- **Slot and playing time** — The **slot** is the time you have for the gig; **playing time** adds up title lengths minus the overlap you plan at each join, and the status line tells you when playing time is longer than the slot.
-- **Roles** — Each performance title gets a **role** (its job): **Anchor** for a signature moment, **Bridge** when key or energy jumps need care, **Groove** for steady flow between peaks.
-- **Alternatives** — **Alternatives** are reserve titles next to the main list; they do not count toward playing time until you drag them into the performance.
-- **Energy arc** — The **arc** maps how energy runs across the slot in phases—**Open**, **Lift**, **Rise**, **Peak**, **Release**—so you see whether the build fits your time.
-- **Hear the joins** — **Rehearsal** plays the previous title, this one, and the next with the same transition lengths as in the set, so you can check blends at home.
-- **Back on the stick** — **Write to stick** saves the set as a playlist on the same USB stick; SETBUILDER makes a backup before it changes anything.
-- **German and English** — Switch **DE** / **EN** in the app; the manual is available in both languages.
+- **Playlist becomes the set** — Your rekordbox stick is the library: load a playlist and its order becomes your set list, with key and BPM as exported. You plan inside a **slot** (the time you have), not just playlist length.
+- **Playing time vs slot** — On each row, the overlap you plan is taken off that title's length. The status line adds up **playing time** against the slot and tells you when the set runs too long.
+- **Roles and alternatives** — Mark each performance title **Anchor**, **Bridge**, or **Groove** so you see its job in the night. **Alternatives** hold reserve titles beside the list; they stay out of playing time until you drag one in.
+- **Energy arc** — In the arc view, place titles across **Open**, **Lift**, **Rise**, **Peak**, and **Release** over your slot. You see whether the build and peak land where you want before you play.
+- **Rehearsal** — **Before**, **Now**, and **After** play the handoff into the next title using the overlap length from that row. Tweak the transition mark while you listen; it lives in the set, not in the file on the stick.
+- **Beatgrid on the waveform** — Nudge the rekordbox beatgrid in the player (**−5**, **+5**, **1**). Hot cues **A–H** sit on the waveform; **Q** snaps new cues to the grid, and you can write cues back to the stick when you export.
+- **Safe write to stick** — **Write to stick** saves performance titles and alternatives as a playlist on the same USB stick. SETBUILDER backs up first, re-reads the database to verify the write, and rolls back if the check fails.
+- **German and English** — Toggle **DE** / **EN** anytime; the same screens and manual exist in both languages.
 
 Step-by-step manual with screenshots: [docs/GUIDE.md](docs/GUIDE.md)
 

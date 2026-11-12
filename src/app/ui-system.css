@@ -1782,8 +1782,7 @@
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
     "filter tools"
-    "status status"
-    "details details";
+    "status details";
   align-items: center;
   column-gap: 1rem;
   row-gap: 0.4rem;
@@ -1801,14 +1800,14 @@
 
 .set-shell .crate-list-head > .panel-inline-status {
   grid-area: status;
-  min-width: 0;
-  max-width: 100% !important;
-  width: 100%;
-  justify-self: stretch;
-  white-space: normal !important;
+  grid-column: 1 / -1;
+  width: max-content;
+  max-width: none;
+  justify-self: start;
+  white-space: nowrap !important;
   overflow: visible;
   text-overflow: unset;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .set-shell .crate-list-head > .list-details-tip {
@@ -3503,14 +3502,15 @@
   top: 0;
   bottom: 0;
   z-index: 3;
-  width: 1.35rem;
+  width: 10px;
   margin: 0;
   padding: 0;
   border: 0;
   background: transparent;
   color: #fff;
-  transform: translateX(-1px);
+  transform: translateX(-5px);
   cursor: ew-resize;
+  overflow: visible;
 }
 
 .preview-player .preview-cue-mark i {
