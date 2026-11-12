@@ -15,6 +15,17 @@ SETBUILDER hilft dir, aus einem rekordbox-USB-Stick ein DJ-Set zu planen, die Ti
 3. **Abend formen** — Rollen (Anchor, Bridge, Groove), Bogen-Phasen (Open, Lift, Rise, Peak, Release), Übergänge und Alternativen.
 4. **Auf Stick schreiben** — Set als Playlist auf den Stick speichern, auswerfen, am Player testen.
 
+## Das bekommst du
+
+- **Stick und Playlist** — Rekordbox-USB-Stick einstecken, eine Playlist laden — ihre Reihenfolge wird deine Setliste, Key und BPM wie auf dem Stick.
+- **Slot und Spielzeit** — Der **Slot** ist die Zeit, die du für den Gig hast; die **Spielzeit** summiert Titellängen minus die geplante Überlappung an jedem Übergang, und die Statuszeile sagt, wenn die Spielzeit länger als der Slot ist.
+- **Rollen** — Jedem Performance-Titel gibst du eine **Rolle** (seine Aufgabe): **Anchor** für einen Signature-Moment, **Bridge** wenn Key oder Energie springen, **Groove** für ruhigen Fluss zwischen Peaks.
+- **Alternativen** — **Alternativen** sind Reserve-Titel neben der Hauptliste; sie zählen nicht zur Spielzeit, bis du sie in die Performance ziehst.
+- **Energie-Bogen** — Der **Bogen** zeigt, wie die Energie über den Slot in Phasen läuft — **Open**, **Lift**, **Rise**, **Peak**, **Release** — damit du siehst, ob der Aufbau zur Zeit passt.
+- **Übergänge hören** — **Vorhören** spielt den vorherigen Titel, diesen und den nächsten mit denselben Übergangs-Längen wie im Set, damit du Blends zu Hause prüfen kannst.
+- **Zurück auf den Stick** — **Auf Stick schreiben** legt das Set als Playlist auf denselben USB-Stick; SETBUILDER sichert vorher, bevor etwas geändert wird.
+- **Deutsch und Englisch** — **DE** / **EN** in der App umschalten; die Anleitung gibt es in beiden Sprachen.
+
 Anleitung mit Screenshots: [docs/GUIDE.de.md](docs/GUIDE.de.md)
 
 ## Starten

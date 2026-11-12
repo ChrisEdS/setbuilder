@@ -15,6 +15,17 @@ SETBUILDER helps you plan a DJ set from a rekordbox USB stick, check how the tit
 3. **Shape the night** — roles (Anchor, Bridge, Groove), arc phases (Open, Lift, Rise, Peak, Release), transitions, and alternatives.
 4. **Write to the stick** — save the set as a playlist on the stick, eject, and test on your player.
 
+## What you get
+
+- **Stick and playlist** — Plug in your rekordbox USB stick, load a playlist, and its order becomes your set list with keys and BPM as exported.
+- **Slot and playing time** — The **slot** is the time you have for the gig; **playing time** adds up title lengths minus the overlap you plan at each join, and the status line tells you when playing time is longer than the slot.
+- **Roles** — Each performance title gets a **role** (its job): **Anchor** for a signature moment, **Bridge** when key or energy jumps need care, **Groove** for steady flow between peaks.
+- **Alternatives** — **Alternatives** are reserve titles next to the main list; they do not count toward playing time until you drag them into the performance.
+- **Energy arc** — The **arc** maps how energy runs across the slot in phases—**Open**, **Lift**, **Rise**, **Peak**, **Release**—so you see whether the build fits your time.
+- **Hear the joins** — **Rehearsal** plays the previous title, this one, and the next with the same transition lengths as in the set, so you can check blends at home.
+- **Back on the stick** — **Write to stick** saves the set as a playlist on the same USB stick; SETBUILDER makes a backup before it changes anything.
+- **German and English** — Switch **DE** / **EN** in the app; the manual is available in both languages.
+
 Step-by-step manual with screenshots: [docs/GUIDE.md](docs/GUIDE.md)
 
 ## Run it
