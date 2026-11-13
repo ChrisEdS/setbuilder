@@ -1190,7 +1190,7 @@
 .set-shell .manual-list:not(.is-compact) .manual-row-main {
   grid-template-columns: minmax(12rem, 1fr) minmax(0, max-content);
   column-gap: 1.15rem;
-  align-items: center;
+  align-items: start;
 }
 
 .set-shell .manual-list:not(.is-compact) .manual-controls {
@@ -1782,7 +1782,8 @@
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
     "filter tools"
-    "status details";
+    "status status"
+    "details details";
   align-items: center;
   column-gap: 1rem;
   row-gap: 0.4rem;
@@ -4448,6 +4449,7 @@ dialog.stick-dialog.gig-ready-dialog .gig-ready-actions .btn {
 
 .set-shell .manual-row.is-compact {
   row-gap: 0.08rem;
+  align-items: center;
 }
 
 .set-shell .manual-row.is-compact-open {
@@ -4667,7 +4669,7 @@ dialog.stick-dialog.gig-ready-dialog .gig-ready-actions .btn {
   color: #fff;
 }
 
-.set-shell .manual-row.is-compact .manual-index {
+.set-shell .manual-row.is-compact:not(.is-compact-open) .manual-index {
   align-self: center;
   height: 32px;
   gap: 0.35rem;

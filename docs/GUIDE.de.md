@@ -2,7 +2,7 @@
 
 **Deutsch** · [English](GUIDE.md) · [README](../README.de.md)
 
-**Version 5.2.3.** Die Screenshots zeigen die englische Oberfläche in Chrome. **DE** / **EN** oben rechts schaltet die Beschriftungen. Die englische Anleitung folgt denselben Schritten.
+**Version 5.2.4.** Die Screenshots zeigen die englische Oberfläche in Chrome. **DE** / **EN** oben rechts schaltet die Beschriftungen. Die englische Anleitung folgt denselben Schritten.
 
 Die Desktop-App (Port **4317**) ist der normale Weg. Wer aus dem Repo mit `npm run dev` startet, nutzt Port **4327**.
 
@@ -81,7 +81,7 @@ Die Statuszeile unter dem Set zeigt **Spielzeit** und Slot. **Spielzeit** ist di
 
 ## 4. Übergänge im Player hören
 
-![Player mit Wellenform, Zoom 2×, Q und Cues A–H](screenshots/de/03-deck.png)
+![Player mit Wellenform, Zoom und Hot Cues A–H](screenshots/de/03-deck.png)
 
 1. Tippe **Play** in einer Zeile. Der Player öffnet sich über der Setliste und hält die spielende Zeile sichtbar.
 2. Nutze **Vorhören** (**Vorher** / **Jetzt** / **Danach**), um zu hören, wie dieser Titel in den nächsten übergeht — dieselben Längen wie im Set.

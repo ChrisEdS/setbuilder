@@ -2,7 +2,7 @@
 
 [Deutsch](GUIDE.de.md) · **English** · [README](../README.md)
 
-**Version 5.2.3.** Screenshots show the English interface in Chrome. **DE** / **EN** at the top right switches the labels. The German manual follows the same steps.
+**Version 5.2.4.** Screenshots show the English interface in Chrome. **DE** / **EN** at the top right switches the labels. The German manual follows the same steps.
 
 The desktop app (port **4317**) is what you normally install. If you run from the repo with `npm run dev`, use port **4327**.
 
@@ -81,7 +81,7 @@ The status line under the set shows **playing time** and the slot. **Playing tim
 
 ## 4. Hear transitions in the player
 
-![Player with waveform, 2× zoom, Q and cues A–H](screenshots/en/03-deck.png)
+![Player with waveform, zoom, and hot cues A–H](screenshots/en/03-deck.png)
 
 1. Tap **Play** on a row. The player opens above the set list and keeps the playing row visible.
 2. Use **Rehearsal** (**Before** / **Now** / **After**) to hear how this title hands off to the next — same lengths as in the set.
