@@ -565,6 +565,25 @@ export async function readStickBeatGrid(root: DirLike, trackId: number, filePath
   return (await readStickBeatGridDetail(root, trackId, filePath)).beats;
 }
 
+/**
+ * Beat grid from the newest SETBUILDER-Backup of this analysis file.
+ * Read only. A missing backup is null and does not create the folder.
+ */
+export async function readBackupBeatGrid(root: DirLike, trackId: number, filePath = ""): Promise<AnlzBeat[] | null> {
+  try {
+    const located = await locateAnalysis(root, trackId, filePath);
+    if (!located) return null;
+    const hex = located.folder.replace(/[^0-9A-F]/gi, "").toUpperCase().padStart(8, "0").slice(-8);
+    const dir = await root.getDirectoryHandle(BACKUP_DIR);
+    const file = await maybeFile(dir, `ANLZ-${hex}.DAT`);
+    if (!file) return null;
+    const bytes = await readGridBuffer(await file.getFile());
+    return bytes ? readAnlzBeatGrid(bytes) : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Phrases from the exported PSSI tag. Null when the file has none, or the mask does not read as phrases. */
 export async function readStickPhrases(
   root: DirLike,

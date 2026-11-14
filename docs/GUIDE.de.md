@@ -2,7 +2,7 @@
 
 **Deutsch** · [English](GUIDE.md) · [README](../README.de.md)
 
-**Version 5.2.4.** Die Screenshots zeigen die englische Oberfläche in Chrome. **DE** / **EN** oben rechts schaltet die Beschriftungen. Die englische Anleitung folgt denselben Schritten.
+**Version 5.2.5.** Die Screenshots zeigen die englische Oberfläche in Chrome. **DE** / **EN** oben rechts schaltet die Beschriftungen. Die englische Anleitung folgt denselben Schritten.
 
 Die Desktop-App (Port **4317**) ist der normale Weg. Wer aus dem Repo mit `npm run dev` startet, nutzt Port **4327**.
 

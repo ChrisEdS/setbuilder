@@ -25,6 +25,7 @@ import {
   stickPermission,
   stickPicker,
 } from "@/lib/stick-session";
+import { ActionIcon } from "@/components/ActionIcon";
 import { Hint } from "@/components/Hint";
 import { StickHealthCard } from "@/components/StickHealthCard";
 import { inspectStick, inspectStickFiles, pdbSummaryOf, type StickHealth } from "@/lib/stick-health";
@@ -101,10 +102,12 @@ export function StickSetList({
   sets,
   pending = false,
   onTake,
+  onDelete,
 }: {
   sets: RekordboxStickSet[];
   pending?: boolean;
   onTake: (set: RekordboxStickSet) => void;
+  onDelete?: (set: RekordboxStickSet) => void;
 }) {
   const { t } = useI18n();
   const [query, setQuery] = useState("");
@@ -126,19 +129,14 @@ export function StickSetList({
     ["history", "library.stick.kindHistory"],
   ] as const;
 
-  function setSubtitle(set: RekordboxStickSet) {
-    if (set.kind === "history" && set.tracks.length) {
-      // Play order from export.pdb — last row is the most recent track in the session.
-      for (const row of [...set.tracks].reverse()) {
-        const track = [row.artist, row.title].filter(Boolean).join(" — ");
-        if (track) {
-          return t("library.stick.historySnippet", { track });
-        }
-      }
+  function latestHistoryTrack(set: RekordboxStickSet) {
+    if (set.kind !== "history" || !set.tracks.length) return "";
+    // Play order from export.pdb — last row is the most recent track in the session.
+    for (const row of [...set.tracks].reverse()) {
+      const track = [row.artist, row.title].filter(Boolean).join(" — ");
+      if (track) return track;
     }
-    // The folder path usually ends with the playlist name. That repeat is not a subtitle.
-    if (!bothKinds) return "";
-    return kindLabel(set);
+    return "";
   }
 
   return (
@@ -186,24 +184,45 @@ export function StickSetList({
           <ul className="library-list">
             {visible.map((set) => {
               const ms = set.tracks.reduce((sum, track) => sum + track.durationMs, 0);
+              const recent = latestHistoryTrack(set);
               return (
                 <li key={set.id}>
                   <div className="stick-set-copy">
                     <strong>{set.name}</strong>
-                    <em>
-                      {trackCount(set.tracks.length, t)}
-                      {ms ? ` · ${formatDuration(ms)}` : ""}
-                    </em>
-                    {setSubtitle(set) ? <span>{setSubtitle(set)}</span> : null}
+                    <div className="stick-set-meta">
+                      <span className="stick-set-kind">{kindLabel(set)}</span>
+                      <em>
+                        {" · "}
+                        {trackCount(set.tracks.length, t)}
+                        {ms ? ` · ${formatDuration(ms)}` : ""}
+                      </em>
+                      {recent ? (
+                        <span className="stick-set-history-track">{` · ${recent}`}</span>
+                      ) : null}
+                    </div>
                   </div>
-                  <button
-                    type="button"
-                    className="btn ghost stick-set-load"
-                    disabled={pending || set.tracks.length === 0}
-                    onClick={() => onTake(set)}
-                  >
-                    {t("library.stick.loadSet")}
-                  </button>
+                  <div className="stick-set-actions">
+                    <button
+                      type="button"
+                      className="btn ghost stick-set-load"
+                      disabled={pending || set.tracks.length === 0}
+                      onClick={() => onTake(set)}
+                    >
+                      {t("library.stick.loadSet")}
+                    </button>
+                    {onDelete && /^(playlist|history):\d+$/.test(set.id) ? (
+                      <button
+                        type="button"
+                        className="icon-action danger stick-set-delete"
+                        disabled={pending}
+                        aria-label={t("library.stick.deleteAria", { name: set.name })}
+                        title={t("library.stick.deleteAria", { name: set.name })}
+                        onClick={() => onDelete(set)}
+                      >
+                        <ActionIcon name="remove" />
+                      </button>
+                    ) : null}
+                  </div>
                 </li>
               );
             })}

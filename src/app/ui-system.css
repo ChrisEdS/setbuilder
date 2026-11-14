@@ -2187,6 +2187,11 @@
   max-width: 100%;
 }
 
+/* Space under the filter row, before the first playlist title. Rows stay tight. */
+.set-shell .stick-sets-fold .stick-sets-body {
+  gap: var(--ui-space-3);
+}
+
 /* Title and count on the left, Load as set on the right.
    Block padding keeps the row clear of the 32px button.
    12px end inset clears the 8px overlay scrollbar and leaves a few pixels. */
@@ -2195,7 +2200,8 @@
   grid-template-columns: minmax(0, 1fr) auto !important;
   grid-template-rows: auto !important;
   align-items: center !important;
-  column-gap: 1rem;
+  /* Beats the shared library-list column-gap so the green count is not tight against Load. */
+  column-gap: 1.5rem !important;
   width: 100%;
   min-width: 0;
   max-width: 100%;
@@ -2215,17 +2221,20 @@
 
 .set-shell .stick-sets-fold .library-list li > .stick-set-copy {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem 1rem;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.35rem;
   min-width: 0;
   max-width: 100%;
 }
 
 .set-shell .stick-sets-fold .library-list li > .stick-set-copy strong {
-  flex: 1 1 0%;
-  align-self: center;
+  flex: 0 1 auto;
+  align-self: stretch;
   display: block;
+  width: 100%;
   min-width: 0;
   max-width: 100%;
   overflow: hidden;
@@ -2235,19 +2244,40 @@
   color: #fff !important;
 }
 
-.set-shell .stick-sets-fold .library-list li > .stick-set-copy em {
+/* Type word and the green count share one line: Playlist · 12 tracks · 1:16:43 */
+.set-shell .stick-sets-fold .library-list li > .stick-set-copy > .stick-set-meta {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: baseline;
+  gap: 0;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.set-shell .stick-sets-fold .library-list li > .stick-set-copy > .stick-set-meta em {
   flex: 0 0 auto;
-  align-self: center;
-  white-space: nowrap;
+  align-self: baseline;
+  /* pre keeps the leading space in " · …". nowrap trims it at the start of this flex item, so the dot sits on Playlist/History. */
+  white-space: pre;
   line-height: 1;
 }
 
-.set-shell .stick-sets-fold .library-list li > .stick-set-copy span {
-  flex: 1 0 100%;
+.set-shell .stick-sets-fold .library-list li > .stick-set-copy > .stick-set-meta .stick-set-kind {
+  flex: 0 0 auto;
+  min-width: 0;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.set-shell .stick-sets-fold .library-list li > .stick-set-copy > .stick-set-meta .stick-set-history-track {
+  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  /* Same as the count: the leading space before this row's " · " must survive. */
+  white-space: pre;
 }
 
 /* Library tracks: one line. Title, key, artist and the add button stay inside the row. */
@@ -2670,10 +2700,18 @@
 .set-shell .stick-sets-fold .library-playlist-pick select {
   appearance: none !important;
   -webkit-appearance: none !important;
+  box-sizing: border-box;
   width: auto;
   min-width: 8.75rem;
   max-width: 14rem;
+  /* Shared field padding beats the :where() reset, and a control-height line
+     box then paints the label through the bottom border. */
+  height: var(--ui-control-height);
+  max-height: var(--ui-control-height);
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
   padding-right: 2.1rem !important;
+  line-height: normal !important;
   color: #fff !important;
   background-color: #121212 !important;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23b3b3b3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E") !important;
@@ -3346,6 +3384,14 @@
   background: #101010;
 }
 
+.preview-player .preview-grid-compare {
+  flex: 1 1 100%;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
 .preview-player .preview-grid-bpm {
   color: #fff;
   font-size: 0.78rem;
@@ -3508,7 +3554,7 @@
   padding: 0;
   border: 0;
   background: transparent;
-  color: #fff;
+  color: var(--cue-color, #fff);
   transform: translateX(-5px);
   cursor: ew-resize;
   overflow: visible;
@@ -3520,7 +3566,7 @@
   bottom: 0.12rem;
   left: 0;
   width: 2px;
-  background: currentColor;
+  background: var(--cue-color, currentColor);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.72);
   pointer-events: none;
 }
@@ -3537,7 +3583,7 @@
   height: 0.95rem;
   padding: 0 0.14rem;
   border-radius: 0 0.18rem 0.18rem 0;
-  background: currentColor;
+  background: var(--cue-color, currentColor);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.72);
   font-size: 0.64rem;
   font-style: normal;
@@ -3601,7 +3647,9 @@
 }
 
 .preview-player .preview-cue-pad.is-set {
-  background: color-mix(in srgb, currentColor 16%, transparent);
+  border-color: var(--cue-color, rgba(255, 255, 255, 0.16));
+  color: var(--cue-color, #fff);
+  background: color-mix(in srgb, var(--cue-color, #fff) 16%, transparent);
 }
 
 .preview-player .preview-cue-pad > .tip {
@@ -5095,4 +5143,58 @@ dialog.stick-dialog .stick-actions .btn {
     width: auto !important;
     height: auto !important;
   }
+}
+
+/* Stick playlist delete: load and delete stay together on the right of the row. */
+.set-shell .stick-sets-fold .library-list li > .stick-set-actions {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  min-width: max-content;
+}
+
+/* Same round trash control as a set-row remove (icon-action.danger). */
+.set-shell .stick-sets-fold .stick-set-delete {
+  box-sizing: border-box;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 2.125rem !important;
+  min-width: 2.125rem !important;
+  max-width: 2.125rem !important;
+  height: 2.125rem !important;
+  min-height: 2.125rem !important;
+  max-height: 2.125rem !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  position: static !important;
+  align-self: center !important;
+  line-height: 1 !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(248, 113, 113, 0.45) !important;
+  background: transparent !important;
+  color: var(--danger) !important;
+}
+
+.set-shell .stick-sets-fold .stick-set-delete:hover:not(:disabled) {
+  background: #2a2a2a !important;
+  color: var(--danger) !important;
+}
+
+.set-shell .stick-sets-fold .stick-set-delete:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+dialog.stick-dialog.playlist-delete-dialog .stick-actions {
+  justify-content: flex-end;
+}
+
+dialog.stick-dialog.playlist-delete-dialog .modal-status,
+dialog.stick-dialog.playlist-delete-dialog .modal-next,
+dialog.stick-dialog.playlist-delete-dialog .modal-info {
+  margin: 0 0 0.45rem;
 }

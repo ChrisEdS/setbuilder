@@ -14,7 +14,9 @@ import {
   prepareStickForPlayers,
   pruneBackups,
   restoreLatestBackup,
+  deletePlaylistFromStick,
   rewriteSetToStick,
+  stickPlaylistKey,
   writeSetToStick,
   writeStickSidecars,
   type DirLike,
@@ -566,6 +568,69 @@ test("restores the newest backup", async () => {
 
   const empty = stick();
   await assert.rejects(restoreLatestBackup(empty.root), /Sicherung/);
+});
+
+test("reads a stick playlist id and ignores an xml import", () => {
+  assert.deepEqual(stickPlaylistKey("playlist:3"), { playlistId: 3, kind: "playlist" });
+  assert.deepEqual(stickPlaylistKey("history:9"), { playlistId: 9, kind: "history" });
+  assert.equal(stickPlaylistKey("xml:0:Friday"), null);
+  assert.equal(stickPlaylistKey("playlist:0"), null);
+});
+
+test("deletes a playlist from export.pdb after a backup and leaves audio and the player library", async () => {
+  const { root, db, rekordbox } = stick();
+  const audio = new MemFile("Night Drive.mp3", {});
+  audio.data = new Uint8Array([9, 8, 7]);
+  rekordbox.files.set(audio.name, audio);
+  const lib = new MemFile("exportLibrary.db", {});
+  lib.data = new Uint8Array([1, 2, 3, 4]);
+  rekordbox.files.set(lib.name, lib);
+  const original = db.data.slice();
+  const done = await deletePlaylistFromStick(root, 3, "playlist", new Date(2026, 10, 14, 4, 5, 6));
+  assert.equal(done.playlistName, "Freitag");
+  assert.equal(done.backupName, "export-20261114-040506.pdb");
+  const after = parseRekordboxPdb(db.data.slice().buffer as ArrayBuffer);
+  assert.ok(!after.playlists.some((item) => item.name === "Freitag"));
+  assert.ok(after.playlists.some((item) => item.kind === "history" && item.name === "HISTORY 001"));
+  assert.equal(after.tracks.length, 2);
+  const backup = root.dirs.get(BACKUP_DIR)?.files.get(done.backupName);
+  assert.ok(backup);
+  assert.deepEqual(backup.data, original);
+  assert.ok(parseRekordboxPdb(backup.data.slice().buffer as ArrayBuffer).playlists.some((item) => item.name === "Freitag"));
+  assert.deepEqual([...(rekordbox.files.get("exportLibrary.db")?.data ?? [])], [1, 2, 3, 4]);
+  assert.deepEqual([...(rekordbox.files.get("Night Drive.mp3")?.data ?? [])], [9, 8, 7]);
+  assert.equal(rekordbox.files.has("master.db"), false);
+});
+
+test("a missing playlist deletes nothing and writes no backup", async () => {
+  const { root, db, rekordbox } = stick();
+  const before = db.data.slice();
+  await assert.rejects(deletePlaylistFromStick(root, 99, "playlist"), /nicht in der Stick-Datenbank/);
+  assert.deepEqual(db.data, before);
+  assert.equal(root.dirs.has(BACKUP_DIR), false);
+  assert.equal(rekordbox.files.has("exportLibrary.db"), false);
+});
+
+test("a playlist delete that fails the check restores export.pdb and keeps exportLibrary.db", async () => {
+  let commits = 0;
+  const { root, db, rekordbox } = stick({
+    onCommit: (name, data) => {
+      if (name !== "export.pdb") return data;
+      commits += 1;
+      if (commits > 1) return data;
+      const broken = data.slice();
+      broken[4 * 4096 + 0x30] ^= 0xff;
+      return broken;
+    },
+  });
+  const lib = new MemFile("exportLibrary.db", {});
+  lib.data = new Uint8Array([5, 5, 5]);
+  rekordbox.files.set(lib.name, lib);
+  const before = db.data.slice();
+  await assert.rejects(deletePlaylistFromStick(root, 3, "playlist"), /wiederhergestellt/);
+  assert.deepEqual(db.data, before);
+  assert.equal(commits, 2);
+  assert.deepEqual([...(rekordbox.files.get("exportLibrary.db")?.data ?? [])], [5, 5, 5]);
 });
 
 test("prepareStickForPlayers leaves exportLibrary.db on the stick", async () => {

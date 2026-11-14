@@ -4,14 +4,19 @@ import { parseRekordboxPdb } from "./rekordbox-pdb.ts";
 import {
   addPlaylistToPdb,
   auditPdbPlaylistPages,
+  deletePlaylistFromPdb,
   replacePlaylistInPdb,
+  verifyPdbDeletion,
   verifyPdbReplacement,
   verifyPdbUpdate,
   PdbWriteError,
 } from "./rekordbox-pdb-write.ts";
 import {
+  ENTRY_FIRST,
   ENTRY_LAST,
   ENTRY_RESERVED,
+  HISTORY_ENTRY_PAGE,
+  HISTORY_PAGE,
   PAGE,
   TRACK_PAGE,
   TREE_PAGE,
@@ -201,6 +206,110 @@ test("refuses tracks the database does not know", () => {
     () => addPlaylistToPdb(fixture(), { name: "X", trackIds: [7, 999] }),
     (error: unknown) => error instanceof PdbWriteError && error.key === "exports.pdbWrite.unknownTracks",
   );
+});
+
+test("deletes one playlist and leaves tracks, history and other rows", () => {
+  const source = fixture();
+  const untouched = new Uint8Array(source).slice();
+  const before = parseRekordboxPdb(source.slice(0));
+  const result = deletePlaylistFromPdb(source, { playlistId: 3, kind: "playlist" });
+  verifyPdbDeletion(source, result.buffer, {
+    playlistId: 3,
+    kind: "playlist",
+    name: "Freitag",
+    changedPages: result.changedPages,
+  });
+  assert.deepEqual(new Uint8Array(source), untouched);
+  assert.equal(result.buffer.byteLength, source.byteLength);
+  assert.deepEqual(result.changedPages, [TREE_PAGE, ENTRY_FIRST, ENTRY_LAST]);
+  const after = parseRekordboxPdb(result.buffer.slice(0));
+  assert.deepEqual(after.tracks, before.tracks);
+  assert.ok(!after.playlists.some((item) => item.kind === "playlist"));
+  assert.deepEqual(
+    after.playlists.find((item) => item.kind === "history"),
+    before.playlists.find((item) => item.kind === "history"),
+  );
+  const written = new Uint8Array(result.buffer);
+  assert.deepEqual(
+    written.slice(TRACK_PAGE * PAGE, (TRACK_PAGE + 1) * PAGE),
+    untouched.slice(TRACK_PAGE * PAGE, (TRACK_PAGE + 1) * PAGE),
+  );
+  assert.deepEqual(
+    written.slice(HISTORY_PAGE * PAGE, (HISTORY_PAGE + 1) * PAGE),
+    untouched.slice(HISTORY_PAGE * PAGE, (HISTORY_PAGE + 1) * PAGE),
+  );
+});
+
+test("deletes a history list without removing playlists", () => {
+  const source = fixture();
+  const before = parseRekordboxPdb(source.slice(0));
+  const result = deletePlaylistFromPdb(source, { playlistId: 9, kind: "history" });
+  assert.deepEqual(result.changedPages, [HISTORY_PAGE, HISTORY_ENTRY_PAGE]);
+  const after = parseRekordboxPdb(result.buffer.slice(0));
+  assert.deepEqual(after.tracks, before.tracks);
+  assert.deepEqual(
+    after.playlists.filter((item) => item.kind === "playlist"),
+    before.playlists.filter((item) => item.kind === "playlist"),
+  );
+  assert.ok(!after.playlists.some((item) => item.kind === "history"));
+});
+
+test("hides every duplicate tree row and keeps the folder of a sibling", () => {
+  const source = fixture({ duplicateTree: true });
+  const before = parseRekordboxPdb(source.slice(0));
+  assert.equal(before.playlists.find((item) => item.name === "Joyride")?.path, "Sets / Joyride");
+  const emptied = deletePlaylistFromPdb(source, { playlistId: 10, kind: "playlist" });
+  const afterEmpty = parseRekordboxPdb(emptied.buffer.slice(0));
+  assert.deepEqual(emptied.changedPages, [TREE_PAGE]);
+  assert.equal(afterEmpty.playlists.find((item) => item.name === "Joyride")?.path, "Sets / Joyride");
+  assert.ok(!afterEmpty.playlists.some((item) => item.name === "Empty"));
+  assert.deepEqual(
+    afterEmpty.playlists.find((item) => item.name === "Once")?.trackIds,
+    before.playlists.find((item) => item.name === "Once")?.trackIds,
+  );
+
+  const result = deletePlaylistFromPdb(source, { playlistId: 5, kind: "playlist" });
+  const after = parseRekordboxPdb(result.buffer.slice(0));
+  assert.ok(!after.playlists.some((item) => item.id === 5));
+  assert.deepEqual(after.playlists.find((item) => item.name === "Once")?.trackIds, [8]);
+  assert.ok(after.playlists.some((item) => item.name === "Empty" && item.trackIds.length === 0));
+  assert.deepEqual(
+    after.playlists.find((item) => item.kind === "history"),
+    before.playlists.find((item) => item.kind === "history"),
+  );
+  assert.ok(!result.changedPages.includes(ENTRY_LAST));
+});
+
+test("keeps a playlist that was added beside the one being deleted", () => {
+  const source = addPlaylistToPdb(fixture(), { name: "Keep", trackIds: [8, 7] }).buffer;
+  const before = parseRekordboxPdb(source.slice(0));
+  const result = deletePlaylistFromPdb(source, { playlistId: 3, kind: "playlist" });
+  const after = parseRekordboxPdb(result.buffer.slice(0));
+  assert.deepEqual(
+    after.playlists.find((item) => item.name === "Keep"),
+    before.playlists.find((item) => item.name === "Keep"),
+  );
+  assert.ok(!after.playlists.some((item) => item.name === "Freitag"));
+  assert.deepEqual(after.tracks, before.tracks);
+});
+
+test("refuses a missing playlist and a playlist page that is not consistent", () => {
+  assert.throws(
+    () => deletePlaylistFromPdb(fixture(), { playlistId: 99, kind: "playlist" }),
+    (error: unknown) => error instanceof PdbWriteError && error.key === "exports.stickWrite.playlistMissing",
+  );
+  assert.throws(
+    () => deletePlaylistFromPdb(fixture(), { playlistId: 9, kind: "playlist" }),
+    (error: unknown) => error instanceof PdbWriteError && error.key === "exports.stickWrite.playlistMissing",
+  );
+  const source = fixture();
+  new DataView(source).setUint16(TREE_PAGE * PAGE + 0x1e, 0, true);
+  const damaged = new Uint8Array(source).slice();
+  assert.throws(
+    () => deletePlaylistFromPdb(source, { playlistId: 3, kind: "playlist" }),
+    (error: unknown) => error instanceof PdbWriteError && error.key === "exports.pdbWrite.unsupported",
+  );
+  assert.deepEqual(new Uint8Array(source), damaged);
 });
 
 test("verification catches any other change", () => {

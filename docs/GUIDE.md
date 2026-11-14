@@ -2,7 +2,7 @@
 
 [Deutsch](GUIDE.de.md) · **English** · [README](../README.md)
 
-**Version 5.2.4.** Screenshots show the English interface in Chrome. **DE** / **EN** at the top right switches the labels. The German manual follows the same steps.
+**Version 5.2.5.** Screenshots show the English interface in Chrome. **DE** / **EN** at the top right switches the labels. The German manual follows the same steps.
 
 The desktop app (port **4317**) is what you normally install. If you run from the repo with `npm run dev`, use port **4327**.
 

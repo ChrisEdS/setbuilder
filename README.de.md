@@ -2,7 +2,7 @@
 
 **Deutsch** · [English](README.md)
 
-**Version 5.2.4**
+**Version 5.2.5**
 
 SETBUILDER hilft dir, aus einem rekordbox-USB-Stick ein DJ-Set zu planen, die Titel im Zusammenspiel zu prüfen, die Übergänge vorzuhören und das fertige Set als Playlist wieder auf denselben Stick zu schreiben. Die App spricht Deutsch und Englisch.
 

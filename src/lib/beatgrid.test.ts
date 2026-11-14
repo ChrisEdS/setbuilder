@@ -3,14 +3,17 @@ import test from "node:test";
 import {
   bassAtTicks,
   beatTempo,
+  compareBeatGrids,
   downbeatTimes,
   extendFourFour,
   foldBeatTicks,
   gridFromDownbeats,
   gridFromTicks,
+  lockedFourFour,
   onsetAtTicks,
   stabilizeBeatTicks,
 } from "./beatgrid.ts";
+import type { AnlzBeat } from "./anlz-cues.ts";
 
 test("the stronger bass phase becomes beat 1 and the tempo follows the gap", () => {
   const ticks = [0, 500, 1000, 1500, 2000, 2500, 3000, 3500];
@@ -136,4 +139,119 @@ test("a click measures more onset than a steady low tone at the same tick", () =
   }
   const [low, click] = onsetAtTicks(samples, rate, [250, 750]);
   assert.ok((click ?? 0) > (low ?? 0));
+});
+
+function gridAt(start: number, gap: number, count: number): AnlzBeat[] {
+  return Array.from({ length: count }, (_, index) => ({
+    timeMs: start + index * gap,
+    beat: (index % 4) + 1,
+  }));
+}
+
+test("an identical grid matches BPM, beat 1, and has no drift", () => {
+  const grid = gridAt(0, 500, 24);
+  const report = compareBeatGrids(grid, grid);
+  assert.equal(report?.referenceBpm, 120);
+  assert.equal(report?.candidateBpm, 120);
+  assert.equal(report?.bpmDelta, 0);
+  assert.equal(report?.downbeatOffsetMs, 0);
+  assert.equal(report?.phaseShift, 0);
+  assert.equal(report?.errorStartMs, 0);
+  assert.equal(report?.errorMiddleMs, 0);
+  assert.equal(report?.errorEndMs, 0);
+  assert.equal(report?.fitsMix, true);
+});
+
+test("a steady 15 ms offset still fits a mix", () => {
+  const report = compareBeatGrids(gridAt(0, 500, 24), gridAt(15, 500, 24));
+  assert.equal(report?.downbeatOffsetMs, 15);
+  assert.equal(report?.phaseShift, 0);
+  assert.equal(report?.bpmDelta, 0);
+  assert.equal(report?.errorStartMs, 15);
+  assert.equal(report?.errorEndMs, 15);
+  assert.equal(report?.fitsMix, true);
+});
+
+test("beat 1 landing on the next beat is a phase shift of 1", () => {
+  const report = compareBeatGrids(gridAt(0, 500, 24), gridAt(500, 500, 24));
+  assert.equal(report?.phaseShift, 1);
+  assert.equal(report?.downbeatOffsetMs, 500);
+  assert.equal(report?.fitsMix, false);
+});
+
+test("a grid that walks away by the end does not fit", () => {
+  const reference = gridAt(0, 500, 30);
+  const candidate = reference.map((beat, index) => ({
+    timeMs: beat.timeMs + (index >= 20 ? 40 : 0),
+    beat: beat.beat,
+  }));
+  const report = compareBeatGrids(reference, candidate);
+  assert.equal(report?.bpmDelta, 0);
+  assert.equal(report?.phaseShift, 0);
+  assert.equal(report?.errorStartMs, 0);
+  assert.ok((report?.errorEndMs ?? 0) > (report?.errorStartMs ?? 0));
+  assert.equal(report?.fitsMix, false);
+});
+
+test("half tempo is reported as a BPM difference", () => {
+  const report = compareBeatGrids(gridAt(0, 500, 24), gridAt(0, 1000, 12));
+  assert.equal(report?.referenceBpm, 120);
+  assert.equal(report?.candidateBpm, 60);
+  assert.equal(report?.bpmDelta, -60);
+  assert.equal(report?.fitsMix, false);
+});
+
+test("two beats are not enough to compare", () => {
+  assert.equal(compareBeatGrids(gridAt(0, 500, 1), gridAt(0, 500, 8)), null);
+});
+
+test("a late tick does not pull the constant grid off the stored BPM", () => {
+  const ticks = [0, 500, 1000, 1600, 2000, 2500, 3000, 3500];
+  const grid = lockedFourFour(ticks, 3500, ticks.map(() => 1), [], { bpm: 120 });
+  assert.deepEqual(
+    grid.map((beat) => beat.timeMs),
+    [0, 500, 1000, 1500, 2000, 2500, 3000, 3500],
+  );
+  assert.equal(grid[0]?.beat, 1);
+});
+
+test("the stored BPM doubles a half-time pulse", () => {
+  const ticks = Array.from({ length: 8 }, (_, index) => index * 690);
+  const grid = lockedFourFour(ticks, 5000, [], [], { bpm: 174 });
+  assert.equal((grid[1]?.timeMs ?? 0) - (grid[0]?.timeMs ?? 0), 345);
+  assert.equal(grid[0]?.timeMs, 0);
+  assert.equal(grid[0]?.beat, 1);
+});
+
+test("one loud off-beat does not move beat 1 when the other bars agree", () => {
+  const ticks = Array.from({ length: 16 }, (_, index) => index * 500);
+  const bass = ticks.map((_, index) => (index % 4 === 0 ? 10 : index === 1 ? 20 : 0));
+  const grid = lockedFourFour(ticks, 7500, bass, [], { bpm: 120 });
+  assert.equal(grid.find((beat) => beat.timeMs === 0)?.beat, 1);
+  assert.equal(grid.find((beat) => beat.timeMs === 500)?.beat, 2);
+});
+
+test("a tracker that starts late does not invent beats back to zero", () => {
+  const ticks = Array.from({ length: 8 }, (_, index) => 4000 + index * 500);
+  const grid = lockedFourFour(ticks, 8000, [], [], { bpm: 120 });
+  assert.equal(grid[0]?.timeMs, 3500);
+  assert.ok(grid.every((beat) => beat.timeMs >= 3500));
+});
+
+test("a Rekordbox downbeat keeps beat 1 when the tracker starts later", () => {
+  const ticks = Array.from({ length: 8 }, (_, index) => 4000 + index * 500);
+  const reference = gridAt(0, 500, 17);
+  const grid = lockedFourFour(ticks, 8000, [], [], { bpm: 120, reference });
+  assert.equal(grid[0]?.timeMs, 0);
+  assert.equal(grid[0]?.beat, 1);
+  assert.equal(grid.find((beat) => beat.timeMs === 4000)?.beat, 1);
+});
+
+test("the Rekordbox phase stays beat 1 when a later kick is louder", () => {
+  const ticks = Array.from({ length: 8 }, (_, index) => index * 500);
+  const bass = [0, 30, 0, 0, 0, 30, 0, 0];
+  const reference = gridAt(0, 500, 8);
+  const grid = lockedFourFour(ticks, 3500, bass, [], { bpm: 120, reference });
+  assert.equal(grid.find((beat) => beat.timeMs === 0)?.beat, 1);
+  assert.equal(grid.find((beat) => beat.timeMs === 500)?.beat, 2);
 });

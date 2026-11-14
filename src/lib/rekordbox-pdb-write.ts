@@ -24,6 +24,8 @@ const HEAP = 0x28;
 const GROUP = 0x24;
 const TREE = 7;
 const ENTRIES = 8;
+const HISTORY = 11;
+const HISTORY_ENTRIES = 12;
 
 export class PdbWriteError extends LocalizedError {}
 
@@ -137,6 +139,21 @@ function deviceStringBytes(view: DataView, pos: number, limit: number): number {
   return view.getUint16(pos + 1, true);
 }
 
+/** Bytes of one present row, from the page start. History rows are shorter than playlist rows. */
+function rowPayloadBytes(
+  view: DataView,
+  pageStart: number,
+  rowOffset: number,
+  pageLen: number,
+  type: number,
+): number {
+  const at = pageStart + rowOffset;
+  const limit = pageStart + pageLen;
+  if (type === ENTRIES || type === HISTORY_ENTRIES) return 12;
+  if (type === HISTORY) return 4 + deviceStringBytes(view, at + 4, limit);
+  return 20 + deviceStringBytes(view, at + 20, limit);
+}
+
 /** Page indexes of a table in chain order. Mirrors the reader's chain walk. */
 function tableChain(view: DataView, pageLen: number, table: TableRef): number[] {
   const chain: number[] = [];
@@ -228,8 +245,7 @@ function readPage(
       const ofs = view.getUint16(slotAddress(pageLen, start, group * 16 + i), true);
       const row = HEAP + ofs;
       if (row >= heapEnd) return null;
-      const size =
-        type === ENTRIES ? 12 : 20 + deviceStringBytes(view, start + row + 20, start + pageLen);
+      const size = rowPayloadBytes(view, start, row, pageLen, type);
       if ((type === TREE && size <= 20) || row + size > heapEnd) return null;
     }
   }
@@ -658,6 +674,150 @@ export function replacePlaylistInPdb(
   return result;
 }
 
+export type DeletePlaylistInput = {
+  playlistId: number;
+  kind: "playlist" | "history";
+};
+
+export type DeletePlaylistResult = {
+  buffer: ArrayBuffer;
+  playlistId: number;
+  name: string;
+  kind: "playlist" | "history";
+  changedPages: number[];
+};
+
+type Drop = { state: PageState; slots: number[]; role: "owner" | "entries" };
+
+function rowMatches(
+  view: DataView,
+  row: number,
+  limit: number,
+  type: number,
+  input: DeletePlaylistInput,
+): boolean {
+  const { kind, playlistId } = input;
+  if (kind === "playlist" && type === TREE) {
+    if (row + 20 > limit) return false;
+    return view.getUint32(row + 12, true) === playlistId && view.getUint32(row + 16, true) === 0;
+  }
+  if (kind === "playlist" && type === ENTRIES) {
+    if (row + 12 > limit) return false;
+    return view.getUint32(row + 8, true) === playlistId;
+  }
+  if (kind === "history" && type === HISTORY) {
+    if (row + 4 > limit) return false;
+    return view.getUint32(row, true) === playlistId;
+  }
+  if (kind === "history" && type === HISTORY_ENTRIES) {
+    if (row + 8 > limit) return false;
+    return view.getUint32(row + 4, true) === playlistId;
+  }
+  return false;
+}
+
+function slotsMatching(work: Work, page: PageState, type: number, input: DeletePlaylistInput): number[] {
+  const slots: number[] = [];
+  const limit = page.start + work.pageLen;
+  for (let slot = 0; slot < page.slots; slot++) {
+    const group = Math.floor(slot / 16);
+    const bit = 1 << (slot % 16);
+    if ((work.view.getUint16(presentAddress(work.pageLen, page.start, group), true) & bit) === 0) {
+      continue;
+    }
+    const offset = work.view.getUint16(slotAddress(work.pageLen, page.start, slot), true);
+    const row = page.start + HEAP + offset;
+    if (rowMatches(work.view, row, limit, type, input)) slots.push(slot);
+  }
+  return slots;
+}
+
+/**
+ * Hides one playlist or history list by clearing its present bits.
+ * Rows stay where they are. Tracks, audio paths, and every other playlist stay.
+ * The input buffer is not modified.
+ */
+export function deletePlaylistFromPdb(
+  source: ArrayBuffer,
+  input: DeletePlaylistInput,
+): DeletePlaylistResult {
+  const library = parseRekordboxPdb(source.slice(0));
+  const matches = library.playlists.filter(
+    (item) => item.kind === input.kind && item.id === input.playlistId,
+  );
+  if (matches.length > 1) {
+    throw new PdbWriteError(
+      "exports.stickWrite.playlistAmbiguous",
+      undefined,
+      "Dieser Eintrag ist in der Stick-Datenbank nicht eindeutig. Es wurde nichts verändert.",
+    );
+  }
+  if (matches.length !== 1) {
+    throw new PdbWriteError(
+      "exports.stickWrite.playlistMissing",
+      undefined,
+      "Dieser Eintrag steht nicht in der Stick-Datenbank. Es wurde nichts verändert.",
+    );
+  }
+  const target = matches[0];
+  const work = new Work(source);
+  const { pageLen, tables } = readHeader(work.view);
+  const wanted =
+    input.kind === "playlist"
+      ? [
+          { table: tables.get(TREE), type: TREE, role: "owner" as const },
+          { table: tables.get(ENTRIES), type: ENTRIES, role: "entries" as const },
+        ]
+      : [
+          { table: tables.get(HISTORY), type: HISTORY, role: "owner" as const },
+          { table: tables.get(HISTORY_ENTRIES), type: HISTORY_ENTRIES, role: "entries" as const },
+        ];
+  if (wanted.some((item) => !item.table)) throw unsupported();
+
+  const drops: Drop[] = [];
+  for (const item of wanted) {
+    const table = item.table;
+    if (!table) throw unsupported();
+    const chain = tableChain(work.view, pageLen, table);
+    if (!chain.length || chain.at(-1) !== table.last) throw unsupported();
+    for (const index of chain) {
+      const state = readPage(work.view, pageLen, index, item.type);
+      if (!state) {
+        const limit = index * pageLen + pageLen;
+        const hit = presentRows(work.view, pageLen, index).some((row) =>
+          rowMatches(work.view, row, limit, item.type, input),
+        );
+        if (hit) throw unsupported();
+        continue;
+      }
+      const slots = slotsMatching(work, state, item.type, input);
+      if (slots.length) drops.push({ state, slots, role: item.role });
+    }
+  }
+  const owners = drops
+    .filter((drop) => drop.role === "owner")
+    .reduce((sum, drop) => sum + drop.slots.length, 0);
+  if (owners < 1) throw unsupported();
+  for (const drop of drops) {
+    for (const slot of drop.slots) work.markAbsent(drop.state, slot);
+  }
+  work.view.setUint32(0x14, work.sequence, true);
+  const result: DeletePlaylistResult = {
+    buffer: work.bytes.buffer as ArrayBuffer,
+    playlistId: target.id,
+    name: target.name,
+    kind: target.kind,
+    changedPages: [...work.changed].sort((a, b) => a - b),
+  };
+  verifyPdbDeletion(source, result.buffer, {
+    playlistId: target.id,
+    kind: target.kind,
+    name: target.name,
+    changedPages: result.changedPages,
+  });
+  return result;
+}
+
 export type ExpectedUpdate = {
   playlistId: number;
   name: string;
@@ -752,6 +912,115 @@ export function verifyPdbReplacement(
   ).length;
   if (sameNameAfter !== sameNameBefore) throw failed("duplicate playlist");
   auditPdbPlaylistPages(after, changedPageIndexes(new Uint8Array(before), new Uint8Array(after), headerAfter.pageLen));
+}
+
+function bitCount(value: number): number {
+  let count = 0;
+  let bits = value & 0xffff;
+  while (bits) {
+    count += bits & 1;
+    bits >>= 1;
+  }
+  return count;
+}
+
+export type ExpectedDeletion = {
+  playlistId: number;
+  kind: "playlist" | "history";
+  name: string;
+  changedPages: number[];
+};
+
+/**
+ * Throws unless `after` is `before` with one playlist or history list hidden.
+ * Tracks and every other playlist stay. The file does not shrink.
+ */
+export function verifyPdbDeletion(before: ArrayBuffer, after: ArrayBuffer, expected: ExpectedDeletion): void {
+  if (before.byteLength !== after.byteLength) throw failed("size");
+  const viewBefore = new DataView(before);
+  const viewAfter = new DataView(after);
+  const headerBefore = readHeader(viewBefore);
+  const headerAfter = readHeader(viewAfter);
+  if (headerBefore.pageLen !== headerAfter.pageLen) throw failed("page size");
+  const pageLen = headerBefore.pageLen;
+  const a = new Uint8Array(before);
+  const b = new Uint8Array(after);
+  for (let i = 0; i < pageLen; i++) {
+    if (i >= 0x14 && i < 0x18) continue;
+    if (a[i] !== b[i]) throw failed("header");
+  }
+  if (viewAfter.getUint32(0x14, true) <= viewBefore.getUint32(0x14, true)) throw failed("sequence");
+
+  const actual = changedPageIndexes(a, b, pageLen);
+  if (
+    actual.length !== expected.changedPages.length ||
+    actual.some((page, index) => page !== expected.changedPages[index])
+  ) {
+    throw failed("changed pages");
+  }
+  for (const page of expected.changedPages) verifyDeletedPage(a, b, pageLen, page);
+
+  const libBefore = parseRekordboxPdb(before.slice(0));
+  const libAfter = parseRekordboxPdb(after.slice(0));
+  if (JSON.stringify(libBefore.tracks) !== JSON.stringify(libAfter.tracks)) throw failed("tracks");
+  if (libAfter.playlists.some((item) => item.kind === expected.kind && item.id === expected.playlistId)) {
+    throw failed("still present");
+  }
+  if (libAfter.playlists.length !== libBefore.playlists.length - 1) throw failed("playlist count");
+  for (const old of libBefore.playlists) {
+    if (old.kind === expected.kind && old.id === expected.playlistId) {
+      if (old.name !== expected.name) throw failed("name");
+      continue;
+    }
+    const now = libAfter.playlists.find((item) => item.kind === old.kind && item.id === old.id);
+    if (!now || JSON.stringify(now) !== JSON.stringify(old)) throw failed("unrelated playlist");
+  }
+}
+
+function verifyDeletedPage(a: Uint8Array, b: Uint8Array, pageLen: number, page: number) {
+  const start = page * pageLen;
+  const viewA = new DataView(a.buffer, a.byteOffset, a.byteLength);
+  const viewB = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  for (let i = 0; i < 0x10; i++) {
+    if (a[start + i] !== b[start + i]) throw failed(`page ${page} header`);
+  }
+  if (a[start + 27] !== b[start + 27]) throw failed(`page ${page} flags`);
+  const packed = (view: DataView) =>
+    view.getUint8(start + 24) | (view.getUint8(start + 25) << 8) | (view.getUint8(start + 26) << 16);
+  const slotsOf = (view: DataView) => packed(view) & 0x1fff;
+  const rowsOf = (view: DataView) => (packed(view) >> 13) & 0x7ff;
+  if (slotsOf(viewA) !== slotsOf(viewB)) throw failed(`page ${page} slots`);
+  if (rowsOf(viewB) >= rowsOf(viewA)) throw failed(`page ${page} rows`);
+  if (viewA.getUint16(start + 0x1c, true) !== viewB.getUint16(start + 0x1c, true)) {
+    throw failed(`page ${page} free`);
+  }
+  if (viewA.getUint16(start + 0x1e, true) !== viewB.getUint16(start + 0x1e, true)) {
+    throw failed(`page ${page} heap`);
+  }
+  const used = viewA.getUint16(start + 0x1e, true);
+  for (let i = HEAP; i < HEAP + used; i++) {
+    if (a[start + i] !== b[start + i]) throw failed(`page ${page} heap`);
+  }
+  const slots = slotsOf(viewA);
+  for (let slot = 0; slot < slots; slot++) {
+    const at = slotAddress(pageLen, start, slot);
+    if (viewA.getUint16(at, true) !== viewB.getUint16(at, true)) throw failed(`page ${page} index`);
+  }
+  let cleared = 0;
+  for (let group = 0; group < groupsFor(slots); group++) {
+    const at = presentAddress(pageLen, start, group);
+    const oldPresent = viewA.getUint16(at, true);
+    const newPresent = viewB.getUint16(at, true);
+    if ((newPresent & oldPresent) !== newPresent) throw failed(`page ${page} present`);
+    const oldTxn = viewA.getUint16(at + 2, true);
+    const newTxn = viewB.getUint16(at + 2, true);
+    if ((newTxn & oldTxn) !== oldTxn) throw failed(`page ${page} transaction`);
+    cleared += bitCount(oldPresent & ~newPresent);
+  }
+  if (cleared < 1) throw failed(`page ${page} unchanged`);
+  if (rowsOf(viewA) - rowsOf(viewB) !== cleared) throw failed(`page ${page} row count`);
+  const type = viewB.getUint32(start + 8, true);
+  if (!readPage(viewB, pageLen, page, type)) throw failed(`page ${page} consistency`);
 }
 
 /**

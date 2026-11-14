@@ -34,6 +34,7 @@ import { HarmonicPath } from "@/components/HarmonicPath";
 import { LibraryBrowser, LibraryPanel } from "@/components/LibraryPanel";
 import { StickSetList, type StickStatusSlice } from "@/components/RekordboxStick";
 import { GigReadyDialog } from "@/components/GigReadyDialog";
+import { PlaylistDeleteDialog } from "@/components/PlaylistDeleteDialog";
 import { PlaylistLoadDialog } from "@/components/PlaylistLoadDialog";
 import { ResetSetDialog } from "@/components/ResetSetDialog";
 import { ReshuffleConfirmDialog } from "@/components/ReshuffleConfirmDialog";
@@ -84,6 +85,7 @@ import {
   readStickFromHandle,
   stickPermission,
   subscribeStickHandle,
+  type PersistableDir,
 } from "@/lib/stick-session";
 import { savedVolumeHandle } from "@/lib/stick-volume-client";
 import { probeStickAlive } from "@/lib/stick-alive";
@@ -139,6 +141,7 @@ import {
   type ReshuffleSource,
 } from "@/components/SetTakeaway";
 import { StickWriteDialog } from "@/components/StickWriteDialog";
+import { deletePlaylistFromStick, stickPlaylistKey } from "@/lib/rekordbox-stick-write";
 import { RoleCrates } from "@/components/RoleCrates";
 import {
   boothFileName,
@@ -604,6 +607,11 @@ export function SetBuilder() {
   const stickJob = useRef(0);
   const energyJob = useRef(0);
   const saveSetupAnchor = useRef<HTMLLabelElement>(null);
+  const stickRootRef = useRef<StickStatusSlice["healthRoot"]>(null);
+  const refreshStickHealthRef = useRef<StickStatusSlice["refreshHealth"] | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<RekordboxStickSet | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [pendingStickSet, setPendingStickSet] = useState<RekordboxStickSet | null>(
     null,
   );
@@ -1146,6 +1154,60 @@ export function SetBuilder() {
       return;
     }
     setPendingStickSet(set);
+  }
+
+  function requestDeleteStickPlaylist(set: RekordboxStickSet) {
+    if (deleteBusy) return;
+    setDeleteError(null);
+    setPendingDelete(set);
+  }
+
+  async function confirmDeleteStickPlaylist() {
+    const set = pendingDelete;
+    if (!set || deleteBusy) return;
+    const key = stickPlaylistKey(set.id);
+    if (!key) {
+      setDeleteError(t("library.stick.deleteNoStick"));
+      return;
+    }
+    setDeleteBusy(true);
+    setDeleteError(null);
+    try {
+      const root =
+        (stickRootRef.current as PersistableDir | null) ?? (await loadPersistedStickHandle());
+      if (!root || !(await stickPermission(root, "readwrite", true))) {
+        setDeleteError(t("library.stick.deleteNoStick"));
+        return;
+      }
+      const done = await enqueueWork(
+        () => deletePlaylistFromStick(root, key.playlistId, key.kind, new Date()),
+        {
+          operation: "stick-delete",
+          key: `stick-delete:${set.id}`,
+          label: t("library.stick.deleteBusy"),
+          target: set.name,
+        },
+      );
+      const fresh = await readStickFromHandle(root).catch(() => null);
+      if (fresh) {
+        const sets = fresh.sets.filter((item) => item.id !== set.id);
+        setLibraryRows(stickLibraryRows(fresh.library, sets));
+        setStickSets(sets);
+      } else {
+        setStickSets((current) => current.filter((item) => item.id !== set.id));
+      }
+      setPendingStickSet((current) => (current?.id === set.id ? null : current));
+      setPendingDelete(null);
+      clearNotice();
+      setStatus(
+        t("library.stick.deleteDone", { name: done.playlistName, backup: done.backupName }),
+      );
+      await refreshStickHealthRef.current?.().catch(() => undefined);
+    } catch (error) {
+      setDeleteError(errorText(error, t, "exports.stickWrite.rolledBack"));
+    } finally {
+      setDeleteBusy(false);
+    }
   }
 
   function setDraft(updater: SetDraft | ((current: SetDraft) => SetDraft)) {
@@ -2053,6 +2115,8 @@ export function SetBuilder() {
   }
 
   const onStickStatus = useCallback((status: StickStatusSlice | null) => {
+    stickRootRef.current = status?.healthRoot ?? null;
+    refreshStickHealthRef.current = status?.refreshHealth ?? null;
     setStickHealth((current) => {
       const next = status?.health ?? null;
       if (!next) return current ? null : current;
@@ -3807,6 +3871,21 @@ export function SetBuilder() {
 
       <AppUpdateCard variant="banner" />
 
+      <PlaylistDeleteDialog
+        open={pendingDelete !== null}
+        name={pendingDelete?.name ?? ""}
+        busy={deleteBusy}
+        error={deleteError}
+        onClose={() => {
+          if (deleteBusy) return;
+          setPendingDelete(null);
+          setDeleteError(null);
+        }}
+        onConfirm={() => {
+          void confirmDeleteStickPlaylist();
+        }}
+      />
+
       <PlaylistLoadDialog
         open={pendingStickSet !== null}
         name={pendingStickSet?.name ?? ""}
@@ -3927,7 +4006,9 @@ export function SetBuilder() {
             {stickSets.length > 0 ? (
               <StickSetList
                 sets={stickSets}
+                pending={deleteBusy}
                 onTake={requestStickSet}
+                onDelete={requestDeleteStickPlaylist}
               />
             ) : (
               <section className="library-browser stick-sets builder-card" aria-label={t("builder.playlist.title")}>

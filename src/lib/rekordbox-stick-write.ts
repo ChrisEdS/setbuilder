@@ -20,8 +20,10 @@ import type { MessageKey } from "@/lib/i18n/core";
 import { parseRekordboxPdb, type PdbLibrary } from "@/lib/rekordbox-pdb";
 import {
   addPlaylistToPdb,
+  deletePlaylistFromPdb,
   PdbWriteError,
   replacePlaylistInPdb,
+  verifyPdbDeletion,
   verifyPdbUpdate,
   verifyPdbReplacement,
   type AddPlaylistResult,
@@ -831,6 +833,75 @@ export async function rewriteSetToStick(
     newPages: result.allocated.length,
     ...libraryState,
   };
+}
+
+export type StickPlaylistDeleteDone = {
+  playlistName: string;
+  kind: "playlist" | "history";
+  backupName: string;
+};
+
+/** Id used by the stick playlist list (`playlist:3`, `history:9`). XML imports do not match. */
+export function stickPlaylistKey(
+  setId: string,
+): { playlistId: number; kind: "playlist" | "history" } | null {
+  const match = /^(playlist|history):(\d+)$/.exec(setId);
+  if (!match) return null;
+  const playlistId = Number(match[2]);
+  if (!Number.isSafeInteger(playlistId) || playlistId <= 0) return null;
+  return { playlistId, kind: match[1] === "history" ? "history" : "playlist" };
+}
+
+/**
+ * Removes one playlist or history list from export.pdb.
+ * Audio files stay. exportLibrary.db is not opened and not deleted.
+ * master.db on the computer is not touched.
+ * A SETBUILDER-Backup copy is written and checked before the database is replaced.
+ */
+export async function deletePlaylistFromStick(
+  root: DirLike,
+  playlistId: number,
+  kind: "playlist" | "history",
+  now: Date = new Date(),
+): Promise<StickPlaylistDeleteDone> {
+  const location = await findStickDatabase(root);
+  const original = await readBytes(location.file);
+  const result = deletePlaylistFromPdb(original, { playlistId, kind });
+
+  const backupDir = await root.getDirectoryHandle(BACKUP_DIR, { create: true });
+  const backupName = `export-${stamp(now)}.pdb`;
+  const backup = await backupDir.getFileHandle(backupName, { create: true });
+  await replaceFile(backup, original);
+  if (!sameBytes(await readBytes(backup), original)) {
+    throw stickError(
+      "exports.stickWrite.backupFailed",
+      "Die Sicherung konnte nicht geschrieben werden. Es wurde nichts verändert.",
+    );
+  }
+
+  try {
+    await replaceFile(location.file, result.buffer);
+    const written = await readBytes(location.file);
+    if (!sameBytes(written, result.buffer)) {
+      throw stickError("exports.stickWrite.readBack", "Die geschriebene Datei weicht ab.");
+    }
+    verifyPdbDeletion(original, written, {
+      playlistId: result.playlistId,
+      kind: result.kind,
+      name: result.name,
+      changedPages: result.changedPages,
+    });
+  } catch (error) {
+    await restoreOriginal(location.file, original);
+    throw stickError(
+      "exports.stickWrite.rolledBack",
+      "Die Stick-Datenbank wurde nach dem Schreiben nicht bestanden. Der vorherige Stand ist wiederhergestellt.",
+      { detail: error instanceof Error ? error.message : "" },
+    );
+  }
+
+  await pruneBackups(root, BACKUP_KEEP);
+  return { playlistName: result.name, kind: result.kind, backupName };
 }
 
 async function writeTextFile(dir: DirLike, name: string, text: string) {

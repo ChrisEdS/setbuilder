@@ -4,7 +4,13 @@ export const PAGE = 4096;
 // ---------------------------------------------------------------------------------------------
 // Fixture: a database whose page headers are fully consistent, with two pages per entries table.
 
-export type Options = { fillEntryLastPage?: boolean; fillEntryFirstPage?: boolean; fillTree?: boolean };
+export type Options = {
+  fillEntryLastPage?: boolean;
+  fillEntryFirstPage?: boolean;
+  fillTree?: boolean;
+  /** Same playlist id stored twice, plus one playlist with no entries. */
+  duplicateTree?: boolean;
+};
 
 export const ARTIST_PAGE = 1;
 export const ALBUM_PAGE = 2;
@@ -48,11 +54,19 @@ export function fixture(options: Options = {}): ArrayBuffer {
   page(file, ALBUM_PAGE, 3, 0, [albumRow()]);
   page(file, KEY_PAGE, 5, 0, [keyRow()]);
   page(file, TRACK_PAGE, 0, 0, [trackRow(7, "Night Drive"), trackRow(8, "Morning Light")]);
-  const treeRows = [
-    treeRow(0, 0, 2, true, shortAscii("Sets")),
-    treeRow(2, 1, 3, false, utf16("Freitag")),
-  ];
-  if (options.fillTree) {
+  const treeRows = options.duplicateTree
+    ? [
+        treeRow(0, 0, 16, true, shortAscii("Sets")),
+        treeRow(0, 0, 5, false, shortAscii("Leftover")),
+        treeRow(16, 2, 5, false, shortAscii("Joyride")),
+        treeRow(0, 1, 8, false, shortAscii("Once")),
+        treeRow(0, 3, 10, false, shortAscii("Empty")),
+      ]
+    : [
+        treeRow(0, 0, 2, true, shortAscii("Sets")),
+        treeRow(2, 1, 3, false, utf16("Freitag")),
+      ];
+  if (options.fillTree && !options.duplicateTree) {
     // Many small playlists until the page cannot take another one.
     for (let id = 4; ; id++) {
       const row = treeRow(0, id, id, false, shortAscii(`P${id}`));
@@ -64,8 +78,8 @@ export function fixture(options: Options = {}): ArrayBuffer {
   }
   page(file, TREE_PAGE, 7, TREE_RESERVED, treeRows);
 
-  const firstRows = [entryRow(1, 7, 3)];
-  const lastRows = [entryRow(1, 8, 3)];
+  const firstRows = options.duplicateTree ? [entryRow(1, 7, 5)] : [entryRow(1, 7, 3)];
+  const lastRows = options.duplicateTree ? [entryRow(1, 8, 8)] : [entryRow(1, 8, 3)];
   if (options.fillEntryFirstPage) fillWithEntries(firstRows);
   if (options.fillEntryLastPage) fillWithEntries(lastRows);
   page(file, ENTRY_FIRST, 8, ENTRY_LAST, firstRows);

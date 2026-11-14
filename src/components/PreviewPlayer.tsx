@@ -36,6 +36,7 @@ import { WaveformDeck } from "@/components/WaveformDeck";
 import { hasKnownEnergy } from "@/lib/energy";
 import {
   formatGridReadingNote,
+  readBackupBeatGrid,
   readRememberedBeatGrid,
   readRememberedHotCues,
   readRememberedPhrases,
@@ -51,7 +52,8 @@ import {
 } from "@/lib/stick-cues";
 import { analyzeSourceGrid } from "@/lib/analyze-grid";
 import { barJump, phrasesOnGrid, shiftBeatTimes, type AnlzBeat, type AnlzPhrase } from "@/lib/anlz-cues";
-import { gridsEqual, reindexPhrases } from "@/lib/beatgrid-edit";
+import { compareBeatGrids } from "@/lib/beatgrid";
+import { gridBpm, gridsEqual, reindexPhrases } from "@/lib/beatgrid-edit";
 import {
   getStickHandleEpoch,
   loadPersistedStickHandle,
@@ -382,7 +384,12 @@ function PreviewDock({
   const [gridNotice, setGridNotice] = useState<string | null>(null);
   const [gridAnalyzing, setGridAnalyzing] = useState(false);
   const [gridUndo, setGridUndo] = useState<AnlzBeat[] | null | undefined>(undefined);
+  const [draftGrid, setDraftGrid] = useState<AnlzBeat[] | null>(null);
+  const [referenceGrid, setReferenceGrid] = useState<AnlzBeat[] | null>(null);
+  const [gridCompare, setGridCompare] = useState<string | null>(null);
   const beatsRef = useRef<AnlzBeat[] | null>(null);
+  const draftRef = useRef<AnlzBeat[] | null>(null);
+  draftRef.current = draftGrid;
   const phrasesRef = useRef<AnlzPhrase[] | null>(null);
   const shifting = useRef(false);
   const pendingDelta = useRef(0);
@@ -447,6 +454,9 @@ function PreviewDock({
     setGridNotice(null);
     setGridAnalyzing(false);
     setGridUndo(undefined);
+    setDraftGrid(null);
+    setReferenceGrid(null);
+    setGridCompare(null);
   }
   useLayoutEffect(() => {
     gridRequestRef.current = gridRequest;
@@ -638,7 +648,7 @@ function PreviewDock({
   }
 
   function shiftGrid(deltaMs: number): boolean {
-    if (analyzing.current || !deltaMs) return false;
+    if (analyzing.current || draftRef.current || !deltaMs) return false;
     const current = beatsRef.current;
     if (!current) return false;
     const next = shiftBeatTimes(current, deltaMs);
@@ -723,46 +733,56 @@ function PreviewDock({
     setGridMissing(missing);
   }
 
+  function gridCompareText(reference: readonly AnlzBeat[] | null, grid: readonly AnlzBeat[]): string {
+    if (!reference?.length) return t("crates.player.gridCompareNone");
+    const report = compareBeatGrids(reference, grid);
+    if (!report) return t("crates.player.gridCompareNone");
+    return t("crates.player.gridCompare", {
+      bpm: report.candidateBpm == null ? "–" : report.candidateBpm.toFixed(1),
+      offset: report.downbeatOffsetMs == null ? "–" : String(report.downbeatOffsetMs),
+      phase: report.phaseShift == null ? "–" : String(report.phaseShift),
+      fit: t(report.fitsMix ? "crates.player.gridCompareFit" : "crates.player.gridCompareOff"),
+    });
+  }
+
+  function clearGridDraft() {
+    draftRef.current = null;
+    setDraftGrid(null);
+    setReferenceGrid(null);
+    setGridCompare(null);
+  }
+
   function analyzeGrid() {
     if (analyzing.current || shifting.current || !src) return;
     analyzing.current = true;
     const token = analyzeToken.current + 1;
     analyzeToken.current = token;
     const analyzeTrack = track.id;
-    const kept = t("crates.player.gridSetOnly");
-    const rejected = t("crates.player.gridRejected");
     const failed = t("crates.player.gridAnalyzeFailed");
+    const path = filePath;
+    const pdbId = rekordboxTrackId(track) ?? 0;
+    const storedBpm = Number.parseFloat(track.bpm || "");
     setGridAnalyzing(true);
     setGridNotice(null);
+    setShowGrid(true);
     void (async () => {
       try {
-        const grid = await analyzeSourceGrid(src);
-        if (analyzeToken.current !== token || openTrack.current !== analyzeTrack) return;
-        const current = beatsRef.current;
-        const previous = current ? current.map((beat) => ({ ...beat })) : null;
-        const first = gridUndo === undefined;
-        if (first) setGridUndo(previous);
-        applyGrid(grid, false);
-        const pdbId = rekordboxTrackId(track) ?? 0;
+        const live = beatsRef.current ? beatsRef.current.map((beat) => ({ ...beat })) : null;
+        let reference = live;
         const root = await loadPersistedStickHandle();
         if (analyzeToken.current !== token || openTrack.current !== analyzeTrack) return;
-        if (!root || !(await stickPermission(root, "readwrite", true))) {
-          setGridNotice(kept);
-          return;
+        if (root && (await stickPermission(root, "read"))) {
+          const backup = await readBackupBeatGrid(root, pdbId, path);
+          if (backup?.length && !gridsEqual(backup, live)) reference = backup;
         }
-        const status = await saveStickAnalyzedGrid(root, pdbId, grid, filePath);
         if (analyzeToken.current !== token || openTrack.current !== analyzeTrack) return;
-        if (status === "written") {
-          setGridNotice(null);
-          return;
-        }
-        if (status === "rejected") {
-          applyGrid(previous, previous == null);
-          if (first) setGridUndo(undefined);
-          setGridNotice(rejected);
-          return;
-        }
-        setGridNotice(kept);
+        const bpm =
+          (reference && gridBpm(reference)) || (Number.isFinite(storedBpm) && storedBpm > 0 ? storedBpm : null);
+        const grid = await analyzeSourceGrid(src, { bpm, reference });
+        if (analyzeToken.current !== token || openTrack.current !== analyzeTrack) return;
+        setReferenceGrid(reference);
+        setDraftGrid(grid);
+        setGridCompare(gridCompareText(reference, grid));
       } catch {
         if (analyzeToken.current !== token || openTrack.current !== analyzeTrack) return;
         setGridNotice(failed);
@@ -775,7 +795,22 @@ function PreviewDock({
     })();
   }
 
+  function keepAnalyzedGrid() {
+    const next = draftRef.current;
+    if (!next?.length || analyzing.current || shifting.current) return;
+    const copy = next.map((beat) => ({ timeMs: beat.timeMs, beat: beat.beat }));
+    const previous = beatsRef.current ? beatsRef.current.map((beat) => ({ ...beat })) : null;
+    if (gridUndo === undefined) setGridUndo(previous);
+    clearGridDraft();
+    replaceGrid(copy);
+  }
+
   function undoAnalyzedGrid() {
+    if (draftRef.current) {
+      clearGridDraft();
+      setGridNotice(null);
+      return;
+    }
     if (gridUndo === undefined || analyzing.current || shifting.current) return;
     const snapshot = gridUndo;
     const shown = beatsRef.current ? beatsRef.current.map((beat) => ({ ...beat })) : null;
@@ -1287,7 +1322,7 @@ function PreviewDock({
               duration={duration || (track.durationMs ?? 0) / 1000}
               playing={playing}
               mediaRef={audioRef}
-              beats={fileBeats}
+              beats={draftGrid && referenceGrid?.length ? referenceGrid : fileBeats}
               bpm={track.bpm || ""}
               fallback={gridMissing}
               gridNote={gridMissing ? t("crates.player.gridMissing") : null}
@@ -1318,8 +1353,13 @@ function PreviewDock({
               onReplaceGrid={replaceGrid}
               onAnalyzeGrid={analyzeGrid}
               onUndoGrid={undoAnalyzedGrid}
-              canUndoGrid={gridUndo !== undefined}
+              canUndoGrid={gridUndo !== undefined || draftGrid != null}
               canAnalyzeGrid={Boolean(src) && !gridAnalyzing && !gridReading}
+              compareBeats={draftGrid}
+              compareNote={gridCompare}
+              onKeepGrid={keepAnalyzedGrid}
+              canKeepGrid={Boolean(draftGrid?.length) && !gridAnalyzing}
+              gridEditable={!draftGrid}
               notice={gridNotice ?? cueNotice}
               onPause={() => {
                 const audio = audioRef.current;

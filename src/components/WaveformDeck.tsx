@@ -42,6 +42,10 @@ import {
 
 const BUCKETS = 1400;
 
+function cueTone(slot: number): CSSProperties {
+  return { ["--cue-color"]: cueColor(slot) } as CSSProperties;
+}
+
 function formatTime(seconds: number): string {
   if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
   const whole = Math.floor(seconds);
@@ -203,6 +207,7 @@ function drawBeatMarks(
   viewSpan: number,
   fromFile: boolean,
   lane: boolean,
+  ghost = false,
 ) {
   const ctx = canvas.getContext("2d");
   if (!ctx || !beats.length || duration <= 0) return;
@@ -231,14 +236,18 @@ function drawBeatMarks(
     const x = ((beat.timeMs - startMs) / spanMs) * width;
     const waveTop = downbeat ? laneH : laneH + (height - laneH) * (fromFile ? 0.22 : 0.34);
     const waveBottom = height - (downbeat ? 2 : height * 0.08);
-    ctx.setLineDash(fromFile ? [] : [2, 5]);
-    ctx.strokeStyle = downbeat
-      ? fromFile
-        ? "rgba(255,255,255,0.34)"
-        : "rgba(190,190,190,0.24)"
-      : fromFile
-        ? "rgba(255,255,255,0.14)"
-        : "rgba(190,190,190,0.1)";
+    ctx.setLineDash(ghost || !fromFile ? [2, 5] : []);
+    ctx.strokeStyle = ghost
+      ? downbeat
+        ? "rgba(251,191,36,0.95)"
+        : "rgba(251,191,36,0.55)"
+      : downbeat
+        ? fromFile
+          ? "rgba(255,255,255,0.34)"
+          : "rgba(190,190,190,0.24)"
+        : fromFile
+          ? "rgba(255,255,255,0.14)"
+          : "rgba(190,190,190,0.1)";
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(x, waveTop);
@@ -247,10 +256,18 @@ function drawBeatMarks(
     if (laneH > 2) {
       ctx.setLineDash([]);
       if (downbeat) {
-        ctx.fillStyle = fromFile ? "rgba(255,255,255,0.92)" : "rgba(210,210,210,0.5)";
+        ctx.fillStyle = ghost
+          ? "rgba(251,191,36,0.95)"
+          : fromFile
+            ? "rgba(255,255,255,0.92)"
+            : "rgba(210,210,210,0.5)";
         ctx.fillRect(x - 1, 1, 2, laneH - 3);
       } else {
-        ctx.fillStyle = fromFile ? "rgba(255,255,255,0.55)" : "rgba(190,190,190,0.22)";
+        ctx.fillStyle = ghost
+          ? "rgba(251,191,36,0.55)"
+          : fromFile
+            ? "rgba(255,255,255,0.55)"
+            : "rgba(190,190,190,0.22)";
         ctx.fillRect(x - 0.5, laneH * 0.48, 1, laneH * 0.42);
       }
     }
@@ -286,6 +303,11 @@ export function WaveformDeck({
   onUndoGrid,
   canUndoGrid,
   canAnalyzeGrid,
+  compareBeats = null,
+  compareNote = null,
+  onKeepGrid,
+  canKeepGrid = false,
+  gridEditable = true,
   onSeek,
   onPlay,
   onPause,
@@ -324,6 +346,13 @@ export function WaveformDeck({
   onUndoGrid: () => void;
   canUndoGrid: boolean;
   canAnalyzeGrid: boolean;
+  /** Auto grid drawn dashed over the Rekordbox grid. Null until Analyse has a result. */
+  compareBeats?: readonly AnlzBeat[] | null;
+  compareNote?: string | null;
+  onKeepGrid?: () => void;
+  canKeepGrid?: boolean;
+  /** False while a preview is showing, so nudges do not write the stick. */
+  gridEditable?: boolean;
   onSeek: (seconds: number) => void;
   onPlay: (seconds: number) => void;
   onPause: () => void;
@@ -380,16 +409,20 @@ export function WaveformDeck({
   const firstRef = useRef(0);
   const playingRef = useRef(playing);
   const holdRef = useRef(false);
-  const gridRef = useRef<{ marks: readonly AnlzBeat[]; fromFile: boolean; quantize: boolean }>({
+  const gridRef = useRef<{ marks: readonly AnlzBeat[]; fromFile: boolean; quantize: boolean; editable: boolean }>({
     marks: [],
     fromFile: false,
     quantize: true,
+    editable: true,
   });
   const drawRef = useRef<{ marks: readonly AnlzBeat[]; fromFile: boolean }>({ marks: [], fromFile: false });
+  const compareRef = useRef<readonly AnlzBeat[]>([]);
+  compareRef.current = compareBeats ?? [];
   const span = duration > 0 ? duration : 0;
   const spanRef = useRef(span);
   const timeRef = useRef(currentTime);
   const fromFile = Boolean(beats && beats.length > 0);
+  gridRef.current.editable = fromFile && gridEditable;
   const gridMarks = useMemo(() => (fromFile && beats ? beats : []), [fromFile, beats]);
   const drawn = useMemo(
     () => (fromFile && beats ? beats : fallback ? beatsFromBpm(Number.parseFloat(bpm), span * 1000) : []),
@@ -403,9 +436,9 @@ export function WaveformDeck({
     const lead = trackLead(drawn, bpm);
     padRef.current = span > 0 ? lead.pad / span : 0;
     firstRef.current = span > 0 ? lead.first / span : 0;
-    gridRef.current = { marks: gridMarks, fromFile, quantize };
+    gridRef.current = { marks: gridMarks, fromFile, quantize, editable: fromFile && gridEditable };
     drawRef.current = { marks: drawn, fromFile };
-  }, [span, currentTime, playing, zoom, viewStart, gridMarks, fromFile, quantize, drawn, bpm]);
+  }, [span, currentTime, playing, zoom, viewStart, gridMarks, fromFile, quantize, drawn, bpm, gridEditable]);
 
   function playCue(seconds: number) {
     if (playTimer.current) window.clearTimeout(playTimer.current);
@@ -449,10 +482,18 @@ export function WaveformDeck({
       drawBands(canvas, bands, start, spanView, grid);
       if (grid && showGrid) {
         drawBeatMarks(canvas, drawRef.current.marks, spanRef.current, start, spanView, drawRef.current.fromFile, true);
+        if (compareRef.current.length) {
+          drawBeatMarks(canvas, compareRef.current, spanRef.current, start, spanView, false, true, true);
+        }
       }
       if (overview && grid) {
         drawBands(overview, bands, 0, 1, false);
-        if (showGrid) drawBeatMarks(overview, drawRef.current.marks, spanRef.current, 0, 1, drawRef.current.fromFile, false);
+        if (showGrid) {
+          drawBeatMarks(overview, drawRef.current.marks, spanRef.current, 0, 1, drawRef.current.fromFile, false);
+          if (compareRef.current.length) {
+            drawBeatMarks(overview, compareRef.current, spanRef.current, 0, 1, false, false, true);
+          }
+        }
       }
     };
     paint();
@@ -460,7 +501,7 @@ export function WaveformDeck({
     observer.observe(stage);
     if (overview?.parentElement) observer.observe(overview.parentElement);
     return () => observer.disconnect();
-  }, [bands, zoom, viewStart, beats, bpm, duration, fallback, light, showGrid]);
+  }, [bands, zoom, viewStart, beats, bpm, duration, fallback, light, showGrid, compareBeats]);
 
   useEffect(() => {
     playingRef.current = playing;
@@ -674,6 +715,7 @@ export function WaveformDeck({
   }
 
   function nudgeGrid(deltaMs: number) {
+    if (!gridRef.current.editable) return;
     const marks = gridRef.current.marks;
     if (!slideGrid(marks, deltaMs)) return;
     rememberGrid();
@@ -718,6 +760,7 @@ export function WaveformDeck({
   }
 
   function applyFlag() {
+    if (!gridRef.current.editable) return;
     const marks = gridRef.current.marks;
     const next = flagGrid(marks, timeRef.current * 1000);
     if (!next || gridsEqual(next, marks)) return;
@@ -726,6 +769,7 @@ export function WaveformDeck({
   }
 
   function applySnap() {
+    if (!gridRef.current.editable) return;
     const marks = gridRef.current.marks;
     const next = snapGrid(marks, timeRef.current * 1000);
     if (!next || !marks[0] || gridsEqual(next, marks)) return;
@@ -734,6 +778,7 @@ export function WaveformDeck({
   }
 
   function applyTempo(factor: 0.5 | 2) {
+    if (!gridRef.current.editable) return;
     const marks = gridRef.current.marks;
     const next = scaleGridTempo(marks, factor, timeRef.current * 1000);
     if (!next) return;
@@ -742,6 +787,10 @@ export function WaveformDeck({
   }
 
   function resetGrid() {
+    if (!gridRef.current.editable) {
+      if (canUndoGrid) onUndoGrid();
+      return;
+    }
     const anchor = anchorRef.current;
     if (anchor) {
       anchorRef.current = null;
@@ -815,6 +864,7 @@ export function WaveformDeck({
 
   const playhead = place(currentTime);
   const zoomLabel = zoom < 1.2 ? "1×" : `${Math.round(zoom)}×`;
+  const editable = fromFile && gridEditable;
   const tempo = fromFile ? gridBpm(gridMarks) : null;
   const bpmText = tempo == null ? "—" : tempo.toFixed(1);
   const windowLeft = Math.max(0, win.start) * 100;
@@ -914,6 +964,19 @@ export function WaveformDeck({
               {t("crates.player.gridAnalyze")}
             </button>
           </Tip>
+          {canKeepGrid ? (
+            <Tip text={t("crates.player.gridKeepTip")}>
+              <button
+                type="button"
+                className="preview-grid-analyze"
+                aria-label={t("crates.player.gridKeep")}
+                onClick={onKeepGrid}
+              >
+                {t("crates.player.gridKeep")}
+              </button>
+            </Tip>
+          ) : null}
+          {compareNote ? <p className="preview-grid-compare">{compareNote}</p> : null}
           <div className="preview-grid-nudge">
             {(
               [
@@ -923,11 +986,11 @@ export function WaveformDeck({
                 ["»", GRID_SLIDE_COARSE_MS, "crates.player.gridSlideCoarseLater"],
               ] as const
             ).map(([glyph, delta, key]) => (
-              <Tip key={key} text={t(key)} disabled={!fromFile}>
+              <Tip key={key} text={t(key)} disabled={!editable}>
                 <button
                   type="button"
                   aria-label={t(key)}
-                  disabled={!fromFile}
+                  disabled={!editable}
                   onPointerDown={(event) => beginHold(delta, event)}
                   onPointerUp={stopHold}
                   onPointerCancel={stopHold}
@@ -937,23 +1000,23 @@ export function WaveformDeck({
               </Tip>
             ))}
           </div>
-          <Tip text={t("crates.player.gridFlagTip")} disabled={!fromFile}>
-            <button type="button" aria-label={t("crates.player.gridFlag")} disabled={!fromFile} onClick={applyFlag}>
+          <Tip text={t("crates.player.gridFlagTip")} disabled={!editable}>
+            <button type="button" aria-label={t("crates.player.gridFlag")} disabled={!editable} onClick={applyFlag}>
               ⚑
             </button>
           </Tip>
-          <Tip text={t("crates.player.gridSnapTip")} disabled={!fromFile}>
-            <button type="button" aria-label={t("crates.player.gridSnap")} disabled={!fromFile} onClick={applySnap}>
+          <Tip text={t("crates.player.gridSnapTip")} disabled={!editable}>
+            <button type="button" aria-label={t("crates.player.gridSnap")} disabled={!editable} onClick={applySnap}>
               ↦
             </button>
           </Tip>
-          <Tip text={t("crates.player.gridHalfTip")} disabled={!fromFile}>
-            <button type="button" className="preview-grid-tempo" aria-label={t("crates.player.gridHalf")} disabled={!fromFile} onClick={() => applyTempo(0.5)}>
+          <Tip text={t("crates.player.gridHalfTip")} disabled={!editable}>
+            <button type="button" className="preview-grid-tempo" aria-label={t("crates.player.gridHalf")} disabled={!editable} onClick={() => applyTempo(0.5)}>
               ½
             </button>
           </Tip>
-          <Tip text={t("crates.player.gridDoubleTip")} disabled={!fromFile}>
-            <button type="button" className="preview-grid-tempo" aria-label={t("crates.player.gridDouble")} disabled={!fromFile} onClick={() => applyTempo(2)}>
+          <Tip text={t("crates.player.gridDoubleTip")} disabled={!editable}>
+            <button type="button" className="preview-grid-tempo" aria-label={t("crates.player.gridDouble")} disabled={!editable} onClick={() => applyTempo(2)}>
               2×
             </button>
           </Tip>
@@ -1009,7 +1072,7 @@ export function WaveformDeck({
             time: timeRef.current,
             playRatio,
             moved: false,
-            grid: gridOpen && gridRef.current.fromFile,
+            grid: gridOpen && gridRef.current.editable,
             applied: 0,
           };
           event.currentTarget.setPointerCapture(event.pointerId);
@@ -1086,7 +1149,7 @@ export function WaveformDeck({
             key={cue.slot}
             type="button"
             className={litSlots?.includes(cue.slot) ? "preview-cue-mark is-structure" : "preview-cue-mark"}
-            style={{ left: `${place(cue.timeMs / 1000)}%`, color: cueColor(cue.slot) }}
+            style={{ left: `${place(cue.timeMs / 1000)}%`, ...cueTone(cue.slot) }}
             title={cue.name || t("crates.player.cueName", { letter: cueLetter(cue.slot) })}
             onPointerDown={(event) => {
               event.stopPropagation();
@@ -1145,7 +1208,7 @@ export function WaveformDeck({
             <span
               key={slot}
               className={["preview-cue-pad", cue ? "is-set" : "", litSlots?.includes(slot) ? "is-structure" : ""].filter(Boolean).join(" ")}
-              style={cue ? { borderColor: cueColor(slot), color: cueColor(slot) } : undefined}
+              style={cue ? cueTone(slot) : undefined}
             >
               {editing === slot && cue ? (
                 <input

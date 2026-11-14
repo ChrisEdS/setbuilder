@@ -79,6 +79,10 @@ const de = {
     "rekordbox hält die Player-Library noch offen. rekordbox schließen und erneut vorbereiten.",
   "exports.stickWrite.prepareTimeout":
     "Vorbereiten hat zu lange gedauert. Stick stecken lassen, rekordbox schließen, erneut versuchen.",
+  "exports.stickWrite.playlistMissing":
+    "Dieser Eintrag steht nicht in der Stick-Datenbank. Es wurde nichts verändert.",
+  "exports.stickWrite.playlistAmbiguous":
+    "Dieser Eintrag ist in der Stick-Datenbank nicht eindeutig. Es wurde nichts verändert.",
 } as const;
 
 const en: Record<keyof typeof de, string> = {
@@ -153,6 +157,10 @@ const en: Record<keyof typeof de, string> = {
     "rekordbox still has the player library open. Quit rekordbox, then prepare again.",
   "exports.stickWrite.prepareTimeout":
     "Preparing took too long. Leave the stick in, quit rekordbox, then try again.",
+  "exports.stickWrite.playlistMissing":
+    "This entry is not in the stick database. Nothing was changed.",
+  "exports.stickWrite.playlistAmbiguous":
+    "This entry is not unique in the stick database. Nothing was changed.",
 };
 
 export const exports_ = { de, en };
