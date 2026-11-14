@@ -2,7 +2,7 @@
 
 [Deutsch](GUIDE.de.md) · **English** · [README](../README.md)
 
-**Version 5.2.5.** Screenshots show the English interface in Chrome. **DE** / **EN** at the top right switches the labels. The German manual follows the same steps.
+**Version 5.3.0.** Screenshots show the English interface in Chrome. **DE** / **EN** at the top right switches the labels. The German manual follows the same steps.
 
 The desktop app (port **4317**) is what you normally install. If you run from the repo with `npm run dev`, use port **4327**.
 
@@ -87,6 +87,7 @@ The status line under the set shows **playing time** and the slot. **Playing tim
 2. Use **Rehearsal** (**Before** / **Now** / **After**) to hear how this title hands off to the next — same lengths as in the set.
 3. Adjust transition mark and length while you listen. Those notes stay in the set, not in the audio file on the stick.
 4. Resize the player by dragging the right or bottom edge. **+** zooms the waveform. **Q** snaps new hot cues **A–H** to the rekordbox beatgrid when a grid is present. **−5**, **+5**, and **1** nudge the grid. New cues can be written back to the stick when analysis is available.
+5. With **Light** off, a tempo fader sits to the right of the waveform. Up is faster. **±10** switches to **±25**; the slider stays put and the percent scales. **MT** keeps the key. **Tempo** next to **Q** hides the fader; the tempo stays, and the button shows the percent when it is not zero. Double-click the percent to set it back to 0. **Light** has no fader.
 
 ---
 

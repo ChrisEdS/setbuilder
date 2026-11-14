@@ -2,7 +2,7 @@
 
 [Deutsch](README.de.md) · **English**
 
-**Version 5.2.5**
+**Version 5.3.0**
 
 SETBUILDER helps you plan a DJ set from a rekordbox USB stick, check how the titles flow together, hear the joins at home, and write the finished set back as a playlist on the same stick. The app speaks German and English.
 
@@ -23,6 +23,7 @@ SETBUILDER helps you plan a DJ set from a rekordbox USB stick, check how the tit
 - **Energy arc** — In the arc view, place titles across **Open**, **Lift**, **Rise**, **Peak**, and **Release** over your slot. You see whether the build and peak land where you want before you play.
 - **Rehearsal** — **Before**, **Now**, and **After** play the handoff into the next title using the overlap length from that row. Tweak the transition mark while you listen; it lives in the set, not in the file on the stick.
 - **Beatgrid on the waveform** — Nudge the rekordbox beatgrid in the player (**−5**, **+5**, **1**). Hot cues **A–H** sit on the waveform; **Q** snaps new cues to the grid, and you can write cues back to the stick when you export.
+- **Tempo in the full player** — With **Light** off, a pitch fader sits beside the waveform. Up is faster. The range starts at **±10%**; one click switches to **±25%** and the fader position stays. **MT** keeps the key and changes only the tempo. **Tempo** next to **Q** hides the fader; the tempo stays, and the button shows the percent when it is not zero. Double-click the percent to return to 0.
 - **Safe write to stick** — **Write to stick** saves performance titles and alternatives as a playlist on the same USB stick. SETBUILDER backs up first, re-reads the database to verify the write, and rolls back if the check fails.
 - **German and English** — Toggle **DE** / **EN** anytime; the same screens and manual exist in both languages.
 

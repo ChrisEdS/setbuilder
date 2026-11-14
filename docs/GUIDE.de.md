@@ -2,7 +2,7 @@
 
 **Deutsch** · [English](GUIDE.md) · [README](../README.de.md)
 
-**Version 5.2.5.** Die Screenshots zeigen die englische Oberfläche in Chrome. **DE** / **EN** oben rechts schaltet die Beschriftungen. Die englische Anleitung folgt denselben Schritten.
+**Version 5.3.0.** Die Screenshots zeigen die englische Oberfläche in Chrome. **DE** / **EN** oben rechts schaltet die Beschriftungen. Die englische Anleitung folgt denselben Schritten.
 
 Die Desktop-App (Port **4317**) ist der normale Weg. Wer aus dem Repo mit `npm run dev` startet, nutzt Port **4327**.
 
@@ -87,6 +87,7 @@ Die Statuszeile unter dem Set zeigt **Spielzeit** und Slot. **Spielzeit** ist di
 2. Nutze **Vorhören** (**Vorher** / **Jetzt** / **Danach**), um zu hören, wie dieser Titel in den nächsten übergeht — dieselben Längen wie im Set.
 3. Passe Übergangs-Marke und Länge beim Hören an. Diese Notizen bleiben im Set, nicht in der Audiodatei auf dem Stick.
 4. Player am rechten oder unteren Rand größer ziehen. **+** zoomt die Wellenform. **Q** rastet neue Hot Cues **A–H** auf das rekordbox-Beatgrid ein, wenn ein Grid da ist. **−5**, **+5** und **1** schieben das Grid. Neue Cues können auf den Stick geschrieben werden, sobald die Analyse dazu passt.
+5. Ist **Light** aus, sitzt ein Tempo-Fader rechts neben der Wellenform. Oben ist schneller. **±10** schaltet auf **±25**; die Stellung bleibt, der Prozentwert skaliert. **MT** hält die Tonart. **Tempo** neben **Q** blendet den Fader aus; das Tempo bleibt, und der Schalter zeigt den Prozentwert, wenn er nicht null ist. Doppelklick auf den Prozentwert setzt ihn auf 0. **Light** hat keinen Fader.
 
 ---
 

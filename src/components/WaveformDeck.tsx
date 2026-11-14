@@ -28,6 +28,7 @@ import {
   snapGrid,
 } from "@/lib/beatgrid-edit";
 import type { MessageKey } from "@/lib/i18n/core";
+import { formatPitchPercent, nudgePitchPosition, pitchPercent, playedBpm, togglePitchRange, type PitchRange } from "@/lib/pitch";
 import { CUE_SLOT_COUNT, cueColor, cueLetter, type TrackCue } from "@/lib/set";
 import {
   waveformBands,
@@ -275,6 +276,95 @@ function drawBeatMarks(
   ctx.restore();
 }
 
+function PitchColumn({
+  bpm,
+  position,
+  range,
+  masterTempo,
+  canMasterTempo,
+  onPosition,
+  onRange,
+  onMasterTempo,
+}: {
+  bpm: string;
+  position: number;
+  range: PitchRange;
+  masterTempo: boolean;
+  canMasterTempo: boolean;
+  onPosition: (position: number) => void;
+  onRange: (range: PitchRange) => void;
+  onMasterTempo: (on: boolean) => void;
+}) {
+  const { t } = useI18n();
+  const percent = pitchPercent(position, range);
+  const played = playedBpm(Number(bpm), percent);
+  const shifted = Math.round(percent * 10) !== 0;
+  function reset() {
+    onPosition(0);
+  }
+  function nudge(delta: number) {
+    onPosition(nudgePitchPosition(position, range, delta));
+  }
+  return (
+    <div className="preview-pitch" role="group" aria-label={t("crates.player.pitch")}>
+      <button
+        type="button"
+        className={shifted ? "preview-pitch-read is-shifted" : "preview-pitch-read"}
+        aria-label={t("crates.player.pitchReset")}
+        onDoubleClick={reset}
+      >
+        {formatPitchPercent(percent)}
+      </button>
+      <div className="preview-pitch-slot">
+        <i className="preview-pitch-zero" aria-hidden="true" />
+        <input
+          type="range"
+          className="preview-pitch-fader"
+          min={-range}
+          max={range}
+          step="any"
+          value={percent}
+          aria-label={t("crates.player.pitch")}
+          aria-valuemin={-range}
+          aria-valuemax={range}
+          aria-valuenow={Math.round(percent * 10) / 10}
+          aria-valuetext={formatPitchPercent(percent)}
+          onChange={(event) => onPosition(Number(event.currentTarget.value) / range)}
+          onDoubleClick={reset}
+          onKeyDown={(event) => {
+            if (event.key !== "ArrowUp" && event.key !== "ArrowDown" && event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+            event.preventDefault();
+            nudge(event.key === "ArrowUp" || event.key === "ArrowRight" ? 0.1 : -0.1);
+          }}
+        />
+      </div>
+      {played == null ? <span className="preview-pitch-bpm" /> : <span className="preview-pitch-bpm">{played.toFixed(1)}</span>}
+      <div className="preview-pitch-switches">
+        <Tip text={t("crates.player.pitchRangeTip")}>
+          <button
+            type="button"
+            aria-label={t("crates.player.pitchRange", { range })}
+            onClick={() => onRange(togglePitchRange(range))}
+          >
+            ±{range}
+          </button>
+        </Tip>
+        <Tip text={t(masterTempo ? "crates.player.pitchMasterTip" : "crates.player.pitchMasterOff")}>
+          <button
+            type="button"
+            aria-pressed={masterTempo}
+            aria-label={t("crates.player.pitchMaster")}
+            disabled={!canMasterTempo}
+            onClick={() => onMasterTempo(!masterTempo)}
+          >
+            {t("crates.player.pitchMaster")}
+          </button>
+        </Tip>
+      </div>
+    </div>
+  );
+}
+
 export function WaveformDeck({
   src,
   currentTime,
@@ -294,6 +384,15 @@ export function WaveformDeck({
   onShowGrid,
   light,
   onLight,
+  pitchPosition,
+  pitchRange,
+  masterTempo,
+  canMasterTempo,
+  pitchOpen,
+  onPitchOpen,
+  onPitchPosition,
+  onPitchRange,
+  onMasterTempo,
   phrases,
   phrasesReady,
   phraseNote,
@@ -336,6 +435,16 @@ export function WaveformDeck({
   onShowGrid: (on: boolean) => void;
   light: boolean;
   onLight: (on: boolean) => void;
+  /** -1 slow, 0 center, 1 fast. The throw stays when the range changes. */
+  pitchPosition: number;
+  pitchRange: PitchRange;
+  masterTempo: boolean;
+  canMasterTempo: boolean;
+  pitchOpen: boolean;
+  onPitchOpen: (open: boolean) => void;
+  onPitchPosition: (position: number) => void;
+  onPitchRange: (range: PitchRange) => void;
+  onMasterTempo: (on: boolean) => void;
   phrases: readonly AnlzPhrase[] | null;
   /** False while the phrase read for this track is still running. */
   phrasesReady: boolean;
@@ -931,6 +1040,19 @@ export function WaveformDeck({
                 Q
               </button>
             </Tip>
+            <Tip text={t("crates.player.pitchToggle")}>
+              <button
+                type="button"
+                aria-pressed={pitchOpen}
+                aria-label={t("crates.player.pitch")}
+                className={Math.round(pitchPercent(pitchPosition, pitchRange) * 10) !== 0 ? "is-shifted" : undefined}
+                onClick={() => onPitchOpen(!pitchOpen)}
+              >
+                {pitchOpen || Math.round(pitchPercent(pitchPosition, pitchRange) * 10) === 0
+                  ? t("crates.player.pitch")
+                  : formatPitchPercent(pitchPercent(pitchPosition, pitchRange))}
+              </button>
+            </Tip>
             <Tip text={t("crates.player.gridPanelTip")}>
               <button
                 type="button"
@@ -1057,6 +1179,7 @@ export function WaveformDeck({
         <span ref={overviewPlayRef} className="preview-playhead" style={{ left: `${overviewPlay}%` }} />
       </div>
       )}
+      <div className={["preview-wave-row", light ? "is-light" : "", !light && !pitchOpen ? "is-pitch-closed" : ""].filter(Boolean).join(" ")}>
       <div
         ref={stageRef}
         className={["preview-wave-stage", zoom > 1 ? "is-zoomed" : "", light ? "is-light" : "", !light && gridOpen ? "is-grid" : ""].filter(Boolean).join(" ")}
@@ -1192,6 +1315,19 @@ export function WaveformDeck({
             </em>
           </button>
         ))}
+      </div>
+      {light || !pitchOpen ? null : (
+        <PitchColumn
+          bpm={bpm}
+          position={pitchPosition}
+          range={pitchRange}
+          masterTempo={masterTempo}
+          canMasterTempo={canMasterTempo}
+          onPosition={onPitchPosition}
+          onRange={onPitchRange}
+          onMasterTempo={onMasterTempo}
+        />
+      )}
       </div>
       {light ? null : (
       <div className="preview-cue-block">

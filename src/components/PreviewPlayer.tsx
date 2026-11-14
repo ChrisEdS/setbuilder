@@ -33,6 +33,7 @@ import {
 import { resolveTrackAudio } from "@/lib/stick-file";
 import { OverlapField } from "@/components/OverlapField";
 import { WaveformDeck } from "@/components/WaveformDeck";
+import { pitchPercent, pitchRate, type PitchRange } from "@/lib/pitch";
 import { hasKnownEnergy } from "@/lib/energy";
 import {
   formatGridReadingNote,
@@ -343,6 +344,12 @@ function PreviewDock({
   onCues,
   light,
   onLight,
+  pitchRange,
+  onPitchRange,
+  masterTempo,
+  onMasterTempo,
+  pitchOpen,
+  onPitchOpen,
 }: {
   track: PlayTrack;
   tracks: PlayTrack[];
@@ -362,9 +369,21 @@ function PreviewDock({
   onCues?: (id: string, cues: TrackCue[]) => void;
   light: boolean;
   onLight: (on: boolean) => void;
+  pitchRange: PitchRange;
+  onPitchRange: (range: PitchRange) => void;
+  masterTempo: boolean;
+  onMasterTempo: (on: boolean) => void;
+  pitchOpen: boolean;
+  onPitchOpen: (open: boolean) => void;
 }) {
   const { t } = useI18n();
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const canMasterTempo =
+    typeof HTMLMediaElement !== "undefined" && "preservesPitch" in HTMLMediaElement.prototype;
+  const [pitchPosition, setPitchPosition] = useState(0);
+  useEffect(() => {
+    if (light) setPitchPosition(0);
+  }, [light]);
   const cardRef = useRef<HTMLElement | null>(null);
   const dragRef = useRef<{ id: number; dx: number; dy: number } | null>(null);
   const resizeRef = useRef<{ id: number; startX: number; startW: number } | null>(null);
@@ -408,6 +427,13 @@ function PreviewDock({
   const fileBase = stickAudioBaseName(filePath);
   const seed = initialAudio(filePath, fileBase, track.name);
   const [src, setSrc] = useState<string | null>(seed.src);
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const percent = light ? 0 : pitchPercent(pitchPosition, pitchRange);
+    audio.playbackRate = pitchRate(percent);
+    if ("preservesPitch" in audio) audio.preservesPitch = !light && canMasterTempo && masterTempo;
+  }, [light, pitchPosition, pitchRange, masterTempo, canMasterTempo, src]);
   const [localIssue, setLocalIssue] = useState<LocalIssue>(seed.issue);
   const [playing, setPlaying] = useState(false);
   const hadStickSrc = useRef(Boolean(seed.src && filePath));
@@ -1346,6 +1372,15 @@ function PreviewDock({
               onShowGrid={setShowGrid}
               light={light}
               onLight={onLight}
+              pitchPosition={pitchPosition}
+              pitchRange={pitchRange}
+              masterTempo={masterTempo && canMasterTempo}
+              canMasterTempo={canMasterTempo}
+              pitchOpen={pitchOpen}
+              onPitchOpen={onPitchOpen}
+              onPitchPosition={setPitchPosition}
+              onPitchRange={onPitchRange}
+              onMasterTempo={onMasterTempo}
               phrases={phrases}
               phrasesReady={gridMissing || phrasesMissing || phrases !== null}
               phraseNote={phrasesMissing ? t("crates.player.phrasesMissing") : null}
@@ -1557,6 +1592,9 @@ export function PreviewPlayer({
   const [heightFor, setHeightFor] = useState(currentId);
   // Kept above the per-track dock so next/previous stay in Light.
   const [light, setLight] = useState(false);
+  const [pitchRange, setPitchRange] = useState<PitchRange>(10);
+  const [masterTempo, setMasterTempo] = useState(true);
+  const [pitchOpen, setPitchOpen] = useState(true);
   const [seenLightEpoch, setSeenLightEpoch] = useState(lightEpoch);
   const playerOpen = Boolean(currentId);
   const [lightOpen, setLightOpen] = useState(playerOpen);
@@ -1596,6 +1634,12 @@ export function PreviewPlayer({
       onCues={onCues}
       light={light}
       onLight={setLight}
+      pitchRange={pitchRange}
+      onPitchRange={setPitchRange}
+      masterTempo={masterTempo}
+      onMasterTempo={setMasterTempo}
+      pitchOpen={pitchOpen}
+      onPitchOpen={setPitchOpen}
     />,
     document.body,
   );
