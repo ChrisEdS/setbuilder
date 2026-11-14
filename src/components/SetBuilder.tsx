@@ -1202,7 +1202,7 @@ export function SetBuilder() {
       setStatus(
         t("library.stick.deleteDone", { name: done.playlistName, backup: done.backupName }),
       );
-      await refreshStickHealthRef.current?.().catch(() => undefined);
+      await Promise.resolve(refreshStickHealthRef.current?.()).catch(() => undefined);
     } catch (error) {
       setDeleteError(errorText(error, t, "exports.stickWrite.rolledBack"));
     } finally {
