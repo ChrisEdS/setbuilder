@@ -6,6 +6,9 @@ const desktopBuild =
 
 const nextConfig: NextConfig = {
   /* config options here */
+  experimental: {
+    agentUpgrade: "security",
+  },
   output: desktopBuild ? "standalone" : undefined,
   distDir: desktopBuild ? ".next-standalone" : ".next",
   outputFileTracingExcludes: {
