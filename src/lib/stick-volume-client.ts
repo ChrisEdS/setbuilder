@@ -4,7 +4,7 @@
  */
 
 import type { PersistableDir } from "@/lib/stick-session";
-import type { FileLike } from "@/lib/rekordbox-stick-write";
+import type { DirLike, FileLike } from "@/lib/rekordbox-stick-write";
 import {
   isSafeVolumeName,
   readSavedVolumeName,
@@ -15,6 +15,63 @@ import {
 export { readSavedVolumeName };
 
 const SAVED_VOLUME = SAVED_STICK_VOLUME;
+
+const desktopVolumes = new WeakMap<DirLike, string>();
+
+/** Volume name when this handle is the desktop volume root. Nested folders are not. */
+export function desktopVolumeName(root: DirLike): string | null {
+  return desktopVolumes.get(root) ?? null;
+}
+
+export type DesktopAnlzIndexEntry = {
+  storedPath: string;
+  relativePath: string;
+};
+
+function indexEntries(rows: unknown): DesktopAnlzIndexEntry[] {
+  const entries: DesktopAnlzIndexEntry[] = [];
+  if (!Array.isArray(rows)) return entries;
+  for (const row of rows) {
+    if (!row || typeof row !== "object") continue;
+    const storedPath = "storedPath" in row && typeof row.storedPath === "string" ? row.storedPath : "";
+    const relativePath = "relativePath" in row && typeof row.relativePath === "string" ? row.relativePath : "";
+    if (!storedPath || !relativePath) continue;
+    entries.push({ storedPath, relativePath });
+  }
+  return entries;
+}
+
+function walkCount(payload: Record<string, unknown>, key: "finished" | "total"): number {
+  const value = payload[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+/**
+ * One read of every ANLZ head on this volume. Null when the desktop API is unavailable.
+ * A running index reports files finished over files to read.
+ */
+export async function readDesktopAnlzIndex(
+  name: string,
+  onProgress?: (walk: { finished: number; total: number }) => void,
+): Promise<DesktopAnlzIndexEntry[] | null> {
+  if (!isSafeVolumeName(name)) return null;
+  try {
+    const payload = await postOp({ op: "anlz-index", name });
+    if (Array.isArray(payload.entries)) return indexEntries(payload.entries);
+    const id = typeof payload.id === "string" ? payload.id : "";
+    if (!id) return null;
+    for (;;) {
+      const status = await postOp({ op: "anlz-progress", id });
+      const total = walkCount(status, "total");
+      if (total > 0) onProgress?.({ finished: walkCount(status, "finished"), total });
+      if (Array.isArray(status.entries)) return indexEntries(status.entries);
+      if (status.error === true) return null;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  } catch {
+    return null;
+  }
+}
 
 export type { PioneerVolumeInfo };
 
@@ -168,6 +225,7 @@ function volumeDir(volume: string, relative: string): PersistableDir {
       await postOp({ op: "remove", name: volume, path: next });
     },
   };
+  if (relative === "") desktopVolumes.set(dir, volume);
   return dir;
 }
 

@@ -8,11 +8,22 @@ import {
   commitAtomicWrite,
   nodeVolumeIo,
   readFileRange,
+  readUsbAnlzIndex,
   resolvePioneerFile,
 } from "@/lib/stick-volume-dir";
 
 const CHUNK_LIMIT = 8 * 1024 * 1024;
 const WRITE_ID = /^[a-f0-9]{32}$/;
+const INDEX_ID = /^[a-f0-9]{32}$/;
+
+type AnlzIndexJob = {
+  finished: number;
+  total: number;
+  entries: { storedPath: string; relativePath: string }[] | null;
+  error: boolean;
+};
+
+const anlzIndexJobs = new Map<string, AnlzIndexJob>();
 
 function localRequest(request: Request): boolean {
   const host = request.headers.get("host") ?? "";
@@ -122,6 +133,20 @@ export async function POST(request: Request) {
       if (WRITE_ID.test(id)) await abortAtomicWrite(id);
       return NextResponse.json({ ok: true });
     }
+    if (op === "anlz-progress") {
+      const id = body?.id ?? "";
+      const job = INDEX_ID.test(id) ? anlzIndexJobs.get(id) : undefined;
+      if (!job) return NextResponse.json({ error: t("api.volume.notFound") }, { status: 404 });
+      if (job.error) {
+        anlzIndexJobs.delete(id);
+        return NextResponse.json({ error: true });
+      }
+      if (job.entries) {
+        anlzIndexJobs.delete(id);
+        return NextResponse.json({ finished: job.finished, total: job.total, entries: job.entries });
+      }
+      return NextResponse.json({ finished: job.finished, total: job.total });
+    }
 
     const name = body?.name ?? "";
     const relative = body?.path ?? "";
@@ -132,6 +157,32 @@ export async function POST(request: Request) {
     if (!abs) {
       return NextResponse.json({ error: t("api.volume.badPath") }, { status: 400 });
     }
+    if (op === "anlz-index") {
+      if (relative !== "") {
+        return NextResponse.json({ error: t("api.volume.badPath") }, { status: 400 });
+      }
+      const id = crypto.randomUUID().replaceAll("-", "");
+      const job: AnlzIndexJob = { finished: 0, total: 0, entries: null, error: false };
+      anlzIndexJobs.set(id, job);
+      const timer = setTimeout(() => {
+        const current = anlzIndexJobs.get(id);
+        if (!current || current.entries || current.error) anlzIndexJobs.delete(id);
+      }, 10 * 60 * 1000);
+      if (typeof timer === "object" && timer && "unref" in timer) timer.unref();
+      void readUsbAnlzIndex(abs, nodeVolumeIo, (walk) => {
+        job.finished = walk.finished;
+        job.total = walk.total;
+      }).then(
+        (entries) => {
+          job.entries = entries;
+        },
+        () => {
+          job.error = true;
+        },
+      );
+      return NextResponse.json({ id });
+    }
+
     const stat = nodeVolumeIo.stat(abs);
 
     if (op === "stat") {

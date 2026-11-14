@@ -30,8 +30,8 @@ import {
 import type { MessageKey } from "@/lib/i18n/core";
 import { formatPitchPercent, nudgePitchPosition, pitchPercent, playedBpm, togglePitchRange, type PitchRange } from "@/lib/pitch";
 import { CUE_SLOT_COUNT, cueColor, cueLetter, type TrackCue } from "@/lib/set";
+import { loadWaveformBands, readAudioSource } from "@/lib/waveform-load";
 import {
-  waveformBands,
   fitLead,
   trackLead,
   waveformWindow,
@@ -40,8 +40,6 @@ import {
   WAVE_ZOOM_MIN,
   type WaveformBands,
 } from "@/lib/waveform";
-
-const BUCKETS = 1400;
 
 function cueTone(slot: number): CSSProperties {
   return { ["--cue-color"]: cueColor(slot) } as CSSProperties;
@@ -55,17 +53,6 @@ function formatTime(seconds: number): string {
   const hours = Math.floor(whole / 3600);
   const clock = `${minutes}:${secs.toString().padStart(2, "0")}`;
   return hours > 0 ? `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}` : clock;
-}
-
-function mixdown(buffer: AudioBuffer): Float32Array {
-  const first = buffer.getChannelData(0);
-  if (buffer.numberOfChannels < 2) return first;
-  const second = buffer.getChannelData(1);
-  const mixed = new Float32Array(first.length);
-  for (let index = 0; index < first.length; index += 1) {
-    mixed[index] = ((first[index] ?? 0) + (second[index] ?? 0)) * 0.5;
-  }
-  return mixed;
 }
 
 function prepareCanvas(canvas: HTMLCanvasElement): CanvasRenderingContext2D | null {
@@ -557,24 +544,11 @@ export function WaveformDeck({
   useEffect(() => {
     if (!src) return;
     let cancel = false;
-    const context = new AudioContext();
-    void (async () => {
-      try {
-        const response = await fetch(src);
-        const buffer = await response.arrayBuffer();
-        const audio = await context.decodeAudioData(buffer.slice(0));
-        const buckets = Math.min(24_000, Math.max(BUCKETS, Math.floor(audio.duration * 180)));
-        const next = waveformBands(mixdown(audio), audio.sampleRate, buckets);
-        if (!cancel) setBands(next);
-      } catch {
-        if (!cancel) setBands(null);
-      } finally {
-        void context.close();
-      }
-    })();
+    void loadWaveformBands(src, () => readAudioSource(src)).then((next) => {
+      if (!cancel) setBands(next?.bands ?? null);
+    });
     return () => {
       cancel = true;
-      void context.close();
     };
   }, [src]);
 
@@ -1149,6 +1123,8 @@ export function WaveformDeck({
           </Tip>
         </div>
       ) : null}
+      <div className={!light && pitchOpen ? "preview-wave-stack is-pitch-open" : undefined}>
+      <div className={!light && pitchOpen ? "preview-wave-main" : undefined}>
       {light ? null : (
       <div
         className="preview-wave-overview"
@@ -1179,7 +1155,7 @@ export function WaveformDeck({
         <span ref={overviewPlayRef} className="preview-playhead" style={{ left: `${overviewPlay}%` }} />
       </div>
       )}
-      <div className={["preview-wave-row", light ? "is-light" : "", !light && !pitchOpen ? "is-pitch-closed" : ""].filter(Boolean).join(" ")}>
+      <div className={["preview-wave-row", light ? "is-light" : ""].filter(Boolean).join(" ")}>
       <div
         ref={stageRef}
         className={["preview-wave-stage", zoom > 1 ? "is-zoomed" : "", light ? "is-light" : "", !light && gridOpen ? "is-grid" : ""].filter(Boolean).join(" ")}
@@ -1316,18 +1292,6 @@ export function WaveformDeck({
           </button>
         ))}
       </div>
-      {light || !pitchOpen ? null : (
-        <PitchColumn
-          bpm={bpm}
-          position={pitchPosition}
-          range={pitchRange}
-          masterTempo={masterTempo}
-          canMasterTempo={canMasterTempo}
-          onPosition={onPitchPosition}
-          onRange={onPitchRange}
-          onMasterTempo={onMasterTempo}
-        />
-      )}
       </div>
       {light ? null : (
       <div className="preview-cue-block">
@@ -1398,6 +1362,20 @@ export function WaveformDeck({
       </div>
       </div>
       )}
+      </div>
+      {!light && pitchOpen ? (
+        <PitchColumn
+          bpm={bpm}
+          position={pitchPosition}
+          range={pitchRange}
+          masterTempo={masterTempo}
+          canMasterTempo={canMasterTempo}
+          onPosition={onPitchPosition}
+          onRange={onPitchRange}
+          onMasterTempo={onMasterTempo}
+        />
+      ) : null}
+      </div>
       {structureNote ? <p className="preview-cue-note">{structureNote}</p> : null}
       {gridReadingNote ? <p className="preview-cue-note">{gridReadingNote}</p> : null}
       {!light && gridNote ? <p className="preview-cue-note">{gridNote}</p> : null}

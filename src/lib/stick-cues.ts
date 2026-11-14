@@ -18,6 +18,7 @@ import {
 } from "@/lib/anlz-cues";
 import { BACKUP_DIR } from "@/lib/brand";
 import { getStickFilesEpoch, listRememberedAnalysisFiles, lookupStickAnalysisFile } from "@/lib/stick-audio";
+import { desktopVolumeName, readDesktopAnlzIndex } from "@/lib/stick-volume-client";
 import type { DirLike, FileLike } from "@/lib/rekordbox-stick-write";
 import type { MemoryCue } from "@/lib/set";
 
@@ -167,7 +168,16 @@ async function readHead(file: FileLike): Promise<Uint8Array> {
   return new Uint8Array(await head.arrayBuffer());
 }
 
-const analysisIndexes = new WeakMap<DirLike, Promise<Map<string, Located>>>();
+type IndexWaiter = { path: string; resolve: (found: Located | null) => void };
+
+type LiveIndex = {
+  map: Map<string, Located>;
+  promise: Promise<Map<string, Located>>;
+  done: boolean;
+  waiters: Set<IndexWaiter>;
+};
+
+const analysisIndexes = new WeakMap<DirLike, LiveIndex>();
 const indexRetried = new WeakSet<DirLike>();
 
 /** Files already read over files still to look at. `total` 0 means the count is not known yet. */
@@ -253,10 +263,103 @@ async function analysisFilesIn(ref: TrackRef): Promise<IndexFile[]> {
   return found;
 }
 
-async function buildAnalysisIndex(root: DirLike): Promise<Map<string, Located>> {
+function nestedDir(root: DirLike, parts: readonly string[]): DirLike {
+  let opened: Promise<DirLike> | null = null;
+  const open = () => {
+    opened ??= parts.reduce(
+      (pending, name) => pending.then((dir) => dir.getDirectoryHandle(name)),
+      Promise.resolve(root),
+    );
+    return opened;
+  };
+  return {
+    name: parts[parts.length - 1] ?? root.name,
+    getDirectoryHandle(name, options) {
+      return open().then((dir) => dir.getDirectoryHandle(name, options));
+    },
+    getFileHandle(name, options) {
+      return open().then((dir) => dir.getFileHandle(name, options));
+    },
+    async *keys() {
+      const dir = await open();
+      if (!dir.keys) return;
+      yield* dir.keys();
+    },
+    async removeEntry(name) {
+      const dir = await open();
+      await dir.removeEntry?.(name);
+    },
+  };
+}
+
+function locatedFromRelative(root: DirLike, relativePath: string): Located | null {
+  if (!relativePath || relativePath.startsWith("/") || /[\\?\0]/.test(relativePath)) return null;
+  const parts = relativePath.split("/");
+  if (parts.some((part) => !part || part === "." || part === "..")) return null;
+  const datName = parts.pop();
+  if (!datName || !ANALYSIS_DAT.test(datName)) return null;
+  const folder = parts[parts.length - 1];
+  if (!folder) return null;
+  return { dir: nestedDir(root, parts), folder, datName };
+}
+
+async function indexFromDesktop(root: DirLike, volume: string): Promise<Map<string, Located> | null> {
+  const entries = await readDesktopAnlzIndex(volume, (walk) => reportIndex(root, walk));
+  if (!entries) return null;
+  const map = new Map<string, Located>();
+  for (const entry of entries) {
+    const located = locatedFromRelative(root, entry.relativePath);
+    if (!located) continue;
+    map.set(entry.storedPath, located);
+  }
+  return map;
+}
+
+function offerLocated(live: LiveIndex, stored: string, located: Located) {
+  live.map.set(stored, located);
+  for (const waiter of [...live.waiters]) {
+    if (anlzPathsMatch(waiter.path, stored)) {
+      live.waiters.delete(waiter);
+      waiter.resolve(located);
+    }
+  }
+}
+
+function finishIndexWaiters(live: LiveIndex) {
+  live.done = true;
+  for (const waiter of [...live.waiters]) {
+    live.waiters.delete(waiter);
+    waiter.resolve(matchLocated(live.map, waiter.path));
+  }
+}
+
+function waitForLocated(live: LiveIndex, filePath: string): Promise<Located | null> {
+  const now = matchLocated(live.map, filePath);
+  if (now) return Promise.resolve(now);
+  if (live.done) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const waiter: IndexWaiter = { path: filePath, resolve };
+    live.waiters.add(waiter);
+    const raced = matchLocated(live.map, filePath);
+    if (raced || live.done) {
+      live.waiters.delete(waiter);
+      resolve(raced);
+    }
+  });
+}
+
+async function buildAnalysisIndex(root: DirLike, live: LiveIndex): Promise<Map<string, Located>> {
   reportIndex(root, { finished: 0, total: 0 });
   try {
-    const map = new Map<string, Located>();
+    const volume = desktopVolumeName(root);
+    if (volume) {
+      const indexed = await indexFromDesktop(root, volume);
+      if (indexed) {
+        for (const [stored, located] of indexed) offerLocated(live, stored, located);
+        return live.map;
+      }
+    }
+    const map = live.map;
     const library = await analysisLibrary(root);
     if (!library?.keys) return map;
     // Group handles only. The file count for a group is known from its names,
@@ -323,10 +426,9 @@ async function buildAnalysisIndex(root: DirLike): Promise<Map<string, Located>> 
           } catch {
             stored = null;
           }
-          indexed.push({
-            located: { dir: file.dir, folder: file.folder, datName: file.datName },
-            stored,
-          });
+          const located = { dir: file.dir, folder: file.folder, datName: file.datName };
+          indexed.push({ located, stored });
+          if (stored) offerLocated(live, stored, located);
           finished += 1;
           publish();
         }
@@ -359,16 +461,34 @@ async function buildAnalysisIndex(root: DirLike): Promise<Map<string, Located>> 
   }
 }
 
-function analysisIndex(root: DirLike): Promise<Map<string, Located>> {
-  let pending = analysisIndexes.get(root);
-  if (!pending) {
-    pending = buildAnalysisIndex(root).catch((error: unknown) => {
-      analysisIndexes.delete(root);
-      throw error;
-    });
-    analysisIndexes.set(root, pending);
+function liveIndex(root: DirLike): LiveIndex {
+  let live = analysisIndexes.get(root);
+  if (!live) {
+    live = {
+      map: new Map(),
+      promise: Promise.resolve(new Map()),
+      done: false,
+      waiters: new Set(),
+    };
+    const index: LiveIndex = live;
+    live.promise = buildAnalysisIndex(root, index).then(
+      (map) => {
+        finishIndexWaiters(index);
+        return map;
+      },
+      (error: unknown) => {
+        finishIndexWaiters(index);
+        analysisIndexes.delete(root);
+        throw error;
+      },
+    );
+    analysisIndexes.set(root, live);
   }
-  return pending;
+  return live;
+}
+
+function analysisIndex(root: DirLike): Promise<Map<string, Located>> {
+  return liveIndex(root).promise;
 }
 
 /**
@@ -395,14 +515,15 @@ function matchLocated(map: Map<string, Located>, filePath: string): Located | nu
  */
 async function locateAnalysis(root: DirLike, trackId: number, filePath: string): Promise<Located | null> {
   if (filePath) {
-    const map = await analysisIndex(root);
-    let found = matchLocated(map, filePath);
+    let live = liveIndex(root);
+    let found = await waitForLocated(live, filePath);
     // An empty index is cached on the folder handle. A scan that ran before
     // USBANLZ was readable would otherwise miss every later track.
-    if (!found && map.size === 0 && !indexRetried.has(root)) {
+    if (!found && live.done && live.map.size === 0 && !indexRetried.has(root)) {
       indexRetried.add(root);
       analysisIndexes.delete(root);
-      found = matchLocated(await analysisIndex(root), filePath);
+      live = liveIndex(root);
+      found = await waitForLocated(live, filePath);
     }
     if (found) return found;
   }
@@ -413,31 +534,89 @@ async function locateAnalysis(root: DirLike, trackId: number, filePath: string):
   return { dir, folder, datName: DAT };
 }
 
-let rememberedEpoch = -1;
-let rememberedPaths = new Map<string, File>();
+type RememberedWaiter = { path: string; resolve: (file: File | null) => void };
 
-async function rememberedDat(filePath: string): Promise<File | null> {
-  const epoch = getStickFilesEpoch();
-  if (epoch !== rememberedEpoch) {
-    rememberedEpoch = epoch;
-    const next = new Map<string, File>();
-    for (const file of listRememberedAnalysisFiles()) {
-      const rel = (file.webkitRelativePath || file.name).replaceAll("\\", "/").toLowerCase();
-      if (!/\/anlz\d+\.dat$/.test(rel)) continue;
-      try {
-        const stored = readAnlzContentPath(new Uint8Array(await file.slice(0, 4096).arrayBuffer()));
-        if (stored) next.set(stored, file);
-      } catch {
-        /* a file the volume no longer serves is skipped */
-      }
-    }
-    rememberedPaths = next;
-  }
-  if (!filePath) return null;
-  for (const [stored, file] of rememberedPaths) {
+type RememberedLive = {
+  epoch: number;
+  paths: Map<string, File>;
+  done: boolean;
+  waiters: Set<RememberedWaiter>;
+};
+
+let remembered: RememberedLive | null = null;
+
+function rememberedMatch(paths: Map<string, File>, filePath: string): File | null {
+  for (const [stored, file] of paths) {
     if (anlzPathsMatch(filePath, stored)) return file;
   }
   return null;
+}
+
+function offerRemembered(live: RememberedLive, stored: string, file: File) {
+  live.paths.set(stored, file);
+  for (const waiter of [...live.waiters]) {
+    if (anlzPathsMatch(waiter.path, stored)) {
+      live.waiters.delete(waiter);
+      waiter.resolve(file);
+    }
+  }
+}
+
+function finishRemembered(live: RememberedLive) {
+  live.done = true;
+  for (const waiter of [...live.waiters]) {
+    live.waiters.delete(waiter);
+    waiter.resolve(rememberedMatch(live.paths, waiter.path));
+  }
+}
+
+function ensureRememberedScan(): RememberedLive {
+  const epoch = getStickFilesEpoch();
+  if (remembered && remembered.epoch === epoch) return remembered;
+  const prev = remembered;
+  const live: RememberedLive = {
+    epoch,
+    paths: new Map(),
+    done: false,
+    waiters: new Set(),
+  };
+  remembered = live;
+  if (prev && !prev.done) finishRemembered(prev);
+  void (async () => {
+    try {
+      for (const file of listRememberedAnalysisFiles()) {
+        if (remembered !== live) return;
+        const rel = (file.webkitRelativePath || file.name).replaceAll("\\", "/").toLowerCase();
+        if (!/\/anlz\d+\.dat$/.test(rel)) continue;
+        try {
+          const stored = readAnlzContentPath(new Uint8Array(await file.slice(0, 4096).arrayBuffer()));
+          if (stored) offerRemembered(live, stored, file);
+        } catch {
+          /* a file the volume no longer serves is skipped */
+        }
+      }
+    } finally {
+      if (remembered === live) finishRemembered(live);
+    }
+  })();
+  return live;
+}
+
+async function rememberedDat(filePath: string): Promise<File | null> {
+  if (!filePath) return null;
+  const live = ensureRememberedScan();
+  const now = rememberedMatch(live.paths, filePath);
+  if (now) return now;
+  if (live.done) return null;
+  return new Promise((resolve) => {
+    const waiter: RememberedWaiter = { path: filePath, resolve };
+    live.waiters.add(waiter);
+    const raced = rememberedMatch(live.paths, filePath);
+    if (raced || live.done) {
+      live.waiters.delete(waiter);
+      resolve(raced);
+    }
+  });
 }
 
 function rememberedExt(dat: File): File | null {
@@ -474,11 +653,26 @@ async function commitFile(file: FileLike, cues: AnlzCue[]): Promise<"written" | 
 /** Beat grid from the ANLZ file still held after the stick folder was picked. */
 export async function readRememberedBeatGrid(trackId: number, filePath = ""): Promise<AnlzBeat[] | null> {
   try {
-    const file = filePath
-      ? await rememberedDat(filePath)
-      : trackId > 0
-        ? lookupStickAnalysisFile(trackId)
-        : null;
+    if (trackId > 0) {
+      const byId = lookupStickAnalysisFile(trackId);
+      if (byId) {
+        let ok = !filePath;
+        if (filePath) {
+          try {
+            const stored = readAnlzContentPath(new Uint8Array(await byId.slice(0, 4096).arrayBuffer()));
+            ok = !stored || anlzPathsMatch(filePath, stored);
+          } catch {
+            ok = true;
+          }
+        }
+        if (ok) {
+          const bytes = await readGridBuffer(byId);
+          const beats = bytes ? readAnlzBeatGrid(bytes) : null;
+          if (beats?.length) return beats;
+        }
+      }
+    }
+    const file = filePath ? await rememberedDat(filePath) : trackId > 0 ? lookupStickAnalysisFile(trackId) : null;
     if (!file) return null;
     const bytes = await readGridBuffer(file);
     return bytes ? readAnlzBeatGrid(bytes) : null;

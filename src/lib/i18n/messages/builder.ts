@@ -109,7 +109,7 @@ const de = {
   "builder.guide.flow.3":
     "Abend planen — Reihenfolge sortieren, jedem Titel Rolle und Phase am Bogen geben, Übergang markieren, Opener, Closer, Pins und Alternativen setzen.",
   "builder.guide.flow.4":
-    "Anschlüsse hören — im Player Vorhören (Vorher / Jetzt / Danach): hörst du den Übergang und passt Marke und Länge an.",
+    "Anschlüsse hören — im Player Vorhören (Vorher / Jetzt / Danach). Light aus, „Übergang hören“ auf Jetzt: Sync, Cue, Crossfader, Taktlinien; Marke und Länge anpassen.",
   "builder.guide.flow.5":
     "Auf Stick schreiben — fertige Performance als Playlist speichern („Auf Stick schreiben“), auswerfen, spielen.",
   "builder.guide.views.title": "Drei Ansichten",
@@ -142,7 +142,7 @@ const de = {
     "Wie lange die beiden Titel überlappen — zieht von der Spielzeit ab. Leer lassen: der Übergang schlägt eine Zeit vor.",
   "builder.guide.rehearse.title": "Vorhören",
   "builder.guide.rehearse.body":
-    "Im Player (Vorher / Jetzt / Danach) hörst du den Anschluss und setzt dieselbe Übergangs-Marke und Länge.",
+    "Im Player (Vorher / Jetzt / Danach) hörst du den Anschluss. Light aus, „Übergang hören“ auf Jetzt legt den nächsten Stick-Titel über die geplante Länge — Sync, Cue, Crossfader, Taktlinien. Marke und Länge bleiben im Set.",
   "builder.guide.note.title": "Set-Notiz",
   "builder.guide.note.body":
     "Kurznotiz für die Kabine — wird nicht auf den Stick in die Datei geschrieben.",
@@ -960,7 +960,7 @@ const en: Record<keyof typeof de, string> = {
   "builder.guide.flow.3":
     "Plan the night — sort order, give each title a role and arc phase, mark transitions, set opener, closer, pins and Alternatives.",
   "builder.guide.flow.4":
-    "Hear each join — in the player rehearse (Before / Now / After): listen and adjust transition mark and length.",
+    "Hear each join — in the player rehearse (Before / Now / After). Light off, “Hear the join” on Now: Sync, Cue, crossfader, downbeat lines; adjust mark and length.",
   "builder.guide.flow.5":
     "Write to stick — save the finished performance as a playlist (“Write to stick”), eject, play.",
   "builder.guide.views.title": "Three views",
@@ -993,7 +993,7 @@ const en: Record<keyof typeof de, string> = {
     "How long the two titles overlap — comes off playtime. Leave empty: the transition suggests a time.",
   "builder.guide.rehearse.title": "Rehearsal",
   "builder.guide.rehearse.body":
-    "In the player (Before / Now / After) you hear the join and set the same transition mark and length.",
+    "In the player (Before / Now / After) you hear the join. Light off, “Hear the join” on Now overlays the next stick title for the planned overlap — Sync, Cue, crossfader, downbeat lines. Mark and length stay in the set.",
   "builder.guide.note.title": "Set note",
   "builder.guide.note.body":
     "Short booth note — not written into the file on the stick.",

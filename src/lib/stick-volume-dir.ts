@@ -13,6 +13,7 @@ import {
   statSync,
 } from "node:fs";
 import { appendFile, mkdir, open, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { readAnlzContentPath } from "@/lib/anlz-cues";
 import { isPioneerVolume, volumePath } from "@/lib/stick-eject";
 import type { DirLike, FileLike } from "@/lib/rekordbox-stick-write";
 import {
@@ -240,6 +241,143 @@ export function volumeDirectory(root: string, volumeName: string, io: VolumeIo):
   }
 
   return at("");
+}
+
+const ANALYSIS_DAT = /^ANLZ\d+\.DAT$/i;
+const INDEX_READERS = 16;
+
+export type AnlzIndexEntry = {
+  storedPath: string;
+  relativePath: string;
+};
+
+function safeName(name: string): boolean {
+  return Boolean(name) && name !== "." && name !== ".." && !/[\\/\0]/.test(name);
+}
+
+function confinedDir(
+  volumeRoot: string,
+  relative: string,
+  io: VolumeIo,
+): string | null {
+  const abs = confineToVolume(volumeRoot, relative, io.realpath);
+  if (!abs) return null;
+  return io.stat(abs)?.isDirectory ? abs : null;
+}
+
+function dirNames(abs: string, io: VolumeIo): string[] {
+  try {
+    return io.readdir(abs).filter(safeName);
+  } catch {
+    return [];
+  }
+}
+
+function wholePercent(finished: number, total: number): number | null {
+  if (!Number.isFinite(finished) || !Number.isFinite(total) || total <= 0) return null;
+  return Math.round(Math.min(1, Math.max(0, finished / total)) * 100);
+}
+
+/**
+ * Content path of every ANLZ file under USBANLZ, read from the first 4 KB.
+ * One local pass. Nothing is written. `onProgress` fires when the whole percent changes.
+ */
+export async function readUsbAnlzIndex(
+  volumeRoot: string,
+  io: VolumeIo = nodeVolumeIo,
+  onProgress?: (walk: { finished: number; total: number }) => void,
+): Promise<AnlzIndexEntry[]> {
+  const libraryRelative =
+    (confinedDir(volumeRoot, "PIONEER/USBANLZ", io) && "PIONEER/USBANLZ") ||
+    (confinedDir(volumeRoot, "USBANLZ", io) && "USBANLZ") ||
+    "";
+  const libraryAbs = libraryRelative ? confinedDir(volumeRoot, libraryRelative, io) : null;
+  if (!libraryRelative || !libraryAbs) return [];
+  type Job = { abs: string; relativePath: string };
+  const jobs: Job[] = [];
+  const stored: Array<string | null> = [];
+  let cursor = 0;
+  let finished = 0;
+  let total = 0;
+  let shown: number | null = null;
+  let listing = true;
+  let waiters: Array<() => void> = [];
+  const wake = () => {
+    const pending = waiters;
+    waiters = [];
+    for (const resolve of pending) resolve();
+  };
+  const publish = () => {
+    const percent = wholePercent(finished, total);
+    if (percent == null || percent === shown) return;
+    shown = percent;
+    onProgress?.({ finished, total });
+  };
+  const queueFile = (abs: string, relativePath: string) => {
+    jobs.push({ abs, relativePath });
+    stored.push(null);
+    total += 1;
+    publish();
+    wake();
+  };
+  async function readNext(): Promise<void> {
+    for (;;) {
+      if (cursor >= jobs.length) {
+        if (!listing) return;
+        await new Promise<void>((resolve) => {
+          waiters.push(resolve);
+        });
+        continue;
+      }
+      const index = cursor;
+      cursor += 1;
+      const job = jobs[index];
+      if (!job) continue;
+      try {
+        const stat = io.stat(job.abs);
+        const size = stat && !stat.isDirectory ? stat.size : 0;
+        if (size > 0) {
+          const head = await readFileRange(job.abs, 0, Math.min(4096, size));
+          stored[index] = readAnlzContentPath(head);
+        }
+      } catch {
+        stored[index] = null;
+      }
+      finished += 1;
+      publish();
+    }
+  }
+  const readers = Array.from({ length: INDEX_READERS }, () => readNext());
+  for (const groupName of dirNames(libraryAbs, io)) {
+    const groupRelative = `${libraryRelative}/${groupName}`;
+    const groupAbs = confinedDir(volumeRoot, groupRelative, io);
+    if (!groupAbs) continue;
+    for (const trackName of dirNames(groupAbs, io)) {
+      const trackRelative = `${groupRelative}/${trackName}`;
+      const trackAbs = confinedDir(volumeRoot, trackRelative, io);
+      if (!trackAbs) continue;
+      for (const fileName of dirNames(trackAbs, io)) {
+        if (!ANALYSIS_DAT.test(fileName)) continue;
+        const relativePath = `${trackRelative}/${fileName}`;
+        const abs = confineToVolume(volumeRoot, relativePath, io.realpath);
+        if (!abs) continue;
+        const stat = io.stat(abs);
+        if (!stat || stat.isDirectory || stat.size <= 0) continue;
+        queueFile(abs, relativePath);
+      }
+    }
+  }
+  listing = false;
+  wake();
+  await Promise.all(readers);
+  const entries: AnlzIndexEntry[] = [];
+  for (let index = 0; index < jobs.length; index += 1) {
+    const storedPath = stored[index];
+    const job = jobs[index];
+    if (!storedPath || !job) continue;
+    entries.push({ storedPath, relativePath: job.relativePath });
+  }
+  return entries;
 }
 
 /** The mounted Pioneer volume, or null when the name is not one. */

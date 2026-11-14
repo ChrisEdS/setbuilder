@@ -2,7 +2,7 @@
 
 **Deutsch** · [English](README.md)
 
-**Version 5.3.0**
+**Version 5.4.0**
 
 SETBUILDER hilft dir, aus einem rekordbox-USB-Stick ein DJ-Set zu planen, die Titel im Zusammenspiel zu prüfen, die Übergänge vorzuhören und das fertige Set als Playlist wieder auf denselben Stick zu schreiben. Die App spricht Deutsch und Englisch.
 
@@ -21,7 +21,7 @@ SETBUILDER hilft dir, aus einem rekordbox-USB-Stick ein DJ-Set zu planen, die Ti
 - **Spielzeit gegen Slot** — Pro Zeile zieht die geplante Überlappung von der Titellänge ab. Die Statuszeile summiert die **Spielzeit** gegen den Slot und sagt dir, wenn das Set zu lang wird.
 - **Rollen und Alternativen** — Performance-Titel als **Anchor**, **Bridge** oder **Groove** markieren, damit du ihre Aufgabe im Abend siehst. **Alternativen** halten Reserve-Titel neben der Liste; sie zählen nicht zur Spielzeit, bis du einen reinziehst.
 - **Energie-Bogen** — In der Bogen-Ansicht sitzen Titel über **Open**, **Lift**, **Rise**, **Peak** und **Release** auf deinem Slot. So siehst du vor dem Gig, ob Aufbau und Höhepunkt dort landen, wo du sie willst.
-- **Vorhören** — **Vorher**, **Jetzt** und **Danach** spielen den Übergang in den nächsten Titel mit der Überlappungs-Länge aus der Zeile. Übergangs-Marke beim Hören anpassen — sie bleibt im Set, nicht in der Datei auf dem Stick.
+- **Vorhören** — **Vorher**, **Jetzt** und **Danach** spielen den Übergang in den nächsten Titel mit der Überlappungs-Länge aus der Zeile. Ist **Light** aus, legt **Übergang hören** auf der Jetzt-Karte die nächste Stick-Datei über diese Länge: **Sync**, **Cue** (playt zurück zum Mix-Start; pausiert abseits setzt ihn), ein Crossfader der stehen bleibt, rote Taktlinien, Incoming-Grid **±1 ms** (Shift **10 ms**). Übergangs-Marke beim Hören anpassen — sie bleibt im Set, nicht in der Datei auf dem Stick.
 - **Beatgrid in der Wellenform** — Das rekordbox-Beatgrid im Player schieben (**−5**, **+5**, **1**). Hot Cues **A–H** liegen auf der Wellenform; **Q** rastet neue Cues am Grid ein, und beim Export kannst du Cues zurück auf den Stick schreiben.
 - **Tempo im großen Player** — Ist **Light** aus, sitzt ein Pitch-Fader neben der Wellenform. Oben ist schneller. Der Bereich startet bei **±10 %**; ein Klick schaltet auf **±25 %**, die Faderstellung bleibt. **MT** hält die Tonart und ändert nur das Tempo. **Tempo** neben **Q** blendet den Fader aus; das Tempo bleibt, und der Schalter zeigt den Prozentwert, wenn er nicht null ist. Doppelklick auf den Prozentwert setzt auf 0.
 - **Sicher auf den Stick schreiben** — **Auf Stick schreiben** legt Performance-Titel und Alternativen als Playlist auf denselben USB-Stick. SETBUILDER sichert vorher, liest die Datenbank danach zum Prüfen wieder ein und rollt bei fehlgeschlagener Prüfung zurück.

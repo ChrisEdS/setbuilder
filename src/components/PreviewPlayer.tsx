@@ -33,6 +33,7 @@ import {
 import { resolveTrackAudio } from "@/lib/stick-file";
 import { OverlapField } from "@/components/OverlapField";
 import { WaveformDeck } from "@/components/WaveformDeck";
+import { JoinDeck, type JoinHandle } from "@/components/JoinDeck";
 import { pitchPercent, pitchRate, type PitchRange } from "@/lib/pitch";
 import { hasKnownEnergy } from "@/lib/energy";
 import {
@@ -67,6 +68,7 @@ import {
   BLEND_MS,
   TRANSITIONS,
   performanceTracks,
+  resolvedOverlapMs,
   type SetTrack,
   type TrackCue,
   type TransitionVerb,
@@ -199,12 +201,57 @@ function TrackActions({
   id,
   name,
   actions,
+  compact = false,
+  open = false,
+  onOpenChange,
 }: {
   id: string;
   name: string;
   actions: PlayerTrackActions;
+  compact?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const { t } = useI18n();
+  const menuRef = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    if (!compact) return;
+    const menu = menuRef.current;
+    if (!menu) return;
+    const details: HTMLDetailsElement = menu;
+    const margin = 8;
+    function place() {
+      if (!details.open) return;
+      const panel = details.querySelector<HTMLElement>(".menu-panel");
+      const summary = details.querySelector("summary");
+      const shell = details.closest(".preview-dock") ?? details.closest(".preview-player");
+      if (!panel || !summary || !(shell instanceof HTMLElement)) return;
+      const trigger = summary.getBoundingClientRect();
+      const box = shell.getBoundingClientRect();
+      const roomRight = box.right - trigger.left - margin;
+      const roomLeft = trigger.right - box.left - margin;
+      const want = Math.min(14 * 16, box.width - margin * 2);
+      const openStart = roomRight >= want || roomRight >= roomLeft;
+      details.classList.toggle("opens-start", openStart);
+      panel.style.setProperty(
+        "--join-menu-max-w",
+        `${Math.round(Math.max(8 * 16, Math.min(want, openStart ? roomRight : roomLeft)))}px`,
+      );
+      panel.style.setProperty(
+        "--join-menu-max-h",
+        `${Math.round(Math.max(5 * 16, trigger.top - box.top - margin))}px`,
+      );
+    }
+    details.addEventListener("toggle", place);
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    if (details.open) place();
+    return () => {
+      details.removeEventListener("toggle", place);
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [compact, open]);
   if (!actions.trackIds.includes(id)) return null;
   const pinned = listed(actions.pinnedIds, id);
   const kept = listed(actions.keptIds, id);
@@ -271,6 +318,58 @@ function TrackActions({
       onClick: () => actions.onDelete(id),
     },
   ];
+  if (compact) {
+    return (
+      <details
+        ref={menuRef}
+        className="menu preview-join-more"
+        open={open}
+        onToggle={(event) => {
+          onOpenChange?.(event.currentTarget.open);
+        }}
+        onPointerDown={(event) => event.stopPropagation()}
+      >
+        <summary
+          className="menu-trigger"
+          aria-label={t("crates.player.actions", { name })}
+          title={t("crates.player.moreActionsTip")}
+          aria-haspopup="menu"
+        >
+          <ActionIcon name="more" />
+        </summary>
+        <div
+          className="menu-panel"
+          role="menu"
+          aria-label={t("crates.player.actions", { name })}
+          onClick={() => onOpenChange?.(false)}
+        >
+          {buttons.map((button) => (
+            <button
+              key={button.key}
+              type="button"
+              role="menuitem"
+              className={[
+                "menu-item",
+                button.danger ? "danger" : "",
+                button.pressed ? "is-on" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              aria-label={button.label}
+              title={button.tip}
+              onClick={(event) => {
+                event.stopPropagation();
+                button.onClick();
+              }}
+            >
+              <ActionIcon name={button.icon} />
+              {button.label}
+            </button>
+          ))}
+        </div>
+      </details>
+    );
+  }
   return (
     <div
       className="preview-actions"
@@ -381,6 +480,45 @@ function PreviewDock({
   const canMasterTempo =
     typeof HTMLMediaElement !== "undefined" && "preservesPitch" in HTMLMediaElement.prototype;
   const [pitchPosition, setPitchPosition] = useState(0);
+  const [joinOpen, setJoinOpen] = useState(false);
+  const [joinMenuId, setJoinMenuId] = useState<string | null>(null);
+  const [joinTrack, setJoinTrack] = useState(track.id);
+  if (joinTrack !== track.id) {
+    setJoinTrack(track.id);
+    setJoinOpen(false);
+    setJoinMenuId(null);
+  }
+  const joinOpenRef = useRef(false);
+  const joinCommand = useRef<JoinHandle | null>(null);
+  useEffect(() => {
+    joinOpenRef.current = joinOpen;
+  }, [joinOpen]);
+  useEffect(() => {
+    if (!joinMenuId) return;
+    function close(event: Event) {
+      if (event.type === "keydown") {
+        if ((event as KeyboardEvent).key !== "Escape") return;
+        setJoinMenuId(null);
+        return;
+      }
+      const target = event.target;
+      if (!(target instanceof Node)) {
+        setJoinMenuId(null);
+        return;
+      }
+      const menus = document.querySelectorAll(".preview-player .preview-join-more");
+      for (const menu of menus) {
+        if (menu.contains(target)) return;
+      }
+      setJoinMenuId(null);
+    }
+    document.addEventListener("pointerdown", close, true);
+    document.addEventListener("keydown", close);
+    return () => {
+      document.removeEventListener("pointerdown", close, true);
+      document.removeEventListener("keydown", close);
+    };
+  }, [joinMenuId]);
   useEffect(() => {
     if (light) setPitchPosition(0);
   }, [light]);
@@ -469,20 +607,24 @@ function PreviewDock({
   const gridRequest = `${trackKey}\0${trackUri ?? ""}\0${stickEpoch}\0${stickHandleEpoch}\0${filePath}`;
   const gridRequestRef = useRef(gridRequest);
   const [gridRequestSeen, setGridRequestSeen] = useState(gridRequest);
+  const [gridTrackSeen, setGridTrackSeen] = useState(trackKey);
   if (gridRequest !== gridRequestSeen) {
     setGridRequestSeen(gridRequest);
-    setFileBeats(null);
-    setGridMissing(false);
+    if (gridTrackSeen !== trackKey) {
+      setGridTrackSeen(trackKey);
+      setFileBeats(null);
+      setGridMissing(false);
+      setPhrases(null);
+      setPhrasesMissing(false);
+      setGridUndo(undefined);
+      setDraftGrid(null);
+      setReferenceGrid(null);
+      setGridCompare(null);
+    }
     setGridReading(false);
     setIndexWalk(null);
-    setPhrases(null);
-    setPhrasesMissing(false);
     setGridNotice(null);
     setGridAnalyzing(false);
-    setGridUndo(undefined);
-    setDraftGrid(null);
-    setReferenceGrid(null);
-    setGridCompare(null);
   }
   useLayoutEffect(() => {
     gridRequestRef.current = gridRequest;
@@ -545,31 +687,31 @@ function PreviewDock({
         // Only true when USBANLZ (or remembered ANLZ) matched this track.
         // A path miss must not paint "No Rekordbox beatgrid".
         let sawFile = false;
-        for (const candidate of roots) {
-          if (cancel) return;
-          active = candidate;
-          showWalk();
-          try {
-            const read = await readStickBeatGridDetail(candidate, pdbId, filePath);
-            if (read.located) sawFile = true;
-            if (read.beats?.length) {
-              found = read.beats;
-              root = candidate;
-              break;
-            }
-          } catch {
-            /* this folder could not be read; try the next one */
+        try {
+          const remembered = await readRememberedBeatGrid(pdbId, filePath);
+          if (remembered?.length) {
+            found = remembered;
+            sawFile = true;
           }
+        } catch {
+          /* remembered files are unreadable */
         }
-        if ((!found || found.length === 0) && !cancel) {
-          try {
-            const remembered = await readRememberedBeatGrid(pdbId, filePath);
-            if (remembered?.length) {
-              found = remembered;
-              sawFile = true;
+        if (!found?.length) {
+          for (const candidate of roots) {
+            if (cancel) return;
+            active = candidate;
+            showWalk();
+            try {
+              const read = await readStickBeatGridDetail(candidate, pdbId, filePath);
+              if (read.located) sawFile = true;
+              if (read.beats?.length) {
+                found = read.beats;
+                root = candidate;
+                break;
+              }
+            } catch {
+              /* this folder could not be read; try the next one */
             }
-          } catch {
-            /* remembered files are unreadable */
           }
         }
         if (cancel) return;
@@ -616,9 +758,13 @@ function PreviewDock({
     let cancel = false;
     void (async () => {
       let found: Awaited<ReturnType<typeof readStickHotCues>> = null;
-      const root = await loadPersistedStickHandle();
-      if (root && !cancel && (await stickPermission(root, "read", false))) {
-        found = await readStickHotCues(root, pdbId, filePath);
+      const volume = savedVolumeHandle();
+      if (volume && !cancel) found = await readStickHotCues(volume, pdbId, filePath).catch(() => null);
+      if ((!found || found.length === 0) && !cancel) {
+        const root = await loadPersistedStickHandle().catch(() => null);
+        if (root && root !== volume && (await stickPermission(root, "read", false))) {
+          found = await readStickHotCues(root, pdbId, filePath).catch(() => null);
+        }
       }
       if ((!found || found.length === 0) && !cancel) found = await readRememberedHotCues(pdbId, filePath);
       if (cancel || !found?.length) return;
@@ -904,7 +1050,7 @@ function PreviewDock({
     if (transport.pauseToken === seenPauseToken.current) return;
     seenPauseToken.current = transport.pauseToken;
     const audio = audioRef.current;
-    if (!audio || !src) return;
+    if (!audio || !src || joinOpenRef.current) return;
     audio.pause();
     setPlaying(false);
   }, [transport.pauseToken, src]);
@@ -913,7 +1059,7 @@ function PreviewDock({
     if (transport.playToken === seenPlayToken.current) return;
     seenPlayToken.current = transport.playToken;
     const audio = audioRef.current;
-    if (!audio || !src) return;
+    if (!audio || !src || joinOpenRef.current) return;
     void audio.play().then(
       () => setPlaying(true),
       () => {
@@ -968,7 +1114,7 @@ function PreviewDock({
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio || !src) return;
+    if (!audio || !src || joinOpenRef.current) return;
     audio.load();
     void audio.play().then(
       () => setPlaying(true),
@@ -1003,6 +1149,9 @@ function PreviewDock({
   const next = neighbors.next;
   const inPerformance = lane.some((item) => item.id === track.id);
   const inSet = Boolean(actions?.trackIds.includes(track.id));
+  const nextPath = next ? trackFilePath(next) : "";
+  const joinBlockKey = light ? "light" : !next ? "next" : !filePath || !nextPath ? "stick" : "";
+  if (joinOpen && joinBlockKey) setJoinOpen(false);
   const nextJoin = next
     ? mixJoin(
         { keyCamelot: track.keyCamelot || "", bpm: track.bpm || "" },
@@ -1110,6 +1259,10 @@ function PreviewDock({
   }
 
   function togglePlay() {
+    if (joinOpenRef.current) {
+      joinCommand.current?.toggle();
+      return;
+    }
     const audio = audioRef.current;
     if (!audio || !src) return;
     if (audio.paused) {
@@ -1174,7 +1327,13 @@ function PreviewDock({
       if (typing(event.target)) return;
       const audio = audioRef.current;
       if (event.code === "Space") {
-        if (event.repeat || !audio || !src) return;
+        if (event.repeat) return;
+        if (joinOpenRef.current) {
+          event.preventDefault();
+          joinCommand.current?.toggle();
+          return;
+        }
+        if (!audio || !src) return;
         event.preventDefault();
         if (audio.paused) {
           void audio.play().then(
@@ -1188,6 +1347,11 @@ function PreviewDock({
         return;
       }
       if (event.code !== "ArrowLeft" && event.code !== "ArrowRight") return;
+      if (joinOpenRef.current) {
+        event.preventDefault();
+        joinCommand.current?.jumpBar(event.code === "ArrowRight" ? 1 : -1);
+        return;
+      }
       const span = spanSeconds(audio);
       if (span <= 0) return;
       event.preventDefault();
@@ -1317,20 +1481,28 @@ function PreviewDock({
 
         {src || (track.durationMs ?? 0) > 0 ? (
           <div className="preview-seek">
-            {src ? (
+            {src && !joinOpen ? (
               <audio
                 ref={audioRef}
                 className="preview-audio-hidden"
                 src={src}
                 preload="auto"
-                onPlay={() => setPlaying(true)}
+                onPlay={() => {
+                  if (joinOpenRef.current) {
+                    audioRef.current?.pause();
+                    return;
+                  }
+                  setPlaying(true);
+                }}
                 onPause={() => {
+                  if (joinOpenRef.current) return;
                   setPlaying(false);
                   setCurrentTime(audioRef.current?.currentTime ?? 0);
                 }}
                 onLoadedMetadata={() => setDuration(audioRef.current?.duration ?? 0)}
                 onDurationChange={() => setDuration(audioRef.current?.duration ?? 0)}
                 onEnded={() => {
+                  if (joinOpenRef.current) return;
                   setPlaying(false);
                   setCurrentTime(audioRef.current?.currentTime ?? 0);
                   if (next) onChange(next.id);
@@ -1342,6 +1514,36 @@ function PreviewDock({
                 }}
               />
             ) : null}
+            {joinOpen && next ? (
+              <JoinDeck
+                outgoingSrc={src ?? ""}
+                outgoingName={track.name}
+                outgoingId={track.id}
+                outgoingUri={track.uri}
+                outgoingPath={filePath}
+                outgoingDurationMs={duration > 0 ? duration * 1000 : (track.durationMs ?? 0)}
+                outgoingBpm={track.bpm || ""}
+                outgoingBeats={fileBeats}
+                outgoingPhrases={phrases}
+                outgoingCues={track.cues}
+                incomingId={next.id}
+                incomingUri={next.uri}
+                incomingName={next.name}
+                incomingPath={trackFilePath(next)}
+                incomingBpm={next.bpm || ""}
+                incomingCues={next.cues}
+                stickEpoch={stickEpoch}
+                overlapMs={resolvedOverlapMs(
+                  { transition: track.transition ?? "unset", overlapMs: track.overlapMs },
+                  blendMs,
+                )}
+                onOverlap={(ms) => rehearsal?.onOverlap(track.id, ms)}
+                pitchPercent={light ? 0 : pitchPercent(pitchPosition, pitchRange)}
+                masterTempo={!light && canMasterTempo && masterTempo}
+                commandRef={joinCommand}
+                onPlaying={setPlaying}
+              />
+            ) : (
             <WaveformDeck
               src={src ?? ""}
               currentTime={currentTime}
@@ -1419,6 +1621,7 @@ function PreviewDock({
               }}
               onCues={commitCues}
             />
+            )}
             {src ? null : (
               <p className="player-fallback">
                 {localIssue === "unsupported"
@@ -1491,8 +1694,57 @@ function PreviewDock({
                       ) : null}
                       {item && actions ? <TrackMarks id={item.id} actions={actions} /> : null}
                     </button>
-                    {item && actions && role !== "now" ? (
-                      <TrackActions id={item.id} name={item.name} actions={actions} />
+                    {role === "now" || (item && actions) ? (
+                      <div className="preview-join-card-tools">
+                        {role === "now" ? (
+                          <Tip
+                            text={
+                              joinBlockKey === "light"
+                                ? t("crates.player.joinNeedLight")
+                                : joinBlockKey === "next"
+                                  ? t("crates.player.joinNeedNext")
+                                  : joinBlockKey === "stick"
+                                    ? t("crates.player.joinNeedStick")
+                                    : t("crates.player.joinHearTip")
+                            }
+                          >
+                            <button
+                              type="button"
+                              className="preview-join-hear"
+                              aria-pressed={joinOpen}
+                              disabled={Boolean(joinBlockKey)}
+                              onClick={() => {
+                                if (joinOpen) {
+                                  setJoinOpen(false);
+                                  setPlaying(false);
+                                  return;
+                                }
+                                const audio = audioRef.current;
+                                if (audio && !audio.paused) audio.pause();
+                                setPlaying(false);
+                                setJoinOpen(true);
+                              }}
+                            >
+                              {t("crates.player.joinHear")}
+                            </button>
+                          </Tip>
+                        ) : null}
+                        {item && actions ? (
+                          <TrackActions
+                            compact
+                            id={item.id}
+                            name={item.name}
+                            actions={actions}
+                            open={joinMenuId === item.id}
+                            onOpenChange={(next) => {
+                              setJoinMenuId((current) => {
+                                if (next) return item.id;
+                                return current === item.id ? null : current;
+                              });
+                            }}
+                          />
+                        ) : null}
+                      </div>
                     ) : null}
                   </div>
                 );

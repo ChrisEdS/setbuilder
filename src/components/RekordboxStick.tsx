@@ -262,6 +262,12 @@ export function RekordboxStick({
   const [hadStickThisSession, setHadStickThisSession] = useState(false);
   const dirInput = useRef<HTMLInputElement>(null);
   const volumeListRef = useRef<HTMLUListElement>(null);
+  const ejectedName = useRef<string | null>(null);
+  const autoTried = useRef<string | null>(null);
+  const labelRef = useRef(label);
+  const healthRef = useRef(health);
+  const phaseRef = useRef(phase);
+  const loadVolumeRef = useRef<(name: string) => Promise<void>>(async () => {});
   const chooseImpl = useRef<() => void>(() => {});
   const softReconnectImpl = useRef<() => Promise<boolean>>(async () => false);
   const onSetsRef = useRef(onSets);
@@ -365,7 +371,27 @@ export function RekordboxStick({
   }, []);
 
   useEffect(() => {
+    labelRef.current = label;
+    healthRef.current = health;
+    phaseRef.current = phase;
+  });
+
+  useEffect(() => {
     let stop = false;
+    function considerAuto(list: PioneerVolumeInfo[]) {
+      if (ejectedName.current && !list.some((volume) => volume.name === ejectedName.current)) {
+        ejectedName.current = null;
+        autoTried.current = null;
+      }
+      if (list.length !== 1) return;
+      const only = list[0];
+      if (!only) return;
+      if (ejectedName.current === only.name || autoTried.current === only.name) return;
+      if (labelRef.current && healthRef.current) return;
+      if (phaseRef.current !== "idle") return;
+      autoTried.current = only.name;
+      void loadVolumeRef.current(only.name);
+    }
     async function poll() {
       try {
         const response = await fetch("/api/desktop/volumes");
@@ -376,7 +402,10 @@ export function RekordboxStick({
         }
         if (!response.ok) return;
         const body = (await response.json()) as { volumes?: PioneerVolumeInfo[] };
-        if (!stop) setVolumes(Array.isArray(body.volumes) ? body.volumes : []);
+        if (stop) return;
+        const list = Array.isArray(body.volumes) ? body.volumes : [];
+        setVolumes(list);
+        considerAuto(list);
       } catch {
         /* keep the last list; the folder picker stays the fallback */
       }
@@ -504,6 +533,10 @@ export function RekordboxStick({
     }
   }
 
+  useEffect(() => {
+    loadVolumeRef.current = loadVolume;
+  });
+
   async function chooseFolder() {
     setError(null);
     if ((volumes?.length ?? 0) > 1) {
@@ -626,6 +659,8 @@ export function RekordboxStick({
       onEject: healthRoot
         ? async () => {
             const name = healthRoot.name;
+            ejectedName.current = name;
+            autoTried.current = name;
             // Full release before diskutil — keeps macOS from “Disk Not Ejected Properly”.
             requestPreviewPause();
             clearSavedVolumeName();
@@ -732,6 +767,10 @@ export function RekordboxStick({
   // disconnected (only Choose stick / export.pdb), so beatgrids never loaded.
   const volumeChooser =
     volumes && volumes.length >= 1 ? (
+      <>
+      {volumes.length > 1 && !(label && health) ? (
+        <p className="stick-volume-hint">{t("library.stick.volumeConnectHint")}</p>
+      ) : null}
       <ul
         className="stick-volume-list"
         ref={volumeListRef}
@@ -764,7 +803,9 @@ export function RekordboxStick({
                 <span className="stick-volume-choice-name">{volume.name}</span>
                 {current ? (
                   <span className="stick-volume-choice-flag">{t("library.stick.volumeCurrent")}</span>
-                ) : null}
+                ) : (
+                  <span className="stick-volume-choice-flag is-connect">{t("library.stick.volumeConnect")}</span>
+                )}
                 <span className="stick-volume-choice-stats">
                   {stats.map((stat) => (
                     <span key={stat} className="stick-volume-stat">
@@ -777,6 +818,7 @@ export function RekordboxStick({
           );
         })}
       </ul>
+      </>
     ) : null;
 
   return (
@@ -851,6 +893,8 @@ export function RekordboxStick({
                 healthRoot
                   ? async () => {
                       const name = healthRoot.name;
+                      ejectedName.current = name;
+                      autoTried.current = name;
                       requestPreviewPause();
                       clearSavedVolumeName();
                       setHealthRoot(null);

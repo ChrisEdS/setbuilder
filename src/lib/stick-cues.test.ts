@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readAnlzBeatGrid, readAnlzHotCues, writeAnlzHotCues } from "./anlz-cues.ts";
 import { BACKUP_DIR } from "./brand.ts";
+import { localStickVolume } from "./stick-volume-client.ts";
 import { tDe, tEn } from "./i18n/core.ts";
 import type { DirLike, FileLike } from "./rekordbox-stick-write.ts";
 import {
@@ -542,8 +543,9 @@ test("a later analysis group is listed while the first group's percent is alread
     seen.push(walk);
   });
   const beats = await readStickBeatGrid(root, 1, "/Contents/A/One.mp3");
-  stop();
   assert.equal(beats?.[0]?.timeMs, 1517);
+  await preloadStickAnalysisIndex(root);
+  stop();
   assert.equal(percentWhileListing, true);
   assert.equal(
     formatGridReadingNote(
@@ -644,4 +646,123 @@ test("a background preload fills the index the player uses, and a second start d
   assert.equal(walks, 1);
   assert.equal((await readStickBeatGrid(other, 1, paths[0] ?? ""))?.[0]?.timeMs, 1517);
   assert.equal(otherWalks, 1);
+});
+
+test("a desktop index reports the percent while the heads are still being read", async () => {
+  const root = localStickVolume("LE PERCENT");
+  const original = globalThis.fetch;
+  let polls = 0;
+  globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    const body = JSON.parse(String(init?.body ?? "{}")) as { op?: string };
+    if (body.op === "anlz-index") {
+      return new Response(JSON.stringify({ id: "abc123" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    if (body.op === "anlz-progress") {
+      polls += 1;
+      const status =
+        polls === 1
+          ? { finished: 0, total: 4 }
+          : polls === 2
+            ? { finished: 2, total: 4 }
+            : {
+                finished: 4,
+                total: 4,
+                entries: [
+                  {
+                    storedPath: "Contents/Track.aiff",
+                    relativePath: "PIONEER/USBANLZ/P001/0000000A/ANLZ0000.DAT",
+                  },
+                ],
+              };
+      return new Response(JSON.stringify(status), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }
+    return new Response(JSON.stringify({ error: "missing" }), { status: 404 });
+  }) as typeof fetch;
+  const seen: Array<StickIndexWalk | null> = [];
+  const stop = subscribeStickIndexProgress(root, (walk) => {
+    seen.push(walk);
+  });
+  try {
+    await preloadStickAnalysisIndex(root);
+    assert.equal(
+      formatGridReadingNote(
+        seen.find((walk) => walk !== null && walk.finished === 2 && walk.total === 4) ?? null,
+        readingText("en"),
+      ),
+      "Reading the beatgrid for the first time. 50%",
+    );
+  } finally {
+    stop();
+    globalThis.fetch = original;
+  }
+});
+
+test("a path match does not wait for the rest of USBANLZ", async () => {
+  const path = "/Contents/A/Hit.mp3";
+  const hit = new MemoryFile("ANLZ0000.DAT", fileWith([pathTag(path), beatTag()]));
+  const stuck = new MemoryFile("ANLZ0000.DAT", fileWith([pathTag("/Contents/Z/Slow.mp3"), beatTag()]));
+  let release!: (reason?: unknown) => void;
+  const blocked = new Promise<{ size: number; arrayBuffer(): Promise<ArrayBuffer> }>((_resolve, reject) => {
+    release = reject;
+  });
+  stuck.getFile = async () => blocked;
+  const root = new MemoryDir("LE_BACKUP");
+  const pioneer = new MemoryDir("PIONEER");
+  const library = new MemoryDir("USBANLZ");
+  const group = new MemoryDir("P001");
+  const first = new MemoryDir("00000001");
+  const later = new MemoryDir("00000002");
+  first.files.set(hit.name, hit);
+  later.files.set(stuck.name, stuck);
+  group.dirs.set(first.name, first);
+  group.dirs.set(later.name, later);
+  library.dirs.set(group.name, group);
+  pioneer.dirs.set(library.name, library);
+  root.dirs.set(pioneer.name, pioneer);
+  try {
+    const beats = await readStickBeatGrid(root, 1, path);
+    assert.equal(beats?.[0]?.timeMs, 1517);
+  } finally {
+    release(new Error("released"));
+  }
+});
+
+test("a desktop volume reads every analysis path in one request", async () => {
+  const root = localStickVolume("LE TEST");
+  const original = globalThis.fetch;
+  let indexCalls = 0;
+  globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+    const body = JSON.parse(String(init?.body ?? "{}")) as { op?: string };
+    if (body.op === "anlz-index") {
+      indexCalls += 1;
+      return new Response(
+        JSON.stringify({
+          entries: [
+            {
+              storedPath: "Contents/Track.aiff",
+              relativePath: "PIONEER/USBANLZ/P001/0000000A/ANLZ0000.DAT",
+            },
+          ],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    }
+    return new Response(JSON.stringify({ error: "missing" }), { status: 404 });
+  }) as typeof fetch;
+  try {
+    await preloadStickAnalysisIndex(root);
+    await preloadStickAnalysisIndex(root);
+    const read = await readStickBeatGridDetail(root, 10, "Contents/Track.aiff");
+    assert.equal(indexCalls, 1);
+    assert.equal(read.located, true);
+    assert.equal(read.beats, null);
+  } finally {
+    globalThis.fetch = original;
+  }
 });
