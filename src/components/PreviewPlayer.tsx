@@ -519,9 +519,7 @@ function PreviewDock({
       document.removeEventListener("keydown", close);
     };
   }, [joinMenuId]);
-  useEffect(() => {
-    if (light) setPitchPosition(0);
-  }, [light]);
+  if (light && pitchPosition !== 0) setPitchPosition(0);
   const cardRef = useRef<HTMLElement | null>(null);
   const dragRef = useRef<{ id: number; dx: number; dy: number } | null>(null);
   const resizeRef = useRef<{ id: number; startX: number; startW: number } | null>(null);
@@ -546,7 +544,6 @@ function PreviewDock({
   const [gridCompare, setGridCompare] = useState<string | null>(null);
   const beatsRef = useRef<AnlzBeat[] | null>(null);
   const draftRef = useRef<AnlzBeat[] | null>(null);
-  draftRef.current = draftGrid;
   const phrasesRef = useRef<AnlzPhrase[] | null>(null);
   const shifting = useRef(false);
   const pendingDelta = useRef(0);
@@ -557,9 +554,10 @@ function PreviewDock({
   const openTrack = useRef(track.id);
   useEffect(() => {
     beatsRef.current = fileBeats;
+    draftRef.current = draftGrid;
     phrasesRef.current = phrases;
     openTrack.current = track.id;
-  }, [fileBeats, phrases, track.id]);
+  }, [fileBeats, draftGrid, phrases, track.id]);
   const stickHandleEpoch = useStickHandleEpoch();
   const filePath = trackFilePath(track);
   const fileBase = stickAudioBaseName(filePath);
@@ -953,6 +951,7 @@ function PreviewDock({
         const grid = await analyzeSourceGrid(src, { bpm, reference });
         if (analyzeToken.current !== token || openTrack.current !== analyzeTrack) return;
         setReferenceGrid(reference);
+        draftRef.current = grid;
         setDraftGrid(grid);
         setGridCompare(gridCompareText(reference, grid));
       } catch {
