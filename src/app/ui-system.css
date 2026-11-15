@@ -5812,16 +5812,22 @@ dialog.stick-dialog .stick-actions .btn {
   }
 }
 
+/* Next hint is a full-width wrap under the title/actions — never nowrap
+   beside the buttons (long openRekordbox copy was overlapping Details). */
 .set-shell .stick-import-head .stick-head-cluster > .stick-strip-next {
-  flex: 0 0 auto;
-  width: auto;
-  margin: 0 0 0 auto;
+  flex: 1 1 100%;
+  order: 2;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
   color: var(--ui-muted);
   font-size: var(--ui-font-sm);
   line-height: 1.4;
-  text-align: right;
-  white-space: nowrap;
-  align-self: center;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: break-word;
+  align-self: stretch;
 }
 
 .set-shell .stick-import-head .stick-head-cluster > .stick-strip-note {

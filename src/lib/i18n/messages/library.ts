@@ -348,7 +348,7 @@ const de = {
   "library.stickHealth.next.eject": "Grün geschafft. Nächster Schritt: Auswerfen, dann Stick in den Player.",
   "library.stickHealth.next.prepare": "„Für Player vorbereiten“ lässt die Player-Bibliothek auf dem Stick. Fehlt sie und liegt eine Sicherung in SETBUILDER-Backup, kommt sie zurück. Nichts wird gelöscht.",
   "library.stickHealth.next.openRekordbox":
-    "Optional für 3000X, AZ und OPUS-QUAD: rekordbox öffnen — SETBUILDER startet nur die App. Dort den Stick auswerfen, dann hier Erneut prüfen. Lesen und Messen gehen weiter.",
+    "Optional für 3000X, AZ und OPUS-QUAD: in rekordbox auswerfen, dann Erneut prüfen.",
   "library.stickHealth.meaning.ready":
     "Die Stick-Datenbank ist lesbar. CDJ-3000, XDJ-XZ und ältere Player zeigen deine Playlists. Vor dem Abziehen immer auswerfen.",
   "library.stickHealth.meaning.readySynced":
@@ -804,7 +804,7 @@ const en: Record<keyof typeof de, string> = {
   "library.stickHealth.next.eject": "You’re green. Next: eject, then put the stick in the player.",
   "library.stickHealth.next.prepare": "“Prepare for player” leaves the player library on the stick. If it is missing and a backup is in SETBUILDER-Backup, it is put back. Nothing is deleted.",
   "library.stickHealth.next.openRekordbox":
-    "Optional for 3000X, AZ and OPUS-QUAD: open rekordbox — SETBUILDER only launches the app. Eject the stick there, then Check again here. Reading and measuring keep working.",
+    "Optional for 3000X, AZ and OPUS-QUAD: eject in rekordbox, then Check again.",
   "library.stickHealth.meaning.ready":
     "The stick database is readable. CDJ-3000, XDJ-XZ and older players will show your playlists. Always eject before you unplug.",
   "library.stickHealth.meaning.readySynced":
