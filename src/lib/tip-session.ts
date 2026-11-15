@@ -38,6 +38,17 @@ export function tipShouldCommitShow(interested: boolean, quiet: boolean): boolea
   return interested && !quiet;
 }
 
+/**
+ * True when a Tip host wraps an open `<details>` menu (energy / sort / …).
+ * Hover and focus must not resurrect a tip over that panel.
+ */
+export function tipHostHasOpenDetails(
+  host: { querySelector: (selectors: string) => unknown } | null | undefined,
+): boolean {
+  if (!host) return false;
+  return host.querySelector("details[open]") != null;
+}
+
 export function tipNoteOpened(): void {
   openTipCount += 1;
 }

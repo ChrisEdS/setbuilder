@@ -10,6 +10,7 @@ import {
   tipNoteClosed,
   tipNoteOpened,
   tipReleaseActive,
+  tipHostHasOpenDetails,
   tipResetSessionForTests,
   tipShouldCommitShow,
   tipShowDelay,
@@ -29,6 +30,22 @@ test("tipShouldCommitShow requires interest and not quiet", () => {
   assert.equal(tipShouldCommitShow(true, false), true);
   assert.equal(tipShouldCommitShow(false, false), false);
   assert.equal(tipShouldCommitShow(true, true), false);
+});
+
+test("tipHostHasOpenDetails is true only for an open nested details menu", () => {
+  assert.equal(tipHostHasOpenDetails(null), false);
+  assert.equal(
+    tipHostHasOpenDetails({
+      querySelector: (sel) => (sel === "details[open]" ? null : {}),
+    }),
+    false,
+  );
+  assert.equal(
+    tipHostHasOpenDetails({
+      querySelector: (sel) => (sel === "details[open]" ? { open: true } : null),
+    }),
+    true,
+  );
 });
 
 test("tipClaimActive closes the previous tip so only one bubble stays", () => {
