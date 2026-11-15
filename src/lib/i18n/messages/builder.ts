@@ -421,7 +421,6 @@ const de = {
   "builder.list.headAll":
     "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit / {slot} Slot",
   "builder.list.headAllBlend":
-  "builder.list.headAllBlend":
     "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit / {slot} Slot · {over} Blend-Abzug",
   "builder.list.headAllShort":
     "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit / {slot} Slot · {free} frei",
@@ -1292,7 +1291,6 @@ const en: Record<keyof typeof de, string> = {
 
   "builder.list.headAll":
     "Performance set · {tracks} · blend {mix} · {duration} playing / {slot} slot",
-  "builder.list.headAllBlend":
   "builder.list.headAllBlend":
     "Performance set · {tracks} · blend {mix} · {duration} playing / {slot} slot · {over} blend time",
   "builder.list.headAllShort":
