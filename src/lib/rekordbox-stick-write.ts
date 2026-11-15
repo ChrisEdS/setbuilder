@@ -1021,7 +1021,7 @@ async function clearLibrarySidecars(dir: DirLike): Promise<void> {
         dir.removeEntry(name),
         5_000,
         "exports.stickWrite.libraryBusy",
-        "rekordbox hält die Player-Library noch offen. rekordbox schließen und erneut vorbereiten.",
+        "rekordbox hält die Player-Library noch offen. In rekordbox den Stick auswerfen oder rekordbox schließen, dann erneut vorbereiten.",
       );
     } catch {
       /* wal/shm may stay locked; the main db is what players prefer */
@@ -1048,7 +1048,7 @@ export async function prepareStickForPlayers(
     findStickDatabase(root),
     PREPARE_STEP_MS,
     "exports.stickWrite.prepareTimeout",
-    "Die Player-Library wurde zu lange nicht gefunden. Stick stecken lassen, rekordbox schließen, erneut versuchen.",
+    "Die Player-Library wurde zu lange nicht gefunden. Stick stecken lassen. In rekordbox auswerfen oder rekordbox schließen, dann erneut versuchen.",
   );
   const lib = await file(location.dir, "exportLibrary.db");
   if (lib) {

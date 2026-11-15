@@ -1,6 +1,7 @@
 import { distributeRoles } from "@/lib/extract-set";
 import { uniqueIncomingDraftTracks } from "@/lib/draft-codec";
 import { stickArtworkUrl } from "@/lib/stick-audio";
+import { readBlobBuffer } from "@/lib/stick-busy";
 import { readSavedVolumeName, volumeArtworkUrl } from "@/lib/stick-volumes";
 import { energyFromRekordboxTags, hasKnownEnergy } from "@/lib/energy";
 import { tDe, type Translate } from "@/lib/i18n/core";
@@ -96,7 +97,7 @@ export async function readRekordboxStick(files: File[]): Promise<RekordboxStickR
     findFile(files, (path) => path.endsWith("/export.pdb") || path === "export.pdb") ??
     findFile(files, (path) => path.endsWith(".pdb"));
   if (pdb) {
-    const buffer = await pdb.arrayBuffer();
+    const buffer = await readBlobBuffer(pdb);
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
     const library = parseRekordboxPdb(buffer);
     return {

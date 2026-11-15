@@ -289,6 +289,50 @@ test("secondary actions never repeat the primary and only restore when a backup 
   assert.deepEqual(secondaryStickActions({ verdict: "empty", libraryAside: false }, { ...NONE, canRestore: false }), []);
 });
 
+test("inspectStick still reports a locked player library instead of treating it as missing", async () => {
+  const busy = Object.assign(new Error("resource busy or locked, open"), { code: "EBUSY" });
+  class LockedLibrary extends MemoryFile {
+    override async getFile(): Promise<never> {
+      throw busy;
+    }
+  }
+  const rekordbox = new MemoryDir("rekordbox");
+  rekordbox.putFile("export.pdb", new MemoryFile("export.pdb", new Uint8Array(fixture()), 200));
+  rekordbox.putFile("exportLibrary.db", new LockedLibrary("exportLibrary.db", new Uint8Array(80), 50));
+  const pioneer = new MemoryDir("PIONEER");
+  pioneer.putDir("rekordbox", rekordbox);
+  const root = new MemoryDir("STICK");
+  root.putDir("PIONEER", pioneer);
+
+  const health = await inspectStick(root);
+  assert.equal(health.pdb.present, true);
+  assert.equal(health.libraryDb.present, true);
+  assert.ok(health.pdb.playlists >= 1);
+});
+
+test("inspectStick retries a briefly busy export.pdb", async () => {
+  let hits = 0;
+  class FlakyPdb extends MemoryFile {
+    override async getFile() {
+      hits += 1;
+      if (hits < 3) {
+        throw Object.assign(new Error("resource busy or locked, open"), { code: "EBUSY" });
+      }
+      return super.getFile();
+    }
+  }
+  const rekordbox = new MemoryDir("rekordbox");
+  rekordbox.putFile("export.pdb", new FlakyPdb("export.pdb", new Uint8Array(fixture()), 200));
+  const pioneer = new MemoryDir("PIONEER");
+  pioneer.putDir("rekordbox", rekordbox);
+  const root = new MemoryDir("STICK");
+  root.putDir("PIONEER", pioneer);
+
+  const health = await inspectStick(root);
+  assert.equal(health.pdb.present, true);
+  assert.ok(hits >= 3);
+});
+
 test("inspectStick reads PIONEER/rekordbox and flags a player library", async () => {
   const rekordbox = new MemoryDir("rekordbox");
   rekordbox.putFile("export.pdb", new MemoryFile("export.pdb", new Uint8Array(fixture()), 200));

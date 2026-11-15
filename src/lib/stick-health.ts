@@ -6,6 +6,7 @@
 
 import { isBrandPlaylistName, SIDECAR_DIR, SIDECAR_DIR_LEGACY } from "@/lib/brand";
 import { parseRekordboxPdb } from "@/lib/rekordbox-pdb";
+import { getStickFile, isStickReadBusy, readBlobBuffer } from "@/lib/stick-busy";
 import {
   listLibraryAsides,
   type DirLike,
@@ -260,7 +261,7 @@ export async function inspectStickFiles(
   const paths = files.map((file) => file.webkitRelativePath || file.name);
   const pdbFile = named(files, "export.pdb");
   const libraryFile = named(files, "exportLibrary.db");
-  const buffer = pdbFile && !known ? await pdbFile.arrayBuffer() : null;
+  const buffer = pdbFile && !known ? await readBlobBuffer(pdbFile) : null;
   return assessStick({
     pioneer: pioneerFromPaths(paths),
     pdb: pdbFile
@@ -302,7 +303,7 @@ async function file(dir: DirLike, name: string): Promise<FileLike | null> {
 type Statted = { size: number; lastModified?: number; arrayBuffer(): Promise<ArrayBuffer> };
 
 async function stat(handle: FileLike): Promise<Statted> {
-  return (await handle.getFile()) as Statted;
+  return (await getStickFile(handle)) as Statted;
 }
 
 /** From the directory handle of the whole stick. */
@@ -335,12 +336,22 @@ export async function inspectStick(root: DirLike, known?: PdbSummary): Promise<S
       const meta = await stat(pdbHandle);
       pdb = known
         ? { size: meta.size, lastModified: meta.lastModified, summary: known }
-        : { buffer: await meta.arrayBuffer(), size: meta.size, lastModified: meta.lastModified };
+        : {
+            buffer: await readBlobBuffer(meta),
+            size: meta.size,
+            lastModified: meta.lastModified,
+          };
     }
     const libHandle = await file(rekordbox, "exportLibrary.db");
     if (libHandle && !libraryDb) {
-      const meta = await stat(libHandle);
-      libraryDb = { size: meta.size, lastModified: meta.lastModified };
+      try {
+        const meta = await stat(libHandle);
+        libraryDb = { size: meta.size, lastModified: meta.lastModified };
+      } catch (error) {
+        // rekordbox often locks exportLibrary.db. Presence is enough for Recheck.
+        if (!isStickReadBusy(error)) throw error;
+        libraryDb = { size: 1 };
+      }
     }
     if (await file(rekordbox, "exportExt.pdb")) exportExt = true;
   }
