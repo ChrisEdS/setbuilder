@@ -6233,3 +6233,93 @@ dialog.stick-dialog.playlist-delete-dialog .playlist-delete-spinner {
   max-width: none;
   min-width: 0;
 }
+
+/* Harmonic path tiles: readable badges/titles and dependable drag (#29). */
+.set-shell .harmonic-path .harm-steps {
+  gap: 0.65rem;
+}
+
+.set-shell .harmonic-path .harm-steps li {
+  flex: 1 1 10.5rem;
+  min-width: 10.5rem;
+  max-width: 14rem;
+}
+
+.set-shell .harmonic-path .harm-node {
+  /* globals clips badge tops with overflow:hidden — keep chrome visible */
+  overflow: visible;
+  padding: 0.95rem 0.75rem 0.7rem;
+  gap: 0.5rem;
+  cursor: grab;
+}
+
+.set-shell .harmonic-path .harm-node:active {
+  cursor: grabbing;
+}
+
+.set-shell .harmonic-path .harm-node-top {
+  position: relative;
+  /* Reserve play + drag so badges never mid-glyph clip under tools */
+  padding-right: 3.85rem;
+  min-height: 1.9rem;
+  align-items: flex-start;
+}
+
+.set-shell .harmonic-path .harm-badge {
+  flex: 0 1 auto;
+  align-self: center;
+  max-width: 100%;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.set-shell .harmonic-path .harm-node-tools {
+  position: absolute;
+  top: -0.15rem;
+  right: -0.15rem;
+  z-index: 1;
+  gap: 0.25rem;
+}
+
+.set-shell .harmonic-path .harm-node-tools .drag-handle {
+  width: 1.9rem !important;
+  height: 1.9rem !important;
+  min-height: 1.9rem !important;
+}
+
+.set-shell .harmonic-path .harm-node-tools .icon-action {
+  width: 1.85rem;
+  min-width: 1.85rem;
+  height: 1.85rem;
+  min-height: 1.85rem;
+  cursor: pointer;
+}
+
+.set-shell .harmonic-path .harm-node > span {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+}
+
+.set-shell .harmonic-path .harm-node .harm-name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: normal;
+  text-overflow: unset;
+  line-height: 1.3;
+  max-width: 100%;
+  font-weight: 550;
+}
+
+.set-shell .harmonic-path .harm-node small {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

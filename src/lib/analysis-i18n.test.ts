@@ -69,6 +69,8 @@ test("energy text and relation labels in both languages", () => {
   assert.equal(relationShortLabel("relative"), "Relativ");
   assert.equal(relationShortLabel("adjacent", tEn), "±1");
   assert.equal(relationShortLabel("clash"), "Clash");
+  assert.equal(relationShortLabel("contrast"), "Kontr.");
+  assert.equal(relationShortLabel("contrast", tEn), "Contr.");
 });
 
 test("relationHint explains the jargon in DE and EN", () => {

@@ -22,7 +22,7 @@ const de = {
   "analysis.relation.adjacent.hint":
     "Nächste Zahl auf dem Wheel, gleicher Buchstabe (8A → 9A oder 7A). Sicherer Standard-Mix.",
   "analysis.relation.contrast": "Key-Kontrast",
-  "analysis.relation.contrast.short": "Kontrast",
+  "analysis.relation.contrast.short": "Kontr.",
   "analysis.relation.contrast.hint":
     "Weiter als ±1, aber kein Clash. Klingt spannend — mit EQ oder kurzem Break mischen.",
   "analysis.relation.clash": "Key-Clash",
@@ -221,7 +221,7 @@ const en: Record<keyof typeof de, string> = {
   "analysis.relation.adjacent.hint":
     "Next number on the wheel, same letter (8A → 9A or 7A). The safe standard mix.",
   "analysis.relation.contrast": "Key contrast",
-  "analysis.relation.contrast.short": "Contrast",
+  "analysis.relation.contrast.short": "Contr.",
   "analysis.relation.contrast.hint":
     "Farther than ±1, but not a clash. Sounds tense — mix with EQ or a short break.",
   "analysis.relation.clash": "Harmonic clash",
