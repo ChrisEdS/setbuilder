@@ -33,7 +33,7 @@ const de = {
   "builder.brief.gearPlaceholder": "CDJs / USB",
   "builder.brief.duration": "Slot-Dauer (Min)",
   "builder.brief.durationHint":
-    "Geplante Setlänge in Minuten. Ändern stößt Auf Slot setzen an: Überlänge wird gekürzt, Unterlänge aus Alternativen und Playlist-Pool nachgefüllt.",
+    "Geplante Setlänge in Minuten. Die Spielzeit-Zeile folgt sofort. Auf Slot setzen bleibt ein eigener Klick.",
   "builder.brief.blend": "Blend-Zeit (Durchschnitt)",
   "builder.brief.blendHint": "Durchschnittliche Zeit vom Ende jedes Tracks, die in den Übergang geht. Die Spielzeit im Slot folgt sofort.",
   "builder.brief.blend.30000": "0:30 Quick",
@@ -900,7 +900,7 @@ const en: Record<keyof typeof de, string> = {
   "builder.brief.gearPlaceholder": "CDJs / USB",
   "builder.brief.duration": "Slot duration (min)",
   "builder.brief.durationHint":
-    "Planned set length in minutes. Changing it runs Fit to slot: overflow is trimmed, underflow is filled from Alternatives and the playlist pool.",
+    "Planned set length in minutes. Playing time updates at once. Fit to slot stays a separate tap.",
   "builder.brief.blend": "Blend time (average)",
   "builder.brief.blendHint": "Average time from the end of each track that goes into the blend. Playing time in the slot follows at once.",
   "builder.brief.blend.30000": "0:30 Quick",

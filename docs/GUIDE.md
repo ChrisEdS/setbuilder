@@ -50,7 +50,7 @@ Under **Build set**, **Start with a playlist** lists the playlists on the stick.
 At the top, the **brief** sets:
 
 - **Title** — name of the set.
-- **Slot duration (min)** — the time window for your gig (the **slot**).
+- **Slot duration (min)** — the time window for your gig (the **slot**). Changing it does not run **Fit to slot**.
 - **Blend time (average)** — how long each join overlaps into the next title on average (the **blend**). SETBUILDER uses this when a row has no transition length yet.
 
 **Set info** (vibe, venue, slot, audience, gear, notes) is only your gig note. It does not change the clock.

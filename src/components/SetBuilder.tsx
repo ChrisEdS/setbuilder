@@ -718,16 +718,6 @@ export function SetBuilder() {
   const [settingsOpenState, setSettingsOpen] = useState<boolean | null>(null);
   /** What the duration field shows while it is being edited (null = the draft value). */
   const [durationText, setDurationText] = useState<string | null>(null);
-  /** Debounce fit/fill after the brief minutes change, so typing 120 does not fit on 12. */
-  const durationFitTimer = useRef<number | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (durationFitTimer.current != null) {
-        window.clearTimeout(durationFitTimer.current);
-      }
-    };
-  }, []);
 
   // Drop a body overflow:hidden left by a drawer that never unlocked (HMR / nested close).
   useEffect(() => {
@@ -3576,29 +3566,11 @@ export function SetBuilder() {
     });
   }
 
-  /** After the brief minutes change: same path as „Auf Slot setzen“ when over/under. */
-  function queueFitForNewDuration(minutes: number) {
-    if (durationFitTimer.current != null) {
-      window.clearTimeout(durationFitTimer.current);
-    }
-    durationFitTimer.current = window.setTimeout(() => {
-      durationFitTimer.current = null;
-      const current = readStoredDraft();
-      if (current.durationMinutes !== minutes || !current.tracks.length) return;
-      const filled = playedTotalMs(current.tracks, blendMsOf(current.blendMs));
-      const slotMs = minutes * 60_000;
-      // Same idle band as the Fit button — leave a fitting cast alone.
-      if (filled <= slotMs * 1.05 && filled >= slotMs) return;
-      fitSlot();
-    }, 450);
-  }
-
   function commitDurationMinutes(minutes: number) {
     const clamped = Math.min(MAX_DURATION, Math.max(MIN_DURATION, Math.round(minutes)));
     setDraft((c) =>
       c.durationMinutes === clamped ? c : { ...c, durationMinutes: clamped },
     );
-    queueFitForNewDuration(clamped);
   }
 
   function fillBestMatches() {
