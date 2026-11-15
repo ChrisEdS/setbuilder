@@ -12,6 +12,17 @@ import {
   type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
+import {
+  tipClaimActive,
+  tipGetLastClosedAt,
+  tipGetOpenCount,
+  tipNoteClosed,
+  tipNoteOpened,
+  tipReleaseActive,
+  tipShouldCommitShow,
+  tipShowDelay,
+  TIP_HIDE_DELAY_MS,
+} from "@/lib/tip-session";
 
 type TipProps = {
   text: string;
@@ -35,24 +46,6 @@ type BubblePos = {
 
 const MARGIN = 8;
 const MAX_WIDTH = 260;
-/** Wait before the first tip, so sweeping across controls does not flash one. */
-const SHOW_DELAY_MS = 450;
-/** Once a tip is open (or just closed), the next neighbor can appear sooner. */
-const SKIP_DELAY_MS = 100;
-const SKIP_GRACE_MS = 120;
-/** Keyboard focus still waits briefly so tabbing does not strobe every tip. */
-const FOCUS_DELAY_MS = 180;
-/** Leave hides almost immediately; long enough to ignore a one-frame gap. */
-const HIDE_DELAY_MS = 60;
-
-let openTipCount = 0;
-let lastTipClosedAt = 0;
-
-function showDelay(source: "pointer" | "focus"): number {
-  if (source === "focus") return FOCUS_DELAY_MS;
-  const warm = openTipCount > 0 || Date.now() - lastTipClosedAt < SKIP_GRACE_MS;
-  return warm ? SKIP_DELAY_MS : SHOW_DELAY_MS;
-}
 
 function estimateRect(width: number, height: number): DOMRect {
   return {
@@ -137,17 +130,14 @@ export function Tip({
   const hideTimer = useRef<number | null>(null);
   const showTimer = useRef<number | null>(null);
   const openRef = useRef(false);
+  /** User still wants this tip (pointer over or focus path armed). Cleared on leave/blur/dismiss. */
+  const interestedRef = useRef(false);
+  const quietRef = useRef(quiet);
+  const forceCloseRef = useRef<() => void>(() => {});
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<BubblePos | null>(null);
   const [trackedQuiet, setTrackedQuiet] = useState(quiet);
   const tipId = useId();
-  if (quiet !== trackedQuiet) {
-    setTrackedQuiet(quiet);
-    if (quiet) {
-      if (open) setOpen(false);
-      if (pos !== null) setPos(null);
-    }
-  }
 
   const clearShow = useCallback(() => {
     if (showTimer.current != null) {
@@ -156,72 +146,98 @@ export function Tip({
     }
   }, []);
 
+  const clearHide = useCallback(() => {
+    if (hideTimer.current != null) {
+      window.clearTimeout(hideTimer.current);
+      hideTimer.current = null;
+    }
+  }, []);
+
+  const closeNow = useCallback(() => {
+    clearShow();
+    clearHide();
+    interestedRef.current = false;
+    openRef.current = false;
+    tipReleaseActive(forceCloseRef.current);
+    setOpen(false);
+    setPos(null);
+  }, [clearHide, clearShow]);
+
+  useLayoutEffect(() => {
+    quietRef.current = quiet;
+    forceCloseRef.current = closeNow;
+  }, [quiet, closeNow]);
+
+  if (quiet !== trackedQuiet) {
+    setTrackedQuiet(quiet);
+    if (quiet) {
+      if (open) setOpen(false);
+      if (pos !== null) setPos(null);
+    }
+  }
+
   const show = useCallback(
     (source: "pointer" | "focus" = "pointer") => {
       if (quiet) return;
-      if (hideTimer.current != null) {
-        window.clearTimeout(hideTimer.current);
-        hideTimer.current = null;
-      }
+      clearHide();
+      interestedRef.current = true;
       if (openRef.current || showTimer.current != null) return;
-      const delay = showDelay(source);
+      const delay = tipShowDelay(source, tipGetOpenCount(), tipGetLastClosedAt());
       showTimer.current = window.setTimeout(() => {
         showTimer.current = null;
+        if (!tipShouldCommitShow(interestedRef.current, quietRef.current)) return;
+        tipClaimActive(forceCloseRef.current);
         openRef.current = true;
         setOpen(true);
       }, delay);
     },
-    [quiet],
+    [clearHide, quiet],
   );
 
   const hide = useCallback(
     (immediate = false) => {
+      interestedRef.current = false;
       clearShow();
-      if (hideTimer.current != null) {
-        window.clearTimeout(hideTimer.current);
-        hideTimer.current = null;
-      }
-      const close = () => {
-        openRef.current = false;
-        setOpen(false);
-        setPos(null);
-        hideTimer.current = null;
-      };
+      clearHide();
       if (!openRef.current) return;
       if (immediate) {
-        close();
+        closeNow();
         return;
       }
-      hideTimer.current = window.setTimeout(close, HIDE_DELAY_MS);
+      hideTimer.current = window.setTimeout(() => {
+        hideTimer.current = null;
+        closeNow();
+      }, TIP_HIDE_DELAY_MS);
     },
-    [clearShow],
+    [clearHide, clearShow, closeNow],
   );
 
   useEffect(() => {
     if (!open) return;
-    openTipCount += 1;
+    tipNoteOpened();
+    tipClaimActive(forceCloseRef.current);
     return () => {
-      openTipCount = Math.max(0, openTipCount - 1);
-      lastTipClosedAt = Date.now();
+      tipNoteClosed();
+      tipReleaseActive(forceCloseRef.current);
     };
   }, [open]);
 
   useEffect(() => {
     return () => {
-      if (hideTimer.current != null) window.clearTimeout(hideTimer.current);
-      if (showTimer.current != null) window.clearTimeout(showTimer.current);
+      clearShow();
+      clearHide();
+      tipReleaseActive(forceCloseRef.current);
     };
-  }, []);
+  }, [clearHide, clearShow]);
 
   useEffect(() => {
     if (!quiet) return;
+    interestedRef.current = false;
     clearShow();
-    if (hideTimer.current != null) {
-      window.clearTimeout(hideTimer.current);
-      hideTimer.current = null;
-    }
+    clearHide();
     openRef.current = false;
-  }, [quiet, clearShow]);
+    tipReleaseActive(forceCloseRef.current);
+  }, [quiet, clearHide, clearShow]);
 
   const update = useCallback(() => {
     const wrap = wrapRef.current;
@@ -243,28 +259,45 @@ export function Tip({
     if (!open) return;
     update();
     const frame = requestAnimationFrame(update);
-    const onScroll = () => update();
-    window.addEventListener("scroll", onScroll, true);
-    window.addEventListener("resize", onScroll);
+    const onResize = () => update();
+    window.addEventListener("resize", onResize);
     return () => {
       cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", onScroll, true);
-      window.removeEventListener("resize", onScroll);
+      window.removeEventListener("resize", onResize);
     };
   }, [open, text, update]);
 
   useEffect(() => {
     if (!open) return;
+    function dismiss() {
+      hide(true);
+    }
     function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        openRef.current = false;
-        setOpen(false);
-        setPos(null);
-      }
+      if (event.key === "Escape") dismiss();
+    }
+    function onPointerDown(event: PointerEvent) {
+      const target = event.target;
+      if (target instanceof Node && wrapRef.current?.contains(target)) return;
+      dismiss();
+    }
+    function onScroll() {
+      dismiss();
     }
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open]);
+    document.addEventListener("pointerdown", onPointerDown, true);
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("dragstart", dismiss, true);
+    window.addEventListener("blur", dismiss);
+    document.addEventListener("visibilitychange", dismiss);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointerDown, true);
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("dragstart", dismiss, true);
+      window.removeEventListener("blur", dismiss);
+      document.removeEventListener("visibilitychange", dismiss);
+    };
+  }, [open, hide]);
 
   if (!text.trim()) return <>{children}</>;
 
