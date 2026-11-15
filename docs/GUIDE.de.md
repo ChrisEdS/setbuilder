@@ -27,8 +27,8 @@ Die Desktop-App (Port **4317**) ist der normale Weg. Wer aus dem Repo mit `npm r
 3. Erkennt SETBUILDER den Stick, lädt er ohne Ordner-Dialog. Zeigt sich ein Dialog: den Stick wählen (den rekordbox-Export), nicht einen Ordner, der nur Musikdateien enthält.
 4. Warte, bis die Bibliothek bereit ist. Du kannst nach Sternen, Farbe, Genre und Kommentar filtern. Playlist-Namen öffnen als Liste unter dem Suchfeld.
 5. Achte auf den Statusstreifen am Stick — er sagt, ob der Stick für deinen Player bereit ist.
-   - **Gelb** — die Player-Bibliothek auf dem Stick fehlt oder ist älter als die Playlists. Tippe **Für Player vorbereiten**, um sie aus einer Sicherung wiederherzustellen, die SETBUILDER behält. Nichts auf dem Stick wird gelöscht.
-   - **Grün** — die Stick-Datenbank ist lesbar. Neuere Player zeigen manchmal noch eine ältere Fassung; Streifen und **Details** erklären das.
+   - **Gelb** — Playlists sind bereit für CDJ-3000 und XDJ-XZ. Neuere Player (CDJ-3000X, XDJ-AZ, OPUS-QUAD) können noch eine ältere zweite Bibliothek zeigen. **rekordbox öffnen** startet nur die App; wirf den Stick **dort** aus, dann **Erneut prüfen**. Fehlt die Bibliothek und liegt eine Sicherung in SETBUILDER-Backup: **Für Player vorbereiten**. Nichts wird gelöscht.
+   - **Grün** — die Stick-Datenbank ist lesbar, auch für neuere Player.
 6. Für einen anderen Stick: **Anderer Stick**.
 
 Unter **Set bauen** listet **Mit einer Playlist starten** die Playlists auf dem Stick. Titel vom Stick lassen sich im Player abspielen, sobald der Stick geladen ist.

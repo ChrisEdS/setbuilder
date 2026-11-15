@@ -614,6 +614,8 @@ export function SetBuilder() {
   const refreshStickHealthRef = useRef<StickStatusSlice["refreshHealth"] | null>(null);
   const [pendingDelete, setPendingDelete] = useState<RekordboxStickSet | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deletePhase, setDeletePhase] = useState<"write" | "read" | null>(null);
+  const [deleteDone, setDeleteDone] = useState<{ name: string; backup: string } | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [pendingStickSet, setPendingStickSet] = useState<RekordboxStickSet | null>(
     null,
@@ -1160,6 +1162,8 @@ export function SetBuilder() {
   function requestDeleteStickPlaylist(set: RekordboxStickSet) {
     if (deleteBusy) return;
     setDeleteError(null);
+    setDeleteDone(null);
+    setDeletePhase(null);
     setPendingDelete(set);
   }
 
@@ -1172,7 +1176,9 @@ export function SetBuilder() {
       return;
     }
     setDeleteBusy(true);
+    setDeletePhase("write");
     setDeleteError(null);
+    setDeleteDone(null);
     try {
       const root =
         (stickRootRef.current as PersistableDir | null) ?? (await loadPersistedStickHandle());
@@ -1185,10 +1191,11 @@ export function SetBuilder() {
         {
           operation: "stick-delete",
           key: `stick-delete:${set.id}`,
-          label: t("library.stick.deleteBusy"),
+          label: t("library.stick.deleteBusyWrite"),
           target: set.name,
         },
       );
+      setDeletePhase("read");
       const fresh = await readStickFromHandle(root).catch(() => null);
       if (fresh) {
         const sets = fresh.sets.filter((item) => item.id !== set.id);
@@ -1198,8 +1205,8 @@ export function SetBuilder() {
         setStickSets((current) => current.filter((item) => item.id !== set.id));
       }
       setPendingStickSet((current) => (current?.id === set.id ? null : current));
-      setPendingDelete(null);
       clearNotice();
+      setDeleteDone({ name: done.playlistName, backup: done.backupName });
       setStatus(
         t("library.stick.deleteDone", { name: done.playlistName, backup: done.backupName }),
       );
@@ -1208,6 +1215,7 @@ export function SetBuilder() {
       setDeleteError(errorText(error, t, "exports.stickWrite.rolledBack"));
     } finally {
       setDeleteBusy(false);
+      setDeletePhase(null);
     }
   }
 
@@ -4064,11 +4072,15 @@ export function SetBuilder() {
         open={pendingDelete !== null}
         name={pendingDelete?.name ?? ""}
         busy={deleteBusy}
+        phase={deletePhase}
         error={deleteError}
+        done={deleteDone}
         onClose={() => {
           if (deleteBusy) return;
           setPendingDelete(null);
+          setDeleteDone(null);
           setDeleteError(null);
+          setDeletePhase(null);
         }}
         onConfirm={() => {
           void confirmDeleteStickPlaylist();

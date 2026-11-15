@@ -182,9 +182,13 @@ const de = {
   "library.stick.deleteNext": "„Löschen“ entfernt nur diesen Eintrag. Die Audiodateien bleiben auf dem Stick.",
   "library.stick.deleteInfo":
     "Vorher Sicherung in SETBUILDER-Backup. Die Player-Bibliothek auf dem Stick und die rekordbox-Bibliothek auf diesem Rechner bleiben unangetastet.",
-  "library.stick.deleteBusy": "Lösche und prüfe…",
+  "library.stick.deleteBusy": "Lösche die Playlist… Bei einem großen Stick dauert das.",
+  "library.stick.deleteBusyWrite": "Schreibe die Stick-Datenbank…",
+  "library.stick.deleteBusyRead": "Lese den Stick neu…",
   "library.stick.deleteDone":
     "„{name}“ ist aus der Stick-Datenbank gelöscht. Sicherung unter SETBUILDER-Backup/{backup}. Die Audiodateien bleiben.",
+  "library.stick.deleteDoneTitle": "Playlist gelöscht",
+  "library.stick.deleteClose": "Schließen",
   "library.stick.deleteNoStick": "Kein beschreibbarer Stick. Den Stick-Ordner wählen. Es wurde nichts gelöscht.",
   "library.stick.deleteCancel": "Abbrechen",
   "library.stick.deleteConfirm": "Löschen",
@@ -324,7 +328,7 @@ const de = {
   "library.stickHealth.verdict.ready": "Bereit für CDJ-3000, XDJ-XZ und ältere Player.",
   "library.stickHealth.verdict.readySynced": "Bereit für alle Player — rekordbox hat die Bibliothek erneuert.",
   "library.stickHealth.verdict.readyAside": "Bereit für den Player. Die Player-Bibliothek liegt auf dem Stick.",
-  "library.stickHealth.verdict.needsRekordbox": "Die Playlists auf dem Stick sind bereit. CDJ-3000X, XDJ-AZ und OPUS-QUAD können trotzdem eine ältere Fassung zeigen.",
+  "library.stickHealth.verdict.needsRekordbox": "Playlists bereit für CDJ-3000 und XDJ-XZ. Gelb: 3000X, AZ und OPUS-QUAD können noch eine ältere Bibliothek zeigen.",
   "library.stickHealth.verdict.needsRekordboxFiles": "Noch nicht bereit: Stick braucht rekordbox, bevor der Player ihn liest.",
   "library.stickHealth.verdict.hiddenFolder": "Ordner heißt .PIONEER (versteckt) — viele Player finden ihn trotzdem.",
   "library.stickHealth.verdict.empty": "Noch nicht bereit: Auf dem Stick liegen noch keine Playlists.",
@@ -344,7 +348,7 @@ const de = {
   "library.stickHealth.next.eject": "Grün geschafft. Nächster Schritt: Auswerfen, dann Stick in den Player.",
   "library.stickHealth.next.prepare": "„Für Player vorbereiten“ lässt die Player-Bibliothek auf dem Stick. Fehlt sie und liegt eine Sicherung in SETBUILDER-Backup, kommt sie zurück. Nichts wird gelöscht.",
   "library.stickHealth.next.openRekordbox":
-    "In rekordbox den Stick auswerfen, damit die Player-Bibliothek neu geschrieben wird. SETBUILDER kann derweil Playlists lesen und Energie messen.",
+    "Optional für 3000X, AZ und OPUS-QUAD: rekordbox öffnen — SETBUILDER startet nur die App. Dort den Stick auswerfen, dann hier Erneut prüfen. Lesen und Messen gehen weiter.",
   "library.stickHealth.meaning.ready":
     "Die Stick-Datenbank ist lesbar. CDJ-3000, XDJ-XZ und ältere Player zeigen deine Playlists. Vor dem Abziehen immer auswerfen.",
   "library.stickHealth.meaning.readySynced":
@@ -385,7 +389,7 @@ const de = {
   "library.stickHealth.tip.repair":
     "Behebt einen „schmutzigen“ FAT-Zustand (häufige Ursache für Nur-Lesen am CDJ). Stick bleibt eingesteckt; danach erneut auswerfen.",
   "library.stickHealth.tip.openRekordbox":
-    "rekordbox öffnen und dort den Stick auswerfen — das schreibt die Player-Bibliothek. SETBUILDER darf weiterlesen und Energie messen. Schließen nur für Vorbereiten, Schreiben oder Auswerfen.",
+    "Startet rekordbox. SETBUILDER schreibt den Stick nicht. Dort auswerfen, damit die Player-Bibliothek neu geschrieben wird — dann hier Erneut prüfen. Lesen und Messen gehen weiter; schließen nur für Vorbereiten, Schreiben oder Auswerfen.",
   "library.stickHealth.tip.restore":
     "OneLibrary aus dem SETBUILDER-Backup zurück auf den Stick legen.",
   "library.stickHealth.fact.folder": "Ordner",
@@ -442,7 +446,7 @@ const de = {
   "library.stickHealth.prepare.open": "rekordbox öffnen",
   "library.stickHealth.prepare.opening": "Öffne rekordbox…",
   "library.stickHealth.prepare.opened":
-    "rekordbox läuft. Dort den Stick auswerfen (Player-Bibliothek). SETBUILDER darf weiter lesen und messen.",
+    "rekordbox läuft. SETBUILDER hat nur die App gestartet. Dort den Stick auswerfen (Player-Bibliothek), dann hier Erneut prüfen. Lesen und Messen gehen weiter.",
   "library.stickHealth.prepare.failed": "rekordbox ließ sich nicht öffnen.",
   "library.stickWrite.healHint":
     "Nächster Schritt: „Sicherung zurück“ unter „Wie die Sicherung funktioniert“.",
@@ -634,9 +638,13 @@ const en: Record<keyof typeof de, string> = {
   "library.stick.deleteNext": "Delete removes only this entry. The audio files stay on the stick.",
   "library.stick.deleteInfo":
     "A backup is written to SETBUILDER-Backup first. The player library on the stick and the rekordbox library on this computer are left alone.",
-  "library.stick.deleteBusy": "Deleting and checking…",
+  "library.stick.deleteBusy": "Deleting the playlist… A large stick can take a while.",
+  "library.stick.deleteBusyWrite": "Writing the stick database…",
+  "library.stick.deleteBusyRead": "Reading the stick again…",
   "library.stick.deleteDone":
     "“{name}” was deleted from the stick database. Backup under SETBUILDER-Backup/{backup}. The audio files stay.",
+  "library.stick.deleteDoneTitle": "Playlist deleted",
+  "library.stick.deleteClose": "Close",
   "library.stick.deleteNoStick": "No writable stick. Choose the stick folder. Nothing was deleted.",
   "library.stick.deleteCancel": "Cancel",
   "library.stick.deleteConfirm": "Delete",
@@ -776,7 +784,7 @@ const en: Record<keyof typeof de, string> = {
   "library.stickHealth.verdict.ready": "Ready for CDJ-3000, XDJ-XZ and older players.",
   "library.stickHealth.verdict.readySynced": "Ready for all players — rekordbox refreshed the library.",
   "library.stickHealth.verdict.readyAside": "Ready for the player. The player library is on the stick.",
-  "library.stickHealth.verdict.needsRekordbox": "Playlists on the stick are ready. CDJ-3000X, XDJ-AZ and OPUS-QUAD can still show an older copy.",
+  "library.stickHealth.verdict.needsRekordbox": "Playlists ready for CDJ-3000 and XDJ-XZ. Amber: 3000X, AZ and OPUS-QUAD may still show an older library.",
   "library.stickHealth.verdict.needsRekordboxFiles": "Not ready yet: this stick needs rekordbox before a player can read it.",
   "library.stickHealth.verdict.hiddenFolder": "Folder is named .PIONEER (hidden) — many players still find it.",
   "library.stickHealth.verdict.empty": "Not ready yet: there are no playlists on the stick.",
@@ -796,7 +804,7 @@ const en: Record<keyof typeof de, string> = {
   "library.stickHealth.next.eject": "You’re green. Next: eject, then put the stick in the player.",
   "library.stickHealth.next.prepare": "“Prepare for player” leaves the player library on the stick. If it is missing and a backup is in SETBUILDER-Backup, it is put back. Nothing is deleted.",
   "library.stickHealth.next.openRekordbox":
-    "Eject the stick in rekordbox so it rewrites the player library. SETBUILDER can keep reading playlists and measuring energy in the meantime.",
+    "Optional for 3000X, AZ and OPUS-QUAD: open rekordbox — SETBUILDER only launches the app. Eject the stick there, then Check again here. Reading and measuring keep working.",
   "library.stickHealth.meaning.ready":
     "The stick database is readable. CDJ-3000, XDJ-XZ and older players will show your playlists. Always eject before you unplug.",
   "library.stickHealth.meaning.readySynced":
@@ -837,7 +845,7 @@ const en: Record<keyof typeof de, string> = {
   "library.stickHealth.tip.repair":
     "Fixes a dirty FAT state (common cause of CDJ read-only). Stick stays plugged in; eject again afterwards.",
   "library.stickHealth.tip.openRekordbox":
-    "Open rekordbox and eject the stick there — that writes the player library. SETBUILDER can keep reading and measuring energy. Quit only for prepare, write, or eject.",
+    "Launches rekordbox. SETBUILDER does not write the stick. Eject there so the player library is rewritten — then Check again here. Reading and measuring keep working; quit only for prepare, write, or eject.",
   "library.stickHealth.tip.restore":
     "Put OneLibrary from the SETBUILDER backup back onto the stick.",
   "library.stickHealth.fact.folder": "Folder",
@@ -894,7 +902,7 @@ const en: Record<keyof typeof de, string> = {
   "library.stickHealth.prepare.open": "Open rekordbox",
   "library.stickHealth.prepare.opening": "Opening rekordbox…",
   "library.stickHealth.prepare.opened":
-    "rekordbox is running. Eject the stick there (player library). SETBUILDER can keep reading and measuring.",
+    "rekordbox is running. SETBUILDER only launched the app. Eject the stick there (player library), then Check again here. Reading and measuring keep working.",
   "library.stickHealth.prepare.failed": "rekordbox could not be opened.",
   "library.stickWrite.healHint":
     "Next: “Restore backup” under “How the backup works”.",

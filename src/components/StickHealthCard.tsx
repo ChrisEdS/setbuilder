@@ -297,7 +297,8 @@ export function StickHealthCard({
   const repairedOk = noteOk && note === "library.stickHealth.fix.repaired";
   const leadWithEject =
     caps.canEject && health.verdict === "ready" && (afterWrite || repairedOk);
-  const primary = ejected
+  const waitingRecheck = note === "library.stickHealth.prepare.opened";
+  const primary = ejected || waitingRecheck
     ? null
     : deferPrimaryAction && !ejectFailed
       ? null
@@ -314,7 +315,10 @@ export function StickHealthCard({
   const secondary = ejected
     ? ([] as ReturnType<typeof secondaryStickActions>)
     : secondaryStickActions(health, caps, actionOpts).filter(
-        (kind) => kind !== primary && !(kind === "eject" && rowEject),
+        (kind) =>
+          kind !== primary &&
+          !(kind === "eject" && rowEject) &&
+          !(waitingRecheck && kind === "openRekordbox"),
       );
   const tone = ejected
     ? "mute"
@@ -576,18 +580,34 @@ export function StickHealthCard({
       }
     >
       <div className="stick-strip-actions-main">
-        {ejected && onRecheck ? (
+        {(ejected || waitingRecheck) && onRecheck ? (
           <Tip text={t("library.stickHealth.recheckTip")} disabled={checking || busy !== null}>
             <button
               type="button"
               className="btn"
               disabled={checking || busy !== null}
               onClick={() => {
-                setEjected(false);
+                if (ejected) setEjected(false);
+                else {
+                  setNote(null);
+                  setNoteOk(false);
+                }
                 void onRecheck();
               }}
             >
               {checking ? t("library.loading") : t("library.stickHealth.recheck")}
+            </button>
+          </Tip>
+        ) : null}
+        {waitingRecheck && caps.canOpenRekordbox ? (
+          <Tip text={tip("openRekordbox")} disabled={busy !== null}>
+            <button
+              type="button"
+              className={"btn ghost" + (busy === "openRekordbox" ? " is-busy" : "")}
+              disabled={busy !== null}
+              onClick={() => void run("openRekordbox")}
+            >
+              {label("openRekordbox")}
             </button>
           </Tip>
         ) : null}
