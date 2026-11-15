@@ -5084,13 +5084,17 @@ export function SetBuilder() {
                             ),
                           ),
                         });
+                  const statusTip =
+                    roleFilter === "all" ? t("builder.list.statusTip") : listStatus;
                   return (
-                    <p
-                      className="panel-inline-status builder-status"
-                      title={listStatus}
-                    >
-                      {listStatus}
-                    </p>
+                    <Tip text={statusTip} className="builder-status-tip">
+                      <p
+                        className="panel-inline-status builder-status"
+                        title={statusTip}
+                      >
+                        {listStatus}
+                      </p>
+                    </Tip>
                   );
                 })()}
                 <div className="list-head-tools">

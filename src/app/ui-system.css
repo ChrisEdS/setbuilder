@@ -1953,7 +1953,8 @@
   justify-self: end;
 }
 
-.set-shell .crate-list-head > .panel-inline-status {
+.set-shell .crate-list-head > .panel-inline-status,
+.set-shell .crate-list-head > .builder-status-tip {
   grid-area: status;
   width: max-content;
   max-width: 100%;
@@ -1963,6 +1964,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
   flex-wrap: nowrap;
+}
+
+.set-shell .crate-list-head > .builder-status-tip > .panel-inline-status {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 !important;
+  white-space: nowrap !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .set-shell .crate-list-head > .list-details-tip {
