@@ -1,6 +1,7 @@
 import { LocalizedError } from "@/lib/i18n/error";
 import { readRekordboxStick, type RekordboxStickRead } from "@/lib/rekordbox-stick";
 import { forgetStickFiles, rememberStickFiles } from "@/lib/stick-audio";
+import { getStickFile, readBlobBuffer } from "@/lib/stick-busy";
 import { findStickDatabase, type DirLike, type FileLike } from "@/lib/rekordbox-stick-write";
 import { STICK_IDB_NAME, STICK_IDB_NAME_LEGACY } from "@/lib/storage-keys";
 
@@ -161,12 +162,12 @@ async function fileHandle(dir: DirLike, name: string): Promise<FileLike | null> 
 }
 
 async function asFile(handle: FileLike, relative: string): Promise<File | null> {
-  const blob = await handle.getFile();
+  const blob = await getStickFile(handle);
   if (typeof File === "undefined") return null;
   const file =
     blob instanceof File
       ? blob
-      : new File([await blob.arrayBuffer()], relative.split("/").pop() || "file");
+      : new File([await readBlobBuffer(blob)], relative.split("/").pop() || "file");
   try {
     Object.defineProperty(file, "webkitRelativePath", { value: relative, configurable: true });
   } catch {
@@ -225,7 +226,7 @@ async function readStickFromHandleNow(root: DirLike): Promise<RekordboxStickRead
     );
   }
   const location = await findStickDatabase(root);
-  const buffer = await (await location.file.getFile()).arrayBuffer();
+  const buffer = await readBlobBuffer(await getStickFile(location.file));
   const file = new File([buffer], "export.pdb");
   try {
     Object.defineProperty(file, "webkitRelativePath", {

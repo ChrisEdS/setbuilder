@@ -11,6 +11,7 @@ import {
   swapEndianPcm,
   type ByteRange,
 } from "./decode-window";
+import { readBlobBuffer } from "@/lib/stick-busy";
 import {
   ENERGY_ANALYSIS_RATE,
   energyAnalysisWindow,
@@ -100,7 +101,7 @@ async function readBytes(file: Blob, start: number, end: number): Promise<Uint8A
   const safeStart = Math.max(0, Math.min(start, file.size));
   const safeEnd = Math.max(safeStart, Math.min(end, file.size));
   if (safeEnd === safeStart) return new Uint8Array();
-  return new Uint8Array(await file.slice(safeStart, safeEnd).arrayBuffer());
+  return new Uint8Array(await readBlobBuffer(file.slice(safeStart, safeEnd)));
 }
 
 function mixdown(decoded: AudioBuffer): { samples: Float32Array; sampleRate: number } {

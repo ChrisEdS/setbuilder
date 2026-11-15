@@ -30,6 +30,7 @@ import { Hint } from "@/components/Hint";
 import { SetEnergyMenu } from "@/components/SetTakeaway";
 import { StickHealthCard } from "@/components/StickHealthCard";
 import { inspectStick, inspectStickFiles, pdbSummaryOf, type StickHealth } from "@/lib/stick-health";
+import { isStickReadBusy } from "@/lib/stick-busy";
 import { enqueueWork } from "@/lib/work-queue";
 import {
   prepareStickForPlayers,
@@ -373,8 +374,8 @@ export function RekordboxStick({
         return;
       }
       setHealth(null);
-    } catch {
-      setHealth(null);
+    } catch (error) {
+      if (!isStickReadBusy(error)) setHealth(null);
     } finally {
       setCheckingHealth(false);
     }
@@ -400,8 +401,8 @@ export function RekordboxStick({
     if (!read.sets.length) setError({ kind: "noSets" });
     try {
       setHealth(await inspectStick(handle, pdbSummaryOf(read.library.length, read.sets)));
-    } catch {
-      setHealth(null);
+    } catch (error) {
+      if (!isStickReadBusy(error)) setHealth(null);
     }
   }
 
@@ -559,8 +560,8 @@ export function RekordboxStick({
             pdbSummaryOf(read.library.length, read.sets),
           );
           if (stillCurrent(token)) setHealth(next);
-        } catch {
-          if (stillCurrent(token)) setHealth(null);
+        } catch (error) {
+          if (stillCurrent(token) && !isStickReadBusy(error)) setHealth(null);
         }
       }, {
         operation: "stick-read",
@@ -680,10 +681,15 @@ export function RekordboxStick({
         ? { text: t("library.stick.emptyPick.text"), hint: t("library.stick.emptyPick.hint") }
         : error.kind === "blocked"
           ? { text: t("library.stick.blocked.text"), hint: t("library.stick.blocked.hint") }
-          : {
-              text: errorText(error.error, t, "library.stick.readFailed.text"),
-              hint: t("library.stick.readFailed.hint"),
-            };
+          : isStickReadBusy(error.error)
+            ? {
+                text: t("exports.stick.readBusy"),
+                hint: t("library.stickHealth.recheckTip"),
+              }
+            : {
+                text: errorText(error.error, t, "library.stick.readFailed.text"),
+                hint: t("library.stick.readFailed.hint"),
+              };
 
   const live: FieldNotice | null =
     phase === "picking"

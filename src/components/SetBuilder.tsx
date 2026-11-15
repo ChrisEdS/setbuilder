@@ -4,6 +4,7 @@ import { LanguageSwitch } from "@/components/LanguageSwitch";
 import {
   createTranslate,
   errorText,
+  LocalizedError,
   localizeWhy,
   phaseHint,
   phaseLabel,
@@ -3152,11 +3153,13 @@ export function SetBuilder() {
           errors += 1;
           const raw = error instanceof Error ? error.message : String(error);
           const message =
-            !raw.trim() ||
-            raw.includes("Exception catching is disabled") ||
-            raw === "Could not measure energy from this file"
-              ? t("builder.energy.measureFailed")
-              : raw.trim();
+            error instanceof LocalizedError
+              ? t(error.key, error.vars)
+              : !raw.trim() ||
+                  raw.includes("Exception catching is disabled") ||
+                  raw === "Could not measure energy from this file"
+                ? t("builder.energy.measureFailed")
+                : raw.trim();
           reasons.set(message, (reasons.get(message) ?? 0) + 1);
         }
         done += 1;
