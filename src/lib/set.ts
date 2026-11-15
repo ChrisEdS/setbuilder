@@ -697,6 +697,16 @@ export function playingOverSlot(playingMs: number, slotMs: number): boolean {
   return playingMs > slotMs * 1.05;
 }
 
+/** True when playing time is strictly under the brief slot (status-line underfill cue). */
+export function playingUnderSlot(playingMs: number, slotMs: number): boolean {
+  return slotMs > 0 && playingMs < slotMs;
+}
+
+/** Remaining slot time when underfilled; otherwise 0. */
+export function slotFreeMs(playingMs: number, slotMs: number): number {
+  return playingUnderSlot(playingMs, slotMs) ? slotMs - playingMs : 0;
+}
+
 export function phaseDurationMs(
   tracks: SetTrack[],
   phase: SetPhaseId,
