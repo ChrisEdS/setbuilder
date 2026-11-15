@@ -1,0 +1,16 @@
+---
+description: Issue → PR → Quality CI workflow. Never commit or push to main.
+alwaysApply: true
+---
+
+# Git workflow
+
+- Never commit or push to `main`. Never force-push `main`.
+- Create or reuse a GitHub issue first (`gh issue create` or an existing issue).
+- Branch as `feat/#n-slug` or `fix/#n-slug` (`chore` is ok for this bootstrap).
+- Open a PR with `Fixes #n` in the body.
+- Wait for Quality CI (`test`, `tsc`, `lint`, `build`) to be green.
+- Do NOT wait for Bugbot / Cursor Bugbot — it is not part of this workflow.
+- Do not merge until the user says so.
+- Tag `v*` only after an explicit Go. Desktop-CI stays tag-only.
+- Do not commit secrets, `.tmp` screenshots, or `.env`.
