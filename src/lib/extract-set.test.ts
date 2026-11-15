@@ -22,6 +22,8 @@ import {
   playedDurationMs,
   playedTotalMs,
   playingOverSlot,
+  playingUnderSlot,
+  slotFreeMs,
   slotTargetMs,
   trackPlayedMs,
 } from "./set.ts";
@@ -96,6 +98,23 @@ test("too long compares playing time with the slot, not the overlap", () => {
   assert.equal(overlapTotalMs(over, 120_000), 10 * 60_000);
   assert.equal(playingOverSlot(playedTotalMs(over, 120_000), slot), true);
   assert.equal(playingOverSlot(overlapTotalMs(over, 120_000), slot), false);
+});
+
+test("underfill reports free slot time from playing time", () => {
+  const slot = slotTargetMs(60);
+  const short = Array.from({ length: 9 }, () => ({
+    durationMs: 8 * 60_000,
+    transition: "unset" as const,
+    role: "groove" as const,
+  }));
+  // 2:00 blend: 54:00 playing → 6:00 free (same shape as a short setlist status line).
+  const playingMs = playedTotalMs(short, 120_000);
+  assert.equal(playingMs, 54 * 60_000);
+  assert.equal(playingUnderSlot(playingMs, slot), true);
+  assert.equal(slotFreeMs(playingMs, slot), 6 * 60_000);
+  assert.equal(playingUnderSlot(slot, slot), false);
+  assert.equal(slotFreeMs(slot, slot), 0);
+  assert.equal(playingUnderSlot(slot + 1, slot), false);
 });
 
 test("formatDuration rolls long spans into hours", () => {

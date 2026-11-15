@@ -422,6 +422,10 @@ const de = {
     "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit / {slot} Slot",
   "builder.list.headAllBlend":
     "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit / {slot} Slot · {over} Überlappung",
+  "builder.list.headAllShort":
+    "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit / {slot} Slot · {free} frei",
+  "builder.list.headAllShortBlend":
+    "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit / {slot} Slot · {over} Überlappung · {free} frei",
   "builder.list.headAllLong":
     "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit / {slot} Slot · Spielzeit zu lang",
   "builder.list.headAllLongBlend":
@@ -1287,6 +1291,10 @@ const en: Record<keyof typeof de, string> = {
     "Performance set · {tracks} · blend {mix} · {duration} playing / {slot} slot",
   "builder.list.headAllBlend":
     "Performance set · {tracks} · blend {mix} · {duration} playing / {slot} slot · {over} overlap",
+  "builder.list.headAllShort":
+    "Performance set · {tracks} · blend {mix} · {duration} playing / {slot} slot · {free} free",
+  "builder.list.headAllShortBlend":
+    "Performance set · {tracks} · blend {mix} · {duration} playing / {slot} slot · {over} overlap · {free} free",
   "builder.list.headAllLong":
     "Performance set · {tracks} · blend {mix} · {duration} playing / {slot} slot · playing time too long",
   "builder.list.headAllLongBlend":

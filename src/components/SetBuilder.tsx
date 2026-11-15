@@ -230,6 +230,8 @@ import {
   overlapPlannedTotalMs,
   playedTotalMs,
   playingOverSlot,
+  playingUnderSlot,
+  slotFreeMs,
   slotTargetMs,
   setPositionById,
   trackCount,
@@ -5047,19 +5049,26 @@ export function SetBuilder() {
                           const playingMs = playedTotalMs(visibleTimeline, blendMs);
                           const overMs = overlapPlannedTotalMs(visibleTimeline, blendMs);
                           const tooLong = playingOverSlot(playingMs, targetMs);
+                          const tooShort = playingUnderSlot(playingMs, targetMs);
+                          const freeMs = slotFreeMs(playingMs, targetMs);
                           const withBlend = overMs >= 1000;
                           return t(
                             tooLong
                               ? withBlend
                                 ? "builder.list.headAllLongBlend"
                                 : "builder.list.headAllLong"
-                              : withBlend
-                                ? "builder.list.headAllBlend"
-                                : "builder.list.headAll",
+                              : tooShort
+                                ? withBlend
+                                  ? "builder.list.headAllShortBlend"
+                                  : "builder.list.headAllShort"
+                                : withBlend
+                                  ? "builder.list.headAllBlend"
+                                  : "builder.list.headAll",
                             {
                               tracks: trackCount(visibleTimeline.length, t),
                               duration: formatDuration(playingMs),
                               over: formatDuration(overMs),
+                              free: formatDuration(freeMs),
                               mix: mixLabel,
                               slot: formatDuration(targetMs),
                             },
