@@ -966,7 +966,8 @@ export function SetBuilder() {
         );
         if (targets.length) {
           finish(null);
-          await runEnergyScan(targets, {
+          // Do not await: energy would hold the work queue and keep the stick pane on Reading.
+          void runEnergyScan(targets, {
             write: false,
             writeRoot: null,
             reuseTags: true,

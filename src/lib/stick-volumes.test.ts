@@ -9,6 +9,7 @@ import {
   listPioneerVolumes,
   resolveUnderVolume,
   stickArtworkCandidates,
+  stickVolumeFlag,
   stickVolumeName,
   volumeArtworkUrl,
 } from "./stick-volumes.ts";
@@ -22,6 +23,12 @@ test("volume names match the eject allow-list and skip the Mac disk", () => {
       name,
     );
   }
+});
+
+test("the volume chip is Reading while the PDB applies, not Connect", () => {
+  assert.equal(stickVolumeFlag({ current: true, reading: true }), "current");
+  assert.equal(stickVolumeFlag({ current: false, reading: true }), "reading");
+  assert.equal(stickVolumeFlag({ current: false, reading: false }), "connect");
 });
 
 test("the stick name is the volume, not the export.pdb path", () => {

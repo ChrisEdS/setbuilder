@@ -30,6 +30,16 @@ const DATABASE_SEGMENT = new Set(["pioneer", ".pioneer", "rekordbox"]);
  * The name a DJ recognises: the volume itself, or the first folder of the
  * “Found:” path when the handle is only the PIONEER folder.
  */
+/** Volume row chip while the PDB is still applying. Not a Connect CTA. */
+export function stickVolumeFlag(state: {
+  current: boolean;
+  reading: boolean;
+}): "current" | "reading" | "connect" {
+  if (state.current) return "current";
+  if (state.reading) return "reading";
+  return "connect";
+}
+
 export function stickVolumeName(
   rootName: string | null | undefined,
   foundLabel: string | null | undefined,
