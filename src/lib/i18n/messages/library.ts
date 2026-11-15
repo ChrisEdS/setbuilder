@@ -192,6 +192,12 @@ const de = {
   "library.stick.deleteNoStick": "Kein beschreibbarer Stick. Den Stick-Ordner wählen. Es wurde nichts gelöscht.",
   "library.stick.deleteCancel": "Abbrechen",
   "library.stick.deleteConfirm": "Löschen",
+  "library.stick.deleteRestore": "Sicherung zurück",
+  "library.stick.deleteRestoring": "Lege die Sicherung zurück…",
+  "library.stick.deleteRestoreTip":
+    "Die zuletzt geprüfte export.pdb aus SETBUILDER-Backup wieder als Stick-Datenbank legen. Lesen geht danach weiter; Schreiben braucht freien Stick-Zugriff.",
+  "library.stick.deleteRestoreDone":
+    "Sicherung SETBUILDER-Backup/{backup} liegt wieder als export.pdb. Stick erneut gelesen.",
   "library.stick.historySnippet": "History · {track}",
   "library.stick.history": "History",
   "library.stick.playlist": "Playlist",
@@ -648,6 +654,12 @@ const en: Record<keyof typeof de, string> = {
   "library.stick.deleteNoStick": "No writable stick. Choose the stick folder. Nothing was deleted.",
   "library.stick.deleteCancel": "Cancel",
   "library.stick.deleteConfirm": "Delete",
+  "library.stick.deleteRestore": "Restore backup",
+  "library.stick.deleteRestoring": "Restoring the backup…",
+  "library.stick.deleteRestoreTip":
+    "Put the last verified export.pdb from SETBUILDER-Backup back as the stick database. Reading works afterwards; writing needs free stick access.",
+  "library.stick.deleteRestoreDone":
+    "Backup SETBUILDER-Backup/{backup} is export.pdb again. Stick re-read.",
   "library.stick.historySnippet": "History · {track}",
   "library.stick.history": "History",
   "library.stick.playlist": "Playlist",

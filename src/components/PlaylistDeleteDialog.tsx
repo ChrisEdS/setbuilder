@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Tip } from "@/components/Hint";
 import { useI18n } from "@/lib/i18n/react";
 
 export function PlaylistDeleteDialog({
@@ -10,8 +11,11 @@ export function PlaylistDeleteDialog({
   phase,
   error,
   done,
+  canRestore,
+  restoring,
   onClose,
   onConfirm,
+  onRestore,
 }: {
   name: string;
   open: boolean;
@@ -19,8 +23,12 @@ export function PlaylistDeleteDialog({
   phase: "write" | "read" | null;
   error: string | null;
   done: { name: string; backup: string } | null;
+  /** Show Sicherung zurück after a write/restore failure. */
+  canRestore: boolean;
+  restoring: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  onRestore: () => void;
 }) {
   const { t } = useI18n();
   const dialog = useRef<HTMLDialogElement>(null);
@@ -37,12 +45,15 @@ export function PlaylistDeleteDialog({
     if (!open && node.open) node.close();
   }, [open]);
 
+  const locked = busy || restoring;
   const busyLabel =
-    phase === "read"
-      ? t("library.stick.deleteBusyRead")
-      : phase === "write"
-        ? t("library.stick.deleteBusyWrite")
-        : t("library.stick.deleteBusy");
+    restoring
+      ? t("library.stick.deleteRestoring")
+      : phase === "read"
+        ? t("library.stick.deleteBusyRead")
+        : phase === "write"
+          ? t("library.stick.deleteBusyWrite")
+          : t("library.stick.deleteBusy");
 
   return (
     <dialog
@@ -51,13 +62,13 @@ export function PlaylistDeleteDialog({
       className="stick-dialog playlist-delete-dialog"
       aria-labelledby="playlist-delete-title"
       aria-describedby="playlist-delete-status"
-      aria-busy={busy || undefined}
+      aria-busy={locked || undefined}
       onClose={() => {
-        if (!busy) onClose();
+        if (!locked) onClose();
       }}
       onCancel={(event) => {
         event.preventDefault();
-        if (!busy) onClose();
+        if (!locked) onClose();
       }}
     >
       {done ? (
@@ -76,7 +87,7 @@ export function PlaylistDeleteDialog({
         <>
           <h2 id="playlist-delete-title">{t("library.stick.deleteTitle", { name: shownName })}</h2>
           <p id="playlist-delete-status" className="modal-status" role="status">
-            {busy ? (
+            {locked ? (
               <span className="playlist-delete-busy">
                 <span className="playlist-delete-spinner" aria-hidden="true" />
                 {busyLabel}
@@ -85,7 +96,7 @@ export function PlaylistDeleteDialog({
               t("library.stick.deleteStatus", { name: shownName })
             )}
           </p>
-          {busy ? null : (
+          {locked ? null : (
             <>
               <p className="modal-next">{t("library.stick.deleteNext")}</p>
               <p className="modal-info">{t("library.stick.deleteInfo")}</p>
@@ -97,12 +108,20 @@ export function PlaylistDeleteDialog({
             </p>
           ) : null}
           <div className="stick-actions">
-            <button type="button" className="btn ghost" disabled={busy} onClick={onClose}>
+            <button type="button" className="btn ghost" disabled={locked} onClick={onClose}>
               {t("library.stick.deleteCancel")}
             </button>
-            <button type="button" className="btn danger" disabled={busy} onClick={onConfirm}>
-              {t("library.stick.deleteConfirm")}
-            </button>
+            {canRestore ? (
+              <Tip text={t("library.stick.deleteRestoreTip")} disabled={locked}>
+                <button type="button" className="btn" disabled={locked} onClick={onRestore}>
+                  {t("library.stick.deleteRestore")}
+                </button>
+              </Tip>
+            ) : (
+              <button type="button" className="btn danger" disabled={locked} onClick={onConfirm}>
+                {t("library.stick.deleteConfirm")}
+              </button>
+            )}
           </div>
         </>
       )}

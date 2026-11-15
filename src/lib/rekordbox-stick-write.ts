@@ -6,9 +6,9 @@
  * Order of events, each step only starts when the one before succeeded:
  *   1. read export.pdb and work out the new file in memory (nothing is written yet)
  *   2. copy the original into SETBUILDER-Backup/ and read the copy back byte for byte
- *   3. replace export.pdb (the browser swaps the file atomically when the write is closed)
+ *   3. stage planned bytes as export.pdb.setbuilder-new, then replace live export.pdb
  *   4. read export.pdb back and check it is the old file plus exactly the new playlist
- *   5. if that check fails: put the original back and say so
+ *   5. if that check fails: restore from RAM, then from the verified backup file
  *   6. the same playlist is written into exportLibrary.db when that file opens.
  *      If it does not open, the file stays byte for byte as it was.
  *
@@ -44,8 +44,10 @@ import {
 import { updateOneLibrary, type OneLibraryPlaylist } from "@/lib/onelibrary-write";
 
 export { BACKUP_DIR, SIDECAR_DIR };
-export const BACKUP_KEEP = 3;
+/** Keep enough verified PDB copies that a bad run cannot wipe the last known-good. */
+export const BACKUP_KEEP = 8;
 export const LIBRARY_ASIDE_RE = /^exportLibrary-aside-\d{8}-\d{6}\.db$/;
+const PDB_TEMP_NAME = "export.pdb.setbuilder-new";
 
 type Writable = {
   write(data: ArrayBuffer | Uint8Array): Promise<void>;
@@ -149,7 +151,13 @@ function stickError(
   german: string,
   vars?: Record<string, string | number>,
 ) {
-  return new PdbWriteError(key, vars, german);
+  let text = german;
+  if (vars) {
+    for (const [name, value] of Object.entries(vars)) {
+      text = text.replaceAll(`{${name}}`, String(value));
+    }
+  }
+  return new PdbWriteError(key, vars, text);
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number, key: MessageKey, german: string): Promise<T> {
@@ -530,6 +538,140 @@ async function replaceFile(handle: FileLike, data: ArrayBuffer | Uint8Array) {
   }
 }
 
+function asBuffer(data: ArrayBuffer | Uint8Array): ArrayBuffer {
+  if (data instanceof ArrayBuffer) return data.slice(0);
+  return bytesToBuffer(data);
+}
+
+/**
+ * Write a verified SETBUILDER-Backup copy of the live PDB before touching export.pdb.
+ * The backup must match byte-for-byte and parse as a rekordbox database.
+ */
+async function writeVerifiedPdbBackup(
+  root: DirLike,
+  original: ArrayBuffer,
+  now: Date,
+): Promise<{ backupName: string; backupDir: DirLike }> {
+  const backupDir = await root.getDirectoryHandle(BACKUP_DIR, { create: true });
+  const backupName = `export-${stamp(now)}.pdb`;
+  const backup = await backupDir.getFileHandle(backupName, { create: true });
+  await replaceFile(backup, original);
+  const readBack = await readBytes(backup);
+  if (!sameBytes(readBack, original)) {
+    throw stickError(
+      "exports.stickWrite.backupFailed",
+      "Die Sicherung konnte nicht geschrieben werden. Es wurde nichts verändert.",
+    );
+  }
+  try {
+    parseRekordboxPdb(readBack.slice(0));
+  } catch {
+    throw stickError(
+      "exports.stickWrite.backupFailed",
+      "Die Sicherung konnte nicht geschrieben werden. Es wurde nichts verändert.",
+    );
+  }
+  return { backupName, backupDir };
+}
+
+/**
+ * Stage planned bytes in a sibling temp file, then replace live export.pdb.
+ * Abort/remove the temp; never leave a half-written temp as the live database.
+ */
+async function replaceLivePdb(location: StickLocation, planned: ArrayBuffer): Promise<void> {
+  const temp = await location.dir.getFileHandle(PDB_TEMP_NAME, { create: true });
+  try {
+    await replaceFile(temp, planned);
+    if (!sameBytes(await readBytes(temp), planned)) {
+      throw stickError(
+        "exports.stickWrite.readBack",
+        "Die geschriebene Datei weicht von der geplanten ab.",
+      );
+    }
+    await replaceFile(location.file, planned);
+    if (!sameBytes(await readBytes(location.file), planned)) {
+      throw stickError(
+        "exports.stickWrite.readBack",
+        "Die geschriebene Datei weicht von der geplanten ab.",
+      );
+    }
+  } finally {
+    await location.dir.removeEntry?.(PDB_TEMP_NAME).catch(() => undefined);
+  }
+}
+
+/** Put live export.pdb back: RAM original first, then this op's verified backup file. */
+async function restoreLivePdb(
+  location: StickLocation,
+  original: ArrayBuffer,
+  backupDir: DirLike,
+  backupName: string,
+): Promise<void> {
+  try {
+    await restoreOriginal(location.file, original);
+    if (sameBytes(await readBytes(location.file), original)) return;
+  } catch {
+    /* fall through to the on-stick backup */
+  }
+  const backup = await readBytes(await backupDir.getFileHandle(backupName));
+  await replaceFile(location.file, backup);
+  if (!sameBytes(await readBytes(location.file), backup)) {
+    throw stickError(
+      "exports.stickWrite.restoreFailed",
+      "Die Stick-Datenbank konnte nicht zurückgesetzt werden. Tippe „Sicherung zurück“ (SETBUILDER-Backup), oder exportiere den Stick in rekordbox neu.",
+      { backup: backupName },
+    );
+  }
+}
+
+/**
+ * Backup → non-truncating live replace → verify → prune.
+ * On any failure: RAM then backup-file restore; never prune.
+ */
+async function commitStickPdb(options: {
+  root: DirLike;
+  location: StickLocation;
+  original: ArrayBuffer;
+  planned: ArrayBuffer | Uint8Array;
+  now?: Date;
+  verify: (written: ArrayBuffer) => void;
+}): Promise<{ backupName: string }> {
+  const now = options.now ?? new Date();
+  const planned = asBuffer(options.planned);
+  const { backupName, backupDir } = await writeVerifiedPdbBackup(
+    options.root,
+    options.original,
+    now,
+  );
+  try {
+    await replaceLivePdb(options.location, planned);
+    const written = await readBytes(options.location.file);
+    if (!sameBytes(written, planned)) {
+      throw stickError(
+        "exports.stickWrite.readBack",
+        "Die geschriebene Datei weicht von der geplanten ab.",
+      );
+    }
+    options.verify(written);
+  } catch (error) {
+    try {
+      await restoreLivePdb(options.location, options.original, backupDir, backupName);
+    } catch (restoreError) {
+      throw restoreError;
+    }
+    throw stickError(
+      "exports.stickWrite.rolledBack",
+      "Die Stick-Datenbank hat die Prüfung nach dem Schreiben nicht bestanden. Der vorherige Stand ist wiederhergestellt. ({detail})",
+      {
+        detail: error instanceof Error ? error.message : "",
+        backup: backupName,
+      },
+    );
+  }
+  await pruneBackups(options.root, BACKUP_KEEP);
+  return { backupName };
+}
+
 export type StickLibraryResult = "written" | "untouched" | "missing";
 
 export type StickWriteDone = {
@@ -656,62 +798,35 @@ export async function writeSetToStick(
   }
   if (staged.refusal) throw staged.refusal;
 
-  // 1. Everything is computed and checked before the first byte is written.
+  // Everything is computed and checked before the first byte is written.
   const { result, altResult, final, perfMatch, altMatch } = staged;
 
-  // 2. A copy of the original, checked by reading it back.
-  const backupDir = await root.getDirectoryHandle(BACKUP_DIR, { create: true });
-  const backupName = `export-${stamp(now)}.pdb`;
-  const backup = await backupDir.getFileHandle(backupName, { create: true });
-  await replaceFile(backup, original);
-  if (!sameBytes(await readBytes(backup), original)) {
-    throw stickError(
-      "exports.stickWrite.backupFailed",
-      "Die Sicherung konnte nicht geschrieben werden. Es wurde nichts verändert.",
-    );
-  }
-
-  // 3. Replace the database. The browser swaps the file in one step on close.
-  try {
-    await replaceFile(location.file, final);
-  } catch (error) {
-    // The swap did not happen, or the stick failed halfway: make sure the original is back.
-    await restoreOriginal(location.file, original);
-    throw error;
-  }
-
-  // 4. Read it back from the stick and check it once more.
-  try {
-    const written = await readBytes(location.file);
-    if (!sameBytes(written, final)) throw stickError("exports.stickWrite.readBack", "Die geschriebene Datei weicht ab.");
-    if (altResult) {
-      verifyPdbUpdate(result?.buffer ?? original, written, {
-        playlistId: altResult.playlistId,
-        name: altResult.name,
-        trackIds: altMatch.trackIds,
-        changedPages: altResult.changedPages,
-        allocated: altResult.allocated,
-      });
-    } else if (result) {
-      verifyPdbUpdate(original, written, {
-        playlistId: result.playlistId,
-        name: result.name,
-        trackIds: perfMatch.trackIds,
-        changedPages: result.changedPages,
-        allocated: result.allocated,
-      });
-    }
-  } catch (error) {
-    // 5. Not what we meant to write: put the original back.
-    await restoreOriginal(location.file, original);
-    throw stickError(
-      "exports.stickWrite.rolledBack",
-      "Die Stick-Datenbank wurde nach dem Schreiben nicht bestanden. Der vorherige Stand ist wiederhergestellt.",
-      { detail: error instanceof Error ? error.message : "" },
-    );
-  }
-
-  await pruneBackups(root, BACKUP_KEEP);
+  const { backupName } = await commitStickPdb({
+    root,
+    location,
+    original,
+    planned: final,
+    now,
+    verify: (written) => {
+      if (altResult) {
+        verifyPdbUpdate(result?.buffer ?? original, written, {
+          playlistId: altResult.playlistId,
+          name: altResult.name,
+          trackIds: altMatch.trackIds,
+          changedPages: altResult.changedPages,
+          allocated: altResult.allocated,
+        });
+      } else if (result) {
+        verifyPdbUpdate(original, written, {
+          playlistId: result.playlistId,
+          name: result.name,
+          trackIds: perfMatch.trackIds,
+          changedPages: result.changedPages,
+          allocated: result.allocated,
+        });
+      }
+    },
+  });
 
   const libraryState = await commitPlayerLibrary(
     root,
@@ -782,40 +897,20 @@ export async function rewriteSetToStick(
     trackIds: match.trackIds,
   });
 
-  // Keep an immediate, byte-verified backup of exactly the current database.
-  const backupDir = await root.getDirectoryHandle(BACKUP_DIR, { create: true });
-  const backupName = `export-${stamp(now)}.pdb`;
-  const backup = await backupDir.getFileHandle(backupName, { create: true });
-  await replaceFile(backup, original);
-  if (!sameBytes(await readBytes(backup), original)) {
-    throw stickError(
-      "exports.stickWrite.backupFailed",
-      "Die Sicherung konnte nicht geschrieben werden. Es wurde nichts verändert.",
-    );
-  }
-
-  try {
-    // One commit to export.pdb, followed by exact and semantic read-back verification.
-    await replaceFile(location.file, result.buffer);
-    const written = await readBytes(location.file);
-    if (!sameBytes(written, result.buffer)) {
-      throw stickError("exports.stickWrite.readBack", "Die geschriebene Datei weicht ab.");
-    }
-    verifyPdbReplacement(original, written, {
-      playlistId: playlist.id,
-      name: playlist.name,
-      trackIds: match.trackIds,
-    });
-  } catch (error) {
-    await restoreOriginal(location.file, original);
-    throw stickError(
-      "exports.stickWrite.rolledBack",
-      "Die Stick-Datenbank wurde nach dem Schreiben nicht bestanden. Der vorherige Stand ist wiederhergestellt.",
-      { detail: error instanceof Error ? error.message : "" },
-    );
-  }
-
-  await pruneBackups(root, BACKUP_KEEP);
+  const { backupName } = await commitStickPdb({
+    root,
+    location,
+    original,
+    planned: result.buffer,
+    now,
+    verify: (written) => {
+      verifyPdbReplacement(original, written, {
+        playlistId: playlist.id,
+        name: playlist.name,
+        trackIds: match.trackIds,
+      });
+    },
+  });
   const libraryState = await commitPlayerLibrary(
     root,
     location.dir,
@@ -868,39 +963,21 @@ export async function deletePlaylistFromStick(
   const original = await readBytes(location.file);
   const result = deletePlaylistFromPdb(original, { playlistId, kind });
 
-  const backupDir = await root.getDirectoryHandle(BACKUP_DIR, { create: true });
-  const backupName = `export-${stamp(now)}.pdb`;
-  const backup = await backupDir.getFileHandle(backupName, { create: true });
-  await replaceFile(backup, original);
-  if (!sameBytes(await readBytes(backup), original)) {
-    throw stickError(
-      "exports.stickWrite.backupFailed",
-      "Die Sicherung konnte nicht geschrieben werden. Es wurde nichts verändert.",
-    );
-  }
-
-  try {
-    await replaceFile(location.file, result.buffer);
-    const written = await readBytes(location.file);
-    if (!sameBytes(written, result.buffer)) {
-      throw stickError("exports.stickWrite.readBack", "Die geschriebene Datei weicht ab.");
-    }
-    verifyPdbDeletion(original, written, {
-      playlistId: result.playlistId,
-      kind: result.kind,
-      name: result.name,
-      changedPages: result.changedPages,
-    });
-  } catch (error) {
-    await restoreOriginal(location.file, original);
-    throw stickError(
-      "exports.stickWrite.rolledBack",
-      "Die Stick-Datenbank wurde nach dem Schreiben nicht bestanden. Der vorherige Stand ist wiederhergestellt.",
-      { detail: error instanceof Error ? error.message : "" },
-    );
-  }
-
-  await pruneBackups(root, BACKUP_KEEP);
+  const { backupName } = await commitStickPdb({
+    root,
+    location,
+    original,
+    planned: result.buffer,
+    now,
+    verify: (written) => {
+      verifyPdbDeletion(original, written, {
+        playlistId: result.playlistId,
+        kind: result.kind,
+        name: result.name,
+        changedPages: result.changedPages,
+      });
+    },
+  });
   return { playlistName: result.name, kind: result.kind, backupName };
 }
 
@@ -972,30 +1049,50 @@ export async function latestBackupName(root: DirLike): Promise<string | null> {
   return names.length ? names[names.length - 1] : null;
 }
 
-/** Puts the newest backup back as export.pdb, after checking it is a readable database. */
-export async function restoreLatestBackup(root: DirLike): Promise<string> {
+/** Puts a named SETBUILDER-Backup export-*.pdb back as export.pdb after a parse check. */
+export async function restoreBackup(root: DirLike, backupName: string): Promise<string> {
   const location = await findStickDatabase(root);
-  const name = await latestBackupName(root);
   const dir = await resolveBackupDir(root);
-  if (!name || !dir) {
+  if (!dir || !/^export-\d{8}-\d{6}\.pdb$/.test(backupName)) {
     throw stickError(
       "exports.stickWrite.noBackup",
       "Auf diesem Stick gibt es noch keine SETBUILDER-Sicherung.",
     );
   }
-  const backup = await readBytes(await dir.getFileHandle(name));
+  const backup = await readBytes(await dir.getFileHandle(backupName));
   parseRekordboxPdb(backup.slice(0));
   const current = await readBytes(location.file);
-  await replaceFile(location.file, backup);
+  try {
+    await replaceLivePdb(location, backup);
+  } catch {
+    await replaceFile(location.file, current).catch(() => undefined);
+    throw stickError(
+      "exports.stickWrite.restoreFailed",
+      "Die Stick-Datenbank konnte nicht zurückgesetzt werden. Tippe „Sicherung zurück“ (SETBUILDER-Backup), oder exportiere den Stick in rekordbox neu.",
+      { backup: backupName },
+    );
+  }
   if (!sameBytes(await readBytes(location.file), backup)) {
-    // Put back what was there before this attempt.
     await replaceFile(location.file, current);
     throw stickError(
       "exports.stickWrite.restoreFailed",
-      "Die Stick-Datenbank konnte nicht zurückgesetzt werden. Bitte den Stick in rekordbox neu exportieren oder die Sicherung in SETBUILDER-Backup kopieren.",
+      "Die Stick-Datenbank konnte nicht zurückgesetzt werden. Tippe „Sicherung zurück“ (SETBUILDER-Backup), oder exportiere den Stick in rekordbox neu.",
+      { backup: backupName },
     );
   }
-  return name;
+  return backupName;
+}
+
+/** Puts the newest backup back as export.pdb, after checking it is a readable database. */
+export async function restoreLatestBackup(root: DirLike): Promise<string> {
+  const name = await latestBackupName(root);
+  if (!name) {
+    throw stickError(
+      "exports.stickWrite.noBackup",
+      "Auf diesem Stick gibt es noch keine SETBUILDER-Sicherung.",
+    );
+  }
+  return restoreBackup(root, name);
 }
 
 export async function listLibraryAsides(root: DirLike): Promise<string[]> {

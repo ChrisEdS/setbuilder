@@ -13,6 +13,7 @@ import {
   planStickWrite,
   prepareStickForPlayers,
   pruneBackups,
+  restoreBackup,
   restoreLatestBackup,
   deletePlaylistFromStick,
   rewriteSetToStick,
@@ -22,6 +23,7 @@ import {
   type DirLike,
   type FileLike,
 } from "./rekordbox-stick-write.ts";
+import { addPlaylistToPdb, deletePlaylistFromPdb } from "./rekordbox-pdb-write.ts";
 import { fixture } from "./testing/pdb-fixture.ts";
 
 // ---- an in-memory file system that behaves like the File System Access API --------------------
@@ -367,8 +369,9 @@ test("a write that fails leaves the original database in place", async () => {
     },
   });
   const before = db.data.slice();
-  await assert.rejects(writeSetToStick(root, tracks, "X"), /disk full/);
+  await assert.rejects(writeSetToStick(root, tracks, "X"), /disk full|wiederhergestellt/);
   assert.deepEqual(db.data, before);
+  assert.ok(root.dirs.get(BACKUP_DIR)?.files.size);
 });
 
 test("a database that fails the check after writing is rolled back", async () => {
@@ -459,15 +462,21 @@ test("an English alternatives label does not create a second playlist", async ()
 
 test("keeps only the newest backups", async () => {
   const { root } = stick();
-  await writeSetToStick(root, tracks, "One", new Date(2026, 9, 14, 3, 1, 0));
-  await writeSetToStick(root, tracks, "Two", new Date(2026, 9, 14, 3, 2, 0));
-  await writeSetToStick(root, tracks, "Three", new Date(2026, 9, 14, 3, 3, 0));
-  await writeSetToStick(root, tracks, "Four", new Date(2026, 9, 14, 3, 4, 0));
+  for (let i = 1; i <= BACKUP_KEEP + 1; i += 1) {
+    await writeSetToStick(
+      root,
+      tracks,
+      `Set ${i}`,
+      new Date(2026, 9, 14, 3, i, 0),
+    );
+  }
   const names: string[] = [];
   for await (const name of root.dirs.get(BACKUP_DIR)?.keys() ?? []) names.push(name);
   names.sort();
   assert.equal(names.length, BACKUP_KEEP);
-  assert.ok(names.includes("export-20261014-030400.pdb"));
+  const newest = `export-20261014-03${String(BACKUP_KEEP + 1).padStart(2, "0")}00.pdb`;
+  assert.ok(names.includes(newest));
+  // Oldest of the BACKUP_KEEP+1 writes must be gone.
   assert.equal(names.includes("export-20261014-030100.pdb"), false);
   assert.deepEqual(await pruneBackups(root, 1), names.slice(0, -1));
 });
@@ -631,6 +640,115 @@ test("a playlist delete that fails the check restores export.pdb and keeps expor
   assert.deepEqual(db.data, before);
   assert.equal(commits, 2);
   assert.deepEqual([...(rekordbox.files.get("exportLibrary.db")?.data ?? [])], [5, 5, 5]);
+  const backups = [...(root.dirs.get(BACKUP_DIR)?.files.keys() ?? [])];
+  assert.equal(backups.length, 1);
+  assert.ok(backups[0]?.startsWith("export-"));
+});
+
+test("deleting a middle playlist leaves long neighbour names byte-stable", () => {
+  let buffer = fixture();
+  const left = "SETBUILDER - Chris le Beat - Vino Session Alternatives";
+  const mid = "SETBUILDER - Chris le Beat - Stellwerk";
+  const right = "SETBUILDER - Chris le Beat - Wohnzimmer Session (test) Alternativen";
+  buffer = addPlaylistToPdb(buffer, { name: left, trackIds: [7] }).buffer;
+  buffer = addPlaylistToPdb(buffer, { name: mid, trackIds: [8] }).buffer;
+  buffer = addPlaylistToPdb(buffer, { name: right, trackIds: [7, 8] }).buffer;
+  const before = parseRekordboxPdb(buffer.slice(0));
+  const midId = before.playlists.find((item) => item.name === mid)?.id;
+  assert.ok(midId);
+  const result = deletePlaylistFromPdb(buffer, { playlistId: midId, kind: "playlist" });
+  const after = parseRekordboxPdb(result.buffer.slice(0));
+  assert.equal(after.playlists.find((item) => item.name === left)?.name, left);
+  assert.equal(after.playlists.find((item) => item.name === right)?.name, right);
+  assert.ok(!after.playlists.some((item) => item.name === mid));
+  assert.deepEqual(
+    after.playlists.find((item) => item.name === left)?.trackIds,
+    before.playlists.find((item) => item.name === left)?.trackIds,
+  );
+  assert.deepEqual(
+    after.playlists.find((item) => item.name === right)?.trackIds,
+    before.playlists.find((item) => item.name === right)?.trackIds,
+  );
+});
+
+test("a truncating live writable is rolled back from RAM and keeps the backup", async () => {
+  const behaviour: Behaviour = {};
+  const { root, db, rekordbox } = stick(behaviour);
+  const before = db.data.slice();
+  let openedLive = 0;
+  const live = rekordbox.files.get("export.pdb")!;
+  const originalCreate = live.createWritable.bind(live);
+  live.createWritable = async () => {
+    openedLive += 1;
+    if (openedLive === 1) {
+      // Browser FSA truncates on open; abort/fail would leave an empty live file.
+      live.data = new Uint8Array(0);
+      throw new Error("write aborted after truncate");
+    }
+    return originalCreate();
+  };
+  await assert.rejects(deletePlaylistFromStick(root, 3, "playlist", new Date(2026, 10, 15, 1, 2, 3)), /wiederhergestellt|aborted/);
+  assert.deepEqual(db.data, before);
+  const backup = root.dirs.get(BACKUP_DIR)?.files.get("export-20261115-010203.pdb");
+  assert.ok(backup);
+  assert.deepEqual(backup.data, before);
+  assert.equal(rekordbox.files.has("export.pdb.setbuilder-new"), false);
+});
+
+test("when RAM restore fails the verified backup file is put back", async () => {
+  let liveWrites = 0;
+  const { root, db } = stick({
+    onCommit: (name, data) => {
+      if (name !== "export.pdb") return data;
+      liveWrites += 1;
+      if (liveWrites === 1) {
+        const broken = data.slice();
+        broken[0] ^= 0xff;
+        return broken;
+      }
+      if (liveWrites === 2) throw new Error("ram restore failed");
+      return data;
+    },
+  });
+  const before = db.data.slice();
+  await assert.rejects(deletePlaylistFromStick(root, 3, "playlist", new Date(2026, 10, 15, 2, 0, 0)), /wiederhergestellt/);
+  assert.deepEqual(db.data, before);
+  assert.ok(liveWrites >= 3);
+  assert.ok(root.dirs.get(BACKUP_DIR)?.files.has("export-20261115-020000.pdb"));
+});
+
+test("when both restores fail the backup stays and nothing is pruned", async () => {
+  const { root, db } = stick({
+    onCommit: (name, data) => {
+      if (name !== "export.pdb") return data;
+      const broken = data.slice();
+      broken[0] ^= 0xff;
+      return broken;
+    },
+  });
+  await assert.rejects(
+    deletePlaylistFromStick(root, 3, "playlist", new Date(2026, 10, 15, 3, 0, 0)),
+    (error: unknown) =>
+      error instanceof Error &&
+      /SETBUILDER-Backup|Sicherung zurück|restoreFailed|zurückgesetzt/i.test(error.message),
+  );
+  const backup = root.dirs.get(BACKUP_DIR)?.files.get("export-20261115-030000.pdb");
+  assert.ok(backup);
+  assert.ok(parseRekordboxPdb(backup.data.slice().buffer as ArrayBuffer).playlists.some((item) => item.name === "Freitag"));
+  assert.equal([...(root.dirs.get(BACKUP_DIR)?.files.keys() ?? [])].length, 1);
+});
+
+test("restoreBackup puts a named backup back over a corrupt live database", async () => {
+  const { root, db } = stick();
+  const original = db.data.slice();
+  await writeSetToStick(root, tracks, "Safe", new Date(2026, 9, 13, 12, 0, 0));
+  const name = await latestBackupName(root);
+  assert.equal(name, "export-20261013-120000.pdb");
+  db.data = new Uint8Array([1, 2, 3, 4]);
+  const restored = await restoreBackup(root, name!);
+  assert.equal(restored, name);
+  assert.deepEqual(db.data, original);
+  assert.ok(parseRekordboxPdb(db.data.slice().buffer as ArrayBuffer).playlists.some((item) => item.name === "Freitag"));
 });
 
 test("prepareStickForPlayers leaves exportLibrary.db on the stick", async () => {
