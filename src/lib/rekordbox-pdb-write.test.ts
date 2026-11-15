@@ -240,6 +240,58 @@ test("deletes one playlist and leaves tracks, history and other rows", () => {
   );
 });
 
+test("delete compacts neighbouring SETBUILDER names so a later write cannot garble them", () => {
+  let buffer = fixture();
+  const names = [
+    "Chris le Beat - Vino",
+    "SETBUILDER - Chris le Beat - Stellwerk - Jules Birthday Alternatives",
+    "SETBUILDER - Chris le Beat - Wohnzimmer Session (test) Alternativen",
+  ];
+  for (const name of names) {
+    buffer = addPlaylistToPdb(buffer, { name, trackIds: [7, 8] }).buffer;
+  }
+  const before = parseRekordboxPdb(buffer.slice(0));
+  const middle = before.playlists.find((item) => item.name.includes("Birthday"));
+  assert.ok(middle);
+
+  const deleted = deletePlaylistFromPdb(buffer, { playlistId: middle.id, kind: "playlist" });
+  const afterDelete = parseRekordboxPdb(deleted.buffer.slice(0));
+  assert.equal(
+    afterDelete.playlists.find((item) => item.name === "Chris le Beat - Vino")?.name,
+    "Chris le Beat - Vino",
+  );
+  assert.equal(
+    afterDelete.playlists.find((item) => item.name.includes("Wohnzimmer"))?.name,
+    "SETBUILDER - Chris le Beat - Wohnzimmer Session (test) Alternativen",
+  );
+  assert.ok(!afterDelete.playlists.some((item) => /SETyhris|1is le Beat|^BUI$|^Playlist$/.test(item.name)));
+
+  const again = addPlaylistToPdb(deleted.buffer, {
+    name: "SETBUILDER - Chris le Beat - Stellwerk - Jules Birthday Alternatives",
+    trackIds: [8],
+  });
+  const afterAdd = parseRekordboxPdb(again.buffer.slice(0));
+  const surviving = afterAdd.playlists.map((item) => item.name);
+  assert.ok(surviving.includes("Chris le Beat - Vino"));
+  assert.ok(
+    surviving.includes("SETBUILDER - Chris le Beat - Wohnzimmer Session (test) Alternativen"),
+  );
+  assert.ok(
+    surviving.includes("SETBUILDER - Chris le Beat - Stellwerk - Jules Birthday Alternatives"),
+  );
+  assert.ok(!surviving.some((name) => /SETyhris|1is le Beat|^BUI$/.test(name)));
+  assert.equal(surviving.filter((name) => name === "Playlist").length, 0);
+
+  // Compacted tree page: every slot is present (no dead name fragments left in the heap).
+  const view = new DataView(deleted.buffer);
+  const start = TREE_PAGE * PAGE;
+  const packed =
+    view.getUint8(start + 24) | (view.getUint8(start + 25) << 8) | (view.getUint8(start + 26) << 16);
+  const slots = packed & 0x1fff;
+  const rows = (packed >> 13) & 0x7ff;
+  assert.equal(slots, rows);
+});
+
 test("deletes a history list without removing playlists", () => {
   const source = fixture();
   const before = parseRekordboxPdb(source.slice(0));

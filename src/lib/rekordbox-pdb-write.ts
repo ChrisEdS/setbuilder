@@ -2,13 +2,15 @@
  * Adds ONE playlist to a rekordbox stick database (`PIONEER/rekordbox/export.pdb`).
  *
  * Safety model, because a broken stick database makes the stick unreadable:
- *  - No existing row is moved or changed. New rows go into free space of the two playlist
- *    tables (tree = table 7, entries = table 8). When a table is full, ONE new page is taken
- *    the way rekordbox does it: the table's reserved "empty candidate" page.
+ *  - New rows go into free space of the two playlist tables (tree = table 7, entries = table 8).
+ *    When a table is full, ONE new page is taken the way rekordbox does it: the table's
+ *    reserved "empty candidate" page.
+ *  - Deletes clear present bits, then compact each touched page so deleted DeviceSQL name
+ *    bytes cannot linger and splice into a later playlist write (garbled "SETyhris" / "BUI").
  *  - A page is only written to when its header agrees with its content (row counts, used and
  *    free bytes, row ends). Anything unexpected makes the writer refuse instead of guess.
  *  - All work happens on a copy. The input is never modified, errors leave nothing behind.
- *  - `verifyPdbUpdate` compares result and original byte for byte and re-reads the result.
+ *  - `verifyPdbUpdate` / `verifyPdbDeletion` re-check the result before the caller writes.
  *  - The caller keeps a backup and restores it when verification fails (see rekordbox-stick-write).
  *
  * Layout (crate-digger rekordbox_pdb, checked against real exports): 0x28 byte page header,
@@ -443,6 +445,60 @@ class Work {
   }
 
   /**
+   * Packs only the rows that are still present, from the start of the heap.
+   * Soft-delete alone leaves dead name bytes in place; a later append can then
+   * grow into a stale `used` gap and splice fragments of "SETBUILDER" / "Chris"
+   * into neighbouring playlist names. Compacting after delete removes those
+   * leftovers and restores free space the way rekordbox expects.
+   */
+  compactPage(page: PageState, type: number) {
+    const { view, bytes, pageLen } = this;
+    const start = page.start;
+    const kept: Uint8Array[] = [];
+    const present: Array<{ offset: number }> = [];
+    for (let slot = 0; slot < page.slots; slot++) {
+      const group = Math.floor(slot / 16);
+      const bit = 1 << (slot % 16);
+      if ((view.getUint16(presentAddress(pageLen, start, group), true) & bit) === 0) continue;
+      present.push({
+        offset: view.getUint16(slotAddress(pageLen, start, slot), true),
+      });
+    }
+    present.sort((a, b) => a.offset - b.offset);
+    for (let i = 0; i < present.length; i++) {
+      const offset = present[i].offset;
+      const unpadded = rowPayloadBytes(view, start, HEAP + offset, pageLen, type);
+      if (unpadded < 1 || offset + unpadded > page.used) throw unsupported();
+      const next = i + 1 < present.length ? present[i + 1].offset : page.used;
+      if (next < offset + unpadded) throw unsupported();
+      const copy = bytes.subarray(start + HEAP + offset, start + HEAP + offset + unpadded);
+      kept.push(padded(copy));
+    }
+
+    bytes.fill(0, start + HEAP, start + pageLen);
+    view.setUint16(start + 0x1c, pageLen - HEAP, true);
+    view.setUint16(start + 0x1e, 0, true);
+    view.setUint8(start + 24, 0);
+    view.setUint8(start + 25, 0);
+    view.setUint8(start + 26, 0);
+    view.setUint16(start + 0x22, 0x1fff, true);
+    page.used = 0;
+    page.free = pageLen - HEAP;
+    page.slots = 0;
+    page.rows = 0;
+    for (const row of kept) this.insert(page, row);
+    if (!readPage(view, pageLen, page.index, type)) throw unsupported();
+  }
+
+  /** Exact ArrayBuffer for this work copy — never a larger pooled backing store. */
+  toBuffer(): ArrayBuffer {
+    return this.bytes.buffer.slice(
+      this.bytes.byteOffset,
+      this.bytes.byteOffset + this.bytes.byteLength,
+    ) as ArrayBuffer;
+  }
+
+  /**
    * Takes the table's reserved empty page, the way rekordbox grows a table:
    * the last page already points to it; it becomes the new last page and a fresh
    * page number is reserved as the next empty candidate.
@@ -582,7 +638,7 @@ export function addPlaylistToPdb(source: ArrayBuffer, input: AddPlaylistInput): 
 
   const changedPages = [...work.changed].sort((a, b) => a - b);
   const result: AddPlaylistResult = {
-    buffer: work.bytes.buffer as ArrayBuffer,
+    buffer: work.toBuffer(),
     playlistId,
     name,
     changedPages,
@@ -635,7 +691,9 @@ export function replacePlaylistInPdb(
     .filter((page): page is PageState => page !== null);
   if (!states.length) throw unsupported();
 
+  const touched: PageState[] = [];
   for (const page of states) {
+    let hit = false;
     for (let slot = 0; slot < page.slots; slot++) {
       const group = Math.floor(slot / 16);
       const bit = 1 << (slot % 16);
@@ -644,9 +702,14 @@ export function replacePlaylistInPdb(
       }
       const offset = work.view.getUint16(slotAddress(pageLen, page.start, slot), true);
       const row = page.start + HEAP + offset;
-      if (work.view.getUint32(row + 8, true) === input.playlistId) work.markAbsent(page, slot);
+      if (work.view.getUint32(row + 8, true) === input.playlistId) {
+        work.markAbsent(page, slot);
+        hit = true;
+      }
     }
+    if (hit) touched.push(page);
   }
+  for (const page of touched) work.compactPage(page, ENTRIES);
 
   const rows = input.trackIds.map((trackId, index) => {
     const row = new Uint8Array(12);
@@ -660,7 +723,7 @@ export function replacePlaylistInPdb(
   place(work, entries, writableStates, rows);
   work.view.setUint32(0x14, work.sequence, true);
   const result: ReplacePlaylistResult = {
-    buffer: work.bytes.buffer as ArrayBuffer,
+    buffer: work.toBuffer(),
     playlistId: input.playlistId,
     name: playlist.name,
     changedPages: [...work.changed].sort((a, b) => a - b),
@@ -733,9 +796,10 @@ function slotsMatching(work: Work, page: PageState, type: number, input: DeleteP
 }
 
 /**
- * Hides one playlist or history list by clearing its present bits.
- * Rows stay where they are. Tracks, audio paths, and every other playlist stay.
- * The input buffer is not modified.
+ * Removes one playlist or history list from the database.
+ * Present bits are cleared, then each touched page is compacted so deleted
+ * name bytes cannot linger in the heap and corrupt a later write.
+ * Tracks, audio paths, and every other playlist stay. The input is not modified.
  */
 export function deletePlaylistFromPdb(
   source: ArrayBuffer,
@@ -801,9 +865,23 @@ export function deletePlaylistFromPdb(
   for (const drop of drops) {
     for (const slot of drop.slots) work.markAbsent(drop.state, slot);
   }
+  const compacted = new Map<number, number>();
+  for (const drop of drops) {
+    if (compacted.has(drop.state.index)) continue;
+    const type =
+      drop.role === "owner"
+        ? input.kind === "playlist"
+          ? TREE
+          : HISTORY
+        : input.kind === "playlist"
+          ? ENTRIES
+          : HISTORY_ENTRIES;
+    work.compactPage(drop.state, type);
+    compacted.set(drop.state.index, type);
+  }
   work.view.setUint32(0x14, work.sequence, true);
   const result: DeletePlaylistResult = {
-    buffer: work.bytes.buffer as ArrayBuffer,
+    buffer: work.toBuffer(),
     playlistId: target.id,
     name: target.name,
     kind: target.kind,
@@ -914,16 +992,6 @@ export function verifyPdbReplacement(
   auditPdbPlaylistPages(after, changedPageIndexes(new Uint8Array(before), new Uint8Array(after), headerAfter.pageLen));
 }
 
-function bitCount(value: number): number {
-  let count = 0;
-  let bits = value & 0xffff;
-  while (bits) {
-    count += bits & 1;
-    bits >>= 1;
-  }
-  return count;
-}
-
 export type ExpectedDeletion = {
   playlistId: number;
   kind: "playlist" | "history";
@@ -932,8 +1000,9 @@ export type ExpectedDeletion = {
 };
 
 /**
- * Throws unless `after` is `before` with one playlist or history list hidden.
- * Tracks and every other playlist stay. The file does not shrink.
+ * Throws unless `after` is `before` with one playlist or history list removed
+ * and its pages compacted. Tracks and every other playlist stay. The file does
+ * not shrink.
  */
 export function verifyPdbDeletion(before: ArrayBuffer, after: ArrayBuffer, expected: ExpectedDeletion): void {
   if (before.byteLength !== after.byteLength) throw failed("size");
@@ -958,7 +1027,7 @@ export function verifyPdbDeletion(before: ArrayBuffer, after: ArrayBuffer, expec
   ) {
     throw failed("changed pages");
   }
-  for (const page of expected.changedPages) verifyDeletedPage(a, b, pageLen, page);
+  for (const page of expected.changedPages) verifyCompactedDeletePage(a, b, pageLen, page);
 
   const libBefore = parseRekordboxPdb(before.slice(0));
   const libAfter = parseRekordboxPdb(after.slice(0));
@@ -977,7 +1046,8 @@ export function verifyPdbDeletion(before: ArrayBuffer, after: ArrayBuffer, expec
   }
 }
 
-function verifyDeletedPage(a: Uint8Array, b: Uint8Array, pageLen: number, page: number) {
+/** After compact-on-delete: fewer rows, packed heap, page still self-consistent. */
+function verifyCompactedDeletePage(a: Uint8Array, b: Uint8Array, pageLen: number, page: number) {
   const start = page * pageLen;
   const viewA = new DataView(a.buffer, a.byteOffset, a.byteLength);
   const viewB = new DataView(b.buffer, b.byteOffset, b.byteLength);
@@ -989,36 +1059,14 @@ function verifyDeletedPage(a: Uint8Array, b: Uint8Array, pageLen: number, page: 
     view.getUint8(start + 24) | (view.getUint8(start + 25) << 8) | (view.getUint8(start + 26) << 16);
   const slotsOf = (view: DataView) => packed(view) & 0x1fff;
   const rowsOf = (view: DataView) => (packed(view) >> 13) & 0x7ff;
-  if (slotsOf(viewA) !== slotsOf(viewB)) throw failed(`page ${page} slots`);
   if (rowsOf(viewB) >= rowsOf(viewA)) throw failed(`page ${page} rows`);
-  if (viewA.getUint16(start + 0x1c, true) !== viewB.getUint16(start + 0x1c, true)) {
-    throw failed(`page ${page} free`);
-  }
-  if (viewA.getUint16(start + 0x1e, true) !== viewB.getUint16(start + 0x1e, true)) {
+  if (slotsOf(viewB) !== rowsOf(viewB)) throw failed(`page ${page} slots`);
+  if (viewB.getUint16(start + 0x1e, true) > viewA.getUint16(start + 0x1e, true)) {
     throw failed(`page ${page} heap`);
   }
-  const used = viewA.getUint16(start + 0x1e, true);
-  for (let i = HEAP; i < HEAP + used; i++) {
-    if (a[start + i] !== b[start + i]) throw failed(`page ${page} heap`);
+  if (viewB.getUint16(start + 0x1c, true) < viewA.getUint16(start + 0x1c, true)) {
+    throw failed(`page ${page} free`);
   }
-  const slots = slotsOf(viewA);
-  for (let slot = 0; slot < slots; slot++) {
-    const at = slotAddress(pageLen, start, slot);
-    if (viewA.getUint16(at, true) !== viewB.getUint16(at, true)) throw failed(`page ${page} index`);
-  }
-  let cleared = 0;
-  for (let group = 0; group < groupsFor(slots); group++) {
-    const at = presentAddress(pageLen, start, group);
-    const oldPresent = viewA.getUint16(at, true);
-    const newPresent = viewB.getUint16(at, true);
-    if ((newPresent & oldPresent) !== newPresent) throw failed(`page ${page} present`);
-    const oldTxn = viewA.getUint16(at + 2, true);
-    const newTxn = viewB.getUint16(at + 2, true);
-    if ((newTxn & oldTxn) !== oldTxn) throw failed(`page ${page} transaction`);
-    cleared += bitCount(oldPresent & ~newPresent);
-  }
-  if (cleared < 1) throw failed(`page ${page} unchanged`);
-  if (rowsOf(viewA) - rowsOf(viewB) !== cleared) throw failed(`page ${page} row count`);
   const type = viewB.getUint32(start + 8, true);
   if (!readPage(viewB, pageLen, page, type)) throw failed(`page ${page} consistency`);
 }
