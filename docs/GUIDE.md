@@ -27,8 +27,8 @@ The desktop app (port **4317**) is what you normally install. If you run from th
 3. If the stick is recognized, SETBUILDER loads it without a folder dialog. If a dialog appears, choose the stick (the rekordbox export), not a folder that only holds music files.
 4. Wait until the library is ready. You can filter by stars, color, genre, and comment. Playlist names open as a list under the search field.
 5. Watch the status strip on the stick panel — it tells you whether the stick is ready for your player.
-   - **Amber** — the player library on the stick is missing or older than the playlists. Tap **Prepare for player** to restore it from a backup SETBUILDER keeps. Nothing on the stick is deleted.
-   - **Green** — the stick database is readable. Newer decks sometimes still show an older copy; the strip and **Details** explain what to do.
+   - **Amber** — playlists are ready for CDJ-3000 and XDJ-XZ. Newer players (CDJ-3000X, XDJ-AZ, OPUS-QUAD) may still show an older second library. **Open rekordbox** only launches the app; eject the stick **there**, then **Check again**. If the library is missing and a backup is in SETBUILDER-Backup: **Prepare for player**. Nothing is deleted.
+   - **Green** — the stick database is readable, including for newer players.
 6. To switch sticks, use **Change stick**.
 
 Under **Build set**, **Start with a playlist** lists the playlists on the stick. Titles from the stick can play in the player once the stick is loaded.

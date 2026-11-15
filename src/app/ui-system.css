@@ -35,7 +35,8 @@
   --ui-touch-target: 2.75rem;
   --ui-dock-safe: 0.75rem;
   --ui-sticky-toolbar-z: 55;
-  --ui-sticky-status-z: 70;
+  /* Above playlist host / energy menus (120); under the player (130). */
+  --ui-sticky-status-z: 125;
 }
 
 /* Page rhythm */
@@ -5924,6 +5925,29 @@ dialog.stick-dialog.playlist-delete-dialog .modal-status,
 dialog.stick-dialog.playlist-delete-dialog .modal-next,
 dialog.stick-dialog.playlist-delete-dialog .modal-info {
   margin: 0 0 0.45rem;
+}
+
+dialog.stick-dialog.playlist-delete-dialog .playlist-delete-busy {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+}
+
+dialog.stick-dialog.playlist-delete-dialog .playlist-delete-spinner {
+  flex: none;
+  width: 0.95rem;
+  height: 0.95rem;
+  margin-top: 0.2rem;
+  border: 2px solid color-mix(in srgb, var(--ui-muted, #b3b3b3) 40%, transparent);
+  border-top-color: var(--ui-focus, #1ed760);
+  border-radius: 50%;
+  animation: playlist-delete-spin 0.7s linear infinite;
+}
+
+@keyframes playlist-delete-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Energy 1–10 meter (openkey TrackRow) and determinate progress. */
