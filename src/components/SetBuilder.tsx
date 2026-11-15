@@ -3351,8 +3351,13 @@ export function SetBuilder() {
   ) {
     const stick = await stickForEnergy();
     if (stick === undefined) return;
-    const writeRoot = stick ? await ensureStickWriteAccess(stick) : null;
-    const denied = Boolean(stick) && !writeRoot;
+    // Only "Fehlende messen" / measure-missing writes levels into MP3s
+    // (same writeEnergy path as "In MP3 schreiben"). "Alle neu berechnen"
+    // stays measure-only so a full remeasure does not rewrite every file.
+    const writeMissing = mode === "missing";
+    const writeRoot =
+      writeMissing && stick ? await ensureStickWriteAccess(stick) : null;
+    const denied = writeMissing && Boolean(stick) && !writeRoot;
     if (denied) setStatus(t("builder.energy.denied"));
     setAnalyzingEnergy(true);
     await queueHeavy(

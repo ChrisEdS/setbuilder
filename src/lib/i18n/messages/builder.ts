@@ -354,7 +354,7 @@ const de = {
     "{count} Dateien, ohne Audio zu dekodieren. Der Tag ersetzt den Level in Playlist oder Set.",
   "builder.energy.menu.missing": "Fehlende messen",
   "builder.energy.menu.missingHint":
-    "{count} Tracks ohne Energie im Hintergrund messen. Die Datei wird nicht geschrieben.",
+    "{count} Tracks ohne Energie im Hintergrund messen. Das Level wird in die Datei geschrieben, wenn der Stick schreibbar ist.",
   "builder.energy.menu.all": "Alle neu berechnen",
   "builder.energy.menu.allHint":
     "{count} Dateien im Hintergrund neu messen. Die Datei bleibt unverändert.",
@@ -1226,7 +1226,7 @@ const en: Record<keyof typeof de, string> = {
     "{count} files, without decoding audio. The tag replaces the level in the playlist or set.",
   "builder.energy.menu.missing": "Measure missing",
   "builder.energy.menu.missingHint":
-    "Measure {count} tracks without energy in the background. The file is not written.",
+    "Measure {count} tracks without energy in the background. The level is written into the file when the stick is writable.",
   "builder.energy.menu.all": "Recalculate all",
   "builder.energy.menu.allHint":
     "Measure {count} files again in the background. The file stays unchanged.",
