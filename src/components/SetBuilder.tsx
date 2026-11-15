@@ -133,6 +133,7 @@ import { ActionIcon } from "@/components/ActionIcon";
 import { SourceBadge } from "@/components/SourceBadge";
 import { TrackArt } from "@/components/TrackArt";
 import { bestPhaseFor } from "@/lib/plan-b";
+import { EnergyScanQueue } from "@/components/EnergyScanQueue";
 import {
   SetEnergyMenu,
   SetMatchLinksButton,
@@ -4050,10 +4051,11 @@ export function SetBuilder() {
         </p>
       ) : null}
 
-      {displayedStatus ? (
+      {displayedStatus || workQueue.energyPlaylistJobs.length ? (
         <div className="banner status" role="status" aria-live="polite" aria-busy={statusHeld || energyBusy}>
-          <p>{displayedStatus}</p>
-          {energyScan ? (
+          {displayedStatus ? <p>{displayedStatus}</p> : null}
+          <EnergyScanQueue jobs={workQueue.energyPlaylistJobs} scan={energyScan} />
+          {energyScan && !workQueue.energyPlaylistJobs.length ? (
             <EnergyProgressBar
               done={energyScan.done}
               total={energyScan.total}
@@ -4210,6 +4212,7 @@ export function SetBuilder() {
                 pending={deleteBusy}
                 energyScan={energyScan}
                 energyBusy={energyBusy}
+                energyJobs={workQueue.energyPlaylistJobs}
                 stickReady={stickReady}
                 onTake={requestStickSet}
                 onDelete={requestDeleteStickPlaylist}

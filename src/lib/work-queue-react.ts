@@ -3,15 +3,21 @@
 import { useMemo, useSyncExternalStore } from "react";
 import type { Translate } from "@/lib/i18n";
 import {
+  energyJobForPlaylist,
   getWorkQueueSnapshot,
+  playlistIdFromEnergyJobKey,
   subscribeWorkQueue,
   type WorkJobSnapshot,
   type WorkQueueSnapshot,
 } from "@/lib/work-queue";
 
+export { energyJobForPlaylist, playlistIdFromEnergyJobKey };
+
 export type LiveWorkQueue = {
   snapshot: WorkQueueSnapshot;
   jobs: readonly WorkJobSnapshot[];
+  /** Energy jobs whose key encodes a stick playlist (`playlist:…`). */
+  energyPlaylistJobs: readonly WorkJobSnapshot[];
   energyPendingIds: ReadonlySet<string>;
   energyBusy: boolean;
 };
@@ -20,8 +26,12 @@ export function deriveLiveWorkQueue(snapshot: WorkQueueSnapshot): Omit<LiveWorkQ
   const jobs = snapshot.jobs.filter(
     (job) => job.status === "queued" || job.status === "running",
   );
+  const energyPlaylistJobs = jobs.filter(
+    (job) => job.operation.startsWith("energy") && playlistIdFromEnergyJobKey(job.key) != null,
+  );
   return {
     jobs,
+    energyPlaylistJobs,
     energyPendingIds: new Set(
       jobs.filter((job) => job.operation === "energy-track").map((job) => job.key),
     ),

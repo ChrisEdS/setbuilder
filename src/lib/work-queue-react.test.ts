@@ -40,6 +40,7 @@ test("derives live and energy queue state without completed history", () => {
   assert.deepEqual(view.jobs.map((job) => job.id), ["running", "queued"]);
   assert.deepEqual([...view.energyPendingIds], ["track-a"]);
   assert.equal(view.energyBusy, true);
+  assert.deepEqual(view.energyPlaylistJobs, []);
 });
 
 test("queue status prioritizes the next waiting job", () => {

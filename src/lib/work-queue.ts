@@ -2,6 +2,9 @@
  * One lane for heavy work (library read, energy measure, tag scan).
  * A second call waits. The UI stays clickable because nothing overlaps
  * and the runner yields between jobs.
+ *
+ * Playlist energy jobs set `target` to the playlist name and a `playlist:…`
+ * key so the existing snapshot can list running + waiting scans.
  */
 
 export type WorkJobStatus =
@@ -30,6 +33,23 @@ export type WorkQueueSnapshot = {
   count: number;
   jobs: readonly WorkJobSnapshot[];
 };
+
+/**
+ * Playlist energy jobs use `playlist:{id}` or `playlist:missing|all:{id}`.
+ * `id` itself is `playlist:123` / `history:4`.
+ */
+export function playlistIdFromEnergyJobKey(key: string): string | null {
+  if (!key.startsWith("playlist:")) return null;
+  const id = key.replace(/^playlist:(?:missing:|all:)?/, "");
+  return id.length > 0 ? id : null;
+}
+
+export function energyJobForPlaylist(
+  jobs: readonly WorkJobSnapshot[],
+  playlistId: string,
+): WorkJobSnapshot | undefined {
+  return jobs.find((job) => playlistIdFromEnergyJobKey(job.key) === playlistId);
+}
 
 type Entry = {
   id: string;

@@ -311,6 +311,11 @@ const de = {
   "builder.tool.energyTip":
     "Liest oder misst Energie aus den Dateien. In MP3 schreiben legt das Level in die Datei.",
   "builder.tool.energyBusy": "Energie…",
+  "builder.work.energyQueue": "Energy-Warteschlange",
+  "builder.work.energyQueueAria": "Playlists, deren Energie gemessen oder geschrieben wird",
+  "builder.work.energyQueueRunning": "Läuft",
+  "builder.work.energyQueueWaiting": "Wartet · Position {position}",
+  "builder.work.energyBusyNamed": "Energie für „{name}“…",
   "builder.energy.noStick":
     "Kein Stick verbunden. Unter „Stick laden & vorbereiten“ den Stick wählen (Chrome / Edge / Desktop).",
   "builder.energy.noFile":
@@ -1172,6 +1177,11 @@ const en: Record<keyof typeof de, string> = {
   "builder.tool.energyTip":
     "Reads or measures energy from the files. Write to MP3 stores the level in the file.",
   "builder.tool.energyBusy": "Energy…",
+  "builder.work.energyQueue": "Energy queue",
+  "builder.work.energyQueueAria": "Playlists whose energy is being measured or written",
+  "builder.work.energyQueueRunning": "Running",
+  "builder.work.energyQueueWaiting": "Waiting · position {position}",
+  "builder.work.energyBusyNamed": "Energy for “{name}”…",
   "builder.energy.noStick":
     "No stick connected. Choose the stick under “Load stick & prepare” (Chrome / Edge / desktop).",
   "builder.energy.noFile":
