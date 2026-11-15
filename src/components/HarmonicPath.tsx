@@ -1,6 +1,11 @@
 "use client";
 
-import { useRef, useState, type CSSProperties } from "react";
+import {
+  useRef,
+  useState,
+  type CSSProperties,
+  type DragEvent,
+} from "react";
 import { ActionIcon } from "@/components/ActionIcon";
 import { Hint, Tip } from "@/components/Hint";
 import { SetSortMenu } from "@/components/SetTakeaway";
@@ -58,6 +63,24 @@ export function HarmonicPath({
   const [overId, setOverId] = useState<string | null>(null);
   const dragIdRef = useRef<string | null>(null);
   const canSort = performance.length >= 2;
+  const tipQuiet = dragId != null;
+
+  function beginReorderDrag(event: DragEvent, trackId: string) {
+    if ((event.target as HTMLElement).closest(".icon-action")) {
+      event.preventDefault();
+      return;
+    }
+    event.dataTransfer.setData("text/plain", trackId);
+    event.dataTransfer.effectAllowed = "move";
+    dragIdRef.current = trackId;
+    requestAnimationFrame(() => setDragId(trackId));
+  }
+
+  function endReorderDrag() {
+    dragIdRef.current = null;
+    setDragId(null);
+    setOverId(null);
+  }
 
   const sortMenu = (
     <SetSortMenu
@@ -219,9 +242,7 @@ export function HarmonicPath({
                     dragIdRef.current ||
                     "";
                   if (from) onReorder(from, track.id);
-                  dragIdRef.current = null;
-                  setDragId(null);
-                  setOverId(null);
+                  endReorderDrag();
                 }}
               >
                 <div
@@ -241,6 +262,9 @@ export function HarmonicPath({
                         }
                       : undefined
                   }
+                  draggable
+                  onDragStart={(event) => beginReorderDrag(event, track.id)}
+                  onDragEnd={endReorderDrag}
                 >
                   <div className="harm-node-top">
                     <span
@@ -262,6 +286,7 @@ export function HarmonicPath({
                     <div className="harm-node-tools">
                       {onPlayTrack ? (
                         <Tip
+                          quiet={tipQuiet}
                           text={
                             playingId === track.id
                               ? t("builder.row.pauseTip")
@@ -292,7 +317,7 @@ export function HarmonicPath({
                           </button>
                         </Tip>
                       ) : null}
-                      <Tip text={t("builder.row.dragTitle")}>
+                      <Tip quiet={tipQuiet} text={t("builder.row.dragTitle")}>
                         <button
                           type="button"
                           className="drag-handle"
@@ -300,18 +325,10 @@ export function HarmonicPath({
                           aria-label={t("builder.row.dragAria", {
                             name: track.name,
                           })}
-                          onDragStart={(event) => {
-                            event.dataTransfer.setData("text/plain", track.id);
-                            event.dataTransfer.effectAllowed = "move";
-                            dragIdRef.current = track.id;
-                            const id = track.id;
-                            requestAnimationFrame(() => setDragId(id));
-                          }}
-                          onDragEnd={() => {
-                            dragIdRef.current = null;
-                            setDragId(null);
-                            setOverId(null);
-                          }}
+                          onDragStart={(event) =>
+                            beginReorderDrag(event, track.id)
+                          }
+                          onDragEnd={endReorderDrag}
                         >
                           <i />
                           <i />
@@ -348,7 +365,9 @@ export function HarmonicPath({
                     ) : null}
                   </div>
                   <span title={`${track.artists.join(", ")} – ${track.name}`}>
-                    <b className="harm-name">{track.name}</b>
+                    <b className="harm-name" title={track.name}>
+                      {track.name}
+                    </b>
                     {track.bpm ? <small>{track.bpm} BPM</small> : null}
                   </span>
                 </div>
