@@ -50,6 +50,8 @@ const de = {
   "exports.stick.notFound": "Kein Rekordbox-Stick erkannt. Den Stick-Ordner wählen oder PIONEER/rekordbox/export.pdb.",
   "exports.stick.denied":
     "Kein Lesezugriff auf diesen Ordner. Im Dialog erlauben oder die Datei export.pdb wählen.",
+  "exports.stick.readBusy":
+    "Der Stick ist kurz belegt. Noch einmal versuchen — zum Lesen und Messen muss rekordbox nicht zu sein.",
   "exports.stick.invalidXml": "Ungültiges XML.",
   "exports.stick.whyLibrary": "Aus der Stick-Bibliothek ins Set gelegt",
   "exports.stick.whyHistory": "Gespielte Reihenfolge aus der Rekordbox-History",
@@ -76,9 +78,9 @@ const de = {
   "exports.stickWrite.asideFailed": "exportLibrary.db konnte nicht beiseitegelegt werden. Die Sicherung liegt in SETBUILDER-Backup.",
   "exports.stickWrite.noAside": "Auf diesem Stick liegt keine beiseitegelegte Player-Library.",
   "exports.stickWrite.libraryBusy":
-    "rekordbox hält die Player-Library noch offen. rekordbox schließen und erneut vorbereiten.",
+    "rekordbox hält die Player-Library noch offen. In rekordbox den Stick auswerfen oder rekordbox schließen, dann erneut vorbereiten.",
   "exports.stickWrite.prepareTimeout":
-    "Vorbereiten hat zu lange gedauert. Stick stecken lassen, rekordbox schließen, erneut versuchen.",
+    "Vorbereiten hat zu lange gedauert. Stick stecken lassen. In rekordbox auswerfen oder rekordbox schließen, dann erneut versuchen.",
   "exports.stickWrite.playlistMissing":
     "Dieser Eintrag steht nicht in der Stick-Datenbank. Es wurde nichts verändert.",
   "exports.stickWrite.playlistAmbiguous":
@@ -129,6 +131,8 @@ const en: Record<keyof typeof de, string> = {
   "exports.stick.notFound": "No rekordbox stick found. Choose the stick folder or PIONEER/rekordbox/export.pdb.",
   "exports.stick.denied":
     "No read access to this folder. Allow it in the dialog, or choose the export.pdb file.",
+  "exports.stick.readBusy":
+    "The stick is briefly busy. Try again — you do not need to quit rekordbox to read or measure.",
   "exports.stick.invalidXml": "Invalid XML.",
   "exports.stick.whyLibrary": "Added to the set from the stick library",
   "exports.stick.whyHistory": "Played order from the rekordbox history",
@@ -154,9 +158,9 @@ const en: Record<keyof typeof de, string> = {
   "exports.stickWrite.asideFailed": "exportLibrary.db could not be set aside. The backup is in SETBUILDER-Backup.",
   "exports.stickWrite.noAside": "There is no set-aside player library on this stick.",
   "exports.stickWrite.libraryBusy":
-    "rekordbox still has the player library open. Quit rekordbox, then prepare again.",
+    "rekordbox still has the player library open. Eject the stick in rekordbox or quit rekordbox, then prepare again.",
   "exports.stickWrite.prepareTimeout":
-    "Preparing took too long. Leave the stick in, quit rekordbox, then try again.",
+    "Preparing took too long. Leave the stick in. Eject it in rekordbox or quit rekordbox, then try again.",
   "exports.stickWrite.playlistMissing":
     "This entry is not in the stick database. Nothing was changed.",
   "exports.stickWrite.playlistAmbiguous":

@@ -30,6 +30,7 @@ import { Hint } from "@/components/Hint";
 import { SetEnergyMenu } from "@/components/SetTakeaway";
 import { StickHealthCard } from "@/components/StickHealthCard";
 import { inspectStick, inspectStickFiles, pdbSummaryOf, type StickHealth } from "@/lib/stick-health";
+import { isStickReadBusy } from "@/lib/stick-busy";
 import { enqueueWork } from "@/lib/work-queue";
 import {
   prepareStickForPlayers,
@@ -45,7 +46,7 @@ import {
   saveVolumeName,
   type PioneerVolumeInfo,
 } from "@/lib/stick-volume-client";
-import { formatMacBytes, stickVolumeName } from "@/lib/stick-volumes";
+import { formatMacBytes, stickVolumeFlag, stickVolumeName } from "@/lib/stick-volumes";
 import {
   hasKnownEnergy,
   stickEnergyCoverage,
@@ -320,6 +321,7 @@ export function RekordboxStick({
 }: Props) {
   const { t, locale } = useI18n();
   const [phase, setPhase] = useState<LoadPhase>("idle");
+  const [loadingName, setLoadingName] = useState<string | null>(null);
   const [label, setLabel] = useState<string | null>(null);
   const [volumes, setVolumes] = useState<PioneerVolumeInfo[] | null>(null);
   const [error, setError] = useState<StickError | null>(null);
@@ -373,8 +375,8 @@ export function RekordboxStick({
         return;
       }
       setHealth(null);
-    } catch {
-      setHealth(null);
+    } catch (error) {
+      if (!isStickReadBusy(error)) setHealth(null);
     } finally {
       setCheckingHealth(false);
     }
@@ -400,8 +402,8 @@ export function RekordboxStick({
     if (!read.sets.length) setError({ kind: "noSets" });
     try {
       setHealth(await inspectStick(handle, pdbSummaryOf(read.library.length, read.sets)));
-    } catch {
-      setHealth(null);
+    } catch (error) {
+      if (!isStickReadBusy(error)) setHealth(null);
     }
   }
 
@@ -500,6 +502,7 @@ export function RekordboxStick({
 
   function cancelLoad() {
     beginLoad();
+    setLoadingName(null);
     setPhase("idle");
   }
 
@@ -516,6 +519,7 @@ export function RekordboxStick({
     setRememberedStick(true);
     if (!(await stickPermission(handle, "read", true))) return false;
     const token = beginLoad();
+    setLoadingName(handle.name || null);
     setPhase("reading");
     setError(null);
     try {
@@ -526,7 +530,10 @@ export function RekordboxStick({
       setError(isPickerBlocked(caught) ? { kind: "blocked" } : { kind: "read", error: caught });
       return false;
     } finally {
-      if (stillCurrent(token)) setPhase("idle");
+      if (stillCurrent(token)) {
+        setLoadingName(null);
+        setPhase("idle");
+      }
     }
   }
 
@@ -559,8 +566,8 @@ export function RekordboxStick({
             pdbSummaryOf(read.library.length, read.sets),
           );
           if (stillCurrent(token)) setHealth(next);
-        } catch {
-          if (stillCurrent(token)) setHealth(null);
+        } catch (error) {
+          if (stillCurrent(token) && !isStickReadBusy(error)) setHealth(null);
         }
       }, {
         operation: "stick-read",
@@ -581,6 +588,7 @@ export function RekordboxStick({
   async function loadVolume(name: string) {
     if (stickVolumeName(healthRoot?.name, label) === name && label && health) return;
     const token = beginLoad();
+    setLoadingName(name);
     setPhase("reading");
     setError(null);
     try {
@@ -600,7 +608,10 @@ export function RekordboxStick({
       setLabel(null);
       setError(isPickerBlocked(caught) ? { kind: "blocked" } : { kind: "read", error: caught });
     } finally {
-      if (stillCurrent(token)) setPhase("idle");
+      if (stillCurrent(token)) {
+        setLoadingName(null);
+        setPhase("idle");
+      }
     }
   }
 
@@ -634,6 +645,7 @@ export function RekordboxStick({
         setPhase("idle");
         return;
       }
+      setLoadingName(handle.name || null);
       setPhase("reading");
       await applyHandle(handle);
     } catch (caught) {
@@ -642,7 +654,10 @@ export function RekordboxStick({
       setLabel(null);
       setError(isPickerBlocked(caught) ? { kind: "blocked" } : { kind: "read", error: caught });
     } finally {
-      if (stillCurrent(token)) setPhase("idle");
+      if (stillCurrent(token)) {
+        setLoadingName(null);
+        setPhase("idle");
+      }
     }
   }
 
@@ -680,10 +695,15 @@ export function RekordboxStick({
         ? { text: t("library.stick.emptyPick.text"), hint: t("library.stick.emptyPick.hint") }
         : error.kind === "blocked"
           ? { text: t("library.stick.blocked.text"), hint: t("library.stick.blocked.hint") }
-          : {
-              text: errorText(error.error, t, "library.stick.readFailed.text"),
-              hint: t("library.stick.readFailed.hint"),
-            };
+          : isStickReadBusy(error.error)
+            ? {
+                text: t("exports.stick.readBusy"),
+                hint: t("library.stickHealth.recheckTip"),
+              }
+            : {
+                text: errorText(error.error, t, "library.stick.readFailed.text"),
+                hint: t("library.stick.readFailed.hint"),
+              };
 
   const live: FieldNotice | null =
     phase === "picking"
@@ -849,6 +869,10 @@ export function RekordboxStick({
       >
         {volumes.map((volume) => {
           const current = stickName === volume.name && Boolean(label);
+          const flag = stickVolumeFlag({
+            current,
+            reading: !current && pending && (loadingName === volume.name || volumes.length === 1),
+          });
           const stats = [
             volume.freeBytes != null
               ? t("library.stick.volumeFree", { free: formatMacBytes(volume.freeBytes, locale) })
@@ -872,8 +896,10 @@ export function RekordboxStick({
                 onClick={() => void loadVolume(volume.name)}
               >
                 <span className="stick-volume-choice-name">{volume.name}</span>
-                {current ? (
+                {flag === "current" ? (
                   <span className="stick-volume-choice-flag">{t("library.stick.volumeCurrent")}</span>
+                ) : flag === "reading" ? (
+                  <span className="stick-volume-choice-flag is-reading">{t("library.stick.volumeReading")}</span>
                 ) : (
                   <span className="stick-volume-choice-flag is-connect">{t("library.stick.volumeConnect")}</span>
                 )}

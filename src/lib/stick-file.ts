@@ -16,6 +16,7 @@ import {
   stickArtworkUrl,
 } from "@/lib/stick-audio";
 import type { DirLike, FileLike } from "@/lib/rekordbox-stick-write";
+import { getStickFile, readBlobBuffer } from "@/lib/stick-busy";
 import {
   loadPersistedStickHandle,
   resolveStickFile,
@@ -48,12 +49,12 @@ async function fileHandle(dir: DirLike, name: string): Promise<FileLike | null> 
 }
 
 async function asFile(handle: FileLike, relative: string): Promise<File | null> {
-  const blob = await handle.getFile();
+  const blob = await getStickFile(handle);
   if (typeof File === "undefined") return null;
   const file =
     blob instanceof File
       ? blob
-      : new File([await blob.arrayBuffer()], relative.split("/").pop() || "file");
+      : new File([await readBlobBuffer(blob)], relative.split("/").pop() || "file");
   try {
     Object.defineProperty(file, "webkitRelativePath", {
       value: relative,
@@ -298,10 +299,10 @@ export type EnergyReadProgress = (done: number, total: number) => void;
 /** ID3 Energy Level from the front of an MP3. Does not decode audio. */
 export async function energyTagFromFile(file: Blob): Promise<number | undefined> {
   const header = new Uint8Array(
-    await file.slice(0, Math.min(file.size, 10)).arrayBuffer(),
+    await readBlobBuffer(file.slice(0, Math.min(file.size, 10))),
   );
   const length = id3PrefixLength(header, file.size);
-  const bytes = new Uint8Array(await file.slice(0, length).arrayBuffer());
+  const bytes = new Uint8Array(await readBlobBuffer(file.slice(0, length)));
   return energyLevelFromId3(bytes);
 }
 

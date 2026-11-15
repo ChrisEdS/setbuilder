@@ -50,7 +50,7 @@ Unter **Set bauen** listet **Mit einer Playlist starten** die Playlists auf dem 
 Oben setzt der **Brief**:
 
 - **Titel** — Name des Sets.
-- **Slot-Dauer (Min)** — Zeitfenster für deinen Gig (der **Slot**).
+- **Slot-Dauer (Min)** — Zeitfenster für deinen Gig (der **Slot**). Ändern stößt **Auf Slot setzen** nicht an.
 - **Blend-Zeit (Durchschnitt)** — wie lange jeder Anschluss im Schnitt in den nächsten Titel überlappt (die **Blend**). SETBUILDER nutzt das, wenn in der Zeile noch keine Übergangs-Länge steht.
 
 **Set-Info** (Vibe, Venue, Slot, Audience, Gear, Notes) ist nur deine Gig-Notiz. Sie ändert die Uhr nicht.
