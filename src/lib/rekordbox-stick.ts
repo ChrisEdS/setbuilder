@@ -15,6 +15,7 @@ import {
 } from "@/lib/rekordbox-pdb";
 import {
   PHASES,
+  type EnergySource,
   type SetDraft,
   type SetPhaseId,
   type SetTrack,
@@ -34,6 +35,8 @@ export type StickTrack = {
   comment: string;
   /** Energy Level 1–10, read from a Mixed In Key comment such as "7A - Energy 6" */
   energyLevel?: number;
+  /** Provenance for energyLevel after a tag read or measurement. */
+  energySource?: EnergySource;
   filePath: string;
   /** Cover path from the stick's Artwork folder (export.pdb only) */
   artworkPath?: string;
@@ -53,6 +56,33 @@ export type RekordboxStickSet = {
   missing: number;
   tracks: StickTrack[];
 };
+
+/** Slim set-track shells so a playlist can be measured without loading it as the set. */
+export function stickSetEnergyTargets(set: RekordboxStickSet): SetTrack[] {
+  return set.tracks
+    .filter((track) => track.filePath.trim())
+    .map((track) => ({
+      id: track.id,
+      name: [track.artist, track.title].filter(Boolean).join(" — ") || track.title,
+      artists: track.artist ? [track.artist] : [],
+      album: track.album || "",
+      durationMs: track.durationMs,
+      uri: track.filePath,
+      externalUrl: "",
+      imageUrl: null,
+      phase: "open",
+      role: "groove",
+      transition: "unset",
+      bpm: track.bpm,
+      keyCamelot: track.keyCamelot,
+      energyLevel: track.energyLevel,
+      energySource: track.energySource,
+      note: "",
+      filePath: track.filePath,
+      source: "rekordbox",
+      safetyAlt: "",
+    }));
+}
 
 export type RekordboxStickRead = {
   label: string;
@@ -286,6 +316,10 @@ function setsFromPdb(library: PdbLibrary): RekordboxStickSet[] {
 
 function toStickTrack(track: PdbTrack): StickTrack {
   const keyCamelot = parseKeyValue(track.key);
+  const energyLevel = energyFromRekordboxTags({
+    comment: track.comment,
+    grouping: track.mixName,
+  });
   return {
     id: String(track.id),
     title: track.title,
@@ -296,10 +330,8 @@ function toStickTrack(track: PdbTrack): StickTrack {
     keyCamelot: keyCamelot || "",
     durationMs: track.durationMs,
     comment: track.comment,
-    energyLevel: energyFromRekordboxTags({
-      comment: track.comment,
-      grouping: track.mixName,
-    }),
+    energyLevel,
+    energySource: energyLevel != null ? "tag" : undefined,
     filePath: track.filePath,
     artworkPath: track.artworkPath,
     rating: track.rating,
@@ -713,6 +745,12 @@ function setsFromXml(xml: string): RekordboxStickSet[] {
     const bpmRaw = node.getAttribute("AverageBpm") || node.getAttribute("Bpm") || "";
     const bpmNum = Number(bpmRaw);
     const seconds = Number(node.getAttribute("TotalTime") || 0);
+    const energyLevel = energyFromRekordboxTags({
+      comment: node.getAttribute("Comments"),
+      grouping: node.getAttribute("Grouping"),
+      label: node.getAttribute("Label"),
+      remixer: node.getAttribute("Remixer"),
+    });
     collection.set(id, {
       id,
       title,
@@ -723,12 +761,8 @@ function setsFromXml(xml: string): RekordboxStickSet[] {
       keyCamelot: parseKeyValue(keyRaw) || "",
       durationMs: Number.isFinite(seconds) ? seconds * 1000 : 0,
       comment: node.getAttribute("Comments") || "",
-      energyLevel: energyFromRekordboxTags({
-        comment: node.getAttribute("Comments"),
-        grouping: node.getAttribute("Grouping"),
-        label: node.getAttribute("Label"),
-        remixer: node.getAttribute("Remixer"),
-      }),
+      energyLevel,
+      energySource: energyLevel != null ? "tag" : undefined,
       filePath: decodeXmlLocation(node.getAttribute("Location") || ""),
       rating: rekordboxStarsFromAttribute(node.getAttribute("Rating")),
       color: rekordboxColorFromAttribute(

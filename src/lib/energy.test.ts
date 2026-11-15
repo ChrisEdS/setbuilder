@@ -13,6 +13,8 @@ import {
   planBCount,
   planBState,
   settledEnergy,
+  stickEnergyCoverage,
+  coverageMeterLevel,
 } from "./energy.ts";
 import { parseKeyImportText } from "./key-import.ts";
 
@@ -107,6 +109,30 @@ test("anonymous Energy 1 is missing; a sourced 1 and any other level stay", () =
     energyLevel: 1,
     energySource: "manual",
   });
+});
+
+test("stick energy coverage counts trusted levels and averages only those", () => {
+  assert.deepEqual(stickEnergyCoverage([]), { known: 0, total: 0, mean: 0 });
+  assert.deepEqual(
+    stickEnergyCoverage([
+      { energyLevel: 6 },
+      { energyLevel: 1 },
+      { energyLevel: 8, energySource: "tag" },
+      {},
+    ]),
+    { known: 2, total: 4, mean: 7 },
+  );
+  assert.deepEqual(
+    stickEnergyCoverage([{ energyLevel: 1, energySource: "measured" }, { energyLevel: 5 }]),
+    { known: 2, total: 2, mean: 3 },
+  );
+});
+
+test("coverage meter uses the rounded mean of known levels", () => {
+  assert.equal(coverageMeterLevel({ known: 0, mean: 0 }), undefined);
+  assert.equal(coverageMeterLevel({ known: 2, mean: 7 }), 7);
+  assert.equal(coverageMeterLevel({ known: 2, mean: 7.4 }), 7);
+  assert.equal(coverageMeterLevel({ known: 2, mean: 7.5 }), 8);
 });
 
 test("energy status counts one repeated reason instead of repeating the sentence", () => {

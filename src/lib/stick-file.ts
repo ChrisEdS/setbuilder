@@ -7,6 +7,7 @@ import { id3PrefixLength } from "@/lib/openkey/decode-window";
 import { artworkFromId3, energyLevelFromId3 } from "@/lib/openkey/writeEnergy";
 import { hasKnownEnergy } from "@/lib/energy";
 import type { EnergySource, SetDraft } from "@/lib/set";
+import type { RekordboxStickSet } from "@/lib/rekordbox-stick";
 import {
   addRememberedStickFiles,
   getStickFilesEpoch,
@@ -398,6 +399,24 @@ function measuredEnergyFor<T extends { id: string; filePath?: string }>(
 }
 
 /** Merge a finished measurement into the latest draft. Same object when nothing changes. */
+export function applyMeasuredEnergyToStickSets(
+  sets: readonly RekordboxStickSet[],
+  levels: ReadonlyMap<string, MeasuredEnergy>,
+  mode: "replace" | "fill" = "replace",
+  setId?: string | null,
+): RekordboxStickSet[] {
+  if (levels.size === 0) return sets as RekordboxStickSet[];
+  let changed = false;
+  const next = sets.map((set) => {
+    if (setId && set.id !== setId) return set;
+    const tracks = stampMeasuredEnergy(set.tracks, levels, mode);
+    if (tracks.every((track, index) => track === set.tracks[index])) return set;
+    changed = true;
+    return { ...set, tracks };
+  });
+  return changed ? next : (sets as RekordboxStickSet[]);
+}
+
 export function applyMeasuredEnergy(
   draft: SetDraft,
   levels: ReadonlyMap<string, MeasuredEnergy>,

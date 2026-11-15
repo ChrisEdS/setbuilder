@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import { ActionIcon } from "@/components/ActionIcon";
+import { EnergyMeter } from "@/components/EnergyMeter";
 import { Tip } from "@/components/Hint";
 import type { MessageKey } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n/react";
@@ -134,6 +135,62 @@ function Menu({
     };
   }, []);
 
+  useEffect(() => {
+    const node = ref.current;
+    if (!node?.classList.contains("stick-set-energy-menu")) return;
+
+    const margin = 12;
+
+    function place() {
+      if (!node?.open) return;
+      const summary = node.querySelector("summary");
+      const panel = node.querySelector<HTMLElement>(".menu-panel");
+      if (!summary || !panel) return;
+      const rect = summary.getBoundingClientRect();
+      const width = Math.min(22.5 * 16, window.innerWidth - margin * 2);
+      const left = Math.min(
+        Math.max(margin, rect.right - width),
+        window.innerWidth - width - margin,
+      );
+      const below = window.innerHeight - rect.bottom - margin;
+      const above = rect.top - margin;
+      const openUp = below < 220 && above > below;
+      node.classList.toggle("opens-up", openUp);
+      panel.style.position = "fixed";
+      panel.style.left = `${left}px`;
+      panel.style.right = "auto";
+      panel.style.width = `${width}px`;
+      panel.style.zIndex = "120";
+      if (openUp) {
+        panel.style.top = "auto";
+        panel.style.bottom = `${window.innerHeight - rect.top + 6}px`;
+        panel.style.maxHeight = `${Math.max(160, above)}px`;
+      } else {
+        panel.style.bottom = "auto";
+        panel.style.top = `${rect.bottom + 6}px`;
+        panel.style.maxHeight = `${Math.max(160, below)}px`;
+      }
+      panel.style.overflowY = "auto";
+    }
+
+    let frame = 0;
+    function schedule() {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(place);
+    }
+
+    node.addEventListener("toggle", schedule);
+    window.addEventListener("resize", schedule);
+    window.addEventListener("scroll", schedule, true);
+    schedule();
+    return () => {
+      cancelAnimationFrame(frame);
+      node.removeEventListener("toggle", schedule);
+      window.removeEventListener("resize", schedule);
+      window.removeEventListener("scroll", schedule, true);
+    };
+  }, []);
+
   /** Arrow keys move through the items, like any menu. */
   function onKeyDown(event: ReactKeyboardEvent<HTMLDetailsElement>) {
     const node = ref.current;
@@ -240,6 +297,8 @@ export function SetEnergyMenu({
   fileCount,
   missingCount,
   knownCount,
+  className,
+  ariaLabel,
   onChooseStick,
   onReadTags,
   onMeasureMissing,
@@ -251,6 +310,8 @@ export function SetEnergyMenu({
   fileCount: number;
   missingCount: number;
   knownCount: number;
+  className?: string;
+  ariaLabel?: string;
   /** Existing stick picker. Shown only when the stick itself is missing. */
   onChooseStick?: () => void;
   onReadTags: () => void;
@@ -267,9 +328,9 @@ export function SetEnergyMenu({
       disabled={locked}
     >
     <Menu
-      className="set-tool-icon"
+      className={["set-tool-icon", className].filter(Boolean).join(" ")}
       label={<ActionIcon name="energy" />}
-      ariaLabel={t("builder.tool.energy")}
+      ariaLabel={ariaLabel ?? t("builder.tool.energy")}
       disabled={locked}
     >
       {gate === "stick" ? (
@@ -343,10 +404,14 @@ export function TrackEnergyMenu({
   return (
     <Tip text={t("builder.row.energyRedoTip")}>
       <Menu
-        className="track-energy"
+        className="track-energy has-meter"
         plain
-        label={<ActionIcon name="energy" />}
-        ariaLabel={t("builder.row.energyRedoAria", { name })}
+        label={<EnergyMeter level={level} busy={busy} name={name} />}
+        ariaLabel={
+          level != null
+            ? t("builder.energy.meterAria", { level, name })
+            : t("builder.energy.meterUnknown")
+        }
       >
         <MenuItem
           title={t("builder.row.energyMenu.measure")}

@@ -4,10 +4,12 @@ import {
   applyCoverUrls,
   applyEnergyLevels,
   applyMeasuredEnergy,
+  applyMeasuredEnergyToStickSets,
   applyRereadEnergyLevels,
   isWritableMp3,
   writeVerifiedStickFileBytes,
 } from "./stick-file.ts";
+import { stickSetEnergyTargets, type RekordboxStickSet } from "./rekordbox-stick.ts";
 import { DEFAULT_SET, type SetTrack } from "./set.ts";
 import type { FileLike } from "./rekordbox-stick-write.ts";
 
@@ -204,4 +206,94 @@ test("applyRereadEnergyLevels replaces a known level with the tag", () => {
   assert.equal(next.tracks[0].energySource, "tag");
   assert.equal(next.tracks[1].energyLevel, 4);
   assert.equal(next.tracks[1].energySource, "manual");
+});
+
+function stickSet(partial: Partial<RekordboxStickSet> & Pick<RekordboxStickSet, "id">): RekordboxStickSet {
+  return {
+    name: "Deep",
+    path: "Playlists/Deep",
+    kind: "playlist",
+    missing: 0,
+    tracks: [],
+    ...partial,
+  };
+}
+
+test("measured energy stamps a stick playlist by id and filePath without touching other sets", () => {
+  const sets = [
+    stickSet({
+      id: "playlist:1",
+      tracks: [
+        {
+          id: "a",
+          title: "Night",
+          artist: "Ada",
+          album: "",
+          bpm: "124",
+          keyRaw: "8A",
+          keyCamelot: "8A",
+          durationMs: 1,
+          comment: "",
+          filePath: "/Ada/Night.mp3",
+        },
+        {
+          id: "b",
+          title: "Kept",
+          artist: "Ada",
+          album: "",
+          bpm: "122",
+          keyRaw: "7A",
+          keyCamelot: "7A",
+          durationMs: 1,
+          comment: "",
+          energyLevel: 4,
+          energySource: "tag",
+          filePath: "/Ada/Kept.mp3",
+        },
+      ],
+    }),
+    stickSet({
+      id: "playlist:2",
+      tracks: [
+        {
+          id: "c",
+          title: "Other",
+          artist: "Ada",
+          album: "",
+          bpm: "120",
+          keyRaw: "6A",
+          keyCamelot: "6A",
+          durationMs: 1,
+          comment: "",
+          filePath: "/Ada/Night.mp3",
+        },
+      ],
+    }),
+  ];
+  const filled = applyMeasuredEnergyToStickSets(
+    sets,
+    new Map([
+      ["a", { energy: 7, source: "measured", filePath: "/Ada/Night.mp3" }],
+    ]),
+    "fill",
+    "playlist:1",
+  );
+  assert.equal(filled[0].tracks[0].energyLevel, 7);
+  assert.equal(filled[0].tracks[0].energySource, "measured");
+  assert.equal(filled[0].tracks[1].energyLevel, 4);
+  assert.equal(filled[1].tracks[0].energyLevel, undefined);
+  const replaced = applyMeasuredEnergyToStickSets(
+    filled,
+    new Map([
+      ["x", { energy: 9, source: "measured", filePath: "/Ada/Kept.mp3" }],
+    ]),
+    "replace",
+    "playlist:1",
+  );
+  assert.equal(replaced[0].tracks[1].energyLevel, 9);
+  assert.equal(replaced[0].tracks[1].energySource, "measured");
+  const targets = stickSetEnergyTargets(sets[0]);
+  assert.equal(targets.length, 2);
+  assert.equal(targets[0].id, "a");
+  assert.equal(targets[0].filePath, "/Ada/Night.mp3");
 });

@@ -110,6 +110,37 @@ export function hasKnownEnergy(track: {
   return true;
 }
 
+export type EnergyScan = {
+  done: number;
+  total: number;
+  phase: "tags" | "measure" | "write";
+  setId?: string | null;
+};
+
+/** How many stick/set tracks already carry a trusted 1–10 level. */
+export function stickEnergyCoverage(
+  tracks: { energyLevel?: number; energySource?: unknown }[],
+): { known: number; total: number; mean: number } {
+  const total = tracks.length;
+  let known = 0;
+  let sum = 0;
+  for (const track of tracks) {
+    if (!hasKnownEnergy(track)) continue;
+    known += 1;
+    sum += track.energyLevel ?? 0;
+  }
+  return { known, total, mean: known === 0 ? 0 : sum / known };
+}
+
+/** Rounded 1–10 mean for the playlist meter. Empty coverage has no ticks. */
+export function coverageMeterLevel(coverage: {
+  known: number;
+  mean: number;
+}): number | undefined {
+  if (coverage.known <= 0) return undefined;
+  return Math.min(10, Math.max(1, Math.round(coverage.mean)));
+}
+
 /** Drop an anonymous Energy 1. Keep every other stored level, including a tagged or measured 1. */
 export function settledEnergy(track: {
   energyLevel?: number;

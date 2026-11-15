@@ -2,7 +2,7 @@
 
 **Deutsch** · [English](README.md)
 
-**Version 5.3.0**
+**Version 5.4.0**
 
 SETBUILDER hilft dir, aus einem rekordbox-USB-Stick ein DJ-Set zu planen, die Titel im Zusammenspiel zu prüfen, die Übergänge vorzuhören und das fertige Set als Playlist wieder auf denselben Stick zu schreiben. Die App spricht Deutsch und Englisch.
 
@@ -20,6 +20,7 @@ SETBUILDER hilft dir, aus einem rekordbox-USB-Stick ein DJ-Set zu planen, die Ti
 - **Playlist wird zum Set** — Dein rekordbox-Stick ist die Bibliothek: Eine Playlist laden, und ihre Reihenfolge wird deine Setliste — Key und BPM wie exportiert. Du planst in einem **Slot** (der Zeit, die du hast), nicht nur nach Playlist-Länge.
 - **Spielzeit gegen Slot** — Pro Zeile zieht die geplante Überlappung von der Titellänge ab. Die Statuszeile summiert die **Spielzeit** gegen den Slot und sagt dir, wenn das Set zu lang wird.
 - **Rollen und Alternativen** — Performance-Titel als **Anchor**, **Bridge** oder **Groove** markieren, damit du ihre Aufgabe im Abend siehst. **Alternativen** halten Reserve-Titel neben der Liste; sie zählen nicht zur Spielzeit, bis du einen reinziehst.
+- **Energie 1–10 (openkey)** — Jeder Titel bekommt Mixed-In-Key-Energie (1–10). Der Blitz links neben **Als Set laden** liest Tags oder misst **diese Playlist**, ohne sie zu laden. **In MP3 schreiben** legt das Level in die Datei (Key, BPM und Audio bleiben). Grün heißt: jede Datei hat ein Level; Amber plus `40/55` heißt, es fehlen noch welche. Leere Playlists haben keinen Blitz. Die Setliste zeigt ein Zehn-Strich-Meter pro Titel.
 - **Energie-Bogen** — In der Bogen-Ansicht sitzen Titel über **Open**, **Lift**, **Rise**, **Peak** und **Release** auf deinem Slot. So siehst du vor dem Gig, ob Aufbau und Höhepunkt dort landen, wo du sie willst.
 - **Vorhören** — **Vorher**, **Jetzt** und **Danach** spielen den Übergang in den nächsten Titel mit der Überlappungs-Länge aus der Zeile. Ist **Light** aus, legt **Übergang hören** auf der Jetzt-Karte die nächste Stick-Datei über diese Länge: **Sync**, **Cue** (playt zurück zum Mix-Start; pausiert abseits setzt ihn), ein Crossfader der stehen bleibt, rote Taktlinien, Incoming-Grid **±1 ms** (Shift **10 ms**). Übergangs-Marke beim Hören anpassen — sie bleibt im Set, nicht in der Datei auf dem Stick.
 - **Beatgrid in der Wellenform** — Das rekordbox-Beatgrid im Player schieben (**−5**, **+5**, **1**). Hot Cues **A–H** liegen auf der Wellenform; **Q** rastet neue Cues am Grid ein, und beim Export kannst du Cues zurück auf den Stick schreiben.

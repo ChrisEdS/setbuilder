@@ -1121,17 +1121,43 @@
   margin: 0;
 }
 
-.set-shell .timeline-tools .track-energy {
+.set-shell .timeline-tools .track-energy,
+.set-shell .timeline-tools .track-energy[open] {
+  position: relative;
   width: 2.125rem;
   height: 2.125rem;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0;
+  overflow: visible;
+}
+
+.set-shell .timeline-tools .track-energy.has-meter,
+.set-shell .timeline-tools .track-energy.has-meter[open] {
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  height: 2.125rem;
+}
+
+/* Meter sits inside Tip + compact-extra; do not clip the pill or the panel. */
+.set-shell .timeline-tools > span:has(.track-energy),
+.set-shell .timeline-tools .tip:has(> .track-energy) {
+  overflow: visible;
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  height: auto;
 }
 
 .set-shell .timeline-tools .icon-action,
-.set-shell .timeline-tools .track-energy > summary.menu-trigger {
+.set-shell .timeline-tools .track-energy > summary.menu-trigger,
+.set-shell .manual-row:hover .timeline-tools .track-energy > summary.menu-trigger,
+.set-shell .timeline-tools .track-energy > summary.menu-trigger:hover,
+.set-shell .timeline-tools .track-energy > summary.menu-trigger:focus,
+.set-shell .timeline-tools .track-energy > summary.menu-trigger:focus-visible,
+.set-shell .timeline-tools .track-energy[open] > summary.menu-trigger {
   box-sizing: border-box;
   display: inline-flex !important;
   align-items: center;
@@ -1145,6 +1171,20 @@
   margin: 0 !important;
   padding: 0 !important;
   border: 1px solid transparent !important;
+  transform: none !important;
+}
+
+.set-shell .timeline-tools .track-energy.has-meter > summary.menu-trigger,
+.set-shell .manual-row:hover .timeline-tools .track-energy.has-meter > summary.menu-trigger,
+.set-shell .timeline-tools .track-energy.has-meter > summary.menu-trigger:hover,
+.set-shell .timeline-tools .track-energy.has-meter > summary.menu-trigger:focus,
+.set-shell .timeline-tools .track-energy.has-meter > summary.menu-trigger:focus-visible,
+.set-shell .timeline-tools .track-energy.has-meter[open] > summary.menu-trigger {
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  padding: 0 0.4rem !important;
+  white-space: nowrap;
 }
 
 .set-shell .timeline-tools .icon-action.danger {
@@ -1317,16 +1357,42 @@
 }
 
 
-.set-shell .manual-row.is-compact .manual-index {
-  align-self: center;
-}
-
+/*
+ * Compact one-liner grid: number | grip | cover | copy | tools
+ * Number+grip live in a fixed first track so 1- and 2-digit positions
+ * (5 vs 10) cannot shove the cover sideways. Cover is a locked 32px
+ * column inside .manual-select; copy ellipsizes instead of wrapping.
+ */
 .set-shell .manual-row.is-compact {
+  --compact-num-w: 2.5ch;
+  --compact-grip-w: 1.15rem;
+  --compact-index-gap: 0.35rem;
+  --compact-index-w: calc(
+    var(--compact-num-w) + var(--compact-index-gap) + var(--compact-grip-w)
+  );
+  --compact-cover-w: 32px;
+  grid-template-columns: var(--compact-index-w) minmax(0, 1fr);
+  column-gap: 0.45rem !important;
   align-items: center;
   padding-top: 0.4rem !important;
   padding-bottom: 0.35rem !important;
   container-type: inline-size;
   container-name: compact-row;
+}
+
+.set-shell .manual-row.is-compact .manual-index {
+  display: grid;
+  grid-template-columns: var(--compact-num-w) var(--compact-grip-w);
+  column-gap: var(--compact-index-gap);
+  align-self: center;
+  align-items: center;
+  justify-content: start;
+  box-sizing: border-box;
+  width: var(--compact-index-w);
+  min-width: var(--compact-index-w);
+  max-width: var(--compact-index-w);
+  height: 32px;
+  font-size: 1.2rem;
 }
 
 /*
@@ -1350,6 +1416,11 @@
   align-items: center;
 }
 
+.set-shell .manual-list.is-compact .timeline-tools > span.compact-extra:has(.track-energy.has-meter) {
+  flex: 0 0 auto;
+  width: auto;
+}
+
 @container compact-row (min-width: 55.99rem) {
   .timeline-tools > .compact-tools-toggle-tip {
     display: none !important;
@@ -1365,18 +1436,24 @@
 .set-shell .manual-row.is-compact .manual-row-main {
   align-items: center !important;
   column-gap: 0.7rem;
-  /* Keep title readable; tools stay max-content (overflow handled above). */
-  grid-template-columns: minmax(12rem, 1fr) max-content;
+  min-width: 0;
+  /* copy | tools — copy may shrink; tools stay on the right. */
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.set-shell .manual-row.is-compact .manual-select-wrap {
+  min-width: 0;
+  overflow: hidden;
 }
 
 .set-shell .manual-row.is-compact .manual-controls {
   display: flex !important;
   flex-direction: row !important;
-  flex-wrap: wrap !important;
+  flex-wrap: nowrap !important;
   align-items: center !important;
   align-self: center;
   justify-content: flex-end;
-  min-width: max-content;
+  min-width: 0;
   min-height: 0;
   padding-top: 0 !important;
 }
@@ -1442,27 +1519,37 @@
 }
 
 .set-shell .manual-row.is-compact-open .manual-subline,
-.set-shell .manual-row.is-compact-open .track-details,
-.set-shell .manual-row.is-compact-open .compact-details-line {
+.set-shell .manual-row.is-compact-open .track-details {
   grid-column: 2 / -1;
 }
 
 .set-shell .manual-row.is-compact .manual-select {
-  grid-template-columns: 32px minmax(0, 1fr) !important;
+  display: grid !important;
+  grid-template-columns: var(--compact-cover-w) minmax(0, 1fr) !important;
   column-gap: 0.55rem !important;
   gap: 0 0.55rem !important;
   align-items: center !important;
+  min-width: 0;
   padding: 0 !important;
 }
 
-.set-shell .manual-row.is-compact .manual-select img,
-.set-shell .manual-row.is-compact .manual-select .art-fallback {
-  width: 32px !important;
-  height: 32px !important;
+.set-shell .manual-row.is-compact .manual-select > img,
+.set-shell .manual-row.is-compact .manual-select > .art-fallback {
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: start;
+  width: var(--compact-cover-w) !important;
+  height: var(--compact-cover-w) !important;
   margin: 0 !important;
   object-fit: cover;
   object-position: center;
   align-self: center;
+}
+
+.set-shell .manual-row.is-compact .manual-select > .manual-copy {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
 }
 
 /* Same cover box once a compact row is opened: drop the 0.15rem button
@@ -1481,15 +1568,17 @@
 
 .set-shell .manual-row.is-compact .manual-copy {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.12rem;
+  flex-flow: row nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
   padding-top: 0;
-  line-height: 1.25;
+  line-height: 1.2;
   min-width: 0;
+  overflow: hidden;
 }
 
-.set-shell .manual-row.is-compact .manual-copy > span:not(.manual-title-line) {
+.set-shell .manual-row.is-compact .manual-copy > span {
   margin-top: 0 !important;
 }
 
@@ -1516,16 +1605,56 @@
 
 .set-shell .manual-row.is-compact .manual-title-line {
   display: flex !important;
+  flex: 0 1 auto;
   flex-wrap: nowrap;
   align-items: center;
   gap: 0.28rem;
+  min-width: 0;
   margin-top: 0 !important;
 }
 
 .set-shell .manual-row.is-compact .manual-title-line > strong {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 0;
   line-height: 1.15;
+}
+
+.set-shell .manual-row.is-compact .manual-artist-line {
+  display: block !important;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.set-shell .manual-row.is-compact .compact-inline-meta {
+  display: inline-flex !important;
+  flex: 1 1 0;
+  align-items: center;
+  gap: 0.28rem;
+  min-width: 6.5rem;
+  overflow: hidden;
+}
+
+.set-shell .manual-row.is-compact .compact-inline-meta > .tip:has(.source-badge) {
+  flex: 0 0 auto;
+  align-self: center;
+  line-height: 0;
+  margin-top: 0 !important;
+}
+
+.set-shell .manual-row.is-compact .compact-inline-meta .td-values {
+  display: block !important;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 0 !important;
+  color: #b3b3b3;
+  font-size: 0.78rem;
+  font-weight: 500;
 }
 
 .set-shell .manual-row.is-compact .manual-title-line > .tip:has(.source-badge),
@@ -1558,7 +1687,8 @@
 }
 
 .set-shell .manual-list.is-compact .manual-row.is-compact .timeline-tools {
-  min-width: max-content;
+  flex-wrap: nowrap !important;
+  min-width: 0;
 }
 
 /* Expanded compact: tools stay beside phase and role. They wrap inside that
@@ -1603,14 +1733,35 @@
   overflow: visible;
 }
 
+.set-shell .manual-list.is-compact .timeline-tools > .track-energy.has-meter,
+.set-shell .manual-list.is-compact .timeline-tools > .track-energy.has-meter[open] {
+  flex: 0 0 auto;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+}
+
 .set-shell .manual-list.is-compact .timeline-tools .icon-action,
-.set-shell .manual-list.is-compact .timeline-tools .track-energy > summary.menu-trigger {
+.set-shell .manual-list.is-compact .timeline-tools .track-energy > summary.menu-trigger,
+.set-shell .manual-list.is-compact .manual-row:hover .timeline-tools .track-energy > summary.menu-trigger,
+.set-shell .manual-list.is-compact .timeline-tools .track-energy > summary.menu-trigger:hover,
+.set-shell .manual-list.is-compact .timeline-tools .track-energy[open] > summary.menu-trigger {
   width: 2rem !important;
   min-width: 2rem !important;
   max-width: 2rem !important;
   height: 2rem !important;
   min-height: 2rem !important;
   max-height: 2rem !important;
+}
+
+.set-shell .manual-list.is-compact .timeline-tools .track-energy.has-meter > summary.menu-trigger,
+.set-shell .manual-list.is-compact .manual-row:hover .timeline-tools .track-energy.has-meter > summary.menu-trigger,
+.set-shell .manual-list.is-compact .timeline-tools .track-energy.has-meter > summary.menu-trigger:hover,
+.set-shell .manual-list.is-compact .timeline-tools .track-energy.has-meter[open] > summary.menu-trigger {
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  padding: 0 0.35rem !important;
 }
 
 .set-shell .manual-list.is-compact .timeline-tools-tail > .tip.compact-details-tip,
@@ -1782,15 +1933,17 @@
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
     "filter tools"
-    "status status"
-    "details details";
+    "status details";
   align-items: center;
   column-gap: 1rem;
-  row-gap: 0.4rem;
+  row-gap: 0.35rem;
+  padding-bottom: 0.12rem !important;
 }
 
 .set-shell .crate-list-head > .crate-list-filter {
   grid-area: filter;
+  min-width: 0;
+  z-index: 1;
 }
 
 .set-shell .crate-list-head > .list-head-tools {
@@ -1801,13 +1954,13 @@
 
 .set-shell .crate-list-head > .panel-inline-status {
   grid-area: status;
-  grid-column: 1 / -1;
   width: max-content;
-  max-width: none;
+  max-width: 100%;
   justify-self: start;
+  align-self: end;
   white-space: nowrap !important;
-  overflow: visible;
-  text-overflow: unset;
+  overflow: hidden;
+  text-overflow: ellipsis;
   flex-wrap: nowrap;
 }
 
@@ -1874,8 +2027,13 @@
 }
 
 /* Track energy redo sits in .timeline-tools, so the shared button rule
-   (nowrap / pill / fixed min-height) would clip the tip and squeeze 5/10. */
+   (nowrap / pill / fixed min-height) would clip the tip and squeeze 5/10.
+   Keep the panel out of flow so open <details> cannot stretch the trigger. */
 .set-shell .track-energy > .menu-panel {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  left: auto;
   width: min(22.5rem, calc(100vw - 1.5rem));
   overflow-x: hidden;
   overflow-y: auto;
@@ -2123,6 +2281,14 @@
 
 .set-shell .banner.status {
   z-index: var(--ui-sticky-status-z);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+}
+
+.set-shell .banner.status > p {
+  margin: 0;
 }
 
 .set-shell .set-chrome {
@@ -2192,13 +2358,14 @@
   gap: var(--ui-space-3);
 }
 
-/* Title and count on the left, Load as set on the right.
+/* Title and count on the left, Energy + Load as set on the right.
    Block padding keeps the row clear of the 32px button.
    12px end inset clears the 8px overlay scrollbar and leaves a few pixels. */
 .set-shell .stick-sets-fold .library-list li {
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) auto !important;
   grid-template-rows: auto !important;
+  grid-template-areas: "copy actions";
   align-items: center !important;
   /* Beats the shared library-list column-gap so the green count is not tight against Load. */
   column-gap: 1.5rem !important;
@@ -2220,6 +2387,7 @@
 }
 
 .set-shell .stick-sets-fold .library-list li > .stick-set-copy {
+  grid-area: copy;
   display: flex;
   flex-direction: column;
   flex-wrap: nowrap;
@@ -2632,6 +2800,10 @@
     grid-template-columns: max-content minmax(0, 1fr) !important;
   }
 
+  .set-shell .manual-row.is-compact {
+    grid-template-columns: var(--compact-index-w) minmax(0, 1fr) !important;
+  }
+
   .set-shell .manual-meta {
     width: 100%;
     justify-content: flex-start;
@@ -2652,13 +2824,22 @@
 
   /* Keep the row icons round. The shared touch min-height would stretch them. */
   .set-shell .timeline-tools .icon-action,
-  .set-shell .timeline-tools .track-energy > summary.menu-trigger {
+  .set-shell .timeline-tools .track-energy > summary.menu-trigger,
+  .set-shell .timeline-tools .track-energy[open] > summary.menu-trigger {
     width: 2.125rem !important;
     min-width: 2.125rem !important;
     max-width: 2.125rem !important;
     height: 2.125rem !important;
     min-height: 2.125rem !important;
     max-height: 2.125rem !important;
+  }
+
+  .set-shell .timeline-tools .track-energy.has-meter > summary.menu-trigger,
+  .set-shell .timeline-tools .track-energy.has-meter[open] > summary.menu-trigger {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    padding: 0 0.4rem !important;
   }
 
   .set-shell .library-browser-head .library-browser-toolbar {
@@ -5120,8 +5301,7 @@ dialog.stick-dialog.gig-ready-dialog .gig-ready-actions .btn {
 }
 
 .set-shell .manual-subline,
-.set-shell .manual-row .track-details,
-.set-shell .manual-row .compact-details-line {
+.set-shell .manual-row .track-details {
   grid-column: 2;
   width: 100%;
   max-width: 100%;
@@ -5129,74 +5309,6 @@ dialog.stick-dialog.gig-ready-dialog .gig-ready-actions .btn {
   box-sizing: border-box;
   margin-inline: 0;
   padding-inline: 0;
-}
-
-/* Compact one-liner: Details + mix-join on their own row under the chrome. */
-.set-shell .manual-row.is-compact .compact-details-line {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.35rem 0.85rem;
-  margin-top: 0.12rem;
-}
-
-.set-shell .manual-row.is-compact .compact-details-trigger {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.28rem;
-  min-width: 0;
-  max-width: 100%;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-/* Origin mark sits on this line, immediately after the word Details. */
-.set-shell .manual-row.is-compact .compact-details-trigger > .tip:has(.source-badge) {
-  flex: 0 0 auto;
-  align-self: center;
-  line-height: 0;
-}
-
-.set-shell .manual-row.is-compact .compact-details-line .td-label {
-  flex: 0 0 auto;
-  color: #f2f2f2;
-  font-size: 0.88rem;
-  font-weight: 650;
-}
-
-.set-shell .manual-row.is-compact .compact-details-line .td-values {
-  flex: 0 1 auto;
-  min-width: 0;
-  margin-inline-start: 0.27rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: #b3b3b3;
-  font-size: 0.78rem;
-  font-weight: 500;
-}
-
-.set-shell .manual-row.is-compact .compact-details-trigger:hover .td-values,
-.set-shell .manual-row.is-compact .compact-details-trigger:focus-visible .td-values {
-  color: #e8e8e8;
-}
-
-.set-shell .manual-row.is-compact .compact-details-line > .mix-join {
-  flex: 0 1 auto;
-  min-width: 0;
-  margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 0.78rem;
-  font-style: normal;
-  font-weight: 600;
 }
 
 .set-shell .manual-subline {
@@ -5326,18 +5438,26 @@ dialog.stick-dialog.gig-ready-dialog .gig-ready-actions .btn {
 .set-shell .manual-row.is-compact:not(.is-compact-open) .manual-index {
   align-self: center;
   height: 32px;
-  gap: 0.35rem;
 }
 
 .set-shell .manual-row.is-compact .manual-index > em.set-pos {
+  box-sizing: border-box;
+  width: var(--compact-num-w);
+  min-width: var(--compact-num-w);
+  max-width: var(--compact-num-w);
+  justify-content: flex-start;
   font-size: 1.2rem;
   line-height: 1;
+  text-align: start;
   transform: none;
 }
 
 .set-shell .manual-row.is-compact .manual-index > .tip {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  width: var(--compact-grip-w);
+  min-width: var(--compact-grip-w);
   height: 100%;
 }
 
@@ -5753,6 +5873,7 @@ dialog.stick-dialog .stick-actions .btn {
 
 /* Stick playlist delete: load and delete stay together on the right of the row. */
 .set-shell .stick-sets-fold .library-list li > .stick-set-actions {
+  grid-area: actions;
   display: flex;
   flex-flow: row nowrap;
   align-items: center;
@@ -5803,4 +5924,222 @@ dialog.stick-dialog.playlist-delete-dialog .modal-status,
 dialog.stick-dialog.playlist-delete-dialog .modal-next,
 dialog.stick-dialog.playlist-delete-dialog .modal-info {
   margin: 0 0 0.45rem;
+}
+
+/* Energy 1–10 meter (openkey TrackRow) and determinate progress. */
+.set-shell .energy-meter {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0.4rem;
+  min-width: 0;
+  line-height: 1;
+}
+
+.set-shell .energy-meter.is-busy {
+  opacity: 0.55;
+}
+
+.set-shell .energy-meter-value {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  min-width: 1.2ch;
+  color: #fff;
+}
+
+.set-shell .energy-meter-ticks {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 2px;
+}
+
+.set-shell .energy-meter-ticks i {
+  width: 4px;
+  height: 12px;
+  border-radius: 1px;
+  background: color-mix(in oklab, var(--ui-warning) 22%, transparent);
+  display: block;
+}
+
+.set-shell .energy-meter-ticks i.on {
+  background: var(--ui-warning);
+  box-shadow: 0 0 6px color-mix(in oklab, var(--ui-warning) 55%, transparent);
+}
+
+.set-shell .manual-list.is-compact .energy-meter-ticks i {
+  width: 3px;
+  height: 10px;
+}
+
+.set-shell .energy-progress {
+  display: block;
+  width: 100%;
+  max-width: 10rem;
+  height: 0.35rem;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--ui-warning) 18%, #242424);
+  overflow: hidden;
+}
+
+.set-shell .energy-progress > span {
+  display: block;
+  height: 100%;
+  width: var(--energy-progress, 0%);
+  background: var(--ui-warning);
+  border-radius: inherit;
+}
+
+.set-shell .stick-sets-fold .library-list li > .stick-set-actions > .stick-set-energy {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 0 0 auto;
+  min-width: 0;
+  overflow: visible;
+}
+
+/* Size the lightning trigger only. Width on <details> / .tip clips .menu-panel. */
+.set-shell .stick-sets-fold .stick-set-energy > .tip,
+.set-shell .stick-sets-fold .stick-set-energy-menu {
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+.set-shell .stick-sets-fold .stick-set-energy-menu > summary.menu-trigger,
+.set-shell .stick-sets-fold .stick-set-energy-menu > summary.btn {
+  box-sizing: border-box;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 2rem !important;
+  min-width: 2rem !important;
+  max-width: 2rem !important;
+  height: 2rem !important;
+  min-height: 2rem !important;
+  max-height: 2rem !important;
+  padding: 0 !important;
+  border: 1px solid transparent !important;
+  border-radius: 999px !important;
+  color: inherit;
+}
+
+.set-shell .stick-sets-fold .stick-set-energy.is-complete > .tip .stick-set-energy-menu > summary.menu-trigger,
+.set-shell .stick-sets-fold .stick-set-energy.is-complete > .tip .stick-set-energy-menu > summary.btn,
+.set-shell .stick-sets-fold .stick-set-energy.is-complete > .tip .stick-set-energy-menu[open] > summary.btn,
+.set-shell .stick-sets-fold .stick-set-energy.is-complete > .tip .stick-set-energy-menu > summary.btn:hover {
+  color: var(--ui-focus) !important;
+}
+
+.set-shell .stick-sets-fold .stick-set-energy.is-complete .action-icon[data-icon="energy"] {
+  fill: var(--ui-focus);
+  stroke: var(--ui-focus);
+}
+
+.set-shell .stick-sets-fold .stick-set-energy.is-incomplete > .tip .stick-set-energy-menu > summary.menu-trigger,
+.set-shell .stick-sets-fold .stick-set-energy.is-incomplete > .tip .stick-set-energy-menu > summary.btn,
+.set-shell .stick-sets-fold .stick-set-energy.is-busy > .tip .stick-set-energy-menu > summary.menu-trigger,
+.set-shell .stick-sets-fold .stick-set-energy.is-busy > .tip .stick-set-energy-menu > summary.btn {
+  border-color: color-mix(in srgb, var(--ui-warning) 45%, transparent) !important;
+  background: var(--ui-warning-surface) !important;
+  color: var(--ui-warning) !important;
+}
+
+.set-shell .stick-sets-fold .stick-set-energy.is-busy {
+  opacity: 0.7;
+}
+
+.set-shell .stick-sets-fold .stick-set-energy-menu > .menu-panel {
+  left: auto;
+  right: 0;
+  width: min(22.5rem, calc(100vw - 1.5rem));
+  /* Beat sticky set chrome (tabs/tools, --ui-sticky-toolbar-z: 55) and the
+     default .menu-panel (80). Match .tip-bubble (120); stay under the player
+     (130), portal tips (140), and replace/guide overlays (120, later in DOM). */
+  z-index: 120;
+}
+
+.set-shell .stick-sets-fold .stick-set-energy-menu > .menu-panel .menu-item {
+  min-width: 0;
+  white-space: normal;
+}
+
+.set-shell .stick-sets-fold .stick-set-energy-menu > .menu-panel .menu-item strong,
+.set-shell .stick-sets-fold .stick-set-energy-menu > .menu-panel .menu-item span {
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+/* stick-sets-host is a crate-workspace grid sibling of .set-chrome (z 55).
+   Nested z-index cannot beat that grid item. Lift host, fold, and the open
+   row with the panel. Match .tip-bubble (120); stay under the player (130). */
+.set-shell .crate-workspace:has(.stick-set-energy-menu[open]) > .stick-sets-host,
+.set-shell .stick-sets-fold:has(.stick-set-energy-menu[open]),
+.set-shell .stick-sets-fold .library-list li:has(.stick-set-energy-menu[open]),
+.set-shell .stick-sets-fold .stick-set-energy-menu[open] {
+  position: relative;
+  z-index: 120;
+}
+
+.set-shell .stick-set-energy-label {
+  font-size: var(--ui-font-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--ui-muted);
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.set-shell .stick-sets-fold .stick-set-energy.is-incomplete .stick-set-energy-label,
+.set-shell .stick-sets-fold .stick-set-energy.is-busy .stick-set-energy-label {
+  color: var(--ui-warning);
+}
+
+.set-shell .set-tools-icons > .set-energy-readout {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.4rem;
+  min-width: 0;
+  max-width: none;
+  width: auto;
+  height: 2.125rem;
+  padding-inline-end: 0.15rem;
+  font-size: var(--ui-font-xs);
+  color: var(--ui-muted);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.set-shell .set-tools-icons > .set-energy-readout .energy-progress {
+  flex: 0 0 4rem;
+  width: 4rem;
+  min-width: 4rem;
+  max-width: 4rem;
+}
+
+/* Same stroke as .set-tools-group + .set-tools-group (the line left of Energy).
+   Keep Energy | Spotify on one row when other tool groups stack on small screens. */
+.set-shell .set-tools-group.set-tools-icons + .set-tools-group.set-tools-icons {
+  padding-left: 0.7rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+@media (max-width: 720px) {
+  .set-shell .set-tools-group.set-tools-icons + .set-tools-group.set-tools-icons {
+    flex: 0 0 auto;
+    padding-top: 0;
+    border-top: 0;
+    padding-left: 0.7rem;
+    border-left: 1px solid rgba(255, 255, 255, 0.16);
+  }
+}
+
+.set-shell .banner.status .energy-progress {
+  width: 10rem;
+  min-width: 10rem;
+  max-width: 10rem;
 }

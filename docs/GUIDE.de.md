@@ -2,7 +2,7 @@
 
 **Deutsch** · [English](GUIDE.md) · [README](../README.de.md)
 
-**Version 5.3.0.** Die Screenshots zeigen die englische Oberfläche in Chrome. **DE** / **EN** oben rechts schaltet die Beschriftungen. Die englische Anleitung folgt denselben Schritten.
+**Version 5.4.0.** Die Screenshots zeigen die englische Oberfläche in Chrome. **DE** / **EN** oben rechts schaltet die Beschriftungen. Die englische Anleitung folgt denselben Schritten.
 
 Die Desktop-App (Port **4317**) ist der normale Weg. Wer aus dem Repo mit `npm run dev` startet, nutzt Port **4327**.
 
@@ -45,6 +45,7 @@ Unter **Set bauen** listet **Mit einer Playlist starten** die Playlists auf dem 
 2. Wählst du eine Playlist, tippst du auf **Als Set laden**.
 3. Hat das Set schon Titel: **Ersetzen** (einmal überschreiben, mit **Rückgängig**), **Zusammenführen** (Set behalten, nur fehlende Titel anhängen) oder **Abbrechen**.
 4. Die Playlist-Reihenfolge wird deine Setliste. Key und BPM bleiben wie auf dem Stick.
+5. Energie 1–10: der Blitz links neben **Als Set laden** liest Tags oder misst **diese Playlist**, ohne sie als Set zu laden. **In MP3 schreiben** legt das Level in die Datei (Key, BPM und Audio bleiben). Grün heißt: jede Datei hat ein Level; Amber plus Zahl (`40/55`) heißt, es fehlen noch welche. Leere Playlists haben keinen Blitz. Das 1–10-Meter gilt pro Titel in der Setliste, nicht auf der Playlist.
 
 Oben setzt der **Brief**:
 

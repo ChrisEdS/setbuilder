@@ -13,6 +13,7 @@ import {
   slotLabel,
   transitionHint,
   transitionLabel,
+  type MessageKey,
   type Translate,
 } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n/react";
@@ -73,6 +74,7 @@ import {
   sourcePoolFromStickLibrary,
   stickLibraryPoolCount,
   stickLibraryRows,
+  stickSetEnergyTargets,
   type RekordboxStickSet,
   type StickTrack,
 } from "@/lib/rekordbox-stick";
@@ -100,7 +102,7 @@ import {
   applyCoverUrls,
   applyEnergyLevels,
   applyMeasuredEnergy,
-  applyRereadEnergyLevels,
+  applyMeasuredEnergyToStickSets,
   ensureStickWriteAccess,
   energyTagFromFile,
   missingCoversFromFiles,
@@ -108,6 +110,7 @@ import {
   isWritableMp3,
   resolveTrackAudio,
   writeVerifiedStickFileBytes,
+  type StickTrackFile,
 } from "@/lib/stick-file";
 import { analyzeFileEnergy } from "@/lib/openkey/client";
 import {
@@ -181,7 +184,13 @@ import {
   toggleUnsort,
   withoutEndPins,
 } from "@/lib/set-anchors";
-import { energyStatusLine, hasKnownEnergy } from "@/lib/energy";
+import { EnergyProgressBar } from "@/components/EnergyMeter";
+import {
+  energyStatusLine,
+  hasKnownEnergy,
+  stickEnergyCoverage,
+  type EnergyScan,
+} from "@/lib/energy";
 import { assessGigReady } from "@/lib/gig-ready";
 import type { StickHealth } from "@/lib/stick-health";
 import type { SetSortTechnique } from "@/lib/sort-set";
@@ -249,12 +258,9 @@ function subscribeListDensity(onChange: () => void) {
 function MixJoinLine({
   tracks,
   track,
-  inline = false,
 }: {
   tracks: SetTrack[];
   track: SetTrack;
-  /** Sit on the compact Details row (span, not a block paragraph). */
-  inline?: boolean;
 }) {
   const { t } = useI18n();
   const index = tracks.findIndex((item) => item.id === track.id);
@@ -262,13 +268,6 @@ function MixJoinLine({
   if (!join) return null;
   const className = `mix-join harm-${join.relation}`;
   const title = relationHint(join.relation, t);
-  if (inline) {
-    return (
-      <em className={className} title={title}>
-        {join.label}
-      </em>
-    );
-  }
   return (
     <p className={className} title={title}>
       {join.label}
@@ -586,11 +585,14 @@ export function SetBuilder() {
   const devLibraryLoaded = useRef(false);
   const [matchingLinks, setMatchingLinks] = useState(false);
   const [analyzingEnergy, setAnalyzingEnergy] = useState(false);
+  const [energyScan, setEnergyScan] = useState<EnergyScan | null>(null);
+  const lastLoadedStickSetId = useRef<string | null>(null);
   const workQueue = useLiveWorkQueue();
   const liveJobs = workQueue.jobs;
   const energyPendingIds = workQueue.energyPendingIds;
   const energyBusy =
     analyzingEnergy || workQueue.energyBusy;
+  const setEnergyCoverage = stickEnergyCoverage(draft.tracks);
   const [stickReady, setStickReady] = useState(false);
   const [stickLostOpen, setStickLostOpen] = useState(false);
   const stickLostOpenRef = useRef(false);
@@ -969,6 +971,7 @@ export function SetBuilder() {
             reuseTags: true,
             root: handle,
             active: () => !cancelled && stickJob.current === job,
+            setId: lastLoadedStickSetId.current,
           });
         } else {
           finish(t("builder.stick.ready"));
@@ -1053,7 +1056,11 @@ export function SetBuilder() {
     );
   }
 
-  function showStickMerge(library: StickTrack[], done: string | null) {
+  function showStickMerge(
+    library: StickTrack[],
+    done: string | null,
+    setId: string | null = lastLoadedStickSetId.current,
+  ) {
     const key = library.map((track) => track.filePath || track.id).join("|");
     if (
       getWorkQueueSnapshot().jobs.some(
@@ -1090,6 +1097,7 @@ export function SetBuilder() {
             reuseTags: true,
             root: null,
             active: current,
+            setId,
           });
         } else {
           endWork(done);
@@ -1109,6 +1117,7 @@ export function SetBuilder() {
     set: RekordboxStickSet,
     mode: "replace" | "merge",
   ) {
+    lastLoadedStickSetId.current = set.id;
     const current = readStoredDraft();
     const loaded = applyPlaylistLoad(current, set, mode, t);
     setReplaceUndo(loaded.undo);
@@ -1137,7 +1146,7 @@ export function SetBuilder() {
     setPendingStickSet(null);
     clearNotice();
     const library = libraryRows.flatMap((row) => (row.stick ? [row.stick] : []));
-    showStickMerge(library, message);
+    showStickMerge(library, message, set.id);
   }
 
   function openStickPicker() {
@@ -2969,8 +2978,9 @@ export function SetBuilder() {
       root: Awaited<ReturnType<typeof loadPersistedStickHandle>>;
       reuseTags: boolean;
       active?: () => boolean;
+      setId?: string | null;
     },
-  ) {
+  ): Promise<boolean> {
     const job = ++energyJob.current;
     setAnalyzingEnergy(true);
     let done = 0;
@@ -2979,13 +2989,22 @@ export function SetBuilder() {
     let setCount = 0;
     let written = 0;
     let lastLevel: number | null = null;
+    let scanPhase: EnergyScan["phase"] = options.reuseTags ? "tags" : "measure";
+    const scanSetId =
+      options.setId !== undefined ? options.setId : lastLoadedStickSetId.current;
     const reasons = new Map<string, number>();
     const total = targets.length;
     const alive = () => energyJob.current === job && (options.active?.() ?? true);
     // Declared before `line`: the first paint reads it immediately.
     const paint = { at: 0 };
 
+    const reportScan = () => {
+      if (!alive()) return;
+      setEnergyScan({ done, total, phase: scanPhase, setId: scanSetId });
+    };
+
     const line = (final: boolean) => {
+      reportScan();
       if (!alive() || !shouldPaint(paint, final)) return;
       if (final && total === 1 && lastLevel != null && errors === 0) {
         setStatus(
@@ -3023,6 +3042,9 @@ export function SetBuilder() {
       pending.clear();
       const mode = alive() ? "replace" : "fill";
       setDraft((current) => applyMeasuredEnergy(current, batch, mode));
+      setStickSets((current) =>
+        applyMeasuredEnergyToStickSets(current, batch, mode, scanSetId),
+      );
     }
 
     const remember = (
@@ -3036,23 +3058,68 @@ export function SetBuilder() {
       flush(false);
     };
 
+    const noteSkip = (key: MessageKey) => {
+      skipped += 1;
+      const message = t(key);
+      reasons.set(message, (reasons.get(message) ?? 0) + 1);
+    };
+
+    const writeLevel = async (
+      file: File,
+      handle: StickTrackFile["handle"],
+      path: string,
+      energy: number,
+    ) => {
+      if (!options.write) return;
+      if (!handle || !options.writeRoot) {
+        noteSkip("builder.energy.skipNoFile");
+        return;
+      }
+      if (!isWritableMp3(file, path)) {
+        noteSkip("builder.energy.skipNotMp3");
+        return;
+      }
+      scanPhase = "write";
+      reportScan();
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const tagged = writeEnergy(bytes, energy);
+      await writeVerifiedStickFileBytes(handle, tagged);
+      written += 1;
+    };
+
     try {
       for (const track of targets) {
-        if (!alive()) return;
+        if (!alive()) return false;
         const path = track.filePath!.trim();
         try {
           const resolved = await resolveTrackAudio(path, options.writeRoot ?? options.root);
-          if (!alive()) return;
+          if (!alive()) return false;
           if (!resolved) {
-            skipped += 1;
+            noteSkip("builder.energy.skipNoFile");
             done += 1;
             line(false);
             await yieldToUi();
             continue;
           }
 
-          const latest = readStoredDraft().tracks.find((item) => item.id === track.id);
-          if (options.reuseTags && latest && hasKnownEnergy(latest)) {
+          const pathKey = track.filePath?.trim();
+          const draftTracks = readStoredDraft().tracks;
+          const latest =
+            draftTracks.find((item) => item.id === track.id) ??
+            (pathKey
+              ? draftTracks.find((item) => item.filePath?.trim() === pathKey)
+              : undefined) ??
+            track;
+          if (options.reuseTags && hasKnownEnergy(latest) && latest.energyLevel != null) {
+            remember(
+              track.id,
+              latest.energyLevel,
+              latest.energySource === "tag" ? "tag" : "measured",
+              path,
+            );
+            setCount += 1;
+            await writeLevel(resolved.file, resolved.handle, path, latest.energyLevel);
+            if (!alive()) return false;
             done += 1;
             line(false);
             await yieldToUi();
@@ -3069,23 +3136,18 @@ export function SetBuilder() {
               await yieldToUi();
               continue;
             }
-            if (!alive()) return;
+            if (!alive()) return false;
           }
 
+          scanPhase = "measure";
+          reportScan();
           const energy = await analyzeFileEnergy(resolved.file);
           remember(track.id, energy, "measured", path);
-          if (!alive()) return;
+          if (!alive()) return false;
           setCount += 1;
 
-          if (options.write && isWritableMp3(resolved.file, path) && resolved.handle && options.writeRoot) {
-            const bytes = new Uint8Array(await resolved.file.arrayBuffer());
-            const tagged = writeEnergy(bytes, energy);
-            await writeVerifiedStickFileBytes(resolved.handle, tagged);
-            if (!alive()) return;
-            written += 1;
-          } else if (options.write) {
-            skipped += 1;
-          }
+          await writeLevel(resolved.file, resolved.handle, path, energy);
+          if (!alive()) return false;
         } catch (error) {
           errors += 1;
           const raw = error instanceof Error ? error.message : String(error);
@@ -3103,9 +3165,13 @@ export function SetBuilder() {
       }
       flush(true);
       line(true);
+      return alive();
     } finally {
       flush(true);
-      if (energyJob.current === job) setAnalyzingEnergy(false);
+      if (energyJob.current === job) {
+        setAnalyzingEnergy(false);
+        setEnergyScan(null);
+      }
     }
   }
 
@@ -3135,7 +3201,7 @@ export function SetBuilder() {
     }
     setAnalyzingEnergy(true);
     await queueHeavy(
-      () => readEnergyTagsNow(withPath),
+      () => readEnergyTagsNow(withPath, lastLoadedStickSetId.current),
       {
         operation: "energy-tags",
         key: withPath.map((track) => track.filePath || track.id).join("|"),
@@ -3145,17 +3211,27 @@ export function SetBuilder() {
     ).finally(() => setAnalyzingEnergy(false));
   }
 
-  async function readEnergyTagsNow(withPath: SetTrack[]) {
+  async function readEnergyTagsNow(
+    withPath: SetTrack[],
+    setId: string | null = lastLoadedStickSetId.current,
+  ) {
     const job = ++energyJob.current;
     setAnalyzingEnergy(true);
     const alive = () => energyJob.current === job;
+    const scanSetId = setId;
+    const total = withPath.length;
+    const report = (done: number) => {
+      if (!alive()) return;
+      setEnergyScan({ done, total, phase: "tags", setId: scanSetId });
+    };
     try {
       const stick = await stickForEnergy();
       if (stick === undefined) return;
       const levels = new Map<string, number>();
       let done = 0;
       const paint = { at: 0 };
-      setStatus(t("builder.energy.tags", { done: 0, total: withPath.length }));
+      report(0);
+      setStatus(t("builder.energy.tags", { done: 0, total }));
       for (const track of withPath) {
         if (!alive()) return;
         const path = track.filePath!.trim();
@@ -3169,17 +3245,68 @@ export function SetBuilder() {
           // An unreadable file keeps the level already in the set.
         }
         done += 1;
-        if (alive() && shouldPaint(paint, done === withPath.length)) {
-          setStatus(t("builder.energy.tags", { done, total: withPath.length }));
+        report(done);
+        if (alive() && shouldPaint(paint, done === total)) {
+          setStatus(t("builder.energy.tags", { done, total }));
         }
         await yieldToUi();
       }
       if (!alive()) return;
-      setDraft(applyRereadEnergyLevels(readStoredDraft(), levels));
-      setStatus(t("builder.energy.tagsDone", { found: levels.size, total: withPath.length }));
+      const measured = new Map(
+        [...levels].map(([id, energy]) => {
+          const path =
+            withPath.find((track) => track.id === id)?.filePath?.trim() ?? "";
+          return [id, { energy, source: "tag" as const, filePath: path }];
+        }),
+      );
+      setDraft(applyMeasuredEnergy(readStoredDraft(), measured, "replace"));
+      setStickSets((current) =>
+        applyMeasuredEnergyToStickSets(current, measured, "replace", scanSetId),
+      );
+      setStatus(t("builder.energy.tagsDone", { found: levels.size, total }));
     } finally {
-      if (alive()) setAnalyzingEnergy(false);
+      if (alive()) {
+        setAnalyzingEnergy(false);
+        setEnergyScan(null);
+      }
     }
+  }
+
+  async function startMeasureScan(
+    targets: SetTrack[],
+    mode: "missing" | "all",
+    setId: string | null,
+    queueKey: string,
+    targetLabel: string,
+  ) {
+    const stick = await stickForEnergy();
+    if (stick === undefined) return;
+    const writeRoot = stick ? await ensureStickWriteAccess(stick) : null;
+    const denied = Boolean(stick) && !writeRoot;
+    if (denied) setStatus(t("builder.energy.denied"));
+    setAnalyzingEnergy(true);
+    await queueHeavy(
+      async () => {
+        const finished = await runEnergyScan(targets, {
+          write: Boolean(writeRoot),
+          writeRoot,
+          reuseTags: mode === "missing",
+          root: writeRoot ?? stick,
+          setId,
+        });
+        if (denied && finished) setStatus(t("builder.energy.denied"));
+      },
+      {
+        operation: "energy-measure",
+        key: queueKey,
+        label: t(
+          mode === "missing"
+            ? "builder.work.energyMissing"
+            : "builder.work.energyAll",
+        ),
+        target: targetLabel,
+      },
+    ).finally(() => setAnalyzingEnergy(false));
   }
 
   async function measureEnergy(mode: "missing" | "all") {
@@ -3193,26 +3320,89 @@ export function SetBuilder() {
       setStatus(t("builder.energy.noneMissing"));
       return;
     }
-    const stick = await stickForEnergy();
-    if (stick === undefined) return;
+    await startMeasureScan(
+      targets,
+      mode,
+      lastLoadedStickSetId.current,
+      `${mode}:${targets.map((track) => track.filePath || track.id).join("|")}`,
+      trackCount(targets.length, t),
+    );
+  }
+
+  function playlistEnergyTargets(set: RekordboxStickSet) {
+    const withPath = stickSetEnergyTargets(set);
+    return {
+      withPath,
+      missing: withPath.filter((track) => !hasKnownEnergy(track)),
+      known: withPath.filter((track) => hasKnownEnergy(track)),
+    };
+  }
+
+  async function readPlaylistEnergyTags(set: RekordboxStickSet) {
+    const { withPath } = playlistEnergyTargets(set);
+    if (!withPath.length) {
+      setStatus(t("builder.energy.noFile"));
+      return;
+    }
     setAnalyzingEnergy(true);
     await queueHeavy(
-      () =>
-        runEnergyScan(targets, {
-          write: false,
-          writeRoot: null,
-          reuseTags: mode === "missing",
-          root: stick,
-        }),
+      () => readEnergyTagsNow(withPath, set.id),
       {
-        operation: "energy-measure",
-        key: `${mode}:${targets.map((track) => track.filePath || track.id).join("|")}`,
-        label: t(
-          mode === "missing"
-            ? "builder.work.energyMissing"
-            : "builder.work.energyAll",
-        ),
-        target: trackCount(targets.length, t),
+        operation: "energy-tags",
+        key: `playlist:${set.id}`,
+        label: t("builder.work.energyTags"),
+        target: set.name,
+      },
+    ).finally(() => setAnalyzingEnergy(false));
+  }
+
+  async function measurePlaylistEnergy(
+    set: RekordboxStickSet,
+    mode: "missing" | "all",
+  ) {
+    const { withPath, missing } = playlistEnergyTargets(set);
+    if (!withPath.length) {
+      setStatus(t("builder.energy.noFile"));
+      return;
+    }
+    const targets = mode === "missing" ? missing : withPath;
+    if (!targets.length) {
+      setStatus(t("builder.energy.noneMissing"));
+      return;
+    }
+    await startMeasureScan(
+      targets,
+      mode,
+      set.id,
+      `playlist:${mode}:${set.id}`,
+      set.name,
+    );
+  }
+
+  async function writePlaylistEnergy(set: RekordboxStickSet) {
+    const { known } = playlistEnergyTargets(set);
+    if (!known.length) {
+      setStatus(t("builder.energy.noneKnown"));
+      return;
+    }
+    const stick = await stickForEnergy();
+    if (stick === undefined || !stick) {
+      setStatus(t("builder.energy.noStick"));
+      return;
+    }
+    const writeRoot = await ensureStickWriteAccess(stick);
+    if (!writeRoot) {
+      setStatus(t("builder.energy.denied"));
+      return;
+    }
+    setAnalyzingEnergy(true);
+    await queueHeavy(
+      () => writeEnergyNow(known, writeRoot, set.id),
+      {
+        operation: "energy-write",
+        key: `playlist:${set.id}`,
+        label: t("builder.work.energyWrite"),
+        target: set.name,
       },
     ).finally(() => setAnalyzingEnergy(false));
   }
@@ -3235,7 +3425,7 @@ export function SetBuilder() {
     }
     setAnalyzingEnergy(true);
     await queueHeavy(
-      () => writeEnergyNow(known, writeRoot),
+      () => writeEnergyNow(known, writeRoot, lastLoadedStickSetId.current),
       {
         operation: "energy-write",
         key: known.map((track) => track.filePath || track.id).join("|"),
@@ -3248,16 +3438,24 @@ export function SetBuilder() {
   async function writeEnergyNow(
     known: SetTrack[],
     writeRoot: NonNullable<Awaited<ReturnType<typeof loadPersistedStickHandle>>>,
+    setId: string | null = lastLoadedStickSetId.current,
   ) {
     const job = ++energyJob.current;
     setAnalyzingEnergy(true);
     const alive = () => energyJob.current === job;
+    const scanSetId = setId;
+    const total = known.length;
+    const report = (done: number) => {
+      if (!alive()) return;
+      setEnergyScan({ done, total, phase: "write", setId: scanSetId });
+    };
     let written = 0;
     let skipped = 0;
     try {
       let done = 0;
       const paint = { at: 0 };
-      setStatus(t("builder.energy.writeProgress", { done: 0, total: known.length, written: 0 }));
+      report(0);
+      setStatus(t("builder.energy.writeProgress", { done: 0, total, written: 0 }));
       for (const track of known) {
         if (!alive()) return;
         const path = track.filePath!.trim();
@@ -3279,14 +3477,18 @@ export function SetBuilder() {
           skipped += 1;
         }
         done += 1;
-        if (alive() && shouldPaint(paint, done === known.length)) {
-          setStatus(t("builder.energy.writeProgress", { done, total: known.length, written }));
+        report(done);
+        if (alive() && shouldPaint(paint, done === total)) {
+          setStatus(t("builder.energy.writeProgress", { done, total, written }));
         }
         await yieldToUi();
       }
       if (alive()) setStatus(t("builder.energy.writeDone", { written, skipped }));
     } finally {
-      if (alive()) setAnalyzingEnergy(false);
+      if (alive()) {
+        setAnalyzingEnergy(false);
+        setEnergyScan(null);
+      }
     }
   }
 
@@ -3309,6 +3511,7 @@ export function SetBuilder() {
           writeRoot,
           reuseTags: false,
           root: stick,
+          setId: lastLoadedStickSetId.current,
         });
       } finally {
         if (!started) setAnalyzingEnergy(false);
@@ -3864,9 +4067,19 @@ export function SetBuilder() {
       ) : null}
 
       {displayedStatus ? (
-        <p className="banner status" role="status" aria-live="polite" aria-busy={statusHeld || energyBusy}>
-          {displayedStatus}
-        </p>
+        <div className="banner status" role="status" aria-live="polite" aria-busy={statusHeld || energyBusy}>
+          <p>{displayedStatus}</p>
+          {energyScan ? (
+            <EnergyProgressBar
+              done={energyScan.done}
+              total={energyScan.total}
+              label={t("builder.energy.progressAria", {
+                done: energyScan.done,
+                total: energyScan.total,
+              })}
+            />
+          ) : null}
+        </div>
       ) : null}
 
       <AppUpdateCard variant="banner" />
@@ -4007,8 +4220,16 @@ export function SetBuilder() {
               <StickSetList
                 sets={stickSets}
                 pending={deleteBusy}
+                energyScan={energyScan}
+                energyBusy={energyBusy}
+                stickReady={stickReady}
                 onTake={requestStickSet}
                 onDelete={requestDeleteStickPlaylist}
+                onChooseStick={openStickPicker}
+                onReadEnergy={(set) => void readPlaylistEnergyTags(set)}
+                onMeasureMissing={(set) => void measurePlaylistEnergy(set, "missing")}
+                onMeasureAll={(set) => void measurePlaylistEnergy(set, "all")}
+                onWriteEnergy={(set) => void writePlaylistEnergy(set)}
               />
             ) : (
               <section className="library-browser stick-sets builder-card" aria-label={t("builder.playlist.title")}>
@@ -4560,6 +4781,26 @@ export function SetBuilder() {
                     onMeasureAll={() => void measureEnergy("all")}
                     onWrite={() => void writeEnergyToFiles()}
                   />
+                  <span className="set-energy-readout">
+                    <span>
+                      {t("builder.energy.coverage", {
+                        known: setEnergyCoverage.known,
+                        total: setEnergyCoverage.total,
+                      })}
+                    </span>
+                    {energyScan ? (
+                      <EnergyProgressBar
+                        done={energyScan.done}
+                        total={energyScan.total}
+                        label={t("builder.energy.progressAria", {
+                          done: energyScan.done,
+                          total: energyScan.total,
+                        })}
+                      />
+                    ) : null}
+                  </span>
+                </div>
+                <div className="set-tools-group set-tools-icons">
                   <SetMatchLinksButton
                     canMatch={draft.tracks.length > 0}
                     matchingLinks={matchingLinks}
@@ -4704,7 +4945,6 @@ export function SetBuilder() {
               aria-labelledby="set-tab-list"
             >
               <div className="crate-list-head">
-                {visibleTimeline.length > 0 ? (
                 <div
                   className="seg crate-list-filter"
                   role="group"
@@ -4737,7 +4977,6 @@ export function SetBuilder() {
                     </Tip>
                   ))}
                 </div>
-                ) : null}
                 {(() => {
                   const listStatus =
                     roleFilter === "all"
@@ -4863,8 +5102,21 @@ export function SetBuilder() {
               </div>
               {visibleTimeline.length === 0 ? (
                 <div className="empty">
-                  <p>{t("builder.list.empty")}</p>
-                  <p>{t("builder.list.emptyHint")}</p>
+                  {roleFilter !== "all" && draft.tracks.length > 0 ? (
+                    <>
+                      <p>
+                        {t("builder.list.emptyRole", {
+                          role: roleLabel(t, roleFilter),
+                        })}
+                      </p>
+                      <p>{t("builder.list.emptyRoleHint")}</p>
+                    </>
+                  ) : (
+                    <>
+                      <p>{t("builder.list.empty")}</p>
+                      <p>{t("builder.list.emptyHint")}</p>
+                    </>
+                  )}
                 </div>
               ) : (
             <ol
@@ -4989,12 +5241,35 @@ export function SetBuilder() {
                                 <em className="anchor-pill is-exclude">{t("builder.row.excludeBadge")}</em>
                               ) : null}
                             </span>
-                            <span>
+                            <span
+                              className="manual-artist-line"
+                              title={
+                                artistLine(track.artists, t) +
+                                (track.durationMs
+                                  ? ` · ${formatDuration(trackPlayedMs(track, blendMs))}`
+                                  : "")
+                              }
+                            >
                               {artistLine(track.artists, t)}
                               {track.durationMs
                                 ? ` · ${formatDuration(trackPlayedMs(track, blendMs))}`
                                 : ""}
                             </span>
+                            {rowCompact ? (
+                              <span className="compact-inline-meta">
+                                <SourceBadge
+                                  source={track.source}
+                                  tip={t("builder.row.sourceTip")}
+                                  inline
+                                />
+                                <span
+                                  className="td-values"
+                                  title={trackDetailsSummary(track, t)}
+                                >
+                                  {trackDetailsSummary(track, t)}
+                                </span>
+                              </span>
+                            ) : null}
                           </span>
                         </button>
                         {!rowCompact &&
@@ -5567,32 +5842,6 @@ export function SetBuilder() {
                         </div>
                       </div>
                     </div>
-                    {rowCompact ? (
-                      <div className="compact-details-line">
-                        <button
-                          type="button"
-                          className="compact-details-trigger"
-                          aria-expanded={detailsOpen}
-                          aria-label={
-                            detailsOpen
-                              ? t("builder.list.detailsClose")
-                              : t("builder.list.detailsOpen")
-                          }
-                          onClick={() => toggleTrackDetails(track.id)}
-                        >
-                          <span className="td-label">{t("builder.row.details")}</span>
-                          <SourceBadge
-                            source={track.source}
-                            tip={t("builder.row.sourceTip")}
-                            inline
-                          />
-                          <span className="td-values">{trackDetailsSummary(track, t)}</span>
-                        </button>
-                        {track.role !== "safety" ? (
-                          <MixJoinLine tracks={mainTracks} track={track} inline />
-                        ) : null}
-                      </div>
-                    ) : null}
                     {track.role !== "safety" || track.why ? (
                       <div className="manual-subline">
                         {track.role !== "safety" ? (

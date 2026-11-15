@@ -27,6 +27,7 @@ import {
 } from "@/lib/stick-session";
 import { ActionIcon } from "@/components/ActionIcon";
 import { Hint } from "@/components/Hint";
+import { SetEnergyMenu } from "@/components/SetTakeaway";
 import { StickHealthCard } from "@/components/StickHealthCard";
 import { inspectStick, inspectStickFiles, pdbSummaryOf, type StickHealth } from "@/lib/stick-health";
 import { enqueueWork } from "@/lib/work-queue";
@@ -45,6 +46,12 @@ import {
   type PioneerVolumeInfo,
 } from "@/lib/stick-volume-client";
 import { formatMacBytes, stickVolumeName } from "@/lib/stick-volumes";
+import {
+  hasKnownEnergy,
+  stickEnergyCoverage,
+  type EnergyScan,
+} from "@/lib/energy";
+
 
 export type StickStatusSlice = {
   health: StickHealth;
@@ -101,13 +108,29 @@ type LoadPhase = "idle" | "picking" | "listing" | "reading";
 export function StickSetList({
   sets,
   pending = false,
+  energyScan = null,
+  energyBusy = false,
+  stickReady = false,
   onTake,
   onDelete,
+  onChooseStick,
+  onReadEnergy,
+  onMeasureMissing,
+  onMeasureAll,
+  onWriteEnergy,
 }: {
   sets: RekordboxStickSet[];
   pending?: boolean;
+  energyScan?: EnergyScan | null;
+  energyBusy?: boolean;
+  stickReady?: boolean;
   onTake: (set: RekordboxStickSet) => void;
   onDelete?: (set: RekordboxStickSet) => void;
+  onChooseStick?: () => void;
+  onReadEnergy?: (set: RekordboxStickSet) => void;
+  onMeasureMissing?: (set: RekordboxStickSet) => void;
+  onMeasureAll?: (set: RekordboxStickSet) => void;
+  onWriteEnergy?: (set: RekordboxStickSet) => void;
 }) {
   const { t } = useI18n();
   const [query, setQuery] = useState("");
@@ -185,6 +208,17 @@ export function StickSetList({
             {visible.map((set) => {
               const ms = set.tracks.reduce((sum, track) => sum + track.durationMs, 0);
               const recent = latestHistoryTrack(set);
+              const withPath = set.tracks.filter((track) => track.filePath.trim());
+              const coverage = stickEnergyCoverage(withPath);
+              const scan =
+                energyScan && energyScan.setId === set.id ? energyScan : null;
+              const fileCount = withPath.length;
+              const knownCount = withPath.filter(hasKnownEnergy).length;
+              const showEnergy = fileCount > 0;
+              const incomplete = showEnergy && coverage.known < coverage.total;
+              const showFraction = Boolean(scan) || incomplete;
+              const fractionKnown = scan ? scan.done : coverage.known;
+              const fractionTotal = scan ? scan.total : coverage.total;
               return (
                 <li key={set.id}>
                   <div className="stick-set-copy">
@@ -202,6 +236,43 @@ export function StickSetList({
                     </div>
                   </div>
                   <div className="stick-set-actions">
+                    {showEnergy ? (
+                    <div
+                      className={[
+                        "stick-set-energy",
+                        incomplete ? "is-incomplete" : "is-complete",
+                        scan ? "is-busy" : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                    >
+                      <SetEnergyMenu
+                        className="stick-set-energy-menu"
+                        ariaLabel={`${t("builder.energy.playlistAria", { name: set.name })}. ${t("builder.energy.coverageAria", { known: coverage.known, total: coverage.total })}`}
+                        busy={energyBusy}
+                        stickReady={stickReady}
+                        onChooseStick={onChooseStick}
+                        fileCount={fileCount}
+                        missingCount={withPath.filter((track) => !hasKnownEnergy(track)).length}
+                        knownCount={knownCount}
+                        onReadTags={() => onReadEnergy?.(set)}
+                        onMeasureMissing={() => onMeasureMissing?.(set)}
+                        onMeasureAll={() => onMeasureAll?.(set)}
+                        onWrite={() => onWriteEnergy?.(set)}
+                      />
+                      {showFraction ? (
+                        <span
+                          className="stick-set-energy-label"
+                          title={t("builder.energy.coverageAria", {
+                            known: fractionKnown,
+                            total: fractionTotal,
+                          })}
+                        >
+                          {`${fractionKnown}/${fractionTotal}`}
+                        </span>
+                      ) : null}
+                    </div>
+                    ) : null}
                     <button
                       type="button"
                       className="btn ghost stick-set-load"

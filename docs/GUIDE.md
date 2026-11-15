@@ -2,7 +2,7 @@
 
 [Deutsch](GUIDE.de.md) · **English** · [README](../README.md)
 
-**Version 5.3.0.** Screenshots show the English interface in Chrome. **DE** / **EN** at the top right switches the labels. The German manual follows the same steps.
+**Version 5.4.0.** Screenshots show the English interface in Chrome. **DE** / **EN** at the top right switches the labels. The German manual follows the same steps.
 
 The desktop app (port **4317**) is what you normally install. If you run from the repo with `npm run dev`, use port **4327**.
 
@@ -45,6 +45,7 @@ Under **Build set**, **Start with a playlist** lists the playlists on the stick.
 2. Pick a playlist and tap **Load as set**.
 3. If the set already has titles, choose **Replace** (overwrite once, with **Undo**), **Merge** (keep the set and add missing titles only), or **Cancel**.
 4. The playlist order becomes your set list. Keys and BPM stay as on the stick.
+5. Energy 1–10: the lightning left of **Load as set** reads tags or measures **that playlist** without loading it as a set. **Write to MP3** stores the level in the file (key, BPM, and audio stay). Green means every file has a level; amber plus a count (`40/55`) means some still lack one. Empty playlists have no lightning. The 1–10 tick meter is per title in the setlist, not on the playlist.
 
 At the top, the **brief** sets:
 

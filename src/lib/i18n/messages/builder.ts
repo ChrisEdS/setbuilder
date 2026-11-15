@@ -148,7 +148,7 @@ const de = {
     "Kurznotiz für die Kabine — wird nicht auf den Stick in die Datei geschrieben.",
   "builder.playlist.title": "Mit einer Playlist starten",
   "builder.playlist.note":
-    "Wählst du eine Playlist und tippst auf „Als Set laden“, wird daraus deine Setliste — mit allen Titeln in Stick-Reihenfolge. Danach ergänzt oder tauschst du einzelne Titel unter „Musik hinzufügen“. Alternativen stehen bereit, zählen aber nicht zur Spielzeit. Erst wenn du sie in die Performance setzt, laufen sie mit.",
+    "Wählst du eine Playlist und tippst auf „Als Set laden“, wird daraus deine Setliste — mit allen Titeln in Stick-Reihenfolge. Energie 1–10 kommt aus Stick-Tags; der Blitz auf der Playlist-Zeile liest Tags oder misst diese Playlist, ohne sie zu laden. Danach ergänzt oder tauschst du einzelne Titel unter „Musik hinzufügen“. Alternativen stehen bereit, zählen aber nicht zur Spielzeit. Erst wenn du sie in die Performance setzt, laufen sie mit.",
   "builder.playlist.empty":
     "Noch kein Stick. Oben unter „Stick laden & vorbereiten“ den Stick laden.",
   "builder.playlist.confirmTitle": "Playlist „{name}“ laden?",
@@ -309,13 +309,15 @@ const de = {
     "Setliste aus den {pool} gespielten Tracks neu setzen? Brief, Opener, Closer, gepinnte und behaltene Tracks bleiben. Der Rest kommt neu aus der History.",
   "builder.tool.energy": "Energie aus Dateien",
   "builder.tool.energyTip":
-    "Liest oder misst Energie aus den Dateien auf dem Stick und schreibt sie zurück.",
+    "Liest oder misst Energie aus den Dateien. In MP3 schreiben legt das Level in die Datei.",
   "builder.tool.energyBusy": "Energie…",
   "builder.energy.noStick":
     "Kein Stick verbunden. Unter „Stick laden & vorbereiten“ den Stick wählen (Chrome / Edge / Desktop).",
   "builder.energy.noFile":
     "Keine Tracks mit Stick-Pfad. Set vom Stick laden, damit die Dateien gefunden werden.",
   "builder.energy.measureFailed": "Messung fehlgeschlagen",
+  "builder.energy.skipNoFile": "Datei nicht lesbar",
+  "builder.energy.skipNotMp3": "Kein MP3",
   "builder.energy.one": "Energie {level} · {name}",
   "builder.energy.oneWritten": "Energie {level} · {name} · MP3 geschrieben",
   "builder.energy.progress": "{done}/{total} · {skipped} übersprungen · {errors} Fehler",
@@ -344,7 +346,7 @@ const de = {
   "builder.energy.writeDone": "{written} MP3 geschrieben · {skipped} übersprungen",
   "builder.energy.menu.read": "Aus Tags lesen",
   "builder.energy.menu.readHint":
-    "{count} Dateien, ohne Audio zu dekodieren. Der Tag ersetzt den Level im Set.",
+    "{count} Dateien, ohne Audio zu dekodieren. Der Tag ersetzt den Level in Playlist oder Set.",
   "builder.energy.menu.missing": "Fehlende messen",
   "builder.energy.menu.missingHint":
     "{count} Tracks ohne Energie im Hintergrund messen. Die Datei wird nicht geschrieben.",
@@ -353,7 +355,17 @@ const de = {
     "{count} Dateien im Hintergrund neu messen. Die Datei bleibt unverändert.",
   "builder.energy.menu.write": "In MP3 schreiben",
   "builder.energy.menu.writeHint":
-    "{count} gesetzte Level in die Dateien schreiben. Key, BPM und Audio bleiben.",
+    "{count} bekannte Level in die Dateien schreiben, ohne neu zu messen. Key, BPM und Audio bleiben.",
+  "builder.energy.coverage": "Energie {known}/{total}",
+  "builder.energy.coverageAria": "Energie {known} von {total} Tracks bekannt",
+  "builder.energy.phase.tags": "Tags lesen…",
+  "builder.energy.phase.measure": "Messen…",
+  "builder.energy.phase.write": "Schreiben…",
+  "builder.energy.meterAria":
+    "Energie {level} von 10 für {name}, Club etwa 7",
+  "builder.energy.meterUnknown": "Energie unbekannt",
+  "builder.energy.progressAria": "Energie {done} von {total}",
+  "builder.energy.playlistAria": "Energie für „{name}“",
   "builder.sort.perfect": "Perfekt · Max Score",
   "builder.sort.perfectHint":
     "Ganzes Set: exakter Camelot-TSP (Held-Karp ≤18, sonst NN+2-opt/Or-opt). Zuerst engere Keys, dann Mix-Score. Orientierung, kein Zwang. Opener/Closer bleiben. Phasen danach neu.",
@@ -431,6 +443,9 @@ const de = {
   "builder.list.empty": "Noch kein Set.",
   "builder.list.emptyHint":
     "Unter „Set bauen“ mit einer Playlist starten oder oben den Stick laden.",
+  "builder.list.emptyRole": "Keine {role}-Tracks in diesem Set.",
+  "builder.list.emptyRoleHint":
+    "Oben „Alle Tracks (Set)“ oder eine andere Rolle wählen — oder unter Rollen Tracks zuweisen.",
 
   "builder.row.dragAria": "{name} verschieben",
   "builder.row.dragTitle": "Hier ziehen",
@@ -999,7 +1014,7 @@ const en: Record<keyof typeof de, string> = {
     "Short booth note — not written into the file on the stick.",
   "builder.playlist.title": "Start with a playlist",
   "builder.playlist.note":
-    "When you pick a playlist and tap “Load as set”, it becomes your set list — every track in stick order. Afterwards you add or swap individual tracks under “Add music”. Alternates are ready but do not count toward playing time until you place them in the performance.",
+    "When you pick a playlist and tap “Load as set”, it becomes your set list — every track in stick order. Energy 1–10 comes from stick tags; the lightning on the playlist row reads tags or measures that playlist without loading it. Afterwards you add or swap individual tracks under “Add music”. Alternates are ready but do not count toward playing time until you place them in the performance.",
   "builder.playlist.empty":
     "No stick yet. Load it above under “Load stick & prepare”.",
   "builder.playlist.confirmTitle": "Load playlist “{name}”?",
@@ -1155,13 +1170,15 @@ const en: Record<keyof typeof de, string> = {
     "Rebuild the setlist from the {pool} played tracks? Brief, opener, closer, pinned and kept tracks stay. The rest is drawn again from history.",
   "builder.tool.energy": "Energy from files",
   "builder.tool.energyTip":
-    "Reads or measures energy from the files on the stick and writes it back.",
+    "Reads or measures energy from the files. Write to MP3 stores the level in the file.",
   "builder.tool.energyBusy": "Energy…",
   "builder.energy.noStick":
     "No stick connected. Choose the stick under “Load stick & prepare” (Chrome / Edge / desktop).",
   "builder.energy.noFile":
     "No tracks with a stick path. Load the set from the stick so the files can be found.",
   "builder.energy.measureFailed": "Measurement failed",
+  "builder.energy.skipNoFile": "File not readable",
+  "builder.energy.skipNotMp3": "Not an MP3",
   "builder.energy.one": "Energy {level} · {name}",
   "builder.energy.oneWritten": "Energy {level} · {name} · written to MP3",
   "builder.energy.progress": "{done}/{total} · {skipped} skipped · {errors} errors",
@@ -1190,7 +1207,7 @@ const en: Record<keyof typeof de, string> = {
   "builder.energy.writeDone": "{written} MP3s written · {skipped} skipped",
   "builder.energy.menu.read": "Read from tags",
   "builder.energy.menu.readHint":
-    "{count} files, without decoding audio. The tag replaces the level in the set.",
+    "{count} files, without decoding audio. The tag replaces the level in the playlist or set.",
   "builder.energy.menu.missing": "Measure missing",
   "builder.energy.menu.missingHint":
     "Measure {count} tracks without energy in the background. The file is not written.",
@@ -1199,7 +1216,17 @@ const en: Record<keyof typeof de, string> = {
     "Measure {count} files again in the background. The file stays unchanged.",
   "builder.energy.menu.write": "Write to MP3",
   "builder.energy.menu.writeHint":
-    "Write {count} set levels into the files. Key, BPM and audio stay.",
+    "Write {count} known levels into the files without measuring again. Key, BPM and audio stay.",
+  "builder.energy.coverage": "Energy {known}/{total}",
+  "builder.energy.coverageAria": "Energy known for {known} of {total} tracks",
+  "builder.energy.phase.tags": "Reading tags…",
+  "builder.energy.phase.measure": "Measuring…",
+  "builder.energy.phase.write": "Writing…",
+  "builder.energy.meterAria":
+    "Energy {level} of 10 for {name}, club around 7",
+  "builder.energy.meterUnknown": "Energy unknown",
+  "builder.energy.progressAria": "Energy {done} of {total}",
+  "builder.energy.playlistAria": "Energy for “{name}”",
   "builder.sort.perfect": "Perfect · Max score",
   "builder.sort.perfectHint":
     "Whole set: exact Camelot TSP (Held-Karp ≤18, else NN+2-opt/Or-opt). Prefer closer keys first, then mix score. A guide, not a rule. Opener/closer stay. Phases re-laid after.",
@@ -1276,6 +1303,9 @@ const en: Record<keyof typeof de, string> = {
   "builder.list.empty": "No set yet.",
   "builder.list.emptyHint":
     "Start with a playlist under “Build set”, or load the stick above.",
+  "builder.list.emptyRole": "No {role} tracks in this set.",
+  "builder.list.emptyRoleHint":
+    "Choose “All tracks (Set)” or another role above — or assign tracks under Roles.",
 
   "builder.row.dragAria": "Move {name}",
   "builder.row.dragTitle": "Drag here",

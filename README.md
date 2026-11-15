@@ -2,7 +2,7 @@
 
 [Deutsch](README.de.md) · **English**
 
-**Version 5.3.0**
+**Version 5.4.0**
 
 SETBUILDER helps you plan a DJ set from a rekordbox USB stick, check how the titles flow together, hear the joins at home, and write the finished set back as a playlist on the same stick. The app speaks German and English.
 
@@ -20,6 +20,7 @@ SETBUILDER helps you plan a DJ set from a rekordbox USB stick, check how the tit
 - **Playlist becomes the set** — Your rekordbox stick is the library: load a playlist and its order becomes your set list, with key and BPM as exported. You plan inside a **slot** (the time you have), not just playlist length.
 - **Playing time vs slot** — On each row, the overlap you plan is taken off that title's length. The status line adds up **playing time** against the slot and tells you when the set runs too long.
 - **Roles and alternatives** — Mark each performance title **Anchor**, **Bridge**, or **Groove** so you see its job in the night. **Alternatives** hold reserve titles beside the list; they stay out of playing time until you drag one in.
+- **Energy 1–10 (openkey)** — Each title gets Mixed In Key-style energy (1–10). The lightning left of **Load as set** reads tags or measures **that playlist** without loading it. **Write to MP3** stores the level in the file (key, BPM, and audio stay). Green means every file has a level; amber plus `40/55` means some still lack one. Empty playlists have no lightning. The setlist shows a ten-tick meter per title.
 - **Energy arc** — In the arc view, place titles across **Open**, **Lift**, **Rise**, **Peak**, and **Release** over your slot. You see whether the build and peak land where you want before you play.
 - **Rehearsal** — **Before**, **Now**, and **After** play the handoff into the next title using the overlap length from that row. With **Light** off, **Hear the join** on the Now card overlays the next stick file for that overlap: **Sync**, **Cue** (playing returns to the mix start; paused off-start sets it), a crossfader that stays where you drag it, red downbeat lines, and incoming grid **±1 ms** (Shift **10 ms**). Tweak the transition mark while you listen; it lives in the set, not in the file on the stick.
 - **Beatgrid on the waveform** — Nudge the rekordbox beatgrid in the player (**−5**, **+5**, **1**). Hot cues **A–H** sit on the waveform; **Q** snaps new cues to the grid, and you can write cues back to the stick when you export.
