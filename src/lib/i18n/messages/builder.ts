@@ -421,15 +421,17 @@ const de = {
   "builder.list.headAll":
     "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit / {slot} Slot",
   "builder.list.headAllBlend":
-    "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit / {slot} Slot · {over} Überlappung",
+    "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit / {slot} Slot · {over} Blend-Abzug",
   "builder.list.headAllShort":
     "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit / {slot} Slot · {free} frei",
   "builder.list.headAllShortBlend":
-    "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit / {slot} Slot · {over} Überlappung · {free} frei",
+    "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit / {slot} Slot · {over} Blend-Abzug · {free} frei",
   "builder.list.headAllLong":
     "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit / {slot} Slot · Spielzeit zu lang",
   "builder.list.headAllLongBlend":
-    "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit / {slot} Slot · {over} Überlappung · Spielzeit zu lang",
+    "Performance-Set · {tracks} · Blend {mix} · {duration} Spielzeit / {slot} Slot · {over} Blend-Abzug · Spielzeit zu lang",
+  "builder.list.statusTip":
+    "Spielzeit ist schon ohne Blend-Überlappungen. Der Blend-Abzug ist die Summe dieser Überlappungen zwischen den Tracks — nicht die Zeit über dem Slot. Über dem Slot steht nur „Spielzeit zu lang“.",
   "builder.list.mixPlanned": "nach Plan",
   "builder.list.headRole": "{role} · {tracks} · {duration}",
   "builder.list.details": "Details",
@@ -1290,15 +1292,17 @@ const en: Record<keyof typeof de, string> = {
   "builder.list.headAll":
     "Performance set · {tracks} · blend {mix} · {duration} playing / {slot} slot",
   "builder.list.headAllBlend":
-    "Performance set · {tracks} · blend {mix} · {duration} playing / {slot} slot · {over} overlap",
+    "Performance set · {tracks} · blend {mix} · {duration} playing / {slot} slot · {over} blend time",
   "builder.list.headAllShort":
     "Performance set · {tracks} · blend {mix} · {duration} playing / {slot} slot · {free} free",
   "builder.list.headAllShortBlend":
-    "Performance set · {tracks} · blend {mix} · {duration} playing / {slot} slot · {over} overlap · {free} free",
+    "Performance set · {tracks} · blend {mix} · {duration} playing / {slot} slot · {over} blend time · {free} free",
   "builder.list.headAllLong":
     "Performance set · {tracks} · blend {mix} · {duration} playing / {slot} slot · playing time too long",
   "builder.list.headAllLongBlend":
-    "Performance set · {tracks} · blend {mix} · {duration} playing / {slot} slot · {over} overlap · playing time too long",
+    "Performance set · {tracks} · blend {mix} · {duration} playing / {slot} slot · {over} blend time · playing time too long",
+  "builder.list.statusTip":
+    "Playing time already subtracts blend overlaps. Blend time is the sum of those overlaps between tracks, not how much you are over the slot. Over-slot is only “playing time too long”.",
   "builder.list.mixPlanned": "as planned",
   "builder.list.headRole": "{role} · {tracks} · {duration}",
   "builder.list.details": "Details",
