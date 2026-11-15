@@ -6173,3 +6173,57 @@ dialog.stick-dialog.playlist-delete-dialog .playlist-delete-spinner {
   min-width: 10rem;
   max-width: 10rem;
 }
+
+.set-shell .banner.status .energy-work-queue {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.set-shell .banner.status .energy-work-queue-title {
+  margin: 0;
+  font-size: var(--ui-font-xs);
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ui-muted);
+}
+
+.set-shell .banner.status .energy-work-queue ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.set-shell .banner.status .energy-work-queue li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.15rem 0.75rem;
+  align-items: baseline;
+}
+
+.set-shell .banner.status .energy-work-queue-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.set-shell .banner.status .energy-work-queue-state,
+.set-shell .banner.status .energy-work-queue-action {
+  font-size: var(--ui-font-xs);
+  color: var(--ui-muted);
+}
+
+.set-shell .banner.status .energy-work-queue-action {
+  grid-column: 1 / -1;
+}
+
+.set-shell .banner.status .energy-work-queue .energy-progress {
+  grid-column: 1 / -1;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+}

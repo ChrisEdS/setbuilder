@@ -293,6 +293,7 @@ function MenuGroup({ label }: { label: string }) {
 
 export function SetEnergyMenu({
   busy,
+  busyHint,
   stickReady,
   fileCount,
   missingCount,
@@ -306,6 +307,8 @@ export function SetEnergyMenu({
   onWrite,
 }: {
   busy?: boolean;
+  /** Replaces the generic “Energy…” tip while this playlist is in the queue. */
+  busyHint?: string;
   stickReady: boolean;
   fileCount: number;
   missingCount: number;
@@ -324,7 +327,11 @@ export function SetEnergyMenu({
   const locked = Boolean(busy);
   return (
     <Tip
-      text={locked ? t("builder.tool.energyBusy") : t("builder.tool.energyTip")}
+      text={
+        locked
+          ? (busyHint ?? t("builder.tool.energyBusy"))
+          : t("builder.tool.energyTip")
+      }
       disabled={locked}
     >
     <Menu

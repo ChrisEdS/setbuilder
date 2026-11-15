@@ -31,7 +31,11 @@ import { SetEnergyMenu } from "@/components/SetTakeaway";
 import { StickHealthCard } from "@/components/StickHealthCard";
 import { inspectStick, inspectStickFiles, pdbSummaryOf, type StickHealth } from "@/lib/stick-health";
 import { isStickReadBusy } from "@/lib/stick-busy";
-import { enqueueWork } from "@/lib/work-queue";
+import {
+  energyJobForPlaylist,
+  enqueueWork,
+  type WorkJobSnapshot,
+} from "@/lib/work-queue";
 import {
   prepareStickForPlayers,
   restorePlayerLibrary,
@@ -111,6 +115,7 @@ export function StickSetList({
   pending = false,
   energyScan = null,
   energyBusy = false,
+  energyJobs = [],
   stickReady = false,
   onTake,
   onDelete,
@@ -124,6 +129,7 @@ export function StickSetList({
   pending?: boolean;
   energyScan?: EnergyScan | null;
   energyBusy?: boolean;
+  energyJobs?: readonly WorkJobSnapshot[];
   stickReady?: boolean;
   onTake: (set: RekordboxStickSet) => void;
   onDelete?: (set: RekordboxStickSet) => void;
@@ -213,6 +219,7 @@ export function StickSetList({
               const coverage = stickEnergyCoverage(withPath);
               const scan =
                 energyScan && energyScan.setId === set.id ? energyScan : null;
+              const energyJob = energyJobForPlaylist(energyJobs, set.id);
               const fileCount = withPath.length;
               const knownCount = withPath.filter(hasKnownEnergy).length;
               const showEnergy = fileCount > 0;
@@ -242,7 +249,7 @@ export function StickSetList({
                       className={[
                         "stick-set-energy",
                         incomplete ? "is-incomplete" : "is-complete",
-                        scan ? "is-busy" : "",
+                        scan || energyJob?.status === "running" ? "is-busy" : "",
                       ]
                         .filter(Boolean)
                         .join(" ")}
@@ -250,7 +257,16 @@ export function StickSetList({
                       <SetEnergyMenu
                         className="stick-set-energy-menu"
                         ariaLabel={`${t("builder.energy.playlistAria", { name: set.name })}. ${t("builder.energy.coverageAria", { known: coverage.known, total: coverage.total })}`}
-                        busy={energyBusy}
+                        busy={Boolean(energyJob) || (energyBusy && energyJobs.length === 0)}
+                        busyHint={
+                          energyJob
+                            ? energyJob.status === "running"
+                              ? t("builder.work.energyBusyNamed", { name: set.name })
+                              : t("builder.work.energyQueueWaiting", {
+                                  position: energyJob.position,
+                                })
+                            : undefined
+                        }
                         stickReady={stickReady}
                         onChooseStick={onChooseStick}
                         fileCount={fileCount}

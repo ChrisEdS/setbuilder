@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   cancelWorkJob,
+  energyJobForPlaylist,
   enqueueWork,
   getWorkQueueSnapshot,
+  playlistIdFromEnergyJobKey,
   subscribeWorkQueue,
   workQueueDepth,
 } from "./work-queue.ts";
@@ -81,4 +83,21 @@ test("a queued named job can be cancelled", async () => {
   await assert.rejects(queued, /cancelled/);
   release();
   await running;
+});
+
+test("playlist energy job keys decode to the stick playlist id", () => {
+  assert.equal(playlistIdFromEnergyJobKey("playlist:missing:playlist:9"), "playlist:9");
+  assert.equal(playlistIdFromEnergyJobKey("playlist:all:history:2"), "history:2");
+  assert.equal(playlistIdFromEnergyJobKey("track-a"), null);
+  const jobs = [
+    {
+      id: "wait",
+      operation: "energy-measure",
+      key: "playlist:all:history:2",
+      label: "Recalculate all energy",
+      status: "queued" as const,
+      position: 1,
+    },
+  ];
+  assert.equal(energyJobForPlaylist(jobs, "history:2")?.id, "wait");
 });
