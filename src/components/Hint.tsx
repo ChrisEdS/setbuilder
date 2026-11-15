@@ -16,6 +16,7 @@ import {
   tipClaimActive,
   tipGetLastClosedAt,
   tipGetOpenCount,
+  tipHostHasOpenDetails,
   tipNoteClosed,
   tipNoteOpened,
   tipReleaseActive,
@@ -132,11 +133,14 @@ export function Tip({
   const openRef = useRef(false);
   /** User still wants this tip (pointer over or focus path armed). Cleared on leave/blur/dismiss. */
   const interestedRef = useRef(false);
-  const quietRef = useRef(quiet);
   const forceCloseRef = useRef<() => void>(() => {});
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<BubblePos | null>(null);
-  const [trackedQuiet, setTrackedQuiet] = useState(quiet);
+  /** Nested `<details>` menu (energy / sort / …) owns the control — keep Tip closed. */
+  const [popupQuiet, setPopupQuiet] = useState(false);
+  const effectiveQuiet = quiet || popupQuiet;
+  const quietRef = useRef(effectiveQuiet);
+  const [trackedQuiet, setTrackedQuiet] = useState(effectiveQuiet);
   const tipId = useId();
 
   const clearShow = useCallback(() => {
@@ -164,13 +168,13 @@ export function Tip({
   }, [clearHide, clearShow]);
 
   useLayoutEffect(() => {
-    quietRef.current = quiet;
+    quietRef.current = effectiveQuiet;
     forceCloseRef.current = closeNow;
-  }, [quiet, closeNow]);
+  }, [effectiveQuiet, closeNow]);
 
-  if (quiet !== trackedQuiet) {
-    setTrackedQuiet(quiet);
-    if (quiet) {
+  if (effectiveQuiet !== trackedQuiet) {
+    setTrackedQuiet(effectiveQuiet);
+    if (effectiveQuiet) {
       if (open) setOpen(false);
       if (pos !== null) setPos(null);
     }
@@ -178,20 +182,25 @@ export function Tip({
 
   const show = useCallback(
     (source: "pointer" | "focus" = "pointer") => {
-      if (quiet) return;
+      if (effectiveQuiet || tipHostHasOpenDetails(wrapRef.current)) return;
       clearHide();
       interestedRef.current = true;
       if (openRef.current || showTimer.current != null) return;
       const delay = tipShowDelay(source, tipGetOpenCount(), tipGetLastClosedAt());
       showTimer.current = window.setTimeout(() => {
         showTimer.current = null;
-        if (!tipShouldCommitShow(interestedRef.current, quietRef.current)) return;
+        if (
+          !tipShouldCommitShow(interestedRef.current, quietRef.current) ||
+          tipHostHasOpenDetails(wrapRef.current)
+        ) {
+          return;
+        }
         tipClaimActive(forceCloseRef.current);
         openRef.current = true;
         setOpen(true);
       }, delay);
     },
-    [clearHide, quiet],
+    [clearHide, effectiveQuiet],
   );
 
   const hide = useCallback(
@@ -230,14 +239,35 @@ export function Tip({
     };
   }, [clearHide, clearShow]);
 
+  /** Stay quiet while a nested details menu is open (click focus must not resurrect Tip). */
   useEffect(() => {
-    if (!quiet) return;
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+    function sync() {
+      const next = tipHostHasOpenDetails(wrap);
+      setPopupQuiet(next);
+      if (!next) return;
+      interestedRef.current = false;
+      clearShow();
+      clearHide();
+      openRef.current = false;
+      tipReleaseActive(forceCloseRef.current);
+      setOpen(false);
+      setPos(null);
+    }
+    sync();
+    wrap.addEventListener("toggle", sync, true);
+    return () => wrap.removeEventListener("toggle", sync, true);
+  }, [clearHide, clearShow]);
+
+  useEffect(() => {
+    if (!effectiveQuiet) return;
     interestedRef.current = false;
     clearShow();
     clearHide();
     openRef.current = false;
     tipReleaseActive(forceCloseRef.current);
-  }, [quiet, clearHide, clearShow]);
+  }, [effectiveQuiet, clearHide, clearShow]);
 
   const update = useCallback(() => {
     const wrap = wrapRef.current;
