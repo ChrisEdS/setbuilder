@@ -146,7 +146,12 @@ import {
   type ReshuffleSource,
 } from "@/components/SetTakeaway";
 import { StickWriteDialog } from "@/components/StickWriteDialog";
-import { deletePlaylistFromStick, stickPlaylistKey } from "@/lib/rekordbox-stick-write";
+import {
+  deletePlaylistFromStick,
+  restoreBackup,
+  restoreLatestBackup,
+  stickPlaylistKey,
+} from "@/lib/rekordbox-stick-write";
 import { RoleCrates } from "@/components/RoleCrates";
 import {
   boothFileName,
@@ -618,6 +623,9 @@ export function SetBuilder() {
   const [deletePhase, setDeletePhase] = useState<"write" | "read" | null>(null);
   const [deleteDone, setDeleteDone] = useState<{ name: string; backup: string } | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteCanRestore, setDeleteCanRestore] = useState(false);
+  const [deleteRestoreName, setDeleteRestoreName] = useState<string | null>(null);
+  const [deleteRestoring, setDeleteRestoring] = useState(false);
   const [pendingStickSet, setPendingStickSet] = useState<RekordboxStickSet | null>(
     null,
   );
@@ -1161,16 +1169,27 @@ export function SetBuilder() {
   }
 
   function requestDeleteStickPlaylist(set: RekordboxStickSet) {
-    if (deleteBusy) return;
+    if (deleteBusy || deleteRestoring) return;
     setDeleteError(null);
     setDeleteDone(null);
     setDeletePhase(null);
+    setDeleteCanRestore(false);
+    setDeleteRestoreName(null);
     setPendingDelete(set);
+  }
+
+  async function applyStickAfterDeleteChange(root: PersistableDir) {
+    const fresh = await readStickFromHandle(root).catch(() => null);
+    if (fresh) {
+      setLibraryRows(stickLibraryRows(fresh.library, fresh.sets));
+      setStickSets(fresh.sets);
+    }
+    await Promise.resolve(refreshStickHealthRef.current?.()).catch(() => undefined);
   }
 
   async function confirmDeleteStickPlaylist() {
     const set = pendingDelete;
-    if (!set || deleteBusy) return;
+    if (!set || deleteBusy || deleteRestoring) return;
     const key = stickPlaylistKey(set.id);
     if (!key) {
       setDeleteError(t("library.stick.deleteNoStick"));
@@ -1180,6 +1199,8 @@ export function SetBuilder() {
     setDeletePhase("write");
     setDeleteError(null);
     setDeleteDone(null);
+    setDeleteCanRestore(false);
+    setDeleteRestoreName(null);
     try {
       const root =
         (stickRootRef.current as PersistableDir | null) ?? (await loadPersistedStickHandle());
@@ -1213,10 +1234,54 @@ export function SetBuilder() {
       );
       await Promise.resolve(refreshStickHealthRef.current?.()).catch(() => undefined);
     } catch (error) {
+      const backup =
+        error instanceof LocalizedError && typeof error.vars?.backup === "string"
+          ? error.vars.backup
+          : null;
       setDeleteError(errorText(error, t, "exports.stickWrite.rolledBack"));
+      setDeleteCanRestore(true);
+      setDeleteRestoreName(backup);
     } finally {
       setDeleteBusy(false);
       setDeletePhase(null);
+    }
+  }
+
+  async function restoreStickAfterDeleteFailure() {
+    if (deleteBusy || deleteRestoring) return;
+    setDeleteRestoring(true);
+    setDeleteError(null);
+    try {
+      const root =
+        (stickRootRef.current as PersistableDir | null) ?? (await loadPersistedStickHandle());
+      if (!root || !(await stickPermission(root, "readwrite", true))) {
+        setDeleteError(t("library.stick.deleteNoStick"));
+        setDeleteCanRestore(true);
+        return;
+      }
+      const name = await enqueueWork(
+        () =>
+          deleteRestoreName
+            ? restoreBackup(root, deleteRestoreName)
+            : restoreLatestBackup(root),
+        {
+          operation: "stick-restore",
+          key: `stick-restore:${deleteRestoreName ?? "latest"}`,
+          label: t("library.stick.deleteRestoring"),
+          target: deleteRestoreName ?? undefined,
+        },
+      );
+      await applyStickAfterDeleteChange(root);
+      clearNotice();
+      setDeleteCanRestore(false);
+      setDeleteRestoreName(null);
+      setPendingDelete(null);
+      setStatus(t("library.stick.deleteRestoreDone", { backup: name }));
+    } catch (error) {
+      setDeleteError(errorText(error, t, "exports.stickWrite.restoreFailed"));
+      setDeleteCanRestore(true);
+    } finally {
+      setDeleteRestoring(false);
     }
   }
 
@@ -4077,15 +4142,22 @@ export function SetBuilder() {
         phase={deletePhase}
         error={deleteError}
         done={deleteDone}
+        canRestore={deleteCanRestore}
+        restoring={deleteRestoring}
         onClose={() => {
-          if (deleteBusy) return;
+          if (deleteBusy || deleteRestoring) return;
           setPendingDelete(null);
           setDeleteDone(null);
           setDeleteError(null);
           setDeletePhase(null);
+          setDeleteCanRestore(false);
+          setDeleteRestoreName(null);
         }}
         onConfirm={() => {
           void confirmDeleteStickPlaylist();
+        }}
+        onRestore={() => {
+          void restoreStickAfterDeleteFailure();
         }}
       />
 

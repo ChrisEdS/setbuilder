@@ -71,8 +71,10 @@ const de = {
   "exports.stickWrite.alreadyThere": "Das Set liegt schon auf diesem Stick. Es wurde nichts verändert.",
   "exports.stickWrite.backupFailed": "Die Sicherung konnte nicht geschrieben werden. Es wurde nichts verändert.",
   "exports.stickWrite.readBack": "Die geschriebene Datei weicht von der geplanten ab.",
-  "exports.stickWrite.rolledBack": "Die Stick-Datenbank hat die Prüfung nach dem Schreiben nicht bestanden. Der vorherige Stand ist wiederhergestellt. ({detail})",
-  "exports.stickWrite.restoreFailed": "Die Stick-Datenbank konnte nicht zurückgesetzt werden. Bitte den Stick in rekordbox neu exportieren oder die Datei aus SETBUILDER-Backup zurückkopieren.",
+  "exports.stickWrite.rolledBack":
+    "Die Stick-Datenbank hat die Prüfung nach dem Schreiben nicht bestanden. Der vorherige Stand ist wiederhergestellt. ({detail})",
+  "exports.stickWrite.restoreFailed":
+    "Die Stick-Datenbank konnte nicht zurückgesetzt werden. Tippe „Sicherung zurück“ (SETBUILDER-Backup), oder exportiere den Stick in rekordbox neu.",
   "exports.stickWrite.noBackup": "Auf diesem Stick gibt es noch keine SETBUILDER-Sicherung.",
   "exports.stickWrite.removeDenied": "Dieser Stick darf die Player-Library nicht beiseitelegen. Chrome, Edge oder die Desktop-App verwenden.",
   "exports.stickWrite.asideFailed": "exportLibrary.db konnte nicht beiseitegelegt werden. Die Sicherung liegt in SETBUILDER-Backup.",
@@ -151,8 +153,10 @@ const en: Record<keyof typeof de, string> = {
   "exports.stickWrite.alreadyThere": "The set is already on this stick. Nothing was changed.",
   "exports.stickWrite.backupFailed": "The backup could not be written. Nothing was changed.",
   "exports.stickWrite.readBack": "The written file differs from the planned one.",
-  "exports.stickWrite.rolledBack": "The stick database failed the check after writing. The previous state has been restored. ({detail})",
-  "exports.stickWrite.restoreFailed": "The stick database could not be reset. Please export the stick again in rekordbox, or copy the file from SETBUILDER-Backup back.",
+  "exports.stickWrite.rolledBack":
+    "The stick database failed the check after writing. The previous state has been restored. ({detail})",
+  "exports.stickWrite.restoreFailed":
+    "The stick database could not be reset. Tap “Restore backup” (SETBUILDER-Backup), or re-export the stick in rekordbox.",
   "exports.stickWrite.noBackup": "There is no SETBUILDER backup on this stick yet.",
   "exports.stickWrite.removeDenied": "This stick cannot set the player library aside. Use Chrome, Edge or the desktop app.",
   "exports.stickWrite.asideFailed": "exportLibrary.db could not be set aside. The backup is in SETBUILDER-Backup.",
