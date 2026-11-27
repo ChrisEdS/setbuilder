@@ -884,23 +884,27 @@ export function SetBuilder() {
     window.history.replaceState({}, "", `${url.pathname}${url.search}`);
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const handle = await loadPersistedStickHandle().catch(() => null);
-      if (cancelled) return;
-      setStickReady(!!handle || stickFileCount() > 0);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [libraryRows.length, draft.tracks.length]);
-
   const stickHandleEpoch = useSyncExternalStore(
     subscribeStickHandle,
     getStickHandleEpoch,
     () => 0,
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const persisted = await loadPersistedStickHandle().catch(() => null);
+      if (cancelled) return;
+      const handle =
+        (stickRootRef.current as PersistableDir | null) ??
+        savedVolumeHandle() ??
+        persisted;
+      setStickReady(Boolean(handle) || stickFileCount() > 0);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [libraryRows.length, draft.tracks.length, stickHandleEpoch]);
 
   // Same path index the player caches on the directory handle. The yellow
   // note stays inside the open player; this only starts the walk.
@@ -2193,6 +2197,7 @@ export function SetBuilder() {
 
   const onStickStatus = useCallback((status: StickStatusSlice | null) => {
     stickRootRef.current = status?.healthRoot ?? null;
+    setStickReady(Boolean(stickRootRef.current) || stickFileCount() > 0);
     refreshStickHealthRef.current = status?.refreshHealth ?? null;
     setStickHealth((current) => {
       const next = status?.health ?? null;
@@ -3255,7 +3260,9 @@ export function SetBuilder() {
   }
 
   async function stickForEnergy() {
-    const stick = await loadPersistedStickHandle().catch(() => null);
+    const live =
+      (stickRootRef.current as PersistableDir | null) ?? savedVolumeHandle();
+    const stick = live ?? (await loadPersistedStickHandle().catch(() => null));
     if (!stick && stickFileCount() === 0) {
       setStatus(t("builder.energy.noStick"));
       return undefined;
@@ -3573,11 +3580,8 @@ export function SetBuilder() {
     await queueHeavy(async () => {
       let started = false;
       try {
-        const stick = await loadPersistedStickHandle().catch(() => null);
-        if (!stick && stickFileCount() === 0) {
-          setStatus(t("builder.energy.noStick"));
-          return;
-        }
+        const stick = await stickForEnergy();
+        if (stick === undefined) return;
         const writeRoot =
           stick && (await stickPermission(stick, "readwrite", false)) ? stick : null;
         started = true;
